@@ -32,8 +32,10 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 USER nextjs
 EXPOSE 3000
 
+# Healthcheck — Next.js redirects "/" to /login (307); use /login directly.
+# Coolify treats 200 as healthy. -L follows redirects, -o discards body.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=5 \
-  CMD curl -sfL http://localhost:3000/ -o /dev/null || exit 1
+  CMD curl -sfL http://localhost:3000/login -o /dev/null || exit 1
 
 ENTRYPOINT ["/sbin/tini", "--"]
 CMD ["node", "server.js"]
