@@ -400,20 +400,55 @@ export function ChatPanel({ conversation, onConversationUpdate }: ChatPanelProps
   }, []);
   const cancelReply = useCallback(() => setReplyingTo(null), []);
 
+  // Helper: insere a Message recém-criada (resposta do POST) na cache local
+  // imediatamente, antes do WS broadcast chegar. Isso evita o gap visível
+  // em headless/Playwright (e em conexões WS lentas) onde o snapshot da UI
+  // saía sem a bolha outbound. O handler `message:new` (acima) faz dedup por
+  // `id`, então o broadcast subsequente apenas merge-update o status sem
+  // duplicar.
+  const upsertMessageInCache = useCallback(
+    (msg: Message) => {
+      queryClient.setQueryData<{ messages: Message[] } | undefined>(
+        ['messages', conversation.id],
+        (prev) => {
+          if (!prev) return prev;
+          const existing = prev.messages || [];
+          const match = existing.findIndex(
+            (m) =>
+              m.id === msg.id ||
+              (msg.externalId && m.externalId && m.externalId === msg.externalId),
+          );
+          if (match !== -1) {
+            const merged = [...existing];
+            merged[match] = { ...existing[match], ...msg };
+            return { ...prev, messages: merged };
+          }
+          return { ...prev, messages: [...existing, msg] };
+        },
+      );
+    },
+    [conversation.id, queryClient],
+  );
+
   const handleSend = async (text: string) => {
-    // The server broadcasts message:new with the QUEUED row immediately, so we
-    // don't need to invalidate — the socket handler above will insert the row.
+    // Optimistic insert: server retorna a Message QUEUED já no body do POST.
+    // Inserimos imediatamente; o `message:new` do WS chega depois e faz
+    // merge no mesmo id (handler acima já tem dedup). Antes desse fix a UI
+    // dependia 100% do WS broadcast, o que falhava em contexto headless.
     const replyToMessageId = replyingTo?.id;
     try {
-      await inboxService.sendMessage({
+      const created = await inboxService.sendMessage({
         conversationId: conversation.id,
         type: 'TEXT',
         content: { text },
         replyToMessageId,
       });
+      if (created) {
+        upsertMessageInCache(created);
+      }
       setReplyingTo(null);
     } catch (err) {
-      // Fallback: if send fails before the socket event arrives, force a refresh.
+      // Fallback: if send fails, force a refresh to drop any stale UI state.
       queryClient.invalidateQueries({ queryKey: ['messages', conversation.id] });
       throw err;
     }
@@ -421,7 +456,10 @@ export function ChatPanel({ conversation, onConversationUpdate }: ChatPanelProps
 
   const handleSendAudio = async (blob: Blob) => {
     try {
-      await inboxService.sendAudioMessage(conversation.id, blob);
+      const created = await inboxService.sendAudioMessage(conversation.id, blob);
+      if (created) {
+        upsertMessageInCache(created);
+      }
     } catch (err) {
       queryClient.invalidateQueries({ queryKey: ['messages', conversation.id] });
       throw err;
