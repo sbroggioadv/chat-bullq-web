@@ -368,6 +368,22 @@ export function ChatPanel({ conversation, onConversationUpdate }: ChatPanelProps
         },
       );
     });
+    // conversation:assigned — emitido pelo server quando auto-assign acontece
+    // no envio de uma mensagem (messages.service.send linhas 206-223). Sem
+    // este listener, a mudança de assignee só aparece no próximo refetch
+    // periódico (5s) da inbox. Invalidamos a conversation aberta + lista.
+    const unsubAssigned = on('conversation:assigned', (payload: any) => {
+      if (payload?.conversationId !== conversation.id) return;
+      queryClient.invalidateQueries({ queryKey: ['conversation', conversation.id] });
+      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+    });
+    // conversation:ai-toggle — emitido quando a IA é desligada por intervenção
+    // humana (messages.service.send linhas 227-237). Sem listener, o toggle
+    // visual da IA fica desatualizado até o próximo refetch.
+    const unsubAiToggle = on('conversation:ai-toggle', (payload: any) => {
+      if (payload?.conversationId !== conversation.id) return;
+      queryClient.invalidateQueries({ queryKey: ['conversation', conversation.id] });
+    });
     // Reconnect: any messages that arrived during the offline window are
     // gone from this client's perspective (socket misses events while
     // disconnected). Refetch the open conversation's messages on every
@@ -382,6 +398,8 @@ export function ChatPanel({ conversation, onConversationUpdate }: ChatPanelProps
     return () => {
       unsubNew?.();
       unsubStatus?.();
+      unsubAssigned?.();
+      unsubAiToggle?.();
       unsubReconnect?.();
     };
   }, [conversation.id, on, onReconnect, queryClient]);
