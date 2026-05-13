@@ -709,7 +709,12 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
   };
 
   return (
-    <div className="flex h-full w-80 flex-col border-r border-zinc-200/80 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+    // w-full: a largura agora é controlada pelo wrapper externo
+    // (`InboxLayout` via react-resizable-panels). O `min-w-0` é
+    // load-bearing junto com o flex-col — sem ele, `truncate` interno
+    // dos nomes longos não funciona porque o flex item assume o
+    // intrinsic content-width como mínimo.
+    <div className="flex h-full w-full min-w-0 flex-col border-r border-zinc-200/80 bg-white dark:border-zinc-800 dark:bg-zinc-950">
       {/* Scope selector (All / Mine) */}
       <div className="px-3 pt-3">
         <Popover className="relative">
