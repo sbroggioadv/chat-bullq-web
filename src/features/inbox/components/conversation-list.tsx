@@ -320,24 +320,24 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
     queryFn: ({ pageParam = 1 }) => {
       const params: Record<string, string> = { limit: '30', page: String(pageParam) };
       if (unreadOnly) params.unread = 'true';
-      // The "archived" scope is owned by the view when one is active.
-      // Otherwise: archivedOnly toggle = 'only', no toggle = 'exclude' (default).
-      if (!viewId) {
+      // archived: dentro de view, só passa quando user explicitamente
+      // ativou (override). Fora de view, passa sempre o estado atual.
+      if (viewId) {
+        if (archivedOnly) params.archived = 'only';
+      } else {
         params.archived = archivedOnly ? 'only' : 'exclude';
-        // Grupos são escondidos por default no inbox geral (regra do JP).
-        // showGroups=true → backend devolve todas (não filtra). View
-        // ativa controla isso via filtros próprios da view.
+      }
+      // groups: dentro de view, só override se user MARCOU "Grupos"
+      // explicitamente (vira 'only' pra forçar). Fora de view, default
+      // esconde grupos (regra do JP).
+      if (viewId) {
+        if (showGroups) params.groups = 'only';
+      } else {
         if (!showGroups) params.groups = 'exclude';
       }
       if (debouncedSearch) params.search = debouncedSearch;
-      // Channel filter is owned by the view when one is active — don't
-      // forward the local selectedChannelId so the saved filter wins.
-      if (!viewId && selectedChannelId) params.channelId = selectedChannelId;
-      // Same rule as channel: tag filters layer on the main inbox only;
-      // saved views own their own tag filtering.
-      if (!viewId && selectedTagIds.length > 0) {
-        params.tagIds = selectedTagIds.join(',');
-      }
+      if (selectedChannelId) params.channelId = selectedChannelId;
+      if (selectedTagIds.length > 0) params.tagIds = selectedTagIds.join(',');
       if (scope === 'MINE' && currentUserId) params.assignedToId = currentUserId;
       if (viewId) {
         return inboxViewsService.getConversations(viewId, params);
@@ -359,6 +359,11 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
     () => data?.pages.flatMap((p) => p.conversations) || [],
     [data],
   );
+
+  // Total count from the paginated response — same value across pages
+  // (it's the count(where) from Postgres). Used to show "Não lidas (N)"
+  // in the active filter chip.
+  const totalCount = data?.pages?.[0]?.pagination?.total ?? 0;
 
   // Infinite scroll via IntersectionObserver
   useEffect(() => {
@@ -535,6 +540,31 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
         },
       );
     });
+    // Mirror of conversation:read for the "mark as unread" action — keeps
+    // other tabs/devices for the same user in sync with the new badge.
+    const unsubUnread = on('conversation:unread', (payload: any) => {
+      const id = payload?.conversationId;
+      if (!id) return;
+      const count = Number(payload?.unreadCount) || 1;
+      queryClient.setQueriesData<any>(
+        { queryKey: ['conversations'] },
+        (old: any) => {
+          if (!old?.pages) return old;
+          return {
+            ...old,
+            pages: old.pages.map((p: any) => ({
+              ...p,
+              conversations: p.conversations.map((c: Conversation) =>
+                c.id === id ? { ...c, unreadCount: count } : c,
+              ),
+            })),
+          };
+        },
+      );
+      // Refetch so the conversation re-enters an "unread only" view it
+      // had previously dropped from.
+      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+    });
     // Reconnect: any events that fired while we were offline are gone, so
     // sync the list from scratch when the socket comes back.
     const unsubReconnect = onReconnect(() => {
@@ -546,6 +576,7 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
       unsubImported?.();
       unsubUpdated?.();
       unsubRead?.();
+      unsubUnread?.();
       unsubReconnect?.();
     };
   }, [on, onReconnect, queryClient]);
@@ -853,18 +884,17 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
 
         <Popover className="relative">
           <PopoverButton
-            // The Archived filter is also reachable as a built-in inbox view.
-            // We hide the toggle entirely when the user is already inside an
-            // inbox view (the view's own filters take precedence).
-            disabled={!!viewId}
-            className={`relative flex h-[30px] w-[30px] items-center justify-center rounded-md transition-colors outline-none data-[open]:bg-zinc-100 data-[open]:text-zinc-600 dark:data-[open]:bg-zinc-800 dark:data-[open]:text-zinc-300 disabled:opacity-50 disabled:pointer-events-none ${
-              activeFilterCount > 0 && !viewId
+            // Filtros funcionam sempre — dentro ou fora de uma view. Quando
+            // dentro de view, eles agem como override em cima dos filtros
+            // salvos da view (backend faz o merge no /inbox-views/:id/conv).
+            className={`relative flex h-[30px] w-[30px] items-center justify-center rounded-md transition-colors outline-none data-[open]:bg-zinc-100 data-[open]:text-zinc-600 dark:data-[open]:bg-zinc-800 dark:data-[open]:text-zinc-300 ${
+              activeFilterCount > 0
                 ? 'bg-primary/10 text-primary dark:bg-primary/20 data-[open]:bg-primary/10 data-[open]:text-primary dark:data-[open]:bg-primary/20 dark:data-[open]:text-primary'
                 : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-300'
             }`}
           >
             <SlidersHorizontal className="h-3.5 w-3.5" />
-            {!viewId && activeFilterCount > 0 && (
+            {activeFilterCount > 0 && (
               <span className="absolute -right-0.5 -top-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-white">
                 {activeFilterCount}
               </span>
@@ -1020,7 +1050,7 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
       </div>
 
       {/* Active filter chips */}
-      {!viewId && activeFilterCount > 0 && (
+      {activeFilterCount > 0 && (
         <div className="flex flex-wrap gap-1.5 px-3 pb-2">
           {filterOptions.map((option) => {
             const isActive =
@@ -1032,6 +1062,11 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
                 className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-medium text-primary dark:bg-primary/20"
               >
                 {option.label}
+                {option.value === 'unread' && (
+                  <span className="rounded-full bg-primary/20 px-1.5 text-[10px] font-semibold leading-none py-[3px] dark:bg-primary/30">
+                    {totalCount}
+                  </span>
+                )}
                 <button
                   onClick={() => toggleListFilter(option.value)}
                   className="rounded-full p-0.5 transition-colors hover:bg-primary/20 dark:hover:bg-primary/30"

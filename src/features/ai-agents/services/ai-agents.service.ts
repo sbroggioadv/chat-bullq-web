@@ -167,9 +167,30 @@ export const aiAgentsService = {
     return data.data ?? data;
   },
 
+  async listAgentSkills(id: string): Promise<AgentSkillBinding[]> {
+    const { data } = await api.get(`/ai-agents/${id}/skills`);
+    return data.data ?? data;
+  },
+
+  async watchdogStats(): Promise<WatchdogStats> {
+    const { data } = await api.get('/ai-agents/watchdog/stats');
+    return data.data ?? data;
+  },
+
+  async setSkillApproval(
+    agentId: string,
+    skillId: string,
+    requiresApproval: boolean,
+  ): Promise<void> {
+    await api.patch(`/ai-agents/${agentId}/skills/${skillId}/approval`, {
+      requiresApproval,
+    });
+  },
+
   async feed(
     params: {
       agentId?: string;
+      conversationId?: string;
       period?: Period | 'all';
       status?: 'RUNNING' | 'COMPLETED' | 'FAILED' | 'SKIPPED';
       finalAction?: string;
@@ -201,18 +222,50 @@ export const aiAgentsService = {
     return data.data ?? data;
   },
 
-  async openrouterCredits(): Promise<OpenRouterCredits> {
-    const { data } = await api.get('/ai-agents/credits');
-    return data.data ?? data;
-  },
 };
 
-export interface OpenRouterCredits {
-  totalCreditsUsd: number;
-  totalUsageUsd: number;
-  remainingUsd: number;
-  ok?: boolean;
-  error?: string;
+export interface WatchdogConversationLite {
+  id: string;
+  status: string;
+  stuckAttempts: number;
+  lastWatchdogCheckAt: string | null;
+  watchdogJobId?: string | null;
+  updatedAt: string;
+  contact: { id: string; name: string | null; phone: string | null };
+  channel: { id: string; name: string; type: string };
+}
+
+export interface WatchdogStats {
+  enabled: boolean;
+  config: {
+    delayBotMin: number;
+    delayPendingMin: number;
+    delayHumanIdleMin: number;
+    maxAttempts: number;
+  };
+  businessHours: unknown;
+  timezone: string;
+  stats: {
+    activeTimers: number;
+    checks24h: number;
+    reactivations24h: number;
+    stuck: number;
+  };
+  topAlert: WatchdogConversationLite[];
+  recentStuck: WatchdogConversationLite[];
+}
+
+export interface AgentSkillBinding {
+  skillId: string;
+  requiresApproval: boolean;
+  skill: {
+    id: string;
+    name: string;
+    description: string;
+    source: 'BUILTIN' | 'HTTP' | 'SQL';
+    category: string | null;
+    isActive: boolean;
+  };
 }
 
 export type Period = '24h' | '7d' | '30d';

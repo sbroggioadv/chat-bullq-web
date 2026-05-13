@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, CheckCheck, Clock, AlertCircle, ExternalLink, Reply, X } from 'lucide-react';
+import { Check, CheckCheck, Clock, AlertCircle, ExternalLink, Reply, Trash2, X, Ban } from 'lucide-react';
+import { toast } from 'sonner';
 import { inboxService, type Conversation, type Message } from '../services/inbox.service';
 import { ChatInput } from './chat-input';
 import { ConversationHeader } from './conversation-header';
@@ -17,10 +18,15 @@ import {
 } from './media-bubbles';
 import { useSocket } from '../hooks/use-socket';
 import { useAuthStore } from '@/stores/auth-store';
+import { PendingActionsList } from '../pending-actions/pending-actions-list';
 
 interface ChatPanelProps {
   conversation: Conversation;
   onConversationUpdate: () => void;
+  /** Forwarded to ConversationHeader so the agent-runs sidebar toggle
+   *  shows up in the chat header. */
+  onToggleAgentLogs?: () => void;
+  agentLogsOpen?: boolean;
 }
 
 const statusIcons: Record<string, React.ElementType> = {
@@ -30,6 +36,86 @@ const statusIcons: Record<string, React.ElementType> = {
   READ: CheckCheck,
   FAILED: AlertCircle,
 };
+
+/**
+ * Banner de aviso quando a conversa está fora da "janela de atendimento"
+ * do WhatsApp (24h sem mensagem do cliente). Sem template aprovado, qualquer
+ * mensagem livre é rejeitada pelo provider com `failed_reason: Re-engagement
+ * message`.
+ *
+ * Heurística client-side: olha as últimas mensagens já carregadas e procura
+ * a última INBOUND. Se nenhuma encontrada nos buffer atual, OU se ela é mais
+ * velha que 24h, mostra o banner. Não 100% preciso (paginação pode esconder
+ * inbound antiga) mas resolve >95% dos casos sem precisar de campo novo no
+ * backend.
+ */
+function EngagementWindowBanner({
+  channelType,
+  messages,
+}: {
+  channelType: string;
+  messages: Message[];
+}) {
+  // Janela 24h é regra rígida APENAS do WhatsApp Cloud API oficial (Meta).
+  // Canais Zappfy/Uazapi (WHATSAPP_ZAPPFY) não têm essa restrição — banner
+  // ali confunde mais que ajuda.
+  if (channelType !== 'WHATSAPP_OFFICIAL') return null;
+  if (messages.length === 0) return null;
+
+  const lastInbound = [...messages]
+    .reverse()
+    .find((m) => m.direction === 'INBOUND');
+  if (!lastInbound) return null;
+
+  const ageMs = Date.now() - new Date(lastInbound.createdAt).getTime();
+  const ageHours = ageMs / (60 * 60 * 1000);
+  if (ageHours < 24) return null;
+
+  const ageLabel =
+    ageHours < 48
+      ? `${Math.floor(ageHours)}h`
+      : `${Math.floor(ageHours / 24)} dias`;
+
+  return (
+    <div className="flex items-start gap-2 border-b border-amber-200 bg-amber-50 px-4 py-2.5 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
+      <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+      <div className="flex-1 leading-relaxed">
+        <strong>Janela de 24h expirada</strong> — última mensagem do cliente
+        foi há {ageLabel}. WhatsApp só aceita{' '}
+        <strong>templates aprovados</strong> agora. Mensagem de texto livre
+        vai falhar com erro <code className="font-mono text-[11px]">Re-engagement message</code>.
+        Peça pro cliente mandar qualquer mensagem pra reabrir a janela, ou
+        envie um template HSM via Meta Business.
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Tooltip humano pra cada status. Especial pra FAILED com motivo conhecido
+ * — operador entende que precisa de template em vez de relê o erro do
+ * provider em inglês ("Re-engagement message").
+ */
+function statusTooltip(status: string, failedReason?: string | null): string {
+  switch (status) {
+    case 'QUEUED':
+      return 'Enviando…';
+    case 'SENT':
+      return 'Enviado pro provedor';
+    case 'DELIVERED':
+      return 'Entregue ao destinatário';
+    case 'READ':
+      return 'Lida';
+    case 'FAILED':
+      if (failedReason && /re-?engagement/i.test(failedReason)) {
+        return 'Falhou: cliente sem mensagem há mais de 24h. Use um template aprovado pra reabrir a conversa.';
+      }
+      if (failedReason) return `Falhou: ${failedReason}`;
+      return 'Falhou ao enviar';
+    default:
+      return status;
+  }
+}
 
 const URL_REGEX = /(https?:\/\/[^\s]+)/gi;
 const IG_CDN_HOSTS = /(lookaside\.fbsbx\.com|cdninstagram\.com|fbcdn\.net)/i;
@@ -284,7 +370,12 @@ function ContactAvatar({
   );
 }
 
-export function ChatPanel({ conversation, onConversationUpdate }: ChatPanelProps) {
+export function ChatPanel({
+  conversation,
+  onConversationUpdate,
+  onToggleAgentLogs,
+  agentLogsOpen,
+}: ChatPanelProps) {
   const queryClient = useQueryClient();
   const bottomRef = useRef<HTMLDivElement>(null);
   const { on, emit, onReconnect } = useSocket();
@@ -395,14 +486,90 @@ export function ChatPanel({ conversation, onConversationUpdate }: ChatPanelProps
       });
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
     });
+    // Watchdog/admin revogou uma mensagem — pinta a bolha como "deletada"
+    // pra todo mundo que tá com a conversa aberta, sem refresh.
+    const unsubRevoked = on('message:revoked', (payload: any) => {
+      if (payload?.conversationId !== conversation.id) return;
+      if (!payload?.messageId) return;
+      queryClient.setQueryData<{ messages: Message[] } | undefined>(
+        ['messages', conversation.id],
+        (prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            messages: prev.messages.map((m) =>
+              m.id === payload.messageId
+                ? {
+                    ...m,
+                    revokedAt: payload.revokedAt,
+                    revokedBy: payload.revokedBy,
+                    revokeSucceededRemote: payload.succeededRemote,
+                  }
+                : m,
+            ),
+          };
+        },
+      );
+    });
     return () => {
       unsubNew?.();
       unsubStatus?.();
       unsubAssigned?.();
       unsubAiToggle?.();
       unsubReconnect?.();
+      unsubRevoked?.();
     };
   }, [conversation.id, on, onReconnect, queryClient]);
+
+  const handleRevoke = useCallback(
+    async (msg: Message) => {
+      const ok = window.confirm(
+        'Deletar essa mensagem pra todos? ' +
+          'Em WhatsApp via Zappfy a mensagem some no app do cliente. ' +
+          'Em WhatsApp Cloud API e Instagram, ela some apenas no Chat BullQ ' +
+          '(limitação da Meta — o cliente continua vendo no app dele).',
+      );
+      if (!ok) return;
+      try {
+        const result = await inboxService.revokeMessage(msg.id);
+        if (result.succeededRemote) {
+          toast.success('Mensagem deletada pra todos');
+        } else {
+          toast.warning(
+            'Mensagem deletada só no Chat BullQ. ' +
+              'O cliente ainda vê a mensagem no app dele (limitação do canal).',
+          );
+        }
+        // Otimista: marca local enquanto o realtime não chega
+        queryClient.setQueryData<{ messages: Message[] } | undefined>(
+          ['messages', conversation.id],
+          (prev) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              messages: prev.messages.map((m) =>
+                m.id === msg.id
+                  ? {
+                      ...m,
+                      revokedAt: result.revokedAt,
+                      revokedBy: result.revokedBy,
+                      revokeSucceededRemote: result.succeededRemote,
+                    }
+                  : m,
+              ),
+            };
+          },
+        );
+      } catch (err: any) {
+        toast.error(
+          err?.response?.data?.message ||
+            err?.message ||
+            'Erro ao deletar mensagem',
+        );
+      }
+    },
+    [conversation.id, queryClient],
+  );
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -496,6 +663,15 @@ export function ChatPanel({ conversation, onConversationUpdate }: ChatPanelProps
       <ConversationHeader
         conversation={conversation}
         onUpdate={onConversationUpdate}
+        onToggleAgentLogs={onToggleAgentLogs}
+        agentLogsOpen={agentLogsOpen}
+      />
+
+      <PendingActionsList conversationId={conversation.id} />
+
+      <EngagementWindowBanner
+        channelType={conversation.channel.type}
+        messages={messages}
       />
 
       <div className="min-h-0 flex-1 overflow-y-auto bg-zinc-50 p-4 dark:bg-zinc-900/50">
@@ -525,6 +701,7 @@ export function ChatPanel({ conversation, onConversationUpdate }: ChatPanelProps
                 const isOutbound = msg.direction === 'OUTBOUND';
                 const StatusIcon = statusIcons[msg.status] || Clock;
                 const reactions = reactionMap.get(msg.externalId || '') || [];
+                const isRevoked = !!msg.revokedAt;
                 return (
                   <div
                     key={msg.id}
@@ -535,17 +712,29 @@ export function ChatPanel({ conversation, onConversationUpdate }: ChatPanelProps
                         FORA da bolha — esquerda quando outbound (msg
                         nossa, espaço à direita da bolha), direita quando
                         inbound (msg do cliente, espaço à esquerda).
-                        Reactions e bolhas curtas mantêm o botão visível. */}
-                    {isOutbound && (
-                      <button
-                        type="button"
-                        onClick={() => startReply(msg)}
-                        className="self-center rounded-full bg-white p-1.5 text-zinc-400 opacity-0 shadow-sm ring-1 ring-zinc-200 transition-opacity hover:text-zinc-700 group-hover:opacity-100 dark:bg-zinc-800 dark:ring-zinc-700 dark:hover:text-zinc-100"
-                        title="Responder"
-                        aria-label="Responder esta mensagem"
-                      >
-                        <Reply className="h-3.5 w-3.5" />
-                      </button>
+                        Reactions e bolhas curtas mantêm o botão visível.
+                        Mensagens já revogadas não mostram ações. */}
+                    {isOutbound && !isRevoked && (
+                      <div className="flex items-center gap-1 self-center opacity-0 transition-opacity group-hover:opacity-100">
+                        <button
+                          type="button"
+                          onClick={() => startReply(msg)}
+                          className="rounded-full bg-white p-1.5 text-zinc-400 shadow-sm ring-1 ring-zinc-200 hover:text-zinc-700 dark:bg-zinc-800 dark:ring-zinc-700 dark:hover:text-zinc-100"
+                          title="Responder"
+                          aria-label="Responder esta mensagem"
+                        >
+                          <Reply className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRevoke(msg)}
+                          className="rounded-full bg-white p-1.5 text-zinc-400 shadow-sm ring-1 ring-zinc-200 hover:text-red-600 dark:bg-zinc-800 dark:ring-zinc-700 dark:hover:text-red-400"
+                          title="Deletar pra todos"
+                          aria-label="Deletar mensagem pra todos"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     )}
                     {!isOutbound && (
                       <ContactAvatar
@@ -639,7 +828,29 @@ export function ChatPanel({ conversation, onConversationUpdate }: ChatPanelProps
                             )}
                           </button>
                         )}
-                      {msg.type === 'AUDIO' ? (
+                      {isRevoked ? (
+                        <div
+                          className={`flex items-center gap-2 rounded-2xl border border-dashed px-4 py-2.5 italic ${
+                            isOutbound
+                              ? 'rounded-br-md border-primary/40 bg-primary/5 text-primary/70'
+                              : 'rounded-bl-md border-zinc-300 bg-zinc-50 text-zinc-400 dark:border-zinc-700 dark:bg-zinc-800/40 dark:text-zinc-500'
+                          }`}
+                          title={
+                            msg.revokeSucceededRemote
+                              ? 'Mensagem deletada pra todos (provider confirmou).'
+                              : 'Deletada apenas no Chat BullQ — o cliente ainda pode estar vendo no app dele.'
+                          }
+                        >
+                          <Ban className="h-3.5 w-3.5 shrink-0" />
+                          <span className="text-sm">
+                            Mensagem deletada
+                            {msg.revokeSucceededRemote === false ? ' (só aqui)' : ''}
+                          </span>
+                          <span className="ml-auto text-[10px] opacity-70">
+                            {formatTime(msg.createdAt)}
+                          </span>
+                        </div>
+                      ) : msg.type === 'AUDIO' ? (
                         <>
                           <AudioMessagePlayer
                             message={msg}
@@ -655,9 +866,17 @@ export function ChatPanel({ conversation, onConversationUpdate }: ChatPanelProps
                           >
                             <span>{formatTime(msg.createdAt)}</span>
                             {isOutbound && (
-                              <StatusIcon
-                                className={`h-3 w-3 ${msg.status === 'READ' ? 'text-primary' : ''}`}
-                              />
+                              <span title={statusTooltip(msg.status, msg.failedReason)}>
+                                <StatusIcon
+                                  className={`h-3 w-3 ${
+                                    msg.status === 'FAILED'
+                                      ? 'text-red-500'
+                                      : msg.status === 'READ'
+                                        ? 'text-primary'
+                                        : ''
+                                  }`}
+                                />
+                              </span>
                             )}
                           </div>
                         </>
@@ -696,9 +915,17 @@ export function ChatPanel({ conversation, onConversationUpdate }: ChatPanelProps
                           >
                             <span>{formatTime(msg.createdAt)}</span>
                             {isOutbound && (
-                              <StatusIcon
-                                className={`h-3 w-3 ${msg.status === 'READ' ? 'text-blue-300' : ''}`}
-                              />
+                              <span title={statusTooltip(msg.status, msg.failedReason)}>
+                                <StatusIcon
+                                  className={`h-3 w-3 ${
+                                    msg.status === 'FAILED'
+                                      ? 'text-red-300'
+                                      : msg.status === 'READ'
+                                        ? 'text-blue-300'
+                                        : ''
+                                  }`}
+                                />
+                              </span>
                             )}
                           </div>
                         </div>

@@ -116,6 +116,9 @@ export interface Message {
   content: Record<string, any>;
   externalId: string | null;
   status: string;
+  /** Motivo do erro quando status=FAILED. Vem direto do provider WhatsApp.
+   *  Ex.: "Re-engagement message" = janela 24h expirada → precisa template. */
+  failedReason?: string | null;
   senderName: string | null;
   senderId: string | null;
   sender: MessageSender | null;
@@ -124,6 +127,12 @@ export interface Message {
   readAt: string | null;
   createdAt: string;
   metadata?: MessageMetadata | null;
+  /** Quando setado, mensagem foi deletada pra todos. UI renderiza placeholder. */
+  revokedAt?: string | null;
+  revokedBy?: string | null;
+  /** true = provider confirmou delete (cliente final viu sumir).
+   *  false = só sumiu no nosso lado (provider não suportou). */
+  revokeSucceededRemote?: boolean | null;
 }
 
 export interface PaginatedResponse<T> {
@@ -165,6 +174,21 @@ export const inboxService = {
     return data.data;
   },
 
+  /**
+   * Deleta mensagem pra todos. Tenta propagar pro provider. Resposta indica
+   * se o provider aceitou (cliente final viu sumir) ou se foi só local.
+   */
+  async revokeMessage(messageId: string): Promise<{
+    messageId: string;
+    revokedAt: string;
+    revokedBy: string;
+    succeededRemote: boolean;
+    remoteError: string | null;
+  }> {
+    const { data } = await api.delete(`/messages/${messageId}`);
+    return data.data ?? data;
+  },
+
   async assignToMe(conversationId: string): Promise<Conversation> {
     const { data } = await api.post(`/conversations/${conversationId}/assign-me`);
     return data.data;
@@ -196,6 +220,13 @@ export const inboxService = {
     const { data } = await api.post(`/conversations/${conversationId}/read`, {
       lastReadMessageId,
     });
+    return data.data ?? data;
+  },
+
+  async markAsUnread(
+    conversationId: string,
+  ): Promise<{ ok: boolean; unreadCount: number }> {
+    const { data } = await api.post(`/conversations/${conversationId}/unread`);
     return data.data ?? data;
   },
 

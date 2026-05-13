@@ -16,6 +16,7 @@ import {
   Inbox as InboxIcon,
   Filter,
   Pencil,
+  Mail,
   X,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -51,8 +52,10 @@ export function ConversationContextMenu({
   const [pendingPipelineId, setPendingPipelineId] = useState<string | null>(null);
   const [pendingViewId, setPendingViewId] = useState<string | null>(null);
   const [archiving, setArchiving] = useState(false);
+  const [markingUnread, setMarkingUnread] = useState(false);
   const [renameOpen, setRenameOpen] = useState(false);
   const isArchived = (conversation as any).isArchived === true;
+  const alreadyUnread = (conversation.unreadCount ?? 0) > 0;
 
   const { data: tags = [], isLoading } = useQuery({
     queryKey: ['tags', orgId],
@@ -161,6 +164,38 @@ export function ConversationContextMenu({
       );
     } finally {
       setPendingViewId(null);
+    }
+  };
+
+  const markUnread = async () => {
+    setMarkingUnread(true);
+    try {
+      const result = await inboxService.markAsUnread(conversation.id);
+      // Optimistically bump the badge in cached list pages — the socket
+      // event (conversation:unread) will reconcile if the count differs.
+      queryClient.setQueriesData<any>(
+        { queryKey: ['conversations'] },
+        (old: any) => {
+          if (!old?.pages) return old;
+          return {
+            ...old,
+            pages: old.pages.map((p: any) => ({
+              ...p,
+              conversations: p.conversations.map((c: any) =>
+                c.id === conversation.id
+                  ? { ...c, unreadCount: result.unreadCount || 1 }
+                  : c,
+              ),
+            })),
+          };
+        },
+      );
+      toast.success('Marcada como não-lida');
+      onClose();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Erro ao marcar como não-lida');
+    } finally {
+      setMarkingUnread(false);
     }
   };
 
@@ -296,6 +331,19 @@ export function ConversationContextMenu({
           >
             <Pencil className="h-3.5 w-3.5 shrink-0 text-zinc-500 dark:text-zinc-400" />
             <span className="flex-1">Renomear</span>
+          </button>
+          <button
+            onClick={markUnread}
+            disabled={markingUnread || alreadyUnread}
+            title={alreadyUnread ? 'Conversa já está como não-lida' : undefined}
+            className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-[13px] text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent dark:text-zinc-300 dark:hover:bg-zinc-800/60"
+          >
+            {markingUnread ? (
+              <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-zinc-400" />
+            ) : (
+              <Mail className="h-3.5 w-3.5 shrink-0 text-zinc-500 dark:text-zinc-400" />
+            )}
+            <span className="flex-1">Marcar como não-lida</span>
           </button>
           <button
             onClick={toggleArchive}
