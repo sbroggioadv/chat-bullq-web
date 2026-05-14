@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 
+export type OrgBrand = 'A' | 'B' | 'C';
+
 interface AuthUser {
   id: string;
   name: string;
@@ -14,6 +16,8 @@ interface OrgInfo {
   role: string;
   // 'ALL' for OWNER/ADMIN. Array of channel IDs for AGENT (deny-by-default).
   accessibleChannelIds: 'ALL' | string[];
+  // Identidade visual da banca. null = onboarding wizard pendente (só OWNER vê).
+  brand: OrgBrand | null;
 }
 
 interface AuthState {
@@ -23,6 +27,7 @@ interface AuthState {
   setAuth: (user: AuthUser, orgs: OrgInfo[]) => void;
   setActiveOrg: (orgId: string) => void;
   applyChannelPermissionUpdate: (channelId: string, granted: boolean) => void;
+  applyOrgBrandUpdate: (orgId: string, brand: OrgBrand) => void;
   logout: () => void;
 }
 
@@ -55,6 +60,14 @@ export const useAuthStore = create<AuthState>((set) => ({
         else set.delete(channelId);
         return { ...org, accessibleChannelIds: [...set] };
       }),
+    }));
+  },
+
+  applyOrgBrandUpdate: (orgId, brand) => {
+    set((state) => ({
+      organizations: state.organizations.map((org) =>
+        org.id === orgId ? { ...org, brand } : org,
+      ),
     }));
   },
 

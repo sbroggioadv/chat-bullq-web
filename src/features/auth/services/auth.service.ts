@@ -25,6 +25,8 @@ interface OrgInfo {
   slug: string;
   role: string;
   accessibleChannelIds: 'ALL' | string[];
+  // Identidade visual: 'A' | 'B' | 'C' | null (wizard pendente).
+  brand: 'A' | 'B' | 'C' | null;
 }
 
 interface AuthResponse {
