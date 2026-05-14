@@ -1,67 +1,415 @@
 @import "tailwindcss";
 
-@theme inline {
-  --color-background: oklch(1 0 0);
-  --color-foreground: oklch(0.145 0 0);
-  --color-card: oklch(1 0 0);
-  --color-card-foreground: oklch(0.145 0 0);
-  --color-popover: oklch(1 0 0);
-  --color-popover-foreground: oklch(0.145 0 0);
-  --color-primary: oklch(0.205 0.08 265);
-  --color-primary-foreground: oklch(0.985 0 0);
-  --color-secondary: oklch(0.97 0 0);
-  --color-secondary-foreground: oklch(0.205 0 0);
-  --color-muted: oklch(0.97 0 0);
-  --color-muted-foreground: oklch(0.556 0 0);
-  --color-accent: oklch(0.97 0 0);
-  --color-accent-foreground: oklch(0.205 0 0);
-  --color-destructive: oklch(0.577 0.245 27.325);
-  --color-border: oklch(0.922 0 0);
-  --color-input: oklch(0.922 0 0);
-  --color-ring: oklch(0.708 0.165 254.624);
-  --color-sidebar: oklch(0.985 0 0);
-  --color-sidebar-foreground: oklch(0.145 0 0);
-  --color-sidebar-border: oklch(0.922 0 0);
-  --color-sidebar-accent: oklch(0.97 0 0);
-  --color-sidebar-accent-foreground: oklch(0.205 0 0);
+/* ─────────────────────────────────────────────────────────────────
+ * Theme System — bullq2 web · Sprint S17
+ *
+ * Eixos:
+ *   data-brand="A" → Sbroggio Graphite (institucional, navy + terracota)
+ *   data-brand="B" → Plain Tech (electric green + cyan)
+ *   data-brand="C" → Stripe Paper (charcoal + rose vivid)
+ *   data-mode="light" | "dark"
+ *
+ * Os tokens semânticos (--bg, --fg, --primary, ...) vivem em variáveis
+ * "raw" sem o prefixo `--color-`. O bloco `@theme inline` mapeia esses
+ * raws nos tokens do Tailwind v4 (`--color-background`, etc.), então:
+ *   - mudar data-brand/data-mode no <html> repinta a UI inteira
+ *   - utilitários como `bg-background`, `text-primary`, `border-border`
+ *     continuam funcionando sem reescrever components
+ *   - utilitários `.dark:foo` continuam funcionando porque o
+ *     ThemeProvider seta a class `dark` em paralelo a `data-mode`
+ *
+ * Brand C é o padrão de boot (sem flicker) — orgs com brand=null herdam
+ * A visualmente depois do hidratamento (ver providers.tsx).
+ * ────────────────────────────────────────────────────────────────── */
+
+/* ============ Defaults de boot (light + brand A) ============
+ * Sem JS rodando ainda, queremos um look "Sbroggio claro" — não
+ * preto puro nem flash branco. Esses raws viram defaults aplicados
+ * em <html> via tag <html data-brand="A" data-mode="light">. */
+:root {
+  --bg: oklch(0.97 0.003 30);
+  --bg-elev: oklch(0.995 0.003 30);
+  --surface: oklch(1 0 0);
+  --surface-2: oklch(0.975 0.003 30);
+  --fg: oklch(0.18 0.02 250);
+  --fg-muted: oklch(0.45 0.02 250);
+  --fg-subtle: oklch(0.6 0.015 250);
+  --border: oklch(0.9 0.008 30);
+  --border-strong: oklch(0.82 0.012 30);
+  --primary: oklch(0.22 0.04 250);
+  --primary-hover: oklch(0.28 0.045 250);
+  --primary-fg: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0.003 30);
+  --secondary-fg: oklch(0.22 0.04 250);
+  --accent: oklch(0.62 0.16 35);
+  --accent-hover: oklch(0.56 0.17 35);
+  --accent-soft: oklch(0.94 0.04 35);
+  --accent-fg: oklch(0.985 0 0);
+  --muted: oklch(0.96 0.005 30);
+  --muted-fg: oklch(0.5 0.015 30);
+  --card: oklch(1 0 0);
+  --card-fg: oklch(0.18 0.02 250);
+  --popover: oklch(1 0 0);
+  --popover-fg: oklch(0.18 0.02 250);
+  --ring: oklch(0.65 0.12 250);
+  --success: oklch(0.6 0.13 150);
+  --success-fg: oklch(0.985 0 0);
+  --warning: oklch(0.75 0.16 80);
+  --warning-fg: oklch(0.18 0 0);
+  --danger: oklch(0.577 0.245 27.325);
+  --danger-fg: oklch(0.985 0 0);
+  --info: oklch(0.62 0.14 230);
+  --info-fg: oklch(0.985 0 0);
+  --sidebar: oklch(0.985 0.003 30);
+  --sidebar-fg: oklch(0.18 0.02 250);
+  --sidebar-border: oklch(0.9 0.008 30);
+  --sidebar-accent: oklch(0.94 0.04 35);
+  --sidebar-accent-fg: oklch(0.22 0.04 250);
   --radius-sm: 0.25rem;
   --radius-md: 0.375rem;
   --radius-lg: 0.5rem;
   --radius-xl: 0.75rem;
 }
 
-.dark {
-  --color-background: oklch(0.145 0 0);
-  --color-foreground: oklch(0.985 0 0);
-  --color-card: oklch(0.205 0 0);
-  --color-card-foreground: oklch(0.985 0 0);
-  --color-popover: oklch(0.205 0 0);
-  --color-popover-foreground: oklch(0.985 0 0);
-  --color-primary: oklch(0.708 0.165 254.624);
-  --color-primary-foreground: oklch(0.985 0 0);
-  --color-secondary: oklch(0.269 0 0);
-  --color-secondary-foreground: oklch(0.985 0 0);
-  --color-muted: oklch(0.269 0 0);
-  --color-muted-foreground: oklch(0.708 0 0);
-  --color-accent: oklch(0.269 0 0);
-  --color-accent-foreground: oklch(0.985 0 0);
-  --color-destructive: oklch(0.577 0.245 27.325);
-  --color-border: oklch(0.3 0 0);
-  --color-input: oklch(0.3 0 0);
-  --color-ring: oklch(0.708 0.165 254.624);
-  --color-sidebar: oklch(0.205 0 0);
-  --color-sidebar-foreground: oklch(0.985 0 0);
-  --color-sidebar-border: oklch(0.3 0 0);
-  --color-sidebar-accent: oklch(0.269 0 0);
-  --color-sidebar-accent-foreground: oklch(0.985 0 0);
+@theme inline {
+  --color-background: var(--bg);
+  --color-foreground: var(--fg);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-fg);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-fg);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-fg);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-fg);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-fg);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-fg);
+  --color-destructive: var(--danger);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
+  --color-border: var(--border);
+  --color-input: var(--border);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-fg);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-fg);
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
 }
 
+/* ═══════════════════════════════════════════════════════════
+ * BRAND A · Sbroggio Graphite — navy graphite + terracota
+ * Sério, institucional, OAB-compliant. Direção criativa: confiança.
+ * ═══════════════════════════════════════════════════════════ */
+
+html[data-brand="A"][data-mode="light"] {
+  --bg: oklch(0.97 0.003 30);
+  --bg-elev: oklch(0.995 0.003 30);
+  --surface: oklch(1 0 0);
+  --surface-2: oklch(0.975 0.003 30);
+  --fg: oklch(0.18 0.02 250);
+  --fg-muted: oklch(0.45 0.02 250);
+  --fg-subtle: oklch(0.6 0.015 250);
+  --border: oklch(0.9 0.008 30);
+  --border-strong: oklch(0.82 0.012 30);
+  --primary: oklch(0.22 0.04 250);
+  --primary-hover: oklch(0.28 0.045 250);
+  --primary-fg: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0.003 30);
+  --secondary-fg: oklch(0.22 0.04 250);
+  --accent: oklch(0.62 0.16 35);
+  --accent-hover: oklch(0.56 0.17 35);
+  --accent-soft: oklch(0.94 0.04 35);
+  --accent-fg: oklch(0.985 0 0);
+  --muted: oklch(0.96 0.005 30);
+  --muted-fg: oklch(0.5 0.015 30);
+  --card: oklch(1 0 0);
+  --card-fg: oklch(0.18 0.02 250);
+  --popover: oklch(1 0 0);
+  --popover-fg: oklch(0.18 0.02 250);
+  --ring: oklch(0.65 0.12 250);
+  --success: oklch(0.6 0.13 150);
+  --success-fg: oklch(0.985 0 0);
+  --warning: oklch(0.75 0.16 80);
+  --warning-fg: oklch(0.18 0 0);
+  --danger: oklch(0.577 0.245 27.325);
+  --danger-fg: oklch(0.985 0 0);
+  --info: oklch(0.62 0.14 230);
+  --info-fg: oklch(0.985 0 0);
+  --sidebar: oklch(0.985 0.003 30);
+  --sidebar-fg: oklch(0.18 0.02 250);
+  --sidebar-border: oklch(0.9 0.008 30);
+  --sidebar-accent: oklch(0.94 0.04 35);
+  --sidebar-accent-fg: oklch(0.22 0.04 250);
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+}
+
+html[data-brand="A"][data-mode="dark"] {
+  --bg: oklch(0.16 0.012 250);
+  --bg-elev: oklch(0.2 0.014 250);
+  --surface: oklch(0.22 0.015 250);
+  --surface-2: oklch(0.25 0.016 250);
+  --fg: oklch(0.97 0.003 30);
+  --fg-muted: oklch(0.72 0.01 30);
+  --fg-subtle: oklch(0.58 0.01 30);
+  --border: oklch(0.3 0.015 250);
+  --border-strong: oklch(0.4 0.018 250);
+  --primary: oklch(0.7 0.08 250);
+  --primary-hover: oklch(0.76 0.08 250);
+  --primary-fg: oklch(0.14 0.012 250);
+  --secondary: oklch(0.25 0.014 250);
+  --secondary-fg: oklch(0.97 0.003 30);
+  --accent: oklch(0.7 0.16 35);
+  --accent-hover: oklch(0.76 0.17 35);
+  --accent-soft: oklch(0.32 0.06 35);
+  --accent-fg: oklch(0.14 0.012 250);
+  --muted: oklch(0.25 0.012 250);
+  --muted-fg: oklch(0.7 0.01 30);
+  --card: oklch(0.22 0.015 250);
+  --card-fg: oklch(0.97 0.003 30);
+  --popover: oklch(0.22 0.015 250);
+  --popover-fg: oklch(0.97 0.003 30);
+  --ring: oklch(0.65 0.1 250);
+  --success: oklch(0.7 0.14 150);
+  --success-fg: oklch(0.14 0.012 250);
+  --warning: oklch(0.78 0.16 80);
+  --warning-fg: oklch(0.14 0 0);
+  --danger: oklch(0.62 0.22 27.325);
+  --danger-fg: oklch(0.97 0 0);
+  --info: oklch(0.7 0.14 230);
+  --info-fg: oklch(0.14 0.012 250);
+  --sidebar: oklch(0.18 0.012 250);
+  --sidebar-fg: oklch(0.97 0.003 30);
+  --sidebar-border: oklch(0.3 0.015 250);
+  --sidebar-accent: oklch(0.32 0.06 35);
+  --sidebar-accent-fg: oklch(0.97 0.003 30);
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+}
+
+/* ═══════════════════════════════════════════════════════════
+ * BRAND B · Plain Tech — electric green + cyan, geométrico
+ * Direção criativa recomendada do creative-director.
+ * ═══════════════════════════════════════════════════════════ */
+
+html[data-brand="B"][data-mode="light"] {
+  --bg: oklch(0.99 0.003 240);
+  --bg-elev: oklch(1 0 0);
+  --surface: oklch(1 0 0);
+  --surface-2: oklch(0.975 0.003 240);
+  --fg: oklch(0.18 0.01 240);
+  --fg-muted: oklch(0.44 0.008 240);
+  --fg-subtle: oklch(0.6 0.005 240);
+  --border: oklch(0.92 0.005 240);
+  --border-strong: oklch(0.84 0.008 240);
+  --primary: oklch(0.55 0.22 145);
+  --primary-hover: oklch(0.5 0.22 145);
+  --primary-fg: oklch(0.99 0 0);
+  --secondary: oklch(0.95 0.06 145);
+  --secondary-fg: oklch(0.32 0.18 145);
+  --accent: oklch(0.58 0.2 220);
+  --accent-hover: oklch(0.52 0.2 220);
+  --accent-soft: oklch(0.95 0.04 220);
+  --accent-fg: oklch(0.99 0 0);
+  --muted: oklch(0.96 0.004 240);
+  --muted-fg: oklch(0.5 0.008 240);
+  --card: oklch(1 0 0);
+  --card-fg: oklch(0.18 0.01 240);
+  --popover: oklch(1 0 0);
+  --popover-fg: oklch(0.18 0.01 240);
+  --ring: oklch(0.55 0.22 145);
+  --success: oklch(0.6 0.18 150);
+  --success-fg: oklch(0.99 0 0);
+  --warning: oklch(0.78 0.16 80);
+  --warning-fg: oklch(0.18 0 0);
+  --danger: oklch(0.6 0.24 27);
+  --danger-fg: oklch(0.99 0 0);
+  --info: oklch(0.58 0.2 220);
+  --info-fg: oklch(0.99 0 0);
+  --sidebar: oklch(0.985 0.003 240);
+  --sidebar-fg: oklch(0.18 0.01 240);
+  --sidebar-border: oklch(0.92 0.005 240);
+  --sidebar-accent: oklch(0.95 0.06 145);
+  --sidebar-accent-fg: oklch(0.32 0.18 145);
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+}
+
+html[data-brand="B"][data-mode="dark"] {
+  --bg: oklch(0.15 0.01 240);
+  --bg-elev: oklch(0.19 0.012 240);
+  --surface: oklch(0.21 0.013 240);
+  --surface-2: oklch(0.24 0.014 240);
+  --fg: oklch(0.97 0.003 240);
+  --fg-muted: oklch(0.72 0.008 240);
+  --fg-subtle: oklch(0.58 0.006 240);
+  --border: oklch(0.3 0.012 240);
+  --border-strong: oklch(0.4 0.014 240);
+  --primary: oklch(0.72 0.22 145);
+  --primary-hover: oklch(0.78 0.22 145);
+  --primary-fg: oklch(0.15 0.01 240);
+  --secondary: oklch(0.28 0.05 145);
+  --secondary-fg: oklch(0.85 0.18 145);
+  --accent: oklch(0.7 0.2 220);
+  --accent-hover: oklch(0.76 0.2 220);
+  --accent-soft: oklch(0.3 0.06 220);
+  --accent-fg: oklch(0.15 0.01 240);
+  --muted: oklch(0.24 0.012 240);
+  --muted-fg: oklch(0.7 0.008 240);
+  --card: oklch(0.21 0.013 240);
+  --card-fg: oklch(0.97 0.003 240);
+  --popover: oklch(0.21 0.013 240);
+  --popover-fg: oklch(0.97 0.003 240);
+  --ring: oklch(0.72 0.22 145);
+  --success: oklch(0.75 0.18 150);
+  --success-fg: oklch(0.15 0.01 240);
+  --warning: oklch(0.82 0.16 80);
+  --warning-fg: oklch(0.15 0 0);
+  --danger: oklch(0.68 0.24 27);
+  --danger-fg: oklch(0.97 0 0);
+  --info: oklch(0.72 0.2 220);
+  --info-fg: oklch(0.15 0.01 240);
+  --sidebar: oklch(0.17 0.01 240);
+  --sidebar-fg: oklch(0.97 0.003 240);
+  --sidebar-border: oklch(0.3 0.012 240);
+  --sidebar-accent: oklch(0.28 0.05 145);
+  --sidebar-accent-fg: oklch(0.97 0.003 240);
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+}
+
+/* ═══════════════════════════════════════════════════════════
+ * BRAND C · Stripe Paper — charcoal puro + rose vivid (1 accent)
+ * Minimalismo extremo, papel premium, contraste alto.
+ * ═══════════════════════════════════════════════════════════ */
+
+html[data-brand="C"][data-mode="light"] {
+  --bg: oklch(0.99 0 0);
+  --bg-elev: oklch(1 0 0);
+  --surface: oklch(1 0 0);
+  --surface-2: oklch(0.975 0 0);
+  --fg: oklch(0.18 0 0);
+  --fg-muted: oklch(0.42 0 0);
+  --fg-subtle: oklch(0.6 0 0);
+  --border: oklch(0.92 0 0);
+  --border-strong: oklch(0.84 0 0);
+  --primary: oklch(0.22 0 0);
+  --primary-hover: oklch(0.32 0 0);
+  --primary-fg: oklch(0.99 0 0);
+  --secondary: oklch(0.95 0 0);
+  --secondary-fg: oklch(0.22 0 0);
+  --accent: oklch(0.64 0.22 22);
+  --accent-hover: oklch(0.58 0.22 22);
+  --accent-soft: oklch(0.96 0.04 22);
+  --accent-fg: oklch(0.99 0 0);
+  --muted: oklch(0.96 0 0);
+  --muted-fg: oklch(0.5 0 0);
+  --card: oklch(1 0 0);
+  --card-fg: oklch(0.18 0 0);
+  --popover: oklch(1 0 0);
+  --popover-fg: oklch(0.18 0 0);
+  --ring: oklch(0.42 0 0);
+  --success: oklch(0.62 0.16 150);
+  --success-fg: oklch(0.99 0 0);
+  --warning: oklch(0.75 0.16 80);
+  --warning-fg: oklch(0.18 0 0);
+  --danger: oklch(0.6 0.22 27);
+  --danger-fg: oklch(0.99 0 0);
+  --info: oklch(0.58 0.14 230);
+  --info-fg: oklch(0.99 0 0);
+  --sidebar: oklch(0.99 0 0);
+  --sidebar-fg: oklch(0.18 0 0);
+  --sidebar-border: oklch(0.92 0 0);
+  --sidebar-accent: oklch(0.96 0.04 22);
+  --sidebar-accent-fg: oklch(0.22 0 0);
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.625rem;
+  --radius-xl: 0.875rem;
+}
+
+html[data-brand="C"][data-mode="dark"] {
+  --bg: oklch(0.14 0 0);
+  --bg-elev: oklch(0.18 0 0);
+  --surface: oklch(0.2 0 0);
+  --surface-2: oklch(0.23 0 0);
+  --fg: oklch(0.97 0 0);
+  --fg-muted: oklch(0.72 0 0);
+  --fg-subtle: oklch(0.55 0 0);
+  --border: oklch(0.28 0 0);
+  --border-strong: oklch(0.4 0 0);
+  --primary: oklch(0.97 0 0);
+  --primary-hover: oklch(0.92 0 0);
+  --primary-fg: oklch(0.18 0 0);
+  --secondary: oklch(0.23 0 0);
+  --secondary-fg: oklch(0.97 0 0);
+  --accent: oklch(0.72 0.22 22);
+  --accent-hover: oklch(0.78 0.22 22);
+  --accent-soft: oklch(0.3 0.08 22);
+  --accent-fg: oklch(0.14 0 0);
+  --muted: oklch(0.22 0 0);
+  --muted-fg: oklch(0.7 0 0);
+  --card: oklch(0.2 0 0);
+  --card-fg: oklch(0.97 0 0);
+  --popover: oklch(0.2 0 0);
+  --popover-fg: oklch(0.97 0 0);
+  --ring: oklch(0.7 0 0);
+  --success: oklch(0.72 0.16 150);
+  --success-fg: oklch(0.14 0 0);
+  --warning: oklch(0.82 0.16 80);
+  --warning-fg: oklch(0.14 0 0);
+  --danger: oklch(0.68 0.22 27);
+  --danger-fg: oklch(0.97 0 0);
+  --info: oklch(0.68 0.14 230);
+  --info-fg: oklch(0.14 0 0);
+  --sidebar: oklch(0.16 0 0);
+  --sidebar-fg: oklch(0.97 0 0);
+  --sidebar-border: oklch(0.28 0 0);
+  --sidebar-accent: oklch(0.3 0.08 22);
+  --sidebar-accent-fg: oklch(0.97 0 0);
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.625rem;
+  --radius-xl: 0.875rem;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+ * Layer base — Tailwind v4 reset friendly
+ * ────────────────────────────────────────────────────────────────── */
 @layer base {
   * {
     @apply border-border;
   }
   body {
     @apply bg-background text-foreground;
+    transition:
+      background-color 150ms ease-out,
+      color 150ms ease-out,
+      border-color 150ms ease-out;
+  }
+  /* Suaviza troca de tema em qualquer elemento que use as cores semânticas. */
+  html[data-mode] body,
+  html[data-mode] [data-themed] {
+    transition:
+      background-color 150ms ease-out,
+      color 150ms ease-out,
+      border-color 150ms ease-out;
   }
   button,
   [role="button"],
@@ -84,7 +432,7 @@
   }
   .scrollbar-thin {
     scrollbar-width: thin;
-    scrollbar-color: oklch(0.8 0 0) transparent;
+    scrollbar-color: var(--border-strong) transparent;
   }
   .scrollbar-thin::-webkit-scrollbar {
     width: 4px;
@@ -94,19 +442,10 @@
     background: transparent;
   }
   .scrollbar-thin::-webkit-scrollbar-thumb {
-    background: oklch(0.8 0 0);
+    background: var(--border-strong);
     border-radius: 9999px;
   }
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    background: oklch(0.7 0 0);
-  }
-  .dark .scrollbar-thin {
-    scrollbar-color: oklch(0.35 0 0) transparent;
-  }
-  .dark .scrollbar-thin::-webkit-scrollbar-thumb {
-    background: oklch(0.35 0 0);
-  }
-  .dark .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    background: oklch(0.45 0 0);
+    background: var(--fg-subtle);
   }
 }

@@ -12,10 +12,16 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
+    // `data-brand` e `data-mode` são re-aplicados em runtime pelo ThemeProvider
+    // (org-level brand vem do auth-store; mode vem do next-themes / preferência
+    // do user). Os valores aqui são o boot default (Brand A · light) pra evitar
+    // flash de cor antes do JS hidratar.
     <html
       lang="pt-BR"
+      data-brand="A"
+      data-mode="light"
       suppressHydrationWarning
-      className="bg-white lg:bg-zinc-100 dark:bg-zinc-900 dark:lg:bg-zinc-950"
+      className="bg-background"
     >
       <body className={inter.className}>
         <Providers>{children}</Providers>
