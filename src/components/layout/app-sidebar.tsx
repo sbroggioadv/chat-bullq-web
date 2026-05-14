@@ -8,6 +8,7 @@ import {
   Building2,
   ChevronUp,
   Zap,
+  Palette,
 } from 'lucide-react';
 import { InboxTree } from '@/features/inbox-views/components/inbox-tree';
 import { JarvisTree } from '@/features/ai-agents/components/jarvis-tree';
@@ -33,6 +34,7 @@ import {
   DropdownLabel,
   DropdownDivider,
 } from '@/components/ui/dropdown';
+import { ThemeModeToggle } from '@/features/theme/components/theme-mode-toggle';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -52,32 +54,35 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarHeader>
-        <Dropdown>
-          <DropdownButton className="flex w-full min-w-0 items-center gap-2 rounded-lg px-2 py-2.5 text-left text-sm/6 font-semibold text-zinc-950 hover:bg-zinc-950/5 dark:text-white dark:hover:bg-white/5">
-            <Avatar
-              initials={activeOrg?.name?.slice(0, 2).toUpperCase()}
-              className="size-6 bg-primary text-[10px] text-primary-foreground"
-              square
-            />
-            <span className="min-w-0 flex-1 truncate">
-              {activeOrg?.name ?? 'Organização'}
-            </span>
-            <ChevronsUpDown className="ml-auto size-4 shrink-0 text-zinc-500" />
-          </DropdownButton>
-          {organizations.length > 1 && (
-            <DropdownMenu anchor="bottom start" className="min-w-56">
-              {organizations.map((org) => (
-                <DropdownItem
-                  key={org.id}
-                  onClick={() => handleOrgSwitch(org.id)}
-                >
-                  <Building2 />
-                  <DropdownLabel>{org.name}</DropdownLabel>
-                </DropdownItem>
-              ))}
-            </DropdownMenu>
-          )}
-        </Dropdown>
+        <div className="flex w-full items-center gap-1">
+          <Dropdown>
+            <DropdownButton className="flex min-w-0 flex-1 items-center gap-2 rounded-lg px-2 py-2.5 text-left text-sm/6 font-semibold text-zinc-950 hover:bg-zinc-950/5 dark:text-white dark:hover:bg-white/5">
+              <Avatar
+                initials={activeOrg?.name?.slice(0, 2).toUpperCase()}
+                className="size-6 bg-primary text-[10px] text-primary-foreground"
+                square
+              />
+              <span className="min-w-0 flex-1 truncate">
+                {activeOrg?.name ?? 'Organização'}
+              </span>
+              <ChevronsUpDown className="ml-auto size-4 shrink-0 text-zinc-500" />
+            </DropdownButton>
+            {organizations.length > 1 && (
+              <DropdownMenu anchor="bottom start" className="min-w-56">
+                {organizations.map((org) => (
+                  <DropdownItem
+                    key={org.id}
+                    onClick={() => handleOrgSwitch(org.id)}
+                  >
+                    <Building2 />
+                    <DropdownLabel>{org.name}</DropdownLabel>
+                  </DropdownItem>
+                ))}
+              </DropdownMenu>
+            )}
+          </Dropdown>
+          <ThemeModeToggle variant="compact" className="relative shrink-0" />
+        </div>
       </SidebarHeader>
 
       <SidebarBody>
@@ -116,6 +121,10 @@ export function AppSidebar() {
             <ChevronUp className="ml-auto size-4 shrink-0 text-zinc-500" />
           </DropdownButton>
           <DropdownMenu anchor="top start" className="min-w-56">
+            <DropdownItem href="/settings/appearance">
+              <Palette />
+              <DropdownLabel>Aparência</DropdownLabel>
+            </DropdownItem>
             <DropdownItem href="/settings">
               <Settings />
               <DropdownLabel>Configurações</DropdownLabel>
