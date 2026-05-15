@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { Send, Paperclip, Mic, Trash2, Square, Loader2, ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAudioRecorder } from '../hooks/use-audio-recorder';
@@ -17,10 +17,20 @@ interface ChatInputProps {
   disabled?: boolean;
 }
 
+/**
+ * Imperative handle the host panel uses to queue an image from outside the
+ * composer — e.g. a drag-and-drop landing on the conversation timeline.
+ * Validation + the `isAcceptedImage` helper are exported alongside so the
+ * host can short-circuit on rejected files without us double-toasting.
+ */
+export interface ChatInputHandle {
+  queueImage: (file: File) => void;
+}
+
 // Allow-list mirrors what the API accepts (UploadsService.ALLOWED_IMAGE_MIME).
 // Keep these in sync — any mime here that the API rejects = silent failure
 // on the user side.
-const ACCEPTED_IMAGE_MIMES = new Set([
+export const ACCEPTED_IMAGE_MIMES = new Set([
   'image/jpeg',
   'image/jpg',
   'image/png',
@@ -29,20 +39,20 @@ const ACCEPTED_IMAGE_MIMES = new Set([
 ]);
 
 // 10MB matches UploadsService.MAX_IMAGE_BYTES on the API.
-const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+export const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 
-function isAcceptedImage(file: File): boolean {
+export function isAcceptedImage(file: File): boolean {
   if (!ACCEPTED_IMAGE_MIMES.has(file.type)) return false;
   if (file.size > MAX_IMAGE_BYTES) return false;
   return true;
 }
 
-export function ChatInput({
+export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function ChatInput({
   onSend,
   onSendAudio,
   onSendImage,
   disabled,
-}: ChatInputProps) {
+}, ref) {
   const [text, setText] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [isSendingAudio, setIsSendingAudio] = useState(false);
@@ -73,6 +83,14 @@ export function ChatInput({
     });
     setPendingImage(file);
   }, []);
+
+  // Imperative API the host (chat-panel) calls when a drag-and-drop lands
+  // OUTSIDE the composer — the conversation timeline owns most of the
+  // visible chat real estate, so users naturally drop there. We trust the
+  // host to have validated (it imports isAcceptedImage from this module).
+  useImperativeHandle(ref, () => ({
+    queueImage: (file: File) => setPending(file),
+  }), [setPending]);
 
   const handleSubmit = useCallback(async () => {
     const trimmed = text.trim();
@@ -429,4 +447,4 @@ export function ChatInput({
       )}
     </div>
   );
-}
+});

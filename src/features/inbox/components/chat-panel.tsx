@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, CheckCheck, Clock, AlertCircle, ExternalLink, Reply, Trash2, X, Ban } from 'lucide-react';
 import { toast } from 'sonner';
 import { inboxService, type Conversation, type Message } from '../services/inbox.service';
-import { ChatInput } from './chat-input';
+import { ChatInput, isAcceptedImage, MAX_IMAGE_BYTES, type ChatInputHandle } from './chat-input';
 import { ConversationHeader } from './conversation-header';
 import { StoryReplyCard } from './story-reply-card';
 import { AudioMessagePlayer } from './audio-message-player';
@@ -667,6 +667,51 @@ export function ChatPanel({
     }
   };
 
+  // Panel-wide drag-and-drop — the composer's drop zone is tiny compared to
+  // the timeline, and users naturally drag onto the messages area. We hand
+  // the file off to ChatInput's imperative `queueImage` so the preview +
+  // optional-caption flow is identical to paste/picker.
+  const chatInputRef = useRef<ChatInputHandle>(null);
+  const [isPanelDragging, setIsPanelDragging] = useState(false);
+  // dragCounter handles the React quirk where dragenter/dragleave fire for
+  // every child element the cursor crosses — without counting, the ring
+  // flickers on every nested element transition.
+  const dragCounterRef = useRef(0);
+
+  const handlePanelDragEnter = (e: React.DragEvent) => {
+    if (!e.dataTransfer?.types?.includes('Files')) return;
+    e.preventDefault();
+    dragCounterRef.current += 1;
+    setIsPanelDragging(true);
+  };
+  const handlePanelDragOver = (e: React.DragEvent) => {
+    if (!e.dataTransfer?.types?.includes('Files')) return;
+    // Necessary — without it, drop is silently swallowed by the browser's
+    // default "open file" handler.
+    e.preventDefault();
+  };
+  const handlePanelDragLeave = (e: React.DragEvent) => {
+    if (!e.dataTransfer?.types?.includes('Files')) return;
+    dragCounterRef.current = Math.max(0, dragCounterRef.current - 1);
+    if (dragCounterRef.current === 0) setIsPanelDragging(false);
+  };
+  const handlePanelDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    dragCounterRef.current = 0;
+    setIsPanelDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+    if (!isAcceptedImage(file)) {
+      toast.error(
+        file.size > MAX_IMAGE_BYTES
+          ? 'Imagem muito grande (máx 10MB)'
+          : `Tipo não suportado: ${file.type || 'desconhecido'}`,
+      );
+      return;
+    }
+    chatInputRef.current?.queueImage(file);
+  };
+
   const formatTime = (date: string) =>
     new Date(date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
@@ -675,7 +720,22 @@ export function ChatPanel({
     // pelo conteúdo (default min-height de flex children) e empurra o
     // ChatInput pra fora do painel — quebra dramaticamente quando o pai
     // é um modal com altura fixa.
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div
+      className={`relative flex min-h-0 flex-1 flex-col transition-colors ${
+        isPanelDragging ? 'bg-primary/5 ring-2 ring-inset ring-primary/40' : ''
+      }`}
+      onDragEnter={handlePanelDragEnter}
+      onDragOver={handlePanelDragOver}
+      onDragLeave={handlePanelDragLeave}
+      onDrop={handlePanelDrop}
+    >
+      {isPanelDragging && (
+        <div className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center bg-primary/10 backdrop-blur-[1px]">
+          <div className="rounded-xl bg-primary px-6 py-3 text-sm font-medium text-primary-foreground shadow-lg">
+            Solte a imagem para anexar
+          </div>
+        </div>
+      )}
       <ConversationHeader
         conversation={conversation}
         onUpdate={onConversationUpdate}
@@ -981,6 +1041,7 @@ export function ChatPanel({
         <ReplyPreviewBar message={replyingTo} onCancel={cancelReply} />
       )}
       <ChatInput
+        ref={chatInputRef}
         onSend={handleSend}
         onSendAudio={handleSendAudio}
         onSendImage={handleSendImage}
