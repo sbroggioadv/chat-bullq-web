@@ -362,4 +362,36 @@ export const inboxService = {
       },
     });
   },
+
+  async uploadImage(file: File): Promise<{
+    url: string;
+    mimeType: string;
+    size: number;
+    filename: string;
+  }> {
+    const form = new FormData();
+    form.append('file', file, file.name || 'image.png');
+    const { data } = await api.post('/messages/uploads/image', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return data.data;
+  },
+
+  async sendImageMessage(
+    conversationId: string,
+    file: File,
+    caption?: string,
+  ): Promise<Message> {
+    const upload = await this.uploadImage(file);
+    return this.sendMessage({
+      conversationId,
+      type: 'IMAGE',
+      content: {
+        mediaUrl: upload.url,
+        mimeType: upload.mimeType,
+        fileSize: upload.size,
+        ...(caption && caption.trim() ? { caption: caption.trim() } : {}),
+      },
+    });
+  },
 };

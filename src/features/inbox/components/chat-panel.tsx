@@ -651,6 +651,22 @@ export function ChatPanel({
     }
   };
 
+  const handleSendImage = async (file: File, caption?: string) => {
+    try {
+      const created = await inboxService.sendImageMessage(
+        conversation.id,
+        file,
+        caption,
+      );
+      if (created) {
+        upsertMessageInCache(created);
+      }
+    } catch (err) {
+      queryClient.invalidateQueries({ queryKey: ['messages', conversation.id] });
+      throw err;
+    }
+  };
+
   const formatTime = (date: string) =>
     new Date(date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
@@ -967,6 +983,7 @@ export function ChatPanel({
       <ChatInput
         onSend={handleSend}
         onSendAudio={handleSendAudio}
+        onSendImage={handleSendImage}
         disabled={conversation.status === 'CLOSED'}
       />
     </div>
