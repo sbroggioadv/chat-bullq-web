@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, CheckCheck, Clock, AlertCircle, ExternalLink, Reply, Trash2, X, Ban } from 'lucide-react';
 import { toast } from 'sonner';
 import { inboxService, type Conversation, type Message } from '../services/inbox.service';
-import { ChatInput, isAcceptedImage, MAX_IMAGE_BYTES, type ChatInputHandle } from './chat-input';
+import { ChatInput, validateFile, type ChatInputHandle } from './chat-input';
 import { ConversationHeader } from './conversation-header';
 import { StoryReplyCard } from './story-reply-card';
 import { AudioMessagePlayer } from './audio-message-player';
@@ -651,9 +651,13 @@ export function ChatPanel({
     }
   };
 
-  const handleSendImage = async (file: File, caption?: string) => {
+  /**
+   * S18/W3-Z: polymorphic file send. Backend detecta tipo via MIME + magic bytes
+   * e retorna contentTypeBucket; service mapeia pro Message.contentType.
+   */
+  const handleSendFile = async (file: File, caption?: string) => {
     try {
-      const created = await inboxService.sendImageMessage(
+      const created = await inboxService.sendFileMessage(
         conversation.id,
         file,
         caption,
@@ -701,15 +705,13 @@ export function ChatPanel({
     setIsPanelDragging(false);
     const file = e.dataTransfer.files?.[0];
     if (!file) return;
-    if (!isAcceptedImage(file)) {
-      toast.error(
-        file.size > MAX_IMAGE_BYTES
-          ? 'Imagem muito grande (máx 10MB)'
-          : `Tipo não suportado: ${file.type || 'desconhecido'}`,
-      );
+    // S18/W3-Z: aceita qualquer tipo válido (image/audio/video/document).
+    const err = validateFile(file);
+    if (err) {
+      toast.error(err);
       return;
     }
-    chatInputRef.current?.queueImage(file);
+    chatInputRef.current?.queueFile(file);
   };
 
   const formatTime = (date: string) =>
@@ -732,7 +734,7 @@ export function ChatPanel({
       {isPanelDragging && (
         <div className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center bg-primary/10 backdrop-blur-[1px]">
           <div className="rounded-xl bg-primary px-6 py-3 text-sm font-medium text-primary-foreground shadow-lg">
-            Solte a imagem para anexar
+            Solte o arquivo para anexar
           </div>
         </div>
       )}
@@ -1044,7 +1046,7 @@ export function ChatPanel({
         ref={chatInputRef}
         onSend={handleSend}
         onSendAudio={handleSendAudio}
-        onSendImage={handleSendImage}
+        onSendFile={handleSendFile}
         disabled={conversation.status === 'CLOSED'}
       />
     </div>

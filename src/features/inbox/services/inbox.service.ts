@@ -394,4 +394,48 @@ export const inboxService = {
       },
     });
   },
+
+  /**
+   * S18/W3-Z: upload polimorfico que aceita qualquer tipo (image/audio/video/
+   * document). Backend valida MIME + magic bytes e retorna `contentTypeBucket`
+   * pra UI mapear no Message.contentType sem reparsear no frontend.
+   */
+  async uploadFile(file: File): Promise<{
+    url: string;
+    mimeType: string;
+    size: number;
+    filename: string;
+    contentTypeBucket: 'IMAGE' | 'AUDIO' | 'VIDEO' | 'DOCUMENT';
+  }> {
+    const form = new FormData();
+    form.append('file', file, file.name || 'attachment.bin');
+    const { data } = await api.post('/messages/uploads/file', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return data.data;
+  },
+
+  /**
+   * S18/W3-Z: envio polimorfico de anexo. Detecta tipo via backend
+   * (contentTypeBucket) e seta Message.type apropriado (IMAGE/AUDIO/VIDEO/DOCUMENT).
+   * Caption opcional em todos os tipos (nao so imagem como antes).
+   */
+  async sendFileMessage(
+    conversationId: string,
+    file: File,
+    caption?: string,
+  ): Promise<Message> {
+    const upload = await this.uploadFile(file);
+    return this.sendMessage({
+      conversationId,
+      type: upload.contentTypeBucket, // IMAGE / AUDIO / VIDEO / DOCUMENT
+      content: {
+        mediaUrl: upload.url,
+        mimeType: upload.mimeType,
+        fileSize: upload.size,
+        ...(upload.filename ? { filename: upload.filename } : {}),
+        ...(caption && caption.trim() ? { caption: caption.trim() } : {}),
+      },
+    });
+  },
 };
