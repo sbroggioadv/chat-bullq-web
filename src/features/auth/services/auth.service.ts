@@ -29,7 +29,11 @@ interface OrgInfo {
   // Identidade visual: 'A' | 'B' | 'C' | null (wizard pendente).
   brand: 'A' | 'B' | 'C' | null;
   // Sprint S18 Wave 3: tokens customizados (override do brand). null = sem custom.
+  // Wave 4: passa a ser o CACHE do preset atualmente ativo (zero mudança shape).
   themeTokens: ThemeTokens | null;
+  // Sprint S18 Wave 4: ID do preset ativo na biblioteca (NULL = sem custom,
+  // usa só brand base A/B/C). UI consulta isso pra exibir "Ativo" badge.
+  activeThemePresetId: string | null;
 }
 
 interface AuthResponse {
