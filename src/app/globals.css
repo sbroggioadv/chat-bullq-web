@@ -448,4 +448,24 @@ html[data-brand="C"][data-mode="dark"] {
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
     background: var(--fg-subtle);
   }
+
+  /* Fade-out lateral pra scrollers horizontais — sinaliza overflow
+   * mesmo em macOS onde scrollbar fica oculta até o usuário rolar.
+   * Aplicado via mask-image: a borda direita "desbota" pro background,
+   * deixando claro que há mais conteúdo escondido. Em viewports onde
+   * tudo cabe, o fade some via media query (max-width arbitrário —
+   * o nav de tabs de settings cabe acima de 1100px). */
+  .horizontal-fade {
+    mask-image: linear-gradient(
+      to right,
+      black 0,
+      black calc(100% - 32px),
+      transparent 100%
+    );
+  }
+  @media (min-width: 1100px) {
+    .horizontal-fade {
+      mask-image: none;
+    }
+  }
 }

@@ -28,25 +28,27 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
           Gerencie sua organização e integrações
         </p>
 
-        <nav className="scrollbar-none mt-6 flex gap-1 overflow-x-auto border-b border-zinc-200 dark:border-zinc-800">
-          {tabs.map((tab) => {
-            const isActive = pathname === tab.href;
-            return (
-              <Link
-                key={tab.href}
-                href={tab.href}
-                className={`inline-flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3 text-sm font-medium transition-colors ${
-                  isActive
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-zinc-500 hover:border-zinc-300 hover:text-zinc-700 dark:text-zinc-400 dark:hover:border-zinc-600 dark:hover:text-zinc-300'
-                }`}
-              >
-                <tab.icon className="h-4 w-4" />
-                {tab.label}
-              </Link>
-            );
-          })}
-        </nav>
+        <div className="relative mt-6 border-b border-zinc-200 dark:border-zinc-800">
+          <nav className="scrollbar-thin horizontal-fade flex gap-1 overflow-x-auto">
+            {tabs.map((tab) => {
+              const isActive = pathname === tab.href;
+              return (
+                <Link
+                  key={tab.href}
+                  href={tab.href}
+                  className={`inline-flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3 text-sm font-medium transition-colors ${
+                    isActive
+                      ? 'border-primary text-primary'
+                      : 'border-transparent text-zinc-500 hover:border-zinc-300 hover:text-zinc-700 dark:text-zinc-400 dark:hover:border-zinc-600 dark:hover:text-zinc-300'
+                  }`}
+                >
+                  <tab.icon className="h-4 w-4" />
+                  {tab.label}
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
       </div>
 
       <div className="scrollbar-thin flex-1 overflow-y-auto">
