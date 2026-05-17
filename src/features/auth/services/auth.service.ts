@@ -1,4 +1,5 @@
 import { api } from '@/lib/api';
+import type { ThemeTokens } from '@/features/theme/types/brand';
 
 interface LoginPayload {
   email: string;
@@ -27,6 +28,8 @@ interface OrgInfo {
   accessibleChannelIds: 'ALL' | string[];
   // Identidade visual: 'A' | 'B' | 'C' | null (wizard pendente).
   brand: 'A' | 'B' | 'C' | null;
+  // Sprint S18 Wave 3: tokens customizados (override do brand). null = sem custom.
+  themeTokens: ThemeTokens | null;
 }
 
 interface AuthResponse {
