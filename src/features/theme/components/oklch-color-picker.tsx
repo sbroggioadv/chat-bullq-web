@@ -18,8 +18,9 @@
  * server roda o mesmo calculo em `theme-contrast.util.ts` no api).
  */
 
-import { useCallback, useEffect, useId, useMemo, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { converter, formatHex, parse } from 'culori';
+import { HexColorPicker } from 'react-colorful';
 
 interface OklchColorPickerProps {
   /** Label visivel (ex: "Cor primaria", "Cor accent"). */
@@ -134,10 +135,37 @@ export function OklchColorPicker({
   const [oklchDraft, setOklchDraft] = useState(value);
   const [hexDraft, setHexDraft] = useState(() => (parsed ? oklchToHex(parsed) : '#000000'));
 
+  // Wave 4.2: popover do color wheel visual (react-colorful HexColorPicker).
+  // Clicar no swatch abre; click fora ou Esc fecha.
+  const [wheelOpen, setWheelOpen] = useState(false);
+  const wheelContainerRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     setOklchDraft(value);
     if (parsed) setHexDraft(oklchToHex(parsed));
   }, [value, parsed]);
+
+  // Click outside fecha o color wheel
+  useEffect(() => {
+    if (!wheelOpen) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (
+        wheelContainerRef.current &&
+        !wheelContainerRef.current.contains(e.target as Node)
+      ) {
+        setWheelOpen(false);
+      }
+    }
+    function handleEsc(e: KeyboardEvent) {
+      if (e.key === 'Escape') setWheelOpen(false);
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEsc);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEsc);
+    };
+  }, [wheelOpen]);
 
   const commitParts = useCallback(
     (next: OklchParts) => {
@@ -176,6 +204,18 @@ export function OklchColorPicker({
     }
   }, [hexDraft, parsed, commitParts]);
 
+  // Wave 4.2: handler do color wheel visual. Recebe hex do react-colorful e
+  // converte pra OKLCH antes de propagar. Atualizacao instantanea — sem blur.
+  const handleWheelChange = useCallback(
+    (nextHex: string) => {
+      const parts = hexToOklch(nextHex);
+      if (parts) {
+        commitParts(parts);
+      }
+    },
+    [commitParts],
+  );
+
   // Contraste contra background fornecido (ou branco/quase-preto conforme mode)
   const defaultBg = mode === 'dark' ? 'oklch(0.18 0.02 250)' : 'oklch(1 0 0)';
   const bg = contrastAgainst ?? defaultBg;
@@ -192,11 +232,35 @@ export function OklchColorPicker({
           {label}
         </label>
         <div className="flex items-center gap-2">
-          <div
-            aria-label={`Preview: ${value}`}
-            className="size-14 shrink-0 rounded-md border border-zinc-200 shadow-sm dark:border-zinc-700"
-            style={{ background: cssPreview }}
-          />
+          {/* Wave 4.2: swatch agora e botao que abre color wheel visual.
+              Click toggles popover; click outside ou Esc fecha. */}
+          <div ref={wheelContainerRef} className="relative">
+            <button
+              type="button"
+              onClick={() => !disabled && setWheelOpen((v) => !v)}
+              disabled={disabled}
+              aria-label={`Abrir seletor visual de cor para ${label}`}
+              aria-expanded={wheelOpen}
+              className="size-14 shrink-0 cursor-pointer rounded-md border border-zinc-200 shadow-sm transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100 dark:border-zinc-700 dark:focus:ring-offset-zinc-950"
+              style={{ background: cssPreview }}
+            />
+            {wheelOpen && (
+              <div
+                role="dialog"
+                aria-label={`Selecionar cor visualmente para ${label}`}
+                className="absolute right-0 top-full z-50 mt-2 rounded-lg border border-zinc-200 bg-white p-3 shadow-xl dark:border-zinc-700 dark:bg-zinc-900"
+                style={{ minWidth: 220 }}
+              >
+                <HexColorPicker
+                  color={parsed ? oklchToHex(parsed) : '#000000'}
+                  onChange={handleWheelChange}
+                />
+                <p className="mt-2 text-[10px] text-zinc-500 dark:text-zinc-400">
+                  Clique fora ou Esc pra fechar. Os sliders L/C/H abaixo ajustam fino.
+                </p>
+              </div>
+            )}
+          </div>
           <span
             role="status"
             aria-label={`Contraste WCAG: ${ratio.toFixed(2)} para 1, ${passesAA ? 'aprovado' : 'reprovado'}`}
