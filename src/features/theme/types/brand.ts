@@ -69,3 +69,59 @@ export const BRAND_META: Record<OrgBrand, BrandMeta> = {
 export function isOrgBrand(value: unknown): value is OrgBrand {
   return value === 'A' || value === 'B' || value === 'C';
 }
+
+// ─── Sprint S18 Wave 3 — Theme Builder OKLCH PRO ──────────────────
+
+export type ThemeDensity = 'compact' | 'comfortable' | 'spacious';
+
+/**
+ * Palette de cores customizadas. Cores em OKLCH literal `oklch(L C H)`.
+ * Hover, soft, fg, etc. são DERIVADOS no client a partir destas 5 cores
+ * (ver `derived-tokens.util.ts`) — não são persistidos pra evitar drift.
+ */
+export interface ThemePalette {
+  primary: string;
+  accent: string;
+  success: string;
+  warning: string;
+  danger: string;
+}
+
+/**
+ * Tokens customizados da banca. Sobrescreve o brand A/B/C selecionado.
+ * NULL no `Organization` = sem custom (usa brand). Não-null = override.
+ * Validação WCAG AA roda server-side em `validateThemeContrast()`.
+ */
+export interface ThemeTokens {
+  /** Brand de origem — referência pra Reset e derivações default. */
+  base: OrgBrand;
+  light: ThemePalette;
+  dark: ThemePalette;
+  /** Radius base em rem (`0.5rem`). sm/md/lg/xl são proporcionais. */
+  radius: string;
+  /** Densidade visual (afeta spacing). Default: comfortable. */
+  density?: ThemeDensity;
+}
+
+export function isThemePalette(v: unknown): v is ThemePalette {
+  if (!v || typeof v !== 'object') return false;
+  const p = v as Record<string, unknown>;
+  return (
+    typeof p.primary === 'string' &&
+    typeof p.accent === 'string' &&
+    typeof p.success === 'string' &&
+    typeof p.warning === 'string' &&
+    typeof p.danger === 'string'
+  );
+}
+
+export function isThemeTokens(v: unknown): v is ThemeTokens {
+  if (!v || typeof v !== 'object') return false;
+  const t = v as Record<string, unknown>;
+  return (
+    isOrgBrand(t.base) &&
+    isThemePalette(t.light) &&
+    isThemePalette(t.dark) &&
+    typeof t.radius === 'string'
+  );
+}

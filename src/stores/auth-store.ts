@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { ThemeTokens } from '@/features/theme/types/brand';
 
 export type OrgBrand = 'A' | 'B' | 'C';
 
@@ -18,6 +19,9 @@ interface OrgInfo {
   accessibleChannelIds: 'ALL' | string[];
   // Identidade visual da banca. null = onboarding wizard pendente (só OWNER vê).
   brand: OrgBrand | null;
+  // Sprint S18 Wave 3: tokens customizados que sobrescrevem o brand.
+  // null = sem custom (usa só brand). Não-null = override OKLCH.
+  themeTokens: ThemeTokens | null;
 }
 
 interface AuthState {
@@ -28,6 +32,7 @@ interface AuthState {
   setActiveOrg: (orgId: string) => void;
   applyChannelPermissionUpdate: (channelId: string, granted: boolean) => void;
   applyOrgBrandUpdate: (orgId: string, brand: OrgBrand) => void;
+  applyOrgThemeTokensUpdate: (orgId: string, themeTokens: ThemeTokens | null) => void;
   logout: () => void;
 }
 
@@ -67,6 +72,14 @@ export const useAuthStore = create<AuthState>((set) => ({
     set((state) => ({
       organizations: state.organizations.map((org) =>
         org.id === orgId ? { ...org, brand } : org,
+      ),
+    }));
+  },
+
+  applyOrgThemeTokensUpdate: (orgId, themeTokens) => {
+    set((state) => ({
+      organizations: state.organizations.map((org) =>
+        org.id === orgId ? { ...org, themeTokens } : org,
       ),
     }));
   },
