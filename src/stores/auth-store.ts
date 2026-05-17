@@ -21,7 +21,11 @@ interface OrgInfo {
   brand: OrgBrand | null;
   // Sprint S18 Wave 3: tokens customizados que sobrescrevem o brand.
   // null = sem custom (usa só brand). Não-null = override OKLCH.
+  // Wave 4: passa a ser o CACHE do preset atualmente ativo (mesmo shape).
   themeTokens: ThemeTokens | null;
+  // Sprint S18 Wave 4: ID do preset ativo na biblioteca. NULL = sem custom.
+  // Lista de presets vive em react-query (queryKey ['theme-presets', orgId]).
+  activeThemePresetId: string | null;
 }
 
 interface AuthState {
