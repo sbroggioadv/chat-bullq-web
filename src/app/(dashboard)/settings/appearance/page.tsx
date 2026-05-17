@@ -1,19 +1,21 @@
 'use client';
 
 import { useState } from 'react';
-import { Building2, User, Lock } from 'lucide-react';
+import Link from 'next/link';
+import { Building2, User, Lock, Sparkles, ArrowRight, Check } from 'lucide-react';
 import { useOrgBrand } from '@/features/theme/hooks/use-org-brand';
 import { ORG_BRANDS, type OrgBrand } from '@/features/theme/types/brand';
 import { BrandPreviewCard } from '@/features/theme/components/brand-preview-card';
 import { ThemeModeToggle } from '@/features/theme/components/theme-mode-toggle';
 
 export default function SettingsAppearancePage() {
-  const { brand, effectiveBrand, role, setBrand, isUpdating } = useOrgBrand();
+  const { brand, effectiveBrand, role, setBrand, isUpdating, themeTokens } = useOrgBrand();
   const [pending, setPending] = useState<OrgBrand | null>(null);
 
   const canEditBrand = role === 'OWNER' || role === 'ADMIN';
   const selected = pending ?? effectiveBrand;
   const hasChanges = pending !== null && pending !== brand;
+  const hasCustomTheme = themeTokens !== null;
 
   const handleSave = async () => {
     if (!pending) return;
@@ -87,6 +89,38 @@ export default function SettingsAppearancePage() {
             >
               {isUpdating ? 'Salvando…' : 'Aplicar para toda a banca'}
             </button>
+          </div>
+        )}
+
+        {/* ─── Custom Theme Builder (Sprint S18 Wave 3) ─── */}
+        {canEditBrand && (
+          <div className="mt-6">
+            <Link
+              href="/settings/appearance/builder"
+              className="group flex items-center justify-between gap-3 rounded-xl border-2 border-dashed border-border bg-gradient-to-br from-primary/5 to-accent/5 p-5 transition-all hover:border-primary hover:from-primary/10 hover:to-accent/10"
+            >
+              <div className="flex items-center gap-3">
+                <span className="inline-flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground">
+                  <Sparkles className="size-5" />
+                </span>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-semibold text-fg">Theme Builder Custom</h3>
+                    {hasCustomTheme && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                        <Check className="size-3" /> Ativo
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-0.5 text-xs text-fg-muted">
+                    {hasCustomTheme
+                      ? `Tema customizado aplicado (base: ${themeTokens?.base}). Clique pra editar.`
+                      : 'Edite cores OKLCH + radius + densidade com preview live e validacao WCAG.'}
+                  </p>
+                </div>
+              </div>
+              <ArrowRight className="size-4 text-fg-muted transition-transform group-hover:translate-x-1 group-hover:text-primary" />
+            </Link>
           </div>
         )}
       </section>
