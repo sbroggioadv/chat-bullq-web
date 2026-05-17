@@ -4,7 +4,7 @@
  * Sprint S18 Wave 3 Fase 3 — Dev-only test page pro OklchColorPicker.
  *
  * Sem Storybook no projeto, esta pagina serve como "playground" pra QA
- * visual do picker. Acessar em `/settings/appearance/_picker-test`.
+ * visual do picker. Acessar em `/settings/appearance/picker-test`.
  *
  * Em producao, a Fase 4 vai consumir o picker via /builder. Esta page
  * fica como showcase de 4 estados (primary, accent, success, danger)
