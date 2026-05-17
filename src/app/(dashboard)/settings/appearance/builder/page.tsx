@@ -478,7 +478,7 @@ function ThemeBuilderInner() {
               <OklchColorPicker
                 key={`${activeMode}-${key}`}
                 label={`${label} (${activeMode})`}
-                value={draft[activeMode][key]}
+                value={draft[activeMode][key] ?? ''}
                 onChange={(next) =>
                   dispatch({ type: 'SET_COLOR', mode: activeMode, key, value: next })
                 }

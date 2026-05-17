@@ -130,26 +130,68 @@ export function buildDensityBlock(density: ThemeDensity | undefined): string {
 }
 
 /**
- * Constroi o bloco de CSS vars completo a partir das cores base + radius
- * + density + mode. Output e uma string pronta pra colar em
- * `<style>{...}</style>` dentro do HTML, ou pra escrever num cssText.
- * Selector e gerado fora.
+ * Wave 4.1: helper pra shift de L (clamp 0..1). Usado pra derivar
+ * tokens como bg-elev, surface-2, fg-muted, fg-subtle, border-strong.
+ */
+function shiftLightness(oklchStr: string, delta: number): string {
+  try {
+    const p = parseOklch(oklchStr);
+    const next = Math.max(0, Math.min(1, p.l + delta));
+    return formatOklch({ ...p, l: next });
+  } catch {
+    return oklchStr;
+  }
+}
+
+/**
+ * Constroi o bloco de CSS vars completo a partir da palette completa
+ * (Wave 4.1: 14 cores) + radius + density + mode.
  *
- * Tokens cobertos:
- *  - Cores: primary, primary-hover, primary-fg, accent, accent-hover,
- *    accent-soft, accent-fg, success, success-fg, warning, warning-fg,
- *    danger, danger-fg.
+ * Tokens emitidos:
+ *  - Funcionais (Wave 3): primary, primary-hover, primary-fg, accent,
+ *    accent-hover, accent-soft, accent-fg, success, success-fg,
+ *    warning, warning-fg, danger, danger-fg.
+ *  - Estrutura (Wave 4.1): bg, bg-elev (derivado), surface, surface-2
+ *    (derivado), fg, fg-muted (derivado), fg-subtle (derivado), border,
+ *    border-strong (derivado).
+ *  - Aliases (Wave 4.1): card+card-fg (= surface+fg), popover+popover-fg
+ *    (= surface+fg), muted (= bg-elev), muted-fg (= fg-muted), secondary
+ *    (= bg-elev), secondary-fg (= fg).
+ *  - Sidebar (Wave 4.1): sidebar, sidebar-fg, sidebar-border, sidebar-accent,
+ *    sidebar-accent-fg.
  *  - Radius: radius-sm, radius-md, radius-lg, radius-xl.
  *  - Density (so quando != 'comfortable'): density-py-list, density-py-row.
  *
- * NAO sobrescreve bg, fg, surface, sidebar — esses ficam vindo do brand
- * base (data-brand="A"|"B"|"C") pra preservar identidade do mode. Doc so
- * customiza as 5 cores funcionais + radius + density, o resto herda do brand
- * origem.
+ * Wave 3 -> 4.1: ANTES o util so emitia funcionais (bg/fg/surface herdavam do
+ * brand base). AGORA emite tudo — Doc customiza sidebar verde fluo e a
+ * sidebar fica verde fluo de verdade.
+ *
+ * Backward-compat: se palette.bg etc. vier undefined, pula a emissao desse
+ * token (o brand base no globals.css continua valendo).
  */
+export interface ExpandedPalette {
+  // Funcionais (Wave 3)
+  primary: string;
+  accent: string;
+  success: string;
+  warning: string;
+  danger: string;
+  // Estrutura (Wave 4.1)
+  bg?: string;
+  surface?: string;
+  fg?: string;
+  border?: string;
+  // Sidebar (Wave 4.1)
+  sidebar?: string;
+  sidebarFg?: string;
+  sidebarBorder?: string;
+  sidebarAccent?: string;
+  sidebarAccentFg?: string;
+}
+
 export function buildThemeOverrideCss(opts: {
-  light: { primary: string; accent: string; success: string; warning: string; danger: string };
-  dark: { primary: string; accent: string; success: string; warning: string; danger: string };
+  light: ExpandedPalette;
+  dark: ExpandedPalette;
   radius: string;
   density?: ThemeDensity;
 }): { light: string; dark: string } {
@@ -157,16 +199,16 @@ export function buildThemeOverrideCss(opts: {
   const radiusBlock = `--radius-sm: ${radius.sm}; --radius-md: ${radius.md}; --radius-lg: ${radius.lg}; --radius-xl: ${radius.xl};`;
   const densityBlock = buildDensityBlock(opts.density);
 
-  const buildColorBlock = (
-    palette: typeof opts.light,
-    mode: 'light' | 'dark',
-  ): string => {
+  const buildColorBlock = (palette: ExpandedPalette, mode: 'light' | 'dark'): string => {
+    const out: string[] = [];
+
+    // ─── Funcionais + derivados (Wave 3) ────────────────
     const pFg = pickForeground(palette.primary);
     const aFg = pickForeground(palette.accent);
     const sFg = pickForeground(palette.success);
     const wFg = pickForeground(palette.warning);
     const dFg = pickForeground(palette.danger);
-    return [
+    out.push(
       `--primary: ${palette.primary};`,
       `--primary-hover: ${deriveHover(palette.primary)};`,
       `--primary-fg: ${pFg};`,
@@ -180,7 +222,79 @@ export function buildThemeOverrideCss(opts: {
       `--warning-fg: ${wFg};`,
       `--danger: ${palette.danger};`,
       `--danger-fg: ${dFg};`,
-    ].join(' ');
+    );
+
+    // ─── Estrutura (Wave 4.1) + derivados ───────────────
+    // Derivacoes preservam direcao do mode:
+    //   light: bg-elev mais claro, fg-muted mais claro (low contrast), border-strong mais escuro
+    //   dark:  bg-elev mais claro, fg-muted mais escuro (low contrast), border-strong mais claro
+    if (palette.bg) {
+      const bgElev = shiftLightness(palette.bg, 0.015);
+      out.push(`--bg: ${palette.bg};`, `--bg-elev: ${bgElev};`);
+    }
+    if (palette.surface) {
+      const surface2 = shiftLightness(
+        palette.surface,
+        mode === 'light' ? -0.015 : 0.015,
+      );
+      out.push(`--surface: ${palette.surface};`, `--surface-2: ${surface2};`);
+    }
+    if (palette.fg) {
+      // fg-muted: 27% menos contraste; fg-subtle: 42% menos contraste
+      const direction = mode === 'light' ? 1 : -1; // light: fg escuro, muted vai pra cinza
+      const fgMuted = shiftLightness(palette.fg, direction * 0.27);
+      const fgSubtle = shiftLightness(palette.fg, direction * 0.42);
+      out.push(
+        `--fg: ${palette.fg};`,
+        `--fg-muted: ${fgMuted};`,
+        `--fg-subtle: ${fgSubtle};`,
+      );
+    }
+    if (palette.border) {
+      // border-strong: light vai pra mais escuro, dark vai pra mais claro
+      const borderStrong = shiftLightness(
+        palette.border,
+        mode === 'light' ? -0.08 : 0.08,
+      );
+      out.push(
+        `--border: ${palette.border};`,
+        `--border-strong: ${borderStrong};`,
+      );
+    }
+
+    // ─── Aliases shadcn-like (Wave 4.1) ─────────────────
+    // Componentes shadcn consomem --card, --popover, --muted, --secondary.
+    // Mapeamos a partir dos tokens canonicos pra estes ficarem coerentes
+    // com o tema custom (em vez de herdar do brand base).
+    if (palette.surface && palette.fg) {
+      out.push(
+        `--card: ${palette.surface};`,
+        `--card-fg: ${palette.fg};`,
+        `--popover: ${palette.surface};`,
+        `--popover-fg: ${palette.fg};`,
+      );
+    }
+    if (palette.bg && palette.fg) {
+      // muted (= bg-elev derivado) e muted-fg (= fg-muted derivado)
+      const bgElev = shiftLightness(palette.bg, 0.015);
+      const direction = mode === 'light' ? 1 : -1;
+      const fgMuted = shiftLightness(palette.fg, direction * 0.27);
+      out.push(`--muted: ${bgElev};`, `--muted-fg: ${fgMuted};`);
+      // secondary (= bg-elev) e secondary-fg (= fg)
+      out.push(`--secondary: ${bgElev};`, `--secondary-fg: ${palette.fg};`);
+    }
+
+    // ─── Sidebar (Wave 4.1) ─────────────────────────────
+    if (palette.sidebar) out.push(`--sidebar: ${palette.sidebar};`);
+    if (palette.sidebarFg) out.push(`--sidebar-fg: ${palette.sidebarFg};`);
+    if (palette.sidebarBorder)
+      out.push(`--sidebar-border: ${palette.sidebarBorder};`);
+    if (palette.sidebarAccent)
+      out.push(`--sidebar-accent: ${palette.sidebarAccent};`);
+    if (palette.sidebarAccentFg)
+      out.push(`--sidebar-accent-fg: ${palette.sidebarAccentFg};`);
+
+    return out.join(' ');
   };
 
   // Density e independente de mode (afeta layout, nao cor), entao adicionamos
