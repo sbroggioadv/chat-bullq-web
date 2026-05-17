@@ -7,6 +7,7 @@ import { useOrgBrand } from '@/features/theme/hooks/use-org-brand';
 import { ORG_BRANDS, type OrgBrand } from '@/features/theme/types/brand';
 import { BrandPreviewCard } from '@/features/theme/components/brand-preview-card';
 import { ThemeModeToggle } from '@/features/theme/components/theme-mode-toggle';
+import { ThemePresetsSection } from '@/features/theme/components/theme-presets-section';
 
 export default function SettingsAppearancePage() {
   const { brand, effectiveBrand, role, setBrand, isUpdating, themeTokens } = useOrgBrand();
@@ -124,6 +125,9 @@ export default function SettingsAppearancePage() {
           </div>
         )}
       </section>
+
+      {/* ─── Seção: Biblioteca de presets (Sprint S18 Wave 4) ─── */}
+      <ThemePresetsSection canEdit={canEditBrand} />
 
       {/* ─── Seção: Tema pessoal (user-level, qualquer membro) ─── */}
       <section aria-labelledby="mode-section" className="border-t border-border pt-10">
