@@ -142,8 +142,20 @@ function draftReducer(state: ThemeTokens, action: DraftAction): ThemeTokens {
       return { ...state, radius: action.value };
     case 'SET_DENSITY':
       return { ...state, density: action.value };
-    case 'SET_BASE':
-      return { ...state, base: action.value };
+    case 'SET_BASE': {
+      // Trocar brand de origem RECARREGA todas as cores + radius do brand
+      // novo. Sem isso o botao so atualiza a label visual e o usuario fica
+      // confuso porque os pickers nao refletem o brand escolhido.
+      // Densidade preserva escolha pessoal (nao e visual do brand).
+      const defaults = BRAND_TOKEN_DEFAULTS[action.value];
+      return {
+        base: action.value,
+        light: { ...defaults.light },
+        dark: { ...defaults.dark },
+        radius: defaults.radius,
+        density: state.density,
+      };
+    }
     case 'RESET': {
       const defaults = BRAND_TOKEN_DEFAULTS[action.base];
       return {
@@ -319,7 +331,13 @@ export default function ThemeBuilderPage() {
                 <button
                   key={b}
                   type="button"
-                  onClick={() => dispatch({ type: 'SET_BASE', value: b })}
+                  onClick={() => {
+                    if (draft.base === b) return;
+                    const ok = window.confirm(
+                      `Trocar pra "${BRAND_META[b].name}" vai recarregar todas as cores e radius desse brand, perdendo customizacoes nao salvas. Continuar?`,
+                    );
+                    if (ok) dispatch({ type: 'SET_BASE', value: b });
+                  }}
                   className={`flex-1 rounded-md border px-2 py-1.5 text-xs font-medium transition-colors ${
                     draft.base === b
                       ? 'border-primary bg-primary/5 text-primary'
@@ -330,6 +348,9 @@ export default function ThemeBuilderPage() {
                 </button>
               ))}
             </div>
+            <p className="mt-1.5 text-[10px] text-zinc-500 dark:text-zinc-400">
+              Carrega as cores deste brand como ponto de partida. Voce edita por cima.
+            </p>
           </div>
 
           {/* Color pickers do mode ativo */}
