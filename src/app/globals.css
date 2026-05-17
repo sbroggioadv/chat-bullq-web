@@ -89,6 +89,20 @@
 @theme inline {
   --color-background: var(--bg);
   --color-foreground: var(--fg);
+
+  /* Wave 4.3 hotfix: tokens raw existiam em :root mas NUNCA foram expostos
+   * ao Tailwind v4, entao classes como `bg-surface`, `text-fg`, `bg-bg-elev`
+   * caiam em transparent. Mapeamentos abaixo corrigem todos esses tokens
+   * pra virarem utilities funcionais (bg-X, text-X, border-X, etc). */
+  --color-bg: var(--bg);
+  --color-bg-elev: var(--bg-elev);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+  --color-border-strong: var(--border-strong);
+
   --color-card: var(--card);
   --color-card-foreground: var(--card-fg);
   --color-popover: var(--popover);
@@ -102,9 +116,15 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-fg);
   --color-destructive: var(--danger);
+  --color-destructive-foreground: var(--danger-fg);
+  --color-danger: var(--danger);
+  --color-danger-foreground: var(--danger-fg);
   --color-success: var(--success);
+  --color-success-foreground: var(--success-fg);
   --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-fg);
   --color-info: var(--info);
+  --color-info-foreground: var(--info-fg);
   --color-border: var(--border);
   --color-input: var(--border);
   --color-ring: var(--ring);
