@@ -21,7 +21,7 @@
  */
 
 import { Suspense, useCallback, useEffect, useReducer, useRef, useState } from 'react';
-import { ArrowLeft, Download, Upload, RotateCcw, Check, X, Save, PlayCircle } from 'lucide-react';
+import { ArrowLeft, Download, Upload, RotateCcw, Check, X, Save, PlayCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -42,29 +42,40 @@ import { previewContrastChecks } from '@/features/theme/util/contrast.util';
 // ─── Defaults por brand base ────────────────────────────────────────
 
 /**
- * Defaults completos pra cada brand A/B/C. Os 5 valores aqui sao os
- * usados como ponto de partida quando Doc clica "Reset" ou abre o
- * builder pela primeira vez. Vem do globals.css mas duplicados aqui
- * pra ter como JS pure (sem precisar parse de CSS em runtime).
+ * Wave 4.1: defaults expandidos pra cada brand A/B/C. 14 cores × 2 modes
+ * por brand (5 funcionais + 4 estrutura + 5 sidebar).
  *
- * NOTA TECH DEBT (Sprint S19): o server-side `theme-contrast.util.ts`
- * (Fase 1) valida contraste assumindo `primary-fg = FG_ON_DARK` (branco
- * fixo). Mas o app real usa `pickForeground()` (L < 0.6 → branco, else
- * → quase-preto) — entao primary claro no dark mode tem fg PRETO.
- * Resultado: server rejeita 422 defaults validos do globals.css real.
- * Workaround temporario: dark primary aqui usa L=0.4 (suficientemente
- * escuro pra texto branco passar AA), mesmo que globals.css use L=0.7.
- * Fix correto fica pra Sprint S19: server deve usar pickForeground
- * dinamico em vez de FG_ON_DARK fixo.
+ * Valores funcionais mantem workaround Wave 3 (dark primary L baixo pra
+ * passar WCAG vs FG branco fixo). Valores estrutura/sidebar vem do
+ * globals.css real (linhas 127-405) — eles sao validados literalmente
+ * (fg vs bg fornecidos) e nao sofrem do tech debt.
+ *
+ * MANTER SINCRONIZADO com:
+ *   - chat-bullq-api/src/modules/organizations/util/theme-defaults.util.ts (BRAND_PALETTE_DEFAULTS)
+ *   - chat-bullq-web/src/app/globals.css (blocos html[data-brand="A|B|C"])
+ *
+ * Pra evitar drift quando algum dos 3 mudar.
  */
 const BRAND_TOKEN_DEFAULTS: Record<OrgBrand, { light: ThemePalette; dark: ThemePalette; radius: string }> = {
   A: {
     light: {
+      // Funcionais
       primary: 'oklch(0.22 0.04 250)',
       accent: 'oklch(0.45 0.18 35)',
       success: 'oklch(0.5 0.15 150)',
       warning: 'oklch(0.55 0.18 80)',
       danger: 'oklch(0.5 0.22 27)',
+      // Estrutura
+      bg: 'oklch(0.97 0.003 30)',
+      surface: 'oklch(1 0 0)',
+      fg: 'oklch(0.18 0.02 250)',
+      border: 'oklch(0.9 0.008 30)',
+      // Sidebar
+      sidebar: 'oklch(0.985 0.003 30)',
+      sidebarFg: 'oklch(0.18 0.02 250)',
+      sidebarBorder: 'oklch(0.9 0.008 30)',
+      sidebarAccent: 'oklch(0.94 0.04 35)',
+      sidebarAccentFg: 'oklch(0.22 0.04 250)',
     },
     dark: {
       primary: 'oklch(0.4 0.08 250)',
@@ -72,6 +83,15 @@ const BRAND_TOKEN_DEFAULTS: Record<OrgBrand, { light: ThemePalette; dark: ThemeP
       success: 'oklch(0.55 0.15 150)',
       warning: 'oklch(0.62 0.18 80)',
       danger: 'oklch(0.62 0.21 27)',
+      bg: 'oklch(0.16 0.012 250)',
+      surface: 'oklch(0.22 0.015 250)',
+      fg: 'oklch(0.97 0.003 30)',
+      border: 'oklch(0.3 0.015 250)',
+      sidebar: 'oklch(0.18 0.012 250)',
+      sidebarFg: 'oklch(0.97 0.003 30)',
+      sidebarBorder: 'oklch(0.3 0.015 250)',
+      sidebarAccent: 'oklch(0.32 0.06 35)',
+      sidebarAccentFg: 'oklch(0.97 0.003 30)',
     },
     radius: '0.5rem',
   },
@@ -82,6 +102,15 @@ const BRAND_TOKEN_DEFAULTS: Record<OrgBrand, { light: ThemePalette; dark: ThemeP
       success: 'oklch(0.5 0.15 150)',
       warning: 'oklch(0.55 0.18 80)',
       danger: 'oklch(0.5 0.22 27)',
+      bg: 'oklch(0.99 0.003 240)',
+      surface: 'oklch(1 0 0)',
+      fg: 'oklch(0.18 0.01 240)',
+      border: 'oklch(0.92 0.005 240)',
+      sidebar: 'oklch(0.985 0.003 240)',
+      sidebarFg: 'oklch(0.18 0.01 240)',
+      sidebarBorder: 'oklch(0.92 0.005 240)',
+      sidebarAccent: 'oklch(0.95 0.06 145)',
+      sidebarAccentFg: 'oklch(0.32 0.18 145)',
     },
     dark: {
       primary: 'oklch(0.5 0.2 145)',
@@ -89,6 +118,15 @@ const BRAND_TOKEN_DEFAULTS: Record<OrgBrand, { light: ThemePalette; dark: ThemeP
       success: 'oklch(0.55 0.15 150)',
       warning: 'oklch(0.62 0.18 80)',
       danger: 'oklch(0.62 0.21 27)',
+      bg: 'oklch(0.15 0.01 240)',
+      surface: 'oklch(0.21 0.013 240)',
+      fg: 'oklch(0.97 0.003 240)',
+      border: 'oklch(0.3 0.012 240)',
+      sidebar: 'oklch(0.17 0.01 240)',
+      sidebarFg: 'oklch(0.97 0.003 240)',
+      sidebarBorder: 'oklch(0.3 0.012 240)',
+      sidebarAccent: 'oklch(0.28 0.05 145)',
+      sidebarAccentFg: 'oklch(0.97 0.003 240)',
     },
     radius: '0.375rem',
   },
@@ -99,6 +137,15 @@ const BRAND_TOKEN_DEFAULTS: Record<OrgBrand, { light: ThemePalette; dark: ThemeP
       success: 'oklch(0.5 0.15 150)',
       warning: 'oklch(0.55 0.18 80)',
       danger: 'oklch(0.5 0.22 27)',
+      bg: 'oklch(0.99 0 0)',
+      surface: 'oklch(1 0 0)',
+      fg: 'oklch(0.18 0 0)',
+      border: 'oklch(0.92 0 0)',
+      sidebar: 'oklch(0.99 0 0)',
+      sidebarFg: 'oklch(0.18 0 0)',
+      sidebarBorder: 'oklch(0.92 0 0)',
+      sidebarAccent: 'oklch(0.96 0.04 22)',
+      sidebarAccentFg: 'oklch(0.22 0 0)',
     },
     dark: {
       primary: 'oklch(0.3 0 0)',
@@ -106,14 +153,58 @@ const BRAND_TOKEN_DEFAULTS: Record<OrgBrand, { light: ThemePalette; dark: ThemeP
       success: 'oklch(0.55 0.15 150)',
       warning: 'oklch(0.62 0.18 80)',
       danger: 'oklch(0.62 0.21 27)',
+      bg: 'oklch(0.14 0 0)',
+      surface: 'oklch(0.2 0 0)',
+      fg: 'oklch(0.97 0 0)',
+      border: 'oklch(0.28 0 0)',
+      sidebar: 'oklch(0.16 0 0)',
+      sidebarFg: 'oklch(0.97 0 0)',
+      sidebarBorder: 'oklch(0.28 0 0)',
+      sidebarAccent: 'oklch(0.3 0.08 22)',
+      sidebarAccentFg: 'oklch(0.97 0 0)',
     },
     radius: '0.625rem',
   },
 };
 
+/**
+ * Wave 4.1: mescla palette atual com defaults do brand pra garantir
+ * que todos os 14 campos estao presentes. Necessario porque payloads
+ * legacy (Wave 3/4) so trazem 5 cores funcionais — sem isso, pickers
+ * dos campos novos abrem vazios.
+ */
+function mergeWithDefaults(
+  current: ThemePalette,
+  defaults: ThemePalette,
+): ThemePalette {
+  return {
+    primary: current.primary ?? defaults.primary,
+    accent: current.accent ?? defaults.accent,
+    success: current.success ?? defaults.success,
+    warning: current.warning ?? defaults.warning,
+    danger: current.danger ?? defaults.danger,
+    bg: current.bg ?? defaults.bg,
+    surface: current.surface ?? defaults.surface,
+    fg: current.fg ?? defaults.fg,
+    border: current.border ?? defaults.border,
+    sidebar: current.sidebar ?? defaults.sidebar,
+    sidebarFg: current.sidebarFg ?? defaults.sidebarFg,
+    sidebarBorder: current.sidebarBorder ?? defaults.sidebarBorder,
+    sidebarAccent: current.sidebarAccent ?? defaults.sidebarAccent,
+    sidebarAccentFg: current.sidebarAccentFg ?? defaults.sidebarAccentFg,
+  };
+}
+
 function buildInitialDraft(base: OrgBrand, current: ThemeTokens | null): ThemeTokens {
-  if (current) return current;
   const defaults = BRAND_TOKEN_DEFAULTS[base];
+  if (current) {
+    // Wave 4.1: garante shape canonico de 14 cores mesmo se vier legacy
+    return {
+      ...current,
+      light: mergeWithDefaults(current.light, defaults.light),
+      dark: mergeWithDefaults(current.dark, defaults.dark),
+    };
+  }
   return {
     base,
     light: { ...defaults.light },
@@ -168,8 +259,18 @@ function draftReducer(state: ThemeTokens, action: DraftAction): ThemeTokens {
         density: 'comfortable',
       };
     }
-    case 'IMPORT':
-      return action.tokens;
+    case 'IMPORT': {
+      // Wave 4.1: payload importado pode ser legacy (5 cores). Mescla com
+      // defaults do brand origem pra garantir 14 campos no draft.
+      const base = action.tokens.base in BRAND_TOKEN_DEFAULTS ? action.tokens.base : 'A';
+      const defaults = BRAND_TOKEN_DEFAULTS[base];
+      return {
+        ...action.tokens,
+        base,
+        light: mergeWithDefaults(action.tokens.light, defaults.light),
+        dark: mergeWithDefaults(action.tokens.dark, defaults.dark),
+      };
+    }
     default:
       return state;
   }
@@ -177,13 +278,61 @@ function draftReducer(state: ThemeTokens, action: DraftAction): ThemeTokens {
 
 // ─── Page ───────────────────────────────────────────────────────────
 
-const COLOR_KEYS: Array<{ key: keyof ThemePalette; label: string }> = [
-  { key: 'primary', label: 'Primaria' },
-  { key: 'accent', label: 'Accent' },
-  { key: 'success', label: 'Sucesso' },
-  { key: 'warning', label: 'Aviso' },
-  { key: 'danger', label: 'Perigo' },
+// Wave 4.1: 14 cores em 3 grupos collapsable. Grupo "Cores funcionais"
+// abre por default (manter familiar pro user que ja conhecia Wave 3).
+// Grupos novos (Estrutura, Sidebar) ficam fechados ate o user expandir.
+interface ColorGroup {
+  id: string;
+  title: string;
+  hint: string;
+  defaultOpen: boolean;
+  keys: Array<{ key: keyof ThemePalette; label: string }>;
+}
+
+const COLOR_GROUPS: ColorGroup[] = [
+  {
+    id: 'functional',
+    title: 'Cores funcionais',
+    hint: 'Botoes, badges, alertas — estados de acao',
+    defaultOpen: true,
+    keys: [
+      { key: 'primary', label: 'Primaria' },
+      { key: 'accent', label: 'Accent' },
+      { key: 'success', label: 'Sucesso' },
+      { key: 'warning', label: 'Aviso' },
+      { key: 'danger', label: 'Perigo' },
+    ],
+  },
+  {
+    id: 'structure',
+    title: 'Estrutura geral',
+    hint: 'Fundo da pagina, cartoes, texto, bordas',
+    defaultOpen: false,
+    keys: [
+      { key: 'bg', label: 'Fundo geral' },
+      { key: 'surface', label: 'Superficie (cartoes)' },
+      { key: 'fg', label: 'Texto' },
+      { key: 'border', label: 'Bordas' },
+    ],
+  },
+  {
+    id: 'sidebar',
+    title: 'Sidebar',
+    hint: 'Barra lateral esquerda — fundo, texto, item ativo',
+    defaultOpen: false,
+    keys: [
+      { key: 'sidebar', label: 'Sidebar (fundo)' },
+      { key: 'sidebarFg', label: 'Sidebar (texto)' },
+      { key: 'sidebarBorder', label: 'Sidebar (borda)' },
+      { key: 'sidebarAccent', label: 'Sidebar (item ativo)' },
+      { key: 'sidebarAccentFg', label: 'Sidebar (texto ativo)' },
+    ],
+  },
 ];
+
+// Flat list pra iterar durante normalizacao (ex.: garantir todos os 14
+// campos antes de salvar caso draft tenha undefined em algum).
+const ALL_COLOR_KEYS = COLOR_GROUPS.flatMap((g) => g.keys.map((k) => k.key));
 
 export default function ThemeBuilderPage() {
   return (
@@ -472,17 +621,17 @@ function ThemeBuilderInner() {
             </p>
           </div>
 
-          {/* Color pickers do mode ativo */}
+          {/* Wave 4.1: 14 pickers em 3 grupos collapsable */}
           <div className="space-y-2">
-            {COLOR_KEYS.map(({ key, label }) => (
-              <OklchColorPicker
-                key={`${activeMode}-${key}`}
-                label={`${label} (${activeMode})`}
-                value={draft[activeMode][key] ?? ''}
-                onChange={(next) =>
+            {COLOR_GROUPS.map((group) => (
+              <ColorGroupAccordion
+                key={group.id}
+                group={group}
+                draft={draft}
+                activeMode={activeMode}
+                onChange={(key, next) =>
                   dispatch({ type: 'SET_COLOR', mode: activeMode, key, value: next })
                 }
-                mode={activeMode}
               />
             ))}
           </div>
@@ -673,5 +822,69 @@ function ModeTab({ active, onClick, children }: { active: boolean; onClick: () =
     >
       {children}
     </button>
+  );
+}
+
+/**
+ * Wave 4.1: accordion com header clicavel + body de pickers. Estado local
+ * (open/closed) inicia conforme `group.defaultOpen` mas user pode togglar.
+ *
+ * Usa <details>/<summary> nativo? Optei por div+button por dois motivos:
+ *   1. controle fino da animacao/transition do icone chevron
+ *   2. evita que <summary> default leaks styling (ex.: marker triangle)
+ * Mas eh acessivel mesmo assim — button tem role implicito + aria-expanded.
+ */
+function ColorGroupAccordion({
+  group,
+  draft,
+  activeMode,
+  onChange,
+}: {
+  group: ColorGroup;
+  draft: ThemeTokens;
+  activeMode: 'light' | 'dark';
+  onChange: (key: keyof ThemePalette, value: string) => void;
+}) {
+  const [open, setOpen] = useState(group.defaultOpen);
+  return (
+    <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-controls={`group-body-${group.id}`}
+        className="flex w-full items-center justify-between px-3 py-2.5 text-left transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-900"
+      >
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+            {group.title}
+          </p>
+          <p className="mt-0.5 text-[10px] text-zinc-500 dark:text-zinc-400">
+            {group.hint}
+          </p>
+        </div>
+        {open ? (
+          <ChevronUp className="size-4 shrink-0 text-zinc-500" aria-hidden />
+        ) : (
+          <ChevronDown className="size-4 shrink-0 text-zinc-500" aria-hidden />
+        )}
+      </button>
+      {open && (
+        <div
+          id={`group-body-${group.id}`}
+          className="space-y-2 border-t border-zinc-200 p-2 dark:border-zinc-800"
+        >
+          {group.keys.map(({ key, label }) => (
+            <OklchColorPicker
+              key={`${activeMode}-${key}`}
+              label={`${label} (${activeMode})`}
+              value={draft[activeMode][key] ?? ''}
+              onChange={(next) => onChange(key, next)}
+              mode={activeMode}
+            />
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
