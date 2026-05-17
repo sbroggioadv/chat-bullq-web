@@ -56,7 +56,7 @@ export function AppSidebar() {
       <SidebarHeader>
         <div className="flex w-full items-center gap-1">
           <Dropdown>
-            <DropdownButton className="flex min-w-0 flex-1 items-center gap-2 rounded-lg px-2 py-2.5 text-left text-sm/6 font-semibold text-zinc-950 hover:bg-zinc-950/5 dark:text-white dark:hover:bg-white/5">
+            <DropdownButton className="flex min-w-0 flex-1 items-center gap-2 rounded-lg px-2 text-left text-sm/6 font-semibold text-zinc-950 hover:bg-zinc-950/5 dark:text-white dark:hover:bg-white/5 [padding-block:var(--density-py-list,0.625rem)]">
               <Avatar
                 initials={activeOrg?.name?.slice(0, 2).toUpperCase()}
                 className="size-6 bg-primary text-[10px] text-primary-foreground"
@@ -103,7 +103,7 @@ export function AppSidebar() {
 
       <SidebarFooter>
         <Dropdown>
-          <DropdownButton className="flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-left hover:bg-zinc-950/5 dark:hover:bg-white/5">
+          <DropdownButton className="flex w-full items-center gap-3 rounded-lg px-2 text-left hover:bg-zinc-950/5 dark:hover:bg-white/5 [padding-block:var(--density-py-list,0.625rem)]">
             <Avatar
               src={user?.avatarUrl}
               initials={user?.name?.slice(0, 2).toUpperCase()}

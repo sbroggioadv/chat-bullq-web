@@ -69,6 +69,21 @@
   --radius-md: 0.375rem;
   --radius-lg: 0.5rem;
   --radius-xl: 0.75rem;
+
+  /* ─── Sprint S18 Wave 3 Fase 5 — Density tokens ──────────────────
+   * 3 presets para densidade visual de listas/linhas/tabs:
+   *   comfortable (default): valores atuais (py-3 = 0.75rem)
+   *   compact: -25% (py-2 ≈ 0.5rem) — mais conteúdo na tela
+   *   spacious: +25% (py-4 = 1rem) — mais respirável
+   *
+   * Tokens consumidos em componentes-chave de alta densidade:
+   *   --density-py-list: linhas de conversation-list, sidebar nav items
+   *   --density-py-row: tabs, table rows, settings nav
+   *
+   * Override vem do brand-theme-bridge quando themeTokens.density != 'comfortable'.
+   * ────────────────────────────────────────────────────────────────── */
+  --density-py-list: 0.625rem; /* py-2.5 default em listas (conversation-list) */
+  --density-py-row: 0.75rem;   /* py-3 default em tabs/settings */
 }
 
 @theme inline {
