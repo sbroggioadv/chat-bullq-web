@@ -20,13 +20,15 @@
  * antes pra evitar trip pro server.
  */
 
-import { useCallback, useReducer, useRef, useState } from 'react';
-import { ArrowLeft, Download, Upload, RotateCcw, Check, X } from 'lucide-react';
+import { Suspense, useCallback, useEffect, useReducer, useRef, useState } from 'react';
+import { ArrowLeft, Download, Upload, RotateCcw, Check, X, Save, PlayCircle } from 'lucide-react';
 import Link from 'next/link';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { OklchColorPicker } from '@/features/theme/components/oklch-color-picker';
 import { ThemePreviewMock } from '@/features/theme/components/theme-preview-mock';
 import { useOrgBrand } from '@/features/theme/hooks/use-org-brand';
+import { useThemePresets } from '@/features/theme/hooks/use-theme-presets';
 import {
   BRAND_META,
   isThemeTokens,
@@ -184,13 +186,66 @@ const COLOR_KEYS: Array<{ key: keyof ThemePalette; label: string }> = [
 ];
 
 export default function ThemeBuilderPage() {
-  const { brand, effectiveBrand, themeTokens, setThemeTokens, isUpdatingTokens, role } = useOrgBrand();
+  return (
+    <Suspense
+      fallback={
+        <div className="p-6 text-sm text-fg-muted">Carregando builder…</div>
+      }
+    >
+      <ThemeBuilderInner />
+    </Suspense>
+  );
+}
+
+function ThemeBuilderInner() {
+  const { brand, effectiveBrand, themeTokens, role } = useOrgBrand();
   const canEdit = role === 'OWNER' || role === 'ADMIN';
 
-  const initialBase = themeTokens?.base ?? brand ?? effectiveBrand;
+  // ─── Wave 4: leitura de presetId via query param ───────────
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const presetIdParam = searchParams.get('presetId');
+
+  const {
+    presets,
+    create,
+    update,
+    activate,
+    isCreating,
+    isUpdating: isUpdatingPreset,
+    isActivating,
+  } = useThemePresets();
+
+  // Preset alvo (quando editando existente). Carregado pela query da lista.
+  const editingPreset = presetIdParam
+    ? presets.find((p) => p.id === presetIdParam)
+    : null;
+  const isEditMode = Boolean(presetIdParam);
+
+  const initialBase =
+    editingPreset?.tokens.base ?? themeTokens?.base ?? brand ?? effectiveBrand;
+  const initialTokens = editingPreset?.tokens ?? themeTokens ?? null;
+
   const [draft, dispatch] = useReducer(draftReducer, undefined, () =>
-    buildInitialDraft(initialBase, themeTokens),
+    buildInitialDraft(initialBase, initialTokens),
   );
+
+  // Quando o preset alvo carregar via react-query (timing assíncrono),
+  // sincroniza o draft uma vez. Se Doc já editou, mantém — só hidrata
+  // quando draft ainda está em estado inicial "do brand" (não-modificado).
+  const hydratedRef = useRef(false);
+  useEffect(() => {
+    if (!editingPreset || hydratedRef.current) return;
+    dispatch({ type: 'IMPORT', tokens: editingPreset.tokens });
+    setPresetName(editingPreset.name);
+    hydratedRef.current = true;
+  }, [editingPreset]);
+
+  // Nome do preset (Wave 4): vazio em modo novo, do preset em modo editar.
+  const [presetName, setPresetName] = useState<string>(
+    editingPreset?.name ?? '',
+  );
+
   const [activeMode, setActiveMode] = useState<'light' | 'dark'>('light');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -202,19 +257,67 @@ export default function ThemeBuilderPage() {
   const failingChecks = checks.filter((c) => !c.passes);
   const allPass = failingChecks.length === 0;
 
-  const handleApply = useCallback(async () => {
-    if (!canEdit) return;
+  // ─── Wave 4: 3 ações de salvar ─────────────────────────
+  // Substitui o antigo "Aplicar pra toda a banca" (single slot).
+  //
+  // - Salvar como novo: cria preset (POST), não ativa
+  // - Salvar mudanças: atualiza preset existente (PATCH) — só em modo editar
+  // - Salvar e ativar: cria/atualiza + ativa em sequência
+
+  function effectiveName(): string {
+    return presetName.trim() || 'Sem nome';
+  }
+
+  const warnIfBadContrast = useCallback(() => {
     if (!allPass) {
-      toast.warning('Tema tem cores ilegiveis', {
+      toast.warning('Tema tem cores ilegíveis', {
         description: `${failingChecks.length} par(es) falhando AA — pode ser rejeitado pelo servidor`,
       });
     }
-    try {
-      await setThemeTokens(draft);
-    } catch {
-      // Toast ja vem do hook (use-org-brand) em onError
-    }
-  }, [canEdit, allPass, failingChecks.length, setThemeTokens, draft]);
+  }, [allPass, failingChecks.length]);
+
+  const handleSaveAsNew = useCallback(
+    async (alsoActivate = false) => {
+      if (!canEdit) return;
+      const name = effectiveName();
+      if (!presetName.trim()) {
+        toast.info('Nome auto-aplicado', { description: `Salvo como "${name}"` });
+      }
+      warnIfBadContrast();
+      try {
+        const created = await create({ name, tokens: draft });
+        if (alsoActivate) {
+          await activate(created.id);
+        }
+        // Redireciona pro builder em modo editar (sem perder o draft visual)
+        router.replace(`/settings/appearance/builder?presetId=${created.id}`);
+      } catch {
+        // hook já lida com toast de erro
+      }
+    },
+    [canEdit, presetName, draft, create, activate, warnIfBadContrast, router],
+  );
+
+  const handleSaveChanges = useCallback(
+    async (alsoActivate = false) => {
+      if (!canEdit || !editingPreset) return;
+      warnIfBadContrast();
+      try {
+        const newName = presetName.trim();
+        const payload: { name?: string; tokens?: ThemeTokens } = { tokens: draft };
+        if (newName && newName !== editingPreset.name) {
+          payload.name = newName;
+        }
+        await update(editingPreset.id, payload);
+        if (alsoActivate && !editingPreset.isActive) {
+          await activate(editingPreset.id);
+        }
+      } catch {
+        // hook trata
+      }
+    },
+    [canEdit, editingPreset, presetName, draft, update, activate, warnIfBadContrast],
+  );
 
   const handleReset = useCallback(() => {
     dispatch({ type: 'RESET', base: draft.base });
@@ -259,15 +362,8 @@ export default function ThemeBuilderPage() {
     }
   }, []);
 
-  const handleClearCustom = useCallback(async () => {
-    if (!canEdit) return;
-    try {
-      await setThemeTokens(null);
-      toast.success('Tema custom removido');
-    } catch {
-      // hook trata
-    }
-  }, [canEdit, setThemeTokens]);
+  // Wave 4: handleClearCustom removido. Remoção agora vive no menu do card
+  // em /settings/appearance ("Deletar"), não mais como ação global do builder.
 
   if (!canEdit) {
     return (
@@ -291,8 +387,8 @@ export default function ThemeBuilderPage() {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between gap-3">
-        <div>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <Link
               href="/settings/appearance"
@@ -301,11 +397,34 @@ export default function ThemeBuilderPage() {
             >
               <ArrowLeft className="size-4" />
             </Link>
-            <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">Theme Builder</h1>
+            <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
+              {isEditMode ? 'Editar tema' : 'Novo tema'}
+            </h1>
           </div>
           <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-            Customize cores OKLCH + radius + densidade. Preview live ao lado, validacao WCAG no rodape.
+            Customize cores OKLCH + radius + densidade. Preview live ao lado, validação WCAG no rodapé.
           </p>
+
+          {/* ─── Wave 4: input de nome do preset ─── */}
+          <div className="mt-3 flex max-w-md items-center gap-2">
+            <label className="sr-only" htmlFor="preset-name">
+              Nome do tema
+            </label>
+            <input
+              id="preset-name"
+              type="text"
+              value={presetName}
+              onChange={(e) => setPresetName(e.target.value)}
+              maxLength={80}
+              placeholder={isEditMode ? '' : 'Nome do tema (ex: Black Friday 2026)'}
+              className="w-full rounded-md border border-zinc-200 bg-white px-3 py-1.5 text-sm font-medium text-zinc-900 placeholder-zinc-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+            />
+            {editingPreset?.isActive && (
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                <Check className="size-3" /> Ativo
+              </span>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-1.5 rounded-md border border-zinc-200 bg-white p-0.5 dark:border-zinc-800 dark:bg-zinc-900">
           <ModeTab active={activeMode === 'light'} onClick={() => setActiveMode('light')}>
@@ -495,25 +614,47 @@ export default function ThemeBuilderPage() {
             onChange={handleImportFile}
             className="hidden"
           />
-          {themeTokens !== null && (
+        </div>
+
+        {/* ─── Wave 4: 3 ações de salvar ─── */}
+        <div className="flex flex-wrap items-center gap-2">
+          {isEditMode && (
             <button
               type="button"
-              onClick={handleClearCustom}
-              disabled={isUpdatingTokens}
-              className="inline-flex items-center gap-1.5 rounded-md border border-red-200 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50 dark:border-red-900/40 dark:text-red-400 dark:hover:bg-red-900/10"
+              onClick={() => handleSaveChanges(false)}
+              disabled={isUpdatingPreset || isActivating}
+              className="inline-flex items-center gap-1.5 rounded-md border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-700 shadow-sm hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+              title="Atualiza este preset sem ativar"
             >
-              Remover custom
+              <Save className="size-3.5" />
+              {isUpdatingPreset ? 'Salvando…' : 'Salvar mudanças'}
             </button>
           )}
+
+          <button
+            type="button"
+            onClick={() => handleSaveAsNew(false)}
+            disabled={isCreating || isActivating}
+            className="inline-flex items-center gap-1.5 rounded-md border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-700 shadow-sm hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+            title="Cria novo preset com este nome e tokens"
+          >
+            <Save className="size-3.5" />
+            {isCreating ? 'Criando…' : 'Salvar como novo'}
+          </button>
+
+          <button
+            type="button"
+            onClick={() =>
+              isEditMode ? handleSaveChanges(true) : handleSaveAsNew(true)
+            }
+            disabled={isCreating || isUpdatingPreset || isActivating}
+            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
+            title="Salva e aplica imediatamente em toda a banca"
+          >
+            <PlayCircle className="size-4" />
+            {isActivating ? 'Ativando…' : 'Salvar e ativar'}
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={handleApply}
-          disabled={isUpdatingTokens}
-          className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {isUpdatingTokens ? 'Aplicando…' : 'Aplicar pra toda a banca'}
-        </button>
       </div>
     </div>
   );
