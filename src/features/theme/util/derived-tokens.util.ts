@@ -105,25 +105,57 @@ export function deriveRadius(baseRem: string): {
 }
 
 /**
- * Constroi o bloco de CSS vars completo a partir das cores base + radius
- * + mode. Output e uma string pronta pra colar em `<style>{...}</style>`
- * dentro do HTML, ou pra escrever num cssText. Selector e gerado fora.
+ * Density tokens: 3 presets que afetam padding vertical de listas/linhas/tabs.
+ * Valores derivados da regra ±25% sobre o default `comfortable`:
+ *   - py-list  (linhas de conversation-list, sidebar nav): default 0.625rem (py-2.5)
+ *     compact = 0.5rem (py-2), spacious = 0.875rem (~py-3.5)
+ *   - py-row   (tabs de settings, table rows): default 0.75rem (py-3)
+ *     compact = 0.5rem (py-2), spacious = 1rem (py-4)
  *
- * Tokens cobertos: primary, primary-hover, primary-fg, accent, accent-hover,
- * accent-soft, accent-fg, success, success-fg, warning, warning-fg, danger,
- * danger-fg, info, info-fg, radius-sm, radius-md, radius-lg, radius-xl.
+ * Quando density === 'comfortable' (ou undefined), nao injetamos override:
+ * o globals.css ja tras os defaults. So mudamos quando o usuario customizou.
+ */
+export type ThemeDensity = 'compact' | 'comfortable' | 'spacious';
+
+const DENSITY_TOKENS: Record<ThemeDensity, { pyList: string; pyRow: string }> = {
+  compact: { pyList: '0.5rem', pyRow: '0.5rem' },
+  comfortable: { pyList: '0.625rem', pyRow: '0.75rem' },
+  spacious: { pyList: '0.875rem', pyRow: '1rem' },
+};
+
+export function buildDensityBlock(density: ThemeDensity | undefined): string {
+  if (!density || density === 'comfortable') return '';
+  const tokens = DENSITY_TOKENS[density];
+  return `--density-py-list: ${tokens.pyList}; --density-py-row: ${tokens.pyRow};`;
+}
+
+/**
+ * Constroi o bloco de CSS vars completo a partir das cores base + radius
+ * + density + mode. Output e uma string pronta pra colar em
+ * `<style>{...}</style>` dentro do HTML, ou pra escrever num cssText.
+ * Selector e gerado fora.
+ *
+ * Tokens cobertos:
+ *  - Cores: primary, primary-hover, primary-fg, accent, accent-hover,
+ *    accent-soft, accent-fg, success, success-fg, warning, warning-fg,
+ *    danger, danger-fg.
+ *  - Radius: radius-sm, radius-md, radius-lg, radius-xl.
+ *  - Density (so quando != 'comfortable'): density-py-list, density-py-row.
  *
  * NAO sobrescreve bg, fg, surface, sidebar — esses ficam vindo do brand
  * base (data-brand="A"|"B"|"C") pra preservar identidade do mode. Doc so
- * customiza as 5 cores funcionais + radius, o resto herda do brand origem.
+ * customiza as 5 cores funcionais + radius + density, o resto herda do brand
+ * origem.
  */
 export function buildThemeOverrideCss(opts: {
   light: { primary: string; accent: string; success: string; warning: string; danger: string };
   dark: { primary: string; accent: string; success: string; warning: string; danger: string };
   radius: string;
+  density?: ThemeDensity;
 }): { light: string; dark: string } {
   const radius = deriveRadius(opts.radius);
   const radiusBlock = `--radius-sm: ${radius.sm}; --radius-md: ${radius.md}; --radius-lg: ${radius.lg}; --radius-xl: ${radius.xl};`;
+  const densityBlock = buildDensityBlock(opts.density);
 
   const buildColorBlock = (
     palette: typeof opts.light,
@@ -151,8 +183,12 @@ export function buildThemeOverrideCss(opts: {
     ].join(' ');
   };
 
+  // Density e independente de mode (afeta layout, nao cor), entao adicionamos
+  // o mesmo bloco nos dois selectors. Se vazio (comfortable), nao adiciona.
+  const tail = densityBlock ? ` ${densityBlock}` : '';
+
   return {
-    light: `${buildColorBlock(opts.light, 'light')} ${radiusBlock}`,
-    dark: `${buildColorBlock(opts.dark, 'dark')} ${radiusBlock}`,
+    light: `${buildColorBlock(opts.light, 'light')} ${radiusBlock}${tail}`,
+    dark: `${buildColorBlock(opts.dark, 'dark')} ${radiusBlock}${tail}`,
   };
 }

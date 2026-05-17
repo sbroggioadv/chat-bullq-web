@@ -36,6 +36,7 @@ function applyThemeTokens(tokens: ThemeTokens | null): void {
       light: tokens.light,
       dark: tokens.dark,
       radius: tokens.radius,
+      density: tokens.density,
     });
 
     // Selector dual (light vs dark) ancora pelo data-mode do <html>.

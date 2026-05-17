@@ -36,7 +36,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
                 <Link
                   key={tab.href}
                   href={tab.href}
-                  className={`inline-flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3 text-sm font-medium transition-colors ${
+                  className={`inline-flex items-center gap-2 whitespace-nowrap border-b-2 px-4 text-sm font-medium transition-colors [padding-block:var(--density-py-row,0.75rem)] ${
                     isActive
                       ? 'border-primary text-primary'
                       : 'border-transparent text-zinc-500 hover:border-zinc-300 hover:text-zinc-700 dark:text-zinc-400 dark:hover:border-zinc-600 dark:hover:text-zinc-300'
