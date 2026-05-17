@@ -71,20 +71,42 @@ export function isOrgBrand(value: unknown): value is OrgBrand {
 }
 
 // ─── Sprint S18 Wave 3 — Theme Builder OKLCH PRO ──────────────────
+// ─── Sprint S18 Wave 4.1 — palette EXPANSION (5 -> 14 tokens) ─────
 
 export type ThemeDensity = 'compact' | 'comfortable' | 'spacious';
 
 /**
  * Palette de cores customizadas. Cores em OKLCH literal `oklch(L C H)`.
- * Hover, soft, fg, etc. são DERIVADOS no client a partir destas 5 cores
- * (ver `derived-tokens.util.ts`) — não são persistidos pra evitar drift.
+ *
+ * Wave 4.1 expandiu de 5 (funcionais) pra 14 cores em 3 grupos:
+ *  - Funcionais (5): primary, accent, success, warning, danger
+ *  - Estrutura  (4): bg, surface, fg, border
+ *  - Sidebar    (5): sidebar, sidebarFg, sidebarBorder, sidebarAccent,
+ *                    sidebarAccentFg
+ *
+ * Os 9 novos campos sao OPCIONAIS no type guard pra manter backward-compat
+ * com payloads Wave 3/4 (5 cores). O backend `normalizeThemeTokens` preenche
+ * com defaults do brand base se faltarem. Tokens hover/soft/fg-button/etc.
+ * sao DERIVADOS no client (ver `derived-tokens.util.ts`) — nao persistidos.
  */
 export interface ThemePalette {
+  // Funcionais (Wave 3)
   primary: string;
   accent: string;
   success: string;
   warning: string;
   danger: string;
+  // Estrutura (Wave 4.1) — opcionais pra backward-compat
+  bg?: string;
+  surface?: string;
+  fg?: string;
+  border?: string;
+  // Sidebar (Wave 4.1) — opcionais pra backward-compat
+  sidebar?: string;
+  sidebarFg?: string;
+  sidebarBorder?: string;
+  sidebarAccent?: string;
+  sidebarAccentFg?: string;
 }
 
 /**
@@ -103,16 +125,37 @@ export interface ThemeTokens {
   density?: ThemeDensity;
 }
 
+/**
+ * Type guard pra palette. Wave 4.1: valida os 5 funcionais como obrigatorios
+ * (mantem compat com Wave 3). Os 9 novos sao validados se presentes.
+ */
 export function isThemePalette(v: unknown): v is ThemePalette {
   if (!v || typeof v !== 'object') return false;
   const p = v as Record<string, unknown>;
-  return (
+  // Funcionais obrigatorios
+  const hasFunctional =
     typeof p.primary === 'string' &&
     typeof p.accent === 'string' &&
     typeof p.success === 'string' &&
     typeof p.warning === 'string' &&
-    typeof p.danger === 'string'
-  );
+    typeof p.danger === 'string';
+  if (!hasFunctional) return false;
+  // Expansion fields: se presentes, devem ser strings; se ausentes, ok
+  const optionalFields = [
+    'bg',
+    'surface',
+    'fg',
+    'border',
+    'sidebar',
+    'sidebarFg',
+    'sidebarBorder',
+    'sidebarAccent',
+    'sidebarAccentFg',
+  ] as const;
+  for (const field of optionalFields) {
+    if (p[field] !== undefined && typeof p[field] !== 'string') return false;
+  }
+  return true;
 }
 
 export function isThemeTokens(v: unknown): v is ThemeTokens {
@@ -123,5 +166,26 @@ export function isThemeTokens(v: unknown): v is ThemeTokens {
     isThemePalette(t.light) &&
     isThemePalette(t.dark) &&
     typeof t.radius === 'string'
+  );
+}
+
+/**
+ * Type guard estricto: valida que palette tem TODOS os 14 campos
+ * (Wave 4.1 canonico). Usado em pontos onde precisamos garantir shape
+ * completo (ex.: payload pra renderizar sidebar custom no preview).
+ */
+export function isExpandedThemePalette(v: unknown): v is Required<ThemePalette> {
+  if (!isThemePalette(v)) return false;
+  const p = v as unknown as Record<string, unknown>;
+  return (
+    typeof p.bg === 'string' &&
+    typeof p.surface === 'string' &&
+    typeof p.fg === 'string' &&
+    typeof p.border === 'string' &&
+    typeof p.sidebar === 'string' &&
+    typeof p.sidebarFg === 'string' &&
+    typeof p.sidebarBorder === 'string' &&
+    typeof p.sidebarAccent === 'string' &&
+    typeof p.sidebarAccentFg === 'string'
   );
 }
