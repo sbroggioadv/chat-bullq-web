@@ -40,11 +40,16 @@ function applyThemeTokens(tokens: ThemeTokens | null): void {
     });
 
     // Selector dual (light vs dark) ancora pelo data-mode do <html>.
-    // !important nao e necessario: ganhamos por specificity (selector tem
-    // 1 elemento + 1 atributo, mesma do brand base mas vem depois no DOM).
+    // Specificity: usamos [data-brand] (presenca) + [data-mode="X"] (valor)
+    // pra IGUALAR a specificity do brand block do globals.css
+    // (html[data-brand="A"][data-mode="X"] = 0,2,1). Com specificity igual,
+    // ganhamos pela ordem da cascata — esse <style> e injetado em runtime
+    // via document.head.appendChild, depois do CSS estatico do bundle.
+    // Wave 4.3: bug specificity (selector tinha so [data-mode], 0,1,1) — brand
+    // vencia sempre, customizacao do Theme Builder nunca aplicava de verdade.
     const styleContent = `
-html[data-mode="light"] { ${css.light} }
-html[data-mode="dark"] { ${css.dark} }
+html[data-brand][data-mode="light"] { ${css.light} }
+html[data-brand][data-mode="dark"] { ${css.dark} }
 `.trim();
 
     const style = document.createElement('style');
