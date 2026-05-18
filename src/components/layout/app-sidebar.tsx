@@ -58,6 +58,7 @@ export function AppSidebar() {
           <Dropdown>
             <DropdownButton className="flex min-w-0 flex-1 items-center gap-2 rounded-lg px-2 text-left text-sm/6 font-semibold text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground [padding-block:var(--density-py-list,0.625rem)]">
               <Avatar
+                src={activeOrg?.logoUrl ?? undefined}
                 initials={activeOrg?.name?.slice(0, 2).toUpperCase()}
                 className="size-6 bg-primary text-[10px] text-primary-foreground"
                 square
@@ -74,7 +75,16 @@ export function AppSidebar() {
                     key={org.id}
                     onClick={() => handleOrgSwitch(org.id)}
                   >
-                    <Building2 />
+                    {org.logoUrl ? (
+                      <Avatar
+                        src={org.logoUrl}
+                        initials={org.name?.slice(0, 2).toUpperCase()}
+                        className="size-4 bg-primary text-[8px] text-primary-foreground"
+                        square
+                      />
+                    ) : (
+                      <Building2 />
+                    )}
                     <DropdownLabel>{org.name}</DropdownLabel>
                   </DropdownItem>
                 ))}

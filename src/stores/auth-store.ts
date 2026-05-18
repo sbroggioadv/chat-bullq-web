@@ -26,6 +26,10 @@ interface OrgInfo {
   // Sprint S18 Wave 4: ID do preset ativo na biblioteca. NULL = sem custom.
   // Lista de presets vive em react-query (queryKey ['theme-presets', orgId]).
   activeThemePresetId: string | null;
+  // Sprint S19 Wave 1: logo da organizacao (renderizado no org-switcher do sidebar).
+  // null/undefined = sem logo, fallback pra initials. Backend `/auth/me` ainda
+  // nao expoe este campo — quando vier undefined, tratamos como null.
+  logoUrl?: string | null;
 }
 
 interface AuthState {
@@ -37,6 +41,9 @@ interface AuthState {
   applyChannelPermissionUpdate: (channelId: string, granted: boolean) => void;
   applyOrgBrandUpdate: (orgId: string, brand: OrgBrand) => void;
   applyOrgThemeTokensUpdate: (orgId: string, themeTokens: ThemeTokens | null) => void;
+  // Sprint S19 Wave 1: aplica patch parcial no perfil da org (name/logoUrl)
+  // sem refetchar /auth/me. Sidebar consome direto.
+  applyOrgProfileUpdate: (orgId: string, patch: { name?: string; logoUrl?: string | null }) => void;
   logout: () => void;
 }
 
@@ -84,6 +91,20 @@ export const useAuthStore = create<AuthState>((set) => ({
     set((state) => ({
       organizations: state.organizations.map((org) =>
         org.id === orgId ? { ...org, themeTokens } : org,
+      ),
+    }));
+  },
+
+  applyOrgProfileUpdate: (orgId, patch) => {
+    set((state) => ({
+      organizations: state.organizations.map((org) =>
+        org.id === orgId
+          ? {
+              ...org,
+              ...(patch.name !== undefined ? { name: patch.name } : {}),
+              ...(patch.logoUrl !== undefined ? { logoUrl: patch.logoUrl } : {}),
+            }
+          : org,
       ),
     }));
   },
