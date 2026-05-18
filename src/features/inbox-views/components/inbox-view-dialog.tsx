@@ -148,14 +148,14 @@ export function InboxViewDialog({ open, view, onClose, onSaved }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-xl bg-white shadow-xl dark:bg-zinc-900">
-        <div className="sticky top-0 flex items-center justify-between border-b border-zinc-200 bg-white px-6 py-4 dark:border-zinc-800 dark:bg-zinc-900">
-          <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+      <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-xl bg-card text-card-foreground shadow-xl">
+        <div className="sticky top-0 flex items-center justify-between border-b border-border bg-card px-6 py-4">
+          <h3 className="text-lg font-semibold text-card-foreground">
             {view ? 'Editar inbox' : 'Nova inbox'}
           </h3>
           <button
             onClick={onClose}
-            className="rounded p-1 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            className="rounded p-1 text-muted-foreground hover:bg-muted"
           >
             <X className="h-4 w-4" />
           </button>
@@ -163,19 +163,19 @@ export function InboxViewDialog({ open, view, onClose, onSaved }: Props) {
 
         <div className="space-y-5 px-6 py-5">
           <div>
-            <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300">
+            <label className="block text-xs font-medium text-card-foreground/80">
               Nome
             </label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="ex: Vendas WhatsApp"
-              className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+              className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300">
+            <label className="block text-xs font-medium text-card-foreground/80">
               Ícone
             </label>
             <div className="mt-2 flex flex-wrap gap-1">
@@ -187,7 +187,7 @@ export function InboxViewDialog({ open, view, onClose, onSaved }: Props) {
                   className={`flex size-8 items-center justify-center rounded-md border ${
                     icon === n
                       ? 'border-primary bg-primary/10 text-primary'
-                      : 'border-zinc-200 text-zinc-500 hover:border-zinc-300 dark:border-zinc-700'
+                      : 'border-border text-muted-foreground hover:border-border'
                   }`}
                 >
                   <Icon className="size-4" />
@@ -197,7 +197,7 @@ export function InboxViewDialog({ open, view, onClose, onSaved }: Props) {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300">
+            <label className="block text-xs font-medium text-card-foreground/80">
               Cor
             </label>
             <div className="mt-2 flex flex-wrap gap-2">
@@ -208,7 +208,7 @@ export function InboxViewDialog({ open, view, onClose, onSaved }: Props) {
                   onClick={() => setColor(c.name)}
                   className={`size-7 rounded-full ${c.cls} ${
                     color === c.name
-                      ? 'ring-2 ring-zinc-900 ring-offset-2 dark:ring-white'
+                      ? 'ring-2 ring-foreground ring-offset-2 ring-offset-card'
                       : ''
                   }`}
                   aria-label={c.name}
@@ -217,24 +217,24 @@ export function InboxViewDialog({ open, view, onClose, onSaved }: Props) {
             </div>
           </div>
 
-          <div className="border-t border-zinc-200 pt-4 dark:border-zinc-800">
-            <p className="text-xs font-semibold uppercase text-zinc-500">
+          <div className="border-t border-border pt-4">
+            <p className="text-xs font-semibold uppercase text-muted-foreground">
               Filtros
             </p>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300">
+            <label className="block text-xs font-medium text-card-foreground/80">
               Canais ({channelIds.length || 'todos'})
             </label>
-            <div className="mt-2 max-h-40 space-y-1 overflow-y-auto rounded-md border border-zinc-200 p-2 dark:border-zinc-800">
+            <div className="mt-2 max-h-40 space-y-1 overflow-y-auto rounded-md border border-border p-2">
               {channels.length === 0 && (
-                <p className="text-xs text-zinc-400">Nenhum canal cadastrado.</p>
+                <p className="text-xs text-muted-foreground/70">Nenhum canal cadastrado.</p>
               )}
               {channels.map((c: any) => (
                 <label
                   key={c.id}
-                  className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-xs hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                  className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-xs hover:bg-muted"
                 >
                   <input
                     type="checkbox"
@@ -243,7 +243,7 @@ export function InboxViewDialog({ open, view, onClose, onSaved }: Props) {
                     className="size-3.5"
                   />
                   <span className="font-medium">{c.name}</span>
-                  <span className="text-[10px] uppercase text-zinc-400">
+                  <span className="text-[10px] uppercase text-muted-foreground/70">
                     {c.type}
                   </span>
                 </label>
@@ -252,7 +252,7 @@ export function InboxViewDialog({ open, view, onClose, onSaved }: Props) {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300">
+            <label className="block text-xs font-medium text-card-foreground/80">
               Status
             </label>
             <div className="mt-2 flex flex-wrap gap-2">
@@ -264,26 +264,26 @@ export function InboxViewDialog({ open, view, onClose, onSaved }: Props) {
                   className={`rounded-full px-3 py-1 text-xs ${
                     statuses.includes(s.value)
                       ? 'bg-primary text-primary-foreground'
-                      : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300'
+                      : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
                   }`}
                 >
                   {s.label}
                 </button>
               ))}
             </div>
-            <p className="mt-1 text-[10px] text-zinc-400">
+            <p className="mt-1 text-[10px] text-muted-foreground/70">
               Vazio = todos os status.
             </p>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300">
+            <label className="block text-xs font-medium text-card-foreground/80">
               Atribuição
             </label>
             <select
               value={assignedTo}
               onChange={(e) => setAssignedTo(e.target.value)}
-              className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+              className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
             >
               {ASSIGNED_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>
@@ -294,7 +294,7 @@ export function InboxViewDialog({ open, view, onClose, onSaved }: Props) {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300">
+            <label className="block text-xs font-medium text-card-foreground/80">
               Tipo de conversa
             </label>
             <div className="mt-2 flex flex-wrap gap-2">
@@ -306,7 +306,7 @@ export function InboxViewDialog({ open, view, onClose, onSaved }: Props) {
                   className={`rounded-full px-3 py-1 text-xs ${
                     kind === o.value
                       ? 'bg-primary text-primary-foreground'
-                      : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300'
+                      : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
                   }`}
                 >
                   {o.label}
@@ -316,12 +316,12 @@ export function InboxViewDialog({ open, view, onClose, onSaved }: Props) {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300">
+            <label className="block text-xs font-medium text-card-foreground/80">
               Tags ({tagIds.length || 'nenhuma — todas'})
             </label>
             <div className="mt-2 flex flex-wrap gap-1.5">
               {tags.length === 0 && (
-                <p className="text-[11px] text-zinc-400">
+                <p className="text-[11px] text-muted-foreground/70">
                   Nenhuma tag cadastrada na org. Crie em Configurações &gt; Tags.
                 </p>
               )}
@@ -356,16 +356,16 @@ export function InboxViewDialog({ open, view, onClose, onSaved }: Props) {
                 );
               })}
             </div>
-            <p className="mt-1 text-[10px] text-zinc-400">
+            <p className="mt-1 text-[10px] text-muted-foreground/70">
               Conversa entra se tiver QUALQUER uma das tags marcadas (na conversa ou no contato).
             </p>
           </div>
         </div>
 
-        <div className="sticky bottom-0 flex items-center justify-end gap-2 border-t border-zinc-200 bg-zinc-50 px-6 py-3 dark:border-zinc-800 dark:bg-zinc-900/50">
+        <div className="sticky bottom-0 flex items-center justify-end gap-2 border-t border-border bg-muted px-6 py-3">
           <button
             onClick={onClose}
-            className="rounded-md px-3 py-1.5 text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            className="rounded-md px-3 py-1.5 text-sm text-card-foreground hover:bg-muted-foreground/10"
           >
             Cancelar
           </button>
