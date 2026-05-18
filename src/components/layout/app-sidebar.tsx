@@ -56,7 +56,7 @@ export function AppSidebar() {
       <SidebarHeader>
         <div className="flex w-full items-center gap-1">
           <Dropdown>
-            <DropdownButton className="flex min-w-0 flex-1 items-center gap-2 rounded-lg px-2 text-left text-sm/6 font-semibold text-zinc-950 hover:bg-zinc-950/5 dark:text-white dark:hover:bg-white/5 [padding-block:var(--density-py-list,0.625rem)]">
+            <DropdownButton className="flex min-w-0 flex-1 items-center gap-2 rounded-lg px-2 text-left text-sm/6 font-semibold text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground [padding-block:var(--density-py-list,0.625rem)]">
               <Avatar
                 initials={activeOrg?.name?.slice(0, 2).toUpperCase()}
                 className="size-6 bg-primary text-[10px] text-primary-foreground"
@@ -65,7 +65,7 @@ export function AppSidebar() {
               <span className="min-w-0 flex-1 truncate">
                 {activeOrg?.name ?? 'Organização'}
               </span>
-              <ChevronsUpDown className="ml-auto size-4 shrink-0 text-zinc-500" />
+              <ChevronsUpDown className="ml-auto size-4 shrink-0 text-sidebar-foreground/50" />
             </DropdownButton>
             {organizations.length > 1 && (
               <DropdownMenu anchor="bottom start" className="min-w-56">
@@ -103,7 +103,7 @@ export function AppSidebar() {
 
       <SidebarFooter>
         <Dropdown>
-          <DropdownButton className="flex w-full items-center gap-3 rounded-lg px-2 text-left hover:bg-zinc-950/5 dark:hover:bg-white/5 [padding-block:var(--density-py-list,0.625rem)]">
+          <DropdownButton className="flex w-full items-center gap-3 rounded-lg px-2 text-left hover:bg-sidebar-accent/50 [padding-block:var(--density-py-list,0.625rem)]">
             <Avatar
               src={user?.avatarUrl}
               initials={user?.name?.slice(0, 2).toUpperCase()}
@@ -111,14 +111,14 @@ export function AppSidebar() {
               square
             />
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm/5 font-medium text-zinc-950 dark:text-white">
+              <span className="block truncate text-sm/5 font-medium text-sidebar-foreground">
                 {user?.name}
               </span>
-              <span className="block truncate text-xs/5 font-normal text-zinc-500 dark:text-zinc-400">
+              <span className="block truncate text-xs/5 font-normal text-sidebar-foreground/60">
                 {user?.email}
               </span>
             </span>
-            <ChevronUp className="ml-auto size-4 shrink-0 text-zinc-500" />
+            <ChevronUp className="ml-auto size-4 shrink-0 text-sidebar-foreground/50" />
           </DropdownButton>
           <DropdownMenu anchor="top start" className="min-w-56">
             <DropdownItem href="/settings/appearance">
