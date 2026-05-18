@@ -62,12 +62,12 @@ export function SidebarLayout({
           transition
           className="fixed inset-y-0 left-0 w-full max-w-80 p-2 transition duration-300 ease-in-out data-[closed]:-translate-x-full"
         >
-          <div className="flex h-full flex-col rounded-lg bg-white shadow-sm ring-1 ring-zinc-950/5 dark:bg-zinc-900 dark:ring-white/10">
+          <div className="flex h-full flex-col rounded-lg bg-sidebar shadow-sm ring-1 ring-sidebar-border">
             <div className="-mb-3 px-4 pt-3">
               <CloseButton
                 as="button"
                 aria-label="Fechar menu"
-                className="flex size-8 items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-950 dark:hover:text-white"
+                className="flex size-8 items-center justify-center rounded-lg text-sidebar-foreground/70 hover:text-sidebar-accent-foreground"
               >
                 <X className="size-5" />
               </CloseButton>
@@ -84,7 +84,7 @@ export function SidebarLayout({
         }`}
       >
         <div
-          className={`flex h-full flex-col border-r border-zinc-950/5 bg-white dark:border-white/5 dark:bg-zinc-900 w-64 transition-transform duration-200 ease-in-out ${
+          className={`flex h-full flex-col border-r border-sidebar-border bg-sidebar w-64 transition-transform duration-200 ease-in-out ${
             collapsed ? "-translate-x-full" : "translate-x-0"
           }`}
         >
@@ -105,7 +105,7 @@ export function SidebarLayout({
         onClick={toggleCollapsed}
         aria-label={collapsed ? "Abrir menu" : "Recolher menu"}
         title={collapsed ? "Abrir menu" : "Recolher menu"}
-        className={`group fixed bottom-4 z-30 hidden h-7 w-5 items-center justify-center rounded-r-md bg-white text-zinc-400 opacity-50 ring-1 ring-zinc-950/5 transition-all duration-200 ease-in-out hover:bg-zinc-50 hover:text-zinc-900 hover:opacity-100 dark:bg-zinc-900 dark:text-zinc-500 dark:ring-white/10 dark:hover:bg-zinc-800 dark:hover:text-white lg:flex ${
+        className={`group fixed bottom-4 z-30 hidden h-7 w-5 items-center justify-center rounded-r-md bg-sidebar text-sidebar-foreground/50 opacity-50 ring-1 ring-sidebar-border transition-all duration-200 ease-in-out hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:opacity-100 lg:flex ${
           collapsed ? "left-0" : "left-64"
         }`}
       >
