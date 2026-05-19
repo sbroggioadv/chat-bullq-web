@@ -9,6 +9,7 @@ import {
   ChevronUp,
   Zap,
   Palette,
+  UserCircle,
 } from 'lucide-react';
 import { InboxTree } from '@/features/inbox-views/components/inbox-tree';
 import { JarvisTree } from '@/features/ai-agents/components/jarvis-tree';
@@ -131,6 +132,10 @@ export function AppSidebar() {
             <ChevronUp className="ml-auto size-4 shrink-0 text-sidebar-foreground/50" />
           </DropdownButton>
           <DropdownMenu anchor="top start" className="min-w-56">
+            <DropdownItem href="/settings/profile">
+              <UserCircle />
+              <DropdownLabel>Meu perfil</DropdownLabel>
+            </DropdownItem>
             <DropdownItem href="/settings/appearance">
               <Palette />
               <DropdownLabel>Aparência</DropdownLabel>

@@ -1,10 +1,12 @@
 'use client';
 
-import { useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback, type ComponentType } from 'react';
 import { Upload, Trash2, Loader2, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { inboxService } from '@/features/inbox/services/inbox.service';
 import { cn } from '@/lib/utils';
+
+type IconComponent = ComponentType<{ className?: string; 'aria-hidden'?: boolean }>;
 
 /**
  * S19 Wave 1: componente reutilizavel pra upload de imagem.
@@ -33,6 +35,8 @@ interface ImageUploadProps {
   label?: string;
   /** Texto descritivo abaixo (opcional). */
   description?: string;
+  /** Icon de placeholder quando vazio. Default Building2 (org logo). Wave 2: UserCircle pra avatar. */
+  placeholderIcon?: IconComponent;
 }
 
 const DEFAULT_MAX_SIZE = 5 * 1024 * 1024; // 5MB
@@ -46,6 +50,7 @@ export function ImageUpload({
   disabled = false,
   label,
   description,
+  placeholderIcon: PlaceholderIcon = Building2,
 }: ImageUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -134,7 +139,7 @@ export function ImageUpload({
               className={cn('size-full object-cover', radiusClass)}
             />
           ) : (
-            <Building2 className="size-8 text-fg-muted/60" aria-hidden />
+            <PlaceholderIcon className="size-8 text-fg-muted/60" aria-hidden />
           )}
         </div>
 
