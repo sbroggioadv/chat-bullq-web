@@ -5,6 +5,7 @@ import { Upload, Trash2, Loader2, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { inboxService } from '@/features/inbox/services/inbox.service';
 import { cn } from '@/lib/utils';
+import { ImageCropModal } from './image-crop-modal';
 
 type IconComponent = ComponentType<{ className?: string; 'aria-hidden'?: boolean }>;
 
@@ -54,6 +55,9 @@ export function ImageUpload({
 }: ImageUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  // Sprint S19 Wave 3.1: arquivo selecionado pendente de crop. Quando setado,
+  // o ImageCropModal renderiza e bloqueia novos picks ate user aplicar/cancelar.
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
 
   const radiusClass = shape === 'circle' ? 'rounded-full' : 'rounded-xl';
 
@@ -63,13 +67,13 @@ export function ImageUpload({
   }, [disabled, uploading]);
 
   const handleFileChange = useCallback(
-    async (e: React.ChangeEvent<HTMLInputElement>) => {
+    (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       // Reset pra permitir re-selecionar mesmo arquivo
       e.target.value = '';
       if (!file) return;
 
-      // Validacao client-side antes de gastar request
+      // Validacao client-side antes de abrir modal de crop (que carrega imagem)
       if (!file.type.startsWith('image/')) {
         toast.error('Arquivo invalido', {
           description: 'Selecione uma imagem (PNG, JPG, WebP, etc.)',
@@ -84,9 +88,19 @@ export function ImageUpload({
         return;
       }
 
+      // Wave 3.1: NAO faz upload direto. Abre modal de crop primeiro — user
+      // ajusta posicao/zoom/rotacao, e so apos aplicar o upload acontece.
+      setPendingFile(file);
+    },
+    [maxSize],
+  );
+
+  const handleCropConfirm = useCallback(
+    async (croppedFile: File) => {
+      setPendingFile(null);
       setUploading(true);
       try {
-        const result = await inboxService.uploadImage(file);
+        const result = await inboxService.uploadImage(croppedFile);
         onChange(result.url);
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Erro desconhecido';
@@ -95,8 +109,12 @@ export function ImageUpload({
         setUploading(false);
       }
     },
-    [maxSize, onChange],
+    [onChange],
   );
+
+  const handleCropCancel = useCallback(() => {
+    setPendingFile(null);
+  }, []);
 
   const handleRemove = useCallback(() => {
     if (disabled || uploading) return;
@@ -183,6 +201,18 @@ export function ImageUpload({
         aria-hidden
         tabIndex={-1}
       />
+
+      {/* Wave 3.1: modal de crop. Abre quando user seleciona arquivo via picker.
+          Em "Aplicar" -> dispara upload do File cortado. Em "Cancelar" -> volta
+          pro estado idle (nada e upado). */}
+      {pendingFile && (
+        <ImageCropModal
+          file={pendingFile}
+          shape={shape}
+          onConfirm={handleCropConfirm}
+          onCancel={handleCropCancel}
+        />
+      )}
     </div>
   );
 }
