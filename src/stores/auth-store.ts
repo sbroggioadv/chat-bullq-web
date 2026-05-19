@@ -48,6 +48,10 @@ interface AuthState {
   // Sidebar footer consome `user.avatarUrl` reativo — optimistic update aqui faz
   // o avatar trocar instantaneamente ao salvar em /settings/profile.
   applyUserProfileUpdate: (patch: { name?: string; avatarUrl?: string | null }) => void;
+  // Sprint S19 Wave 3: adiciona uma org recem-criada na lista. Caller pode chamar
+  // setActiveOrg em seguida pra trocar contexto pra ela. Usado pelo modal "Criar
+  // workspace" antes de reload da pagina.
+  addOrganization: (org: OrgInfo) => void;
   logout: () => void;
 }
 
@@ -122,6 +126,16 @@ export const useAuthStore = create<AuthState>((set) => ({
           ...(patch.name !== undefined ? { name: patch.name } : {}),
           ...(patch.avatarUrl !== undefined ? { avatarUrl: patch.avatarUrl } : {}),
         },
+      };
+    });
+  },
+
+  addOrganization: (org) => {
+    set((state) => {
+      // Idempotente — evita duplicar se modal for clicado 2x rapidos
+      if (state.organizations.some((o) => o.id === org.id)) return state;
+      return {
+        organizations: [...state.organizations, org],
       };
     });
   },

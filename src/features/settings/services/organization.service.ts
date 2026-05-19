@@ -21,6 +21,15 @@ export interface UpdateOrganizationProfilePayload {
   logoUrl?: string | null;
 }
 
+/**
+ * S19 Wave 3: payload pra criar nova organizacao (workspace adicional).
+ * Backend aceita apenas `name` — slug e demais campos sao gerados server-side
+ * (slug deterministico via timestamp base36, plan='free' por default).
+ */
+export interface CreateOrganizationPayload {
+  name: string;
+}
+
 export const organizationService = {
   /**
    * Carrega o perfil da org ativa (x-organization-id e injetado pelo interceptor).
@@ -41,6 +50,20 @@ export const organizationService = {
   async updateProfile(payload: UpdateOrganizationProfilePayload): Promise<OrganizationProfile> {
     const { data } = await api.patch<{ data: OrganizationProfile }>(
       '/organizations/current',
+      payload,
+    );
+    return data.data;
+  },
+
+  /**
+   * S19 Wave 3: cria nova org (workspace adicional) onde o user atual vira OWNER.
+   * Backend cria Org + UserOrganization + Department "Geral" default em transacao.
+   * Resposta inclui id/slug/plan recem-criados. Caller deve atualizar auth-store
+   * (addOrganization + setActiveOrg) ANTES de reload da pagina pra ativar contexto.
+   */
+  async create(payload: CreateOrganizationPayload): Promise<OrganizationProfile> {
+    const { data } = await api.post<{ data: OrganizationProfile }>(
+      '/organizations',
       payload,
     );
     return data.data;

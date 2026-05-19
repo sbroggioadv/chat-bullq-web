@@ -14,6 +14,7 @@ import { useAuthStore } from '@/stores/auth-store';
 import { Avatar } from '@/components/ui/avatar';
 import { ImageUpload } from '@/components/ui/image-upload';
 import { useOrganizationProfile } from '../hooks/use-organization-profile';
+import { useCreateOrganization } from '../hooks/use-create-organization';
 
 /**
  * S19 Wave 1: aba `/settings/general`. Substitui placeholder "em breve".
@@ -317,25 +318,58 @@ export function OrganizationGeneralForm() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════ */}
-      {/* MODAL STUB — multi-workspace (S19 Wave 2)                        */}
+      {/* MODAL — criar novo workspace (S19 Wave 3)                        */}
       {/* ═══════════════════════════════════════════════════════════════ */}
       {showCreateWorkspace && (
-        <CreateWorkspaceModalStub onClose={() => setShowCreateWorkspace(false)} />
+        <CreateWorkspaceModal onClose={() => setShowCreateWorkspace(false)} />
       )}
     </div>
   );
 }
 
 /**
- * Modal stub pra "Criar novo workspace". Multi-org real (criar tenant pelo
- * dashboard) vai ser S19 Wave 2 — aqui so explicamos pro Doc que esta vindo.
+ * S19 Wave 3: modal real pra criar workspace adicional. Substitui o stub da
+ * Wave 1. Form simples: input nome + Criar/Cancelar. Em sucesso, hook faz
+ * hard reload pra recarregar contexto inteiro com nova org ativa.
  */
-function CreateWorkspaceModalStub({ onClose }: { onClose: () => void }) {
+const NEW_WORKSPACE_MIN_NAME = 2;
+const NEW_WORKSPACE_MAX_NAME = 120;
+
+function CreateWorkspaceModal({ onClose }: { onClose: () => void }) {
+  const { create, isCreating } = useCreateOrganization();
+  const [name, setName] = useState('');
+
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isCreating) onClose();
+    };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  }, [onClose, isCreating]);
+
+  const trimmed = name.trim();
+  const nameError = (() => {
+    if (trimmed.length < NEW_WORKSPACE_MIN_NAME) {
+      return `Mínimo ${NEW_WORKSPACE_MIN_NAME} caracteres`;
+    }
+    if (trimmed.length > NEW_WORKSPACE_MAX_NAME) {
+      return `Máximo ${NEW_WORKSPACE_MAX_NAME} caracteres`;
+    }
+    return null;
+  })();
+  const canSubmit = !nameError && !isCreating;
+
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!canSubmit) return;
+    try {
+      await create({ name: trimmed });
+      // Modal nao fecha — toast de sucesso + reload acontecem no hook.
+      // Doc ve "Recarregando..." e pagina muda.
+    } catch {
+      // Toast ja foi disparado pelo hook em onError.
+    }
+  };
 
   return (
     <div
@@ -343,9 +377,10 @@ function CreateWorkspaceModalStub({ onClose }: { onClose: () => void }) {
       aria-modal="true"
       aria-labelledby="create-workspace-title"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
-      onClick={onClose}
+      onClick={() => !isCreating && onClose()}
     >
-      <div
+      <form
+        onSubmit={handleSubmit}
         className="w-full max-w-md rounded-2xl bg-card p-6 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
@@ -361,31 +396,83 @@ function CreateWorkspaceModalStub({ onClose }: { onClose: () => void }) {
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-1 text-fg-muted transition-colors hover:bg-muted hover:text-fg"
+            disabled={isCreating}
+            className="rounded-lg p-1 text-fg-muted transition-colors hover:bg-muted hover:text-fg disabled:cursor-not-allowed disabled:opacity-50"
             aria-label="Fechar"
           >
             <X className="size-5" />
           </button>
         </div>
-        <p className="mt-4 text-sm text-fg-muted">
-          Em breve você vai poder criar e gerenciar múltiplos workspaces dentro do BullQ — uma
-          banca para o escritório principal, outras para sub-clientes, parcerias ou negócios
-          paralelos. Cada workspace é totalmente isolado (canais, agentes, equipes e dados
-          próprios).
+
+        <p className="mt-3 text-sm text-fg-muted">
+          Cada workspace é totalmente isolado — canais, agentes, equipes e dados próprios.
+          Você será o owner do novo workspace.
         </p>
-        <p className="mt-2 text-sm text-fg-muted">
-          Esta funcionalidade está prevista para a próxima onda da Sprint S19.
-        </p>
-        <div className="mt-6 flex justify-end">
+
+        <div className="mt-5">
+          <label
+            htmlFor="new-workspace-name"
+            className="mb-1.5 block text-sm font-medium text-fg"
+          >
+            Nome do workspace
+          </label>
+          <input
+            id="new-workspace-name"
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            disabled={isCreating}
+            autoFocus
+            maxLength={NEW_WORKSPACE_MAX_NAME + 10}
+            aria-invalid={Boolean(nameError) && name.length > 0}
+            aria-describedby={nameError && name.length > 0 ? 'new-workspace-name-error' : undefined}
+            className="block w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-fg shadow-sm transition-colors placeholder:text-fg-muted/60 hover:border-primary/40 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
+            placeholder="Ex: Sbroggio Sub-cliente"
+          />
+          <div className="mt-1.5 flex items-center justify-between">
+            {nameError && name.length > 0 ? (
+              <p id="new-workspace-name-error" className="text-xs text-destructive">
+                {nameError}
+              </p>
+            ) : (
+              <p className="text-xs text-fg-muted">
+                Você poderá alterar depois em Configurações.
+              </p>
+            )}
+            <p className="text-xs tabular-nums text-fg-muted">
+              {name.length}/{NEW_WORKSPACE_MAX_NAME}
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-6 flex flex-col-reverse items-stretch justify-end gap-3 border-t border-border pt-5 sm:flex-row sm:items-center">
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex h-10 items-center justify-center rounded-lg bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-[var(--primary-hover)]"
+            disabled={isCreating}
+            className="text-sm font-medium text-fg-muted hover:text-fg disabled:opacity-50"
           >
-            Entendi
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={!canSubmit}
+            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-lg bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isCreating ? (
+              <>
+                <span className="size-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                Criando…
+              </>
+            ) : (
+              <>
+                <Plus className="size-4" />
+                Criar workspace
+              </>
+            )}
           </button>
         </div>
-      </div>
+      </form>
     </div>
   );
 }
