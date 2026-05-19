@@ -44,6 +44,10 @@ interface AuthState {
   // Sprint S19 Wave 1: aplica patch parcial no perfil da org (name/logoUrl)
   // sem refetchar /auth/me. Sidebar consome direto.
   applyOrgProfileUpdate: (orgId: string, patch: { name?: string; logoUrl?: string | null }) => void;
+  // Sprint S19 Wave 2: aplica patch parcial no perfil do usuario (name/avatarUrl).
+  // Sidebar footer consome `user.avatarUrl` reativo — optimistic update aqui faz
+  // o avatar trocar instantaneamente ao salvar em /settings/profile.
+  applyUserProfileUpdate: (patch: { name?: string; avatarUrl?: string | null }) => void;
   logout: () => void;
 }
 
@@ -107,6 +111,19 @@ export const useAuthStore = create<AuthState>((set) => ({
           : org,
       ),
     }));
+  },
+
+  applyUserProfileUpdate: (patch) => {
+    set((state) => {
+      if (!state.user) return state;
+      return {
+        user: {
+          ...state.user,
+          ...(patch.name !== undefined ? { name: patch.name } : {}),
+          ...(patch.avatarUrl !== undefined ? { avatarUrl: patch.avatarUrl } : {}),
+        },
+      };
+    });
   },
 
   logout: () => {
