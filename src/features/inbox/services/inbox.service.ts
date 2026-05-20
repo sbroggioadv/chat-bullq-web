@@ -433,7 +433,7 @@ export const inboxService = {
         mediaUrl: upload.url,
         mimeType: upload.mimeType,
         fileSize: upload.size,
-        ...(upload.filename ? { filename: upload.filename } : {}),
+        ...(upload.filename ? { fileName: upload.filename } : {}),
         ...(caption && caption.trim() ? { caption: caption.trim() } : {}),
       },
     });
