@@ -15,6 +15,18 @@ export interface Contact {
   createdAt: string;
 }
 
+/**
+ * S20 Wave 1: stats devolvidas por POST /contacts/sync-avatars. Frontend
+ * usa pra montar toast "X de Y contatos sincronizados em Z segundos".
+ */
+export interface SyncAvatarsResult {
+  total: number;
+  enriched: number;
+  skipped: number;
+  failed: number;
+  durationMs: number;
+}
+
 export const contactsService = {
   async list(params?: Record<string, string>): Promise<{
     contacts: Contact[];
@@ -36,5 +48,15 @@ export const contactsService = {
 
   async remove(id: string): Promise<void> {
     await api.delete(`/contacts/${id}`);
+  },
+
+  /**
+   * S20 Wave 1: backfill sincrono de fotos do WhatsApp pra todos os contatos
+   * da org. Operacao cara (chamadas Zappfy) — RBAC OWNER/ADMIN no backend.
+   * Tempo esperado: ~30s pra 100 contatos (concorrencia 5 paralelos).
+   */
+  async syncAvatars(): Promise<SyncAvatarsResult> {
+    const { data } = await api.post<{ data: SyncAvatarsResult }>('/contacts/sync-avatars');
+    return data.data;
   },
 };
