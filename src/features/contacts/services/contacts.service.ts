@@ -53,10 +53,19 @@ export const contactsService = {
   /**
    * S20 Wave 1: backfill sincrono de fotos do WhatsApp pra todos os contatos
    * da org. Operacao cara (chamadas Zappfy) — RBAC OWNER/ADMIN no backend.
-   * Tempo esperado: ~30s pra 100 contatos (concorrencia 5 paralelos).
+   * Tempo esperado: ~30s pra 100 contatos / ~50s pra 1000+ (concorrencia 5).
+   *
+   * HOTFIX: o `api` client tem timeout default de 15s (apropriado pra requests
+   * normais), mas esta operacao excede facilmente. Override pra 3 minutos
+   * cobre orgs com ate ~3000 contatos. Pra escala maior, migrar pra job
+   * BullMQ background (fora do escopo da Wave 1).
    */
   async syncAvatars(): Promise<SyncAvatarsResult> {
-    const { data } = await api.post<{ data: SyncAvatarsResult }>('/contacts/sync-avatars');
+    const { data } = await api.post<{ data: SyncAvatarsResult }>(
+      '/contacts/sync-avatars',
+      {},
+      { timeout: 180_000 },
+    );
     return data.data;
   },
 };
