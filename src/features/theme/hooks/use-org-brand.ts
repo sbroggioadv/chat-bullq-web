@@ -52,8 +52,12 @@ export function useOrgBrand(): UseOrgBrandResult {
     onMutate: async (next) => {
       if (!activeOrgId) return { previous: brand };
       const previous = brand;
+      const previousTokens = themeTokens;
       applyOrgBrandUpdate(activeOrgId, next);
-      return { previous };
+      // Aplicar um brand zera o tema custom — são mutuamente exclusivos.
+      // Espelha o backend pra UI não seguir mostrando o override antigo.
+      applyOrgThemeTokensUpdate(activeOrgId, null);
+      return { previous, previousTokens };
     },
     onError: (err, _next, ctx) => {
       // Rollback otimista
@@ -63,6 +67,10 @@ export function useOrgBrand(): UseOrgBrandResult {
         } else {
           applyOrgBrandUpdate(activeOrgId, ctx.previous);
         }
+      }
+      // Restaura o tema custom que foi zerado otimisticamente no onMutate.
+      if (activeOrgId && ctx?.previousTokens !== undefined) {
+        applyOrgThemeTokensUpdate(activeOrgId, ctx.previousTokens);
       }
       const msg = err instanceof Error ? err.message : 'Erro ao salvar tema';
       toast.error('Não foi possível salvar a identidade visual', { description: msg });
