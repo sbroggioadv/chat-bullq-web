@@ -9,6 +9,12 @@ type RecordingState = 'idle' | 'recording' | 'stopped';
  * The hook owns the MediaStream lifecycle — it releases the microphone on
  * unmount or when the recording finishes, so the tab's mic indicator doesn't
  * stay lit after the user sends the message.
+ *
+ * Critical ordering (MDN, observed in Safari): stop the MediaRecorder FIRST,
+ * wait for `onstop` to fire (which means all chunks are finalised and the
+ * blob is sealed), THEN release the MediaStream tracks. Releasing tracks
+ * before the recorder finishes draining can invalidate the final chunk and
+ * produce an empty blob — that's exactly what was happening in production.
  */
 export function useAudioRecorder() {
   const [state, setState] = useState<RecordingState>('idle');
@@ -39,7 +45,8 @@ export function useAudioRecorder() {
     return 'audio/webm';
   };
 
-  const cleanup = useCallback(() => {
+  /** Stop tick interval + release mic. Called from onstop callback (NEVER from stop()). */
+  const releaseStream = useCallback(() => {
     if (tickRef.current) {
       clearInterval(tickRef.current);
       tickRef.current = null;
@@ -51,7 +58,7 @@ export function useAudioRecorder() {
     recorderRef.current = null;
   }, []);
 
-  useEffect(() => cleanup, [cleanup]);
+  useEffect(() => releaseStream, [releaseStream]);
 
   const start = useCallback(async () => {
     setError(null);
@@ -71,6 +78,14 @@ export function useAudioRecorder() {
       };
       recorder.onstop = () => {
         const out = new Blob(chunksRef.current, { type: chosenMime });
+        // Release mic AFTER recorder is fully drained — this is the whole
+        // reason we don't kill tracks inside stop().
+        releaseStream();
+        if (out.size === 0) {
+          setError('Nenhum áudio capturado. Tente novamente.');
+          setState('idle');
+          return;
+        }
         setBlob(out);
         setState('stopped');
       };
@@ -89,32 +104,49 @@ export function useAudioRecorder() {
           : err?.message || 'Erro ao acessar microfone';
       setError(msg);
       setState('idle');
-      cleanup();
+      releaseStream();
     }
-  }, [cleanup]);
+  }, [releaseStream]);
 
+  /**
+   * Stop the recorder. DOES NOT release mic — that happens inside `onstop`
+   * after the final chunk is drained and the blob sealed.
+   */
   const stop = useCallback(() => {
-    if (recorderRef.current && recorderRef.current.state !== 'inactive') {
-      recorderRef.current.stop();
+    const rec = recorderRef.current;
+    if (rec && rec.state !== 'inactive') {
+      rec.stop();
+    } else {
+      // Recorder not active — release immediately (defensive).
+      releaseStream();
+      setState('idle');
     }
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((t) => t.stop());
-      streamRef.current = null;
-    }
-    if (tickRef.current) {
-      clearInterval(tickRef.current);
-      tickRef.current = null;
-    }
-  }, []);
+  }, [releaseStream]);
 
+  /** Abandon recording without producing a blob. */
   const cancel = useCallback(() => {
-    stop();
+    const rec = recorderRef.current;
+    if (rec) {
+      // Swap the onstop handler so we don't transition to 'stopped' state
+      // with a half-baked blob the user explicitly discarded.
+      rec.onstop = () => {
+        releaseStream();
+      };
+      if (rec.state !== 'inactive') {
+        rec.stop();
+      } else {
+        releaseStream();
+      }
+    } else {
+      releaseStream();
+    }
     setBlob(null);
     setState('idle');
     setElapsedMs(0);
     chunksRef.current = [];
-  }, [stop]);
+  }, [releaseStream]);
 
+  /** Reset after a successful send. */
   const reset = useCallback(() => {
     setBlob(null);
     setState('idle');
