@@ -189,6 +189,24 @@ export const inboxService = {
     return data.data ?? data;
   },
 
+  /**
+   * Encaminha uma mensagem pra N conversas. Backend reusa send() por destino,
+   * respeitando isolamento de tenant + rate-limit por canal. Resposta síncrona
+   * com `queued` (destinos aceitos) e `rejected` (motivos por destino).
+   */
+  async forwardMessage(payload: {
+    messageId: string;
+    destinationConversationIds: string[];
+  }): Promise<{
+    queued: string[];
+    rejected: Array<{ conversationId: string; reason: string }>;
+  }> {
+    const { data } = await api.post(`/messages/${payload.messageId}/forward`, {
+      destinationConversationIds: payload.destinationConversationIds,
+    });
+    return data.data ?? data;
+  },
+
   async assignToMe(conversationId: string): Promise<Conversation> {
     const { data } = await api.post(`/conversations/${conversationId}/assign-me`);
     return data.data;
