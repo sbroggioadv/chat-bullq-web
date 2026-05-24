@@ -31,6 +31,7 @@ export default function SettingsAiPage() {
   });
 
   const [aiEnabled, setAiEnabled] = useState(true);
+  const [aiPanicMode, setAiPanicMode] = useState(false);
   const [aiTimezone, setAiTimezone] = useState('America/Sao_Paulo');
   const [hours, setHours] = useState<BusinessHoursConfig>(DEFAULT_BUSINESS_HOURS);
   // 24/7: representado no banco como aiBusinessHours = null. Mantemos os
@@ -58,6 +59,7 @@ export default function SettingsAiPage() {
   useEffect(() => {
     if (!data) return;
     setAiEnabled(data.aiEnabled);
+    setAiPanicMode(data.aiPanicMode ?? false);
     setAiTimezone(data.aiTimezone);
     setAlwaysOn(data.aiBusinessHours == null);
     setHours(data.aiBusinessHours ?? DEFAULT_BUSINESS_HOURS);
@@ -88,6 +90,7 @@ export default function SettingsAiPage() {
         .filter(Boolean);
       await aiSettingsService.update({
         aiEnabled,
+        aiPanicMode,
         aiTimezone,
         aiBusinessHours: alwaysOn ? null : hours,
         aiOutOfHoursMessage: outOfHoursMessage,
@@ -218,8 +221,36 @@ export default function SettingsAiPage() {
         </button>
       </div>
 
+      {/* S22.2 — PANIC MODE (botão vermelho de emergência) */}
+      <section
+        className={`mt-6 rounded-xl border-2 p-5 transition-colors ${
+          aiPanicMode
+            ? 'border-red-500 bg-red-50 dark:border-red-500 dark:bg-red-950/30'
+            : 'border-red-200 bg-white dark:border-red-900/40 dark:bg-zinc-900'
+        }`}
+      >
+        <label className="flex cursor-pointer items-start justify-between gap-4">
+          <div>
+            <p className={`flex items-center gap-2 text-sm font-bold ${aiPanicMode ? 'text-red-700 dark:text-red-300' : 'text-red-600 dark:text-red-400'}`}>
+              🚨 Pausar TODA IA imediatamente
+            </p>
+            <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
+              Kill switch absoluto. Ignora qualquer scope, override de conversa ou canal.
+              Use em emergência (suspeita de ban, agente fora de controle). Efeito imediato
+              após salvar — ~1s pra propagar globalmente.
+              {aiPanicMode && (
+                <span className="mt-2 block font-semibold text-red-700 dark:text-red-300">
+                  ⚠ MODO PÂNICO ATIVO — nenhum agente está respondendo. Desligue pra restaurar operação normal.
+                </span>
+              )}
+            </p>
+          </div>
+          <Toggle checked={aiPanicMode} onChange={setAiPanicMode} />
+        </label>
+      </section>
+
       {/* Kill switch */}
-      <section className="mt-6 rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
+      <section className="mt-4 rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
         <label className="flex cursor-pointer items-start justify-between gap-4">
           <div>
             <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
@@ -228,7 +259,7 @@ export default function SettingsAiPage() {
             <p className="mt-0.5 text-xs text-zinc-500">
               Padrão pra novas conversas. Canais individuais podem sobrepor
               esse toggle (abaixo). Conversas individuais também podem forçar
-              IA ON/OFF.
+              IA ON/OFF. <strong>Agentes scopados a Pipelines</strong> sobrevivem a esse switch (S22.1) — pra calar até eles, use o botão vermelho acima.
             </p>
           </div>
           <Toggle checked={aiEnabled} onChange={setAiEnabled} />

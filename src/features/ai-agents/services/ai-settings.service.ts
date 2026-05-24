@@ -33,6 +33,8 @@ export interface OrganizationAiSettings {
   id: string;
   name: string;
   aiEnabled: boolean;
+  /** S22.2 — Panic mode (kill switch absoluto). Ignora scope/conv/channel. */
+  aiPanicMode: boolean;
   aiTimezone: string;
   aiBusinessHours: BusinessHoursConfig | null;
   aiOutOfHoursMessage: string | null;
@@ -49,6 +51,8 @@ export interface OrganizationAiSettings {
 
 export interface UpdateAiSettingsInput {
   aiEnabled?: boolean;
+  /** S22.2 — Panic mode. true = cala TUDO imediatamente. */
+  aiPanicMode?: boolean;
   aiTimezone?: string;
   aiBusinessHours?: BusinessHoursConfig | null;
   aiOutOfHoursMessage?: string;
