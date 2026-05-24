@@ -17,6 +17,9 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAudioRecorder } from '../hooks/use-audio-recorder';
+import { ComposerAutocomplete, type AutocompleteItem } from './composer-autocomplete';
+import { useQuickReplyTrigger } from '../hooks/use-quick-reply-trigger';
+import { useQuickReplies } from '@/features/quick-replies/hooks/use-quick-replies';
 
 interface ChatInputProps {
   onSend: (text: string) => Promise<void>;
@@ -187,6 +190,37 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
   const fileInputRef = useRef<HTMLInputElement>(null);
   const recorder = useAudioRecorder();
 
+  // S21/W1: Quick Replies trigger + autocomplete
+  const { data: quickReplies = [] } = useQuickReplies();
+  const trigger = useQuickReplyTrigger(textareaRef, text);
+
+  useEffect(() => {
+    trigger.recompute();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [text]);
+
+  const quickReplyItems: AutocompleteItem[] = quickReplies.map((qr) => ({
+    id: qr.id,
+    primary: `/${qr.shortcut}`,
+    secondary: qr.title,
+  }));
+
+  const handleSelectQuickReply = (item: AutocompleteItem) => {
+    const qr = quickReplies.find((q) => q.id === item.id);
+    if (!qr) return;
+    trigger.replace(qr.content, (next, cursor) => {
+      setText(next);
+      requestAnimationFrame(() => {
+        const el = textareaRef.current;
+        if (!el) return;
+        el.focus();
+        el.setSelectionRange(cursor, cursor);
+        el.style.height = 'auto';
+        el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+      });
+    });
+  };
+
   // Revoke the object URL whenever it changes — leaking URLs holds the blob
   // in memory until the page unloads, which adds up over a long shift.
   useEffect(() => {
@@ -260,6 +294,9 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
   const handleSendImage = handleSendAttachment;
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (trigger.open && (e.key === 'Enter' || e.key === 'Escape' || e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+      return;
+    }
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       // Attachment takes precedence — Enter sends the queued attachment (with
@@ -528,25 +565,36 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
         >
           <Paperclip className="h-5 w-5" />
         </button>
-        <textarea
-          ref={textareaRef}
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={handleKeyDown}
-          onInput={handleInput}
-          onPaste={handlePaste}
-          placeholder={
-            pendingAttachment
-              ? 'Legenda (opcional)…'
-              : canSendImage
-                ? acceptsAnyFile
-                  ? 'Digite uma mensagem ou arraste/cole um arquivo…'
-                  : 'Digite uma mensagem ou cole/arraste uma imagem…'
-                : 'Digite uma mensagem...'
-          }
-          rows={1}
-          className="max-h-40 min-h-[40px] flex-1 resize-none rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm placeholder:text-zinc-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-        />
+        <div className="relative flex-1">
+          <ComposerAutocomplete
+            open={trigger.open}
+            query={trigger.query}
+            items={quickReplyItems}
+            onSelect={handleSelectQuickReply}
+            onClose={trigger.close}
+            emptyLabel="Nenhum atalho — cadastre em Configurações"
+          />
+          <textarea
+            ref={textareaRef}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onInput={handleInput}
+            onPaste={handlePaste}
+            onSelect={() => trigger.recompute()}
+            placeholder={
+              pendingAttachment
+                ? 'Legenda (opcional)…'
+                : canSendImage
+                  ? acceptsAnyFile
+                    ? 'Digite uma mensagem ou arraste/cole um arquivo…'
+                    : 'Digite uma mensagem ou cole/arraste uma imagem…'
+                  : 'Digite uma mensagem...'
+            }
+            rows={1}
+            className="max-h-40 min-h-[40px] w-full resize-none rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm placeholder:text-zinc-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+          />
+        </div>
         {pendingAttachment ? (
           <button
             onClick={handleSendAttachment}
