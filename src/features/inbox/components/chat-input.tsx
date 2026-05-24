@@ -565,7 +565,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
         >
           <Paperclip className="h-5 w-5" />
         </button>
-        <div className="relative flex-1">
+        <div className="relative min-w-0 flex-1">
           <ComposerAutocomplete
             open={trigger.open}
             query={trigger.query}

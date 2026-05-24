@@ -740,7 +740,7 @@ export function ChatPanel({
     // ChatInput pra fora do painel — quebra dramaticamente quando o pai
     // é um modal com altura fixa.
     <div
-      className={`relative flex min-h-0 flex-1 flex-col transition-colors ${
+      className={`relative flex min-h-0 min-w-0 flex-1 flex-col transition-colors ${
         isPanelDragging ? 'bg-primary/5 ring-2 ring-inset ring-primary/40' : ''
       }`}
       onDragEnter={handlePanelDragEnter}
@@ -769,7 +769,7 @@ export function ChatPanel({
         messages={messages}
       />
 
-      <div className="min-h-0 flex-1 overflow-y-auto bg-zinc-50 p-4 dark:bg-zinc-900/50">
+      <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-zinc-50 p-4 dark:bg-zinc-900/50">
         {isLoading ? (
           <div className="flex h-full items-center justify-center">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
