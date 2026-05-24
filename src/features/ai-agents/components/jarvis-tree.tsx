@@ -12,11 +12,12 @@ import {
   Activity,
   User,
   ShieldCheck,
+  SlidersHorizontal,
 } from 'lucide-react';
 
 const STORAGE_KEY = 'jarvis-tree-expanded';
 
-type Tab = 'overview' | 'agents' | 'skills' | 'tools' | 'runs' | 'agent' | 'watchdog';
+type Tab = 'overview' | 'agents' | 'skills' | 'tools' | 'runs' | 'agent' | 'watchdog' | 'scope';
 
 const TABS: Array<{
   id: Tab;
@@ -30,6 +31,7 @@ const TABS: Array<{
   { id: 'runs', label: 'Execuções', icon: Activity },
   { id: 'watchdog', label: 'Watchdog', icon: ShieldCheck },
   { id: 'agent', label: 'Por agente', icon: User },
+  { id: 'scope', label: 'Scope & Cadência', icon: SlidersHorizontal },
 ];
 
 /**

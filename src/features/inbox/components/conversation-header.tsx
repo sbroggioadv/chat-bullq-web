@@ -19,6 +19,7 @@ import { AssignmentPopover } from './assignment-popover';
 import { AgentPinPopover } from './agent-pin-popover';
 import { PipelinePopover } from './pipeline-popover';
 import { inboxService, type Conversation } from '../services/inbox.service';
+import { useConversationAiAllowedInGroup } from '../hooks/use-conversation-ai-allowed-in-group';
 
 interface ConversationHeaderProps {
   conversation: Conversation;
@@ -104,6 +105,16 @@ export function ConversationHeader({
   const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const allowedMut = useConversationAiAllowedInGroup(conversation.id);
+
+  const handleAllowedToggle = async (next: boolean) => {
+    try {
+      await allowedMut.mutateAsync(next);
+      toast.success(next ? 'IA habilitada nesse grupo' : 'IA pausada nesse grupo');
+    } catch {
+      toast.error('Erro ao atualizar');
+    }
+  };
 
   const handleSync = async () => {
     setIsSyncing(true);
@@ -189,6 +200,20 @@ export function ConversationHeader({
             }, 'IA engajada — vai responder em segundos');
           }}
         />
+        {conversation.isGroup && (
+          <label className="flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400">
+            <input
+              type="checkbox"
+              checked={conversation.aiAllowedInGroup}
+              onChange={(e) => handleAllowedToggle(e.target.checked)}
+              className="h-3.5 w-3.5 rounded border-zinc-300 text-primary"
+            />
+            <span>IA permitida nesse grupo</span>
+            <span className="text-zinc-400" title="Mesmo habilitada, só responde a @ ou reply">
+              ⓘ
+            </span>
+          </label>
+        )}
         <button
           onClick={handleSync}
           disabled={isSyncing}

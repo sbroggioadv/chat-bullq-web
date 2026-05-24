@@ -21,6 +21,25 @@ import { useSocket } from '../hooks/use-socket';
 import { useAuthStore } from '@/stores/auth-store';
 import { PendingActionsList } from '../pending-actions/pending-actions-list';
 
+function translateSkipReason(reason: string): string {
+  const map: Record<string, string> = {
+    GROUP_NOT_WHITELISTED: 'IA não habilitada nesse grupo',
+    GROUP_NO_MENTION: 'Sem menção @ ou reply',
+    ORG_AI_DISABLED: 'IA da org desligada',
+    CONV_AI_FORCED_OFF: 'IA forçada OFF nessa conversa',
+    NO_AGENT_MATCH: 'Sem agente compatível',
+    CHANNEL_CAP_HOUR: 'Cap horário do canal atingido',
+    CONV_CONSECUTIVE_CAP: 'Cap consecutivo da conversa atingido',
+    'no-agent-for-channel': 'Sem agente ativo no canal',
+    'outside-business-hours': 'Fora do horário comercial',
+    'monthly-token-cap-reached': 'Cap mensal de tokens atingido',
+    'conversation.aiEnabled=force-off': 'IA forçada OFF',
+    'channel.aiEnabled=force-off': 'IA do canal desligada',
+    'org.aiEnabled=false': 'IA da org desligada',
+  };
+  return map[reason] || reason;
+}
+
 interface ChatPanelProps {
   conversation: Conversation;
   onConversationUpdate: () => void;
@@ -395,6 +414,10 @@ export function ChatPanel({
 
   const messages = data?.messages || [];
 
+  // S22 — AI WS indicators
+  const [aiTyping, setAiTyping] = useState<{ agentName: string; etaMs: number; until: number } | null>(null);
+  const [aiSkip, setAiSkip] = useState<{ reason: string; until: number } | null>(null);
+
   useEffect(() => {
     emit('join:conversation', { conversationId: conversation.id });
     return () => {
@@ -512,6 +535,24 @@ export function ChatPanel({
         },
       );
     });
+    // S22 — AI typing indicator
+    const unsubAiTyping = on('ai:typing', (payload: { agentId: string; agentName: string; etaMs: number }) => {
+      if ((payload as any).conversationId && (payload as any).conversationId !== conversation.id) return;
+      setAiTyping({
+        agentName: payload.agentName,
+        etaMs: payload.etaMs,
+        until: Date.now() + payload.etaMs,
+      });
+    });
+    // S22 — AI scope-skipped indicator
+    const unsubAiScopeSkip = on('ai:scope-skipped', (payload: { reason: string }) => {
+      setAiSkip({ reason: payload.reason, until: Date.now() + 30_000 });
+    });
+    // S22 — AI cadence-skipped indicator
+    const unsubAiCadenceSkip = on('ai:cadence-skipped', (payload: { reason: string }) => {
+      setAiSkip({ reason: payload.reason, until: Date.now() + 30_000 });
+    });
+
     return () => {
       unsubNew?.();
       unsubStatus?.();
@@ -519,6 +560,9 @@ export function ChatPanel({
       unsubAiToggle?.();
       unsubReconnect?.();
       unsubRevoked?.();
+      unsubAiTyping?.();
+      unsubAiScopeSkip?.();
+      unsubAiCadenceSkip?.();
     };
   }, [conversation.id, on, onReconnect, queryClient]);
 
@@ -575,6 +619,20 @@ export function ChatPanel({
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages.length]);
+
+  // S22 — Auto-clear AI typing banner after ETA expires
+  useEffect(() => {
+    if (!aiTyping) return;
+    const t = setTimeout(() => setAiTyping(null), aiTyping.etaMs + 500);
+    return () => clearTimeout(t);
+  }, [aiTyping]);
+
+  // S22 — Auto-clear AI skip banner after 30s
+  useEffect(() => {
+    if (!aiSkip) return;
+    const t = setTimeout(() => setAiSkip(null), 30_000);
+    return () => clearTimeout(t);
+  }, [aiSkip]);
 
   // Reply state — quando setado, próxima msg enviada vai com replyToMessageId
   // e a UI mostra a barra "respondendo a..." acima do input. Reseta ao
@@ -763,6 +821,19 @@ export function ChatPanel({
       />
 
       <PendingActionsList conversationId={conversation.id} />
+
+      {aiTyping && (
+        <div className="flex items-center gap-2 border-b border-zinc-100 bg-zinc-50 px-4 py-2 text-xs text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-400">
+          <span className="inline-flex h-2 w-2 animate-pulse rounded-full bg-primary" />
+          <span>🤖 {aiTyping.agentName} está digitando…</span>
+          <span className="text-zinc-400">(~{Math.ceil(aiTyping.etaMs / 1000)}s)</span>
+        </div>
+      )}
+      {aiSkip && (
+        <div className="flex items-center gap-2 border-b border-amber-100 bg-amber-50 px-4 py-2 text-xs text-amber-700 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-300">
+          <span>⏸ IA pausada · {translateSkipReason(aiSkip.reason)}</span>
+        </div>
+      )}
 
       <EngagementWindowBanner
         channelType={conversation.channel.type}
