@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, CheckCheck, Clock, AlertCircle, ExternalLink, Reply, Trash2, X, Ban } from 'lucide-react';
+import { Check, CheckCheck, Clock, AlertCircle, ExternalLink, Reply, Trash2, X, Ban, Forward } from 'lucide-react';
+import { ForwardMessageDialog } from './forward-message-dialog';
 import { toast } from 'sonner';
 import { inboxService, type Conversation, type Message } from '../services/inbox.service';
 import { ChatInput, validateFile, type ChatInputHandle } from './chat-input';
@@ -579,11 +580,27 @@ export function ChatPanel({
   // e a UI mostra a barra "respondendo a..." acima do input. Reseta ao
   // trocar de conversa (via key prop do ChatPanel) ou ao mandar a msg.
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
+  const [forwarding, setForwarding] = useState<Message | null>(null);
 
   const startReply = useCallback((message: Message) => {
     setReplyingTo(message);
   }, []);
   const cancelReply = useCallback(() => setReplyingTo(null), []);
+
+  const handleStartForward = useCallback((msg: Message) => {
+    setForwarding(msg);
+  }, []);
+
+  const forwardPreview = (msg: Message): string => {
+    const c = (msg.content ?? {}) as Record<string, any>;
+    if (typeof c.text === 'string' && c.text) return c.text.slice(0, 120);
+    if (typeof c.caption === 'string' && c.caption) return c.caption.slice(0, 120);
+    if (msg.type === 'IMAGE') return '[Imagem]';
+    if (msg.type === 'AUDIO') return '[Áudio]';
+    if (msg.type === 'VIDEO') return '[Vídeo]';
+    if (msg.type === 'DOCUMENT') return c.fileName ? `[Documento: ${c.fileName}]` : '[Documento]';
+    return `[${msg.type}]`;
+  };
 
   // Helper: insere a Message recém-criada (resposta do POST) na cache local
   // imediatamente, antes do WS broadcast chegar. Isso evita o gap visível
@@ -805,6 +822,15 @@ export function ChatPanel({
                         </button>
                         <button
                           type="button"
+                          onClick={() => handleStartForward(msg)}
+                          className="rounded-full bg-white p-1.5 text-zinc-400 shadow-sm ring-1 ring-zinc-200 hover:text-zinc-700 dark:bg-zinc-800 dark:ring-zinc-700 dark:hover:text-zinc-100"
+                          title="Encaminhar"
+                          aria-label="Encaminhar esta mensagem"
+                        >
+                          <Forward className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => handleRevoke(msg)}
                           className="rounded-full bg-white p-1.5 text-zinc-400 shadow-sm ring-1 ring-zinc-200 hover:text-red-600 dark:bg-zinc-800 dark:ring-zinc-700 dark:hover:text-red-400"
                           title="Deletar pra todos"
@@ -1019,16 +1045,27 @@ export function ChatPanel({
                         </div>
                       )}
                     </div>
-                    {!isOutbound && (
-                      <button
-                        type="button"
-                        onClick={() => startReply(msg)}
-                        className="self-center rounded-full bg-white p-1.5 text-zinc-400 opacity-0 shadow-sm ring-1 ring-zinc-200 transition-opacity hover:text-zinc-700 group-hover:opacity-100 dark:bg-zinc-800 dark:ring-zinc-700 dark:hover:text-zinc-100"
-                        title="Responder"
-                        aria-label="Responder esta mensagem"
-                      >
-                        <Reply className="h-3.5 w-3.5" />
-                      </button>
+                    {!isOutbound && !isRevoked && (
+                      <div className="flex items-center gap-1 self-center opacity-0 transition-opacity group-hover:opacity-100">
+                        <button
+                          type="button"
+                          onClick={() => startReply(msg)}
+                          className="rounded-full bg-white p-1.5 text-zinc-400 shadow-sm ring-1 ring-zinc-200 hover:text-zinc-700 dark:bg-zinc-800 dark:ring-zinc-700 dark:hover:text-zinc-100"
+                          title="Responder"
+                          aria-label="Responder esta mensagem"
+                        >
+                          <Reply className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleStartForward(msg)}
+                          className="rounded-full bg-white p-1.5 text-zinc-400 shadow-sm ring-1 ring-zinc-200 hover:text-zinc-700 dark:bg-zinc-800 dark:ring-zinc-700 dark:hover:text-zinc-100"
+                          title="Encaminhar"
+                          aria-label="Encaminhar esta mensagem"
+                        >
+                          <Forward className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     )}
                   </div>
                 );
@@ -1049,6 +1086,15 @@ export function ChatPanel({
         onSendFile={handleSendFile}
         disabled={conversation.status === 'CLOSED'}
       />
+      {forwarding && (
+        <ForwardMessageDialog
+          open={!!forwarding}
+          onClose={() => setForwarding(null)}
+          sourceMessageId={forwarding.id}
+          sourceConversationId={conversation.id}
+          sourcePreview={forwardPreview(forwarding)}
+        />
+      )}
     </div>
   );
 }
