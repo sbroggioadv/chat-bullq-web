@@ -48,6 +48,8 @@ export interface Conversation {
   protocol: string | null;
   subject?: string | null;
   isGroup: boolean;
+  /** S22 — whitelist explícita pra IA em grupos. Default false. */
+  aiAllowedInGroup: boolean;
   isArchived?: boolean;
   archivedAt?: string | null;
   lastMessageAt: string | null;
