@@ -355,13 +355,27 @@ export const inboxService = {
     return data.data;
   },
 
-  async uploadAudio(blob: Blob, filename = 'audio.webm'): Promise<{
+  async uploadAudio(blob: Blob, filename?: string): Promise<{
     url: string;
     mimeType: string;
     size: number;
   }> {
+    // Derive filename extension from the blob's actual MIME so Safari (mp4)
+    // and Chrome/Firefox (webm) both upload with consistent name/content.
+    // Browsers set the multipart Content-Type from blob.type — backend uses
+    // that, not the filename — but keeping them consistent is best practice.
+    const mimeToExt: Record<string, string> = {
+      'audio/webm': 'webm',
+      'audio/mp4': 'm4a',
+      'audio/mpeg': 'mp3',
+      'audio/ogg': 'ogg',
+      'audio/wav': 'wav',
+    };
+    const normalisedMime = (blob.type || 'audio/webm').split(';')[0].trim();
+    const ext = mimeToExt[normalisedMime] || 'webm';
+    const finalName = filename || `audio.${ext}`;
     const form = new FormData();
-    form.append('file', blob, filename);
+    form.append('file', blob, finalName);
     const { data } = await api.post('/messages/uploads/audio', form, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
