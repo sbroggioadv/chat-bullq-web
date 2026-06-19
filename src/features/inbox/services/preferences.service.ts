@@ -5,6 +5,9 @@ export interface InboxPreferences {
   /** @deprecated mantido pra compat de leitura — não escrevemos mais aqui. */
   statusFilters?: string[];
   selectedChannelId?: string | null;
+  /** Filtro por Segmento (grupos compartilhados entre vários números).
+   *  Mutuamente exclusivo com selectedChannelId. */
+  selectedSegmentId?: string | null;
   unreadOnly?: boolean;
   archivedOnly?: boolean;
   /** Quando true, conversas de grupos aparecem no inbox geral. Default
@@ -13,6 +16,10 @@ export interface InboxPreferences {
   /** IDs de tags filtradas (OR — conversa precisa ter pelo menos uma).
    *  Match em tag de conversa OU tag de contato. */
   tagIds?: string[];
+  /** Filtro de status de projeto na inbox. */
+  selectedProjectStatus?: string;
+  /** "Meus projetos" — só grupos cujo responsável de projeto sou eu. */
+  mineProjects?: boolean;
 }
 
 export interface UserPreferences {

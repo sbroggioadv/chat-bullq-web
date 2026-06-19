@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { Fragment, useEffect, useRef, useState, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, CheckCheck, Clock, AlertCircle, ExternalLink, Reply, Trash2, X, Ban, Forward } from 'lucide-react';
 import { ForwardMessageDialog } from './forward-message-dialog';
@@ -47,6 +47,9 @@ interface ChatPanelProps {
    *  shows up in the chat header. */
   onToggleAgentLogs?: () => void;
   agentLogsOpen?: boolean;
+  /** Forwarded to ConversationHeader for the Project panel toggle (groups). */
+  onToggleProject?: () => void;
+  projectOpen?: boolean;
 }
 
 const statusIcons: Record<string, React.ElementType> = {
@@ -395,6 +398,8 @@ export function ChatPanel({
   onConversationUpdate,
   onToggleAgentLogs,
   agentLogsOpen,
+  onToggleProject,
+  projectOpen,
 }: ChatPanelProps) {
   const queryClient = useQueryClient();
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -789,8 +794,47 @@ export function ChatPanel({
     chatInputRef.current?.queueFile(file);
   };
 
-  const formatTime = (date: string) =>
-    new Date(date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  // Hora embaixo de cada bolha. Se a msg não for de hoje, prefixa com
+  // a data curta ("DD/MM 16:58") pra não precisar caçar o separador
+  // rolando o histórico inteiro.
+  const formatTime = (date: string) => {
+    const d = new Date(date);
+    const now = new Date();
+    const isToday =
+      d.getFullYear() === now.getFullYear() &&
+      d.getMonth() === now.getMonth() &&
+      d.getDate() === now.getDate();
+    const time = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    if (isToday) return time;
+    const showYear = d.getFullYear() !== now.getFullYear();
+    const datePart = d.toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      ...(showYear ? { year: '2-digit' } : {}),
+    });
+    return `${datePart} ${time}`;
+  };
+
+  // Separador de data no estilo WhatsApp: agrupa mensagens por dia.
+  // "Hoje" / "Ontem" / dia da semana (últimos 7 dias) / "25 de maio" /
+  // "25/05/2024" quando o ano é diferente.
+  const formatDateSeparator = (date: string) => {
+    const d = new Date(date);
+    const startOfDay = (x: Date) =>
+      new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+    const now = new Date();
+    const dayDiff = Math.round((startOfDay(now) - startOfDay(d)) / 86400000);
+    if (dayDiff === 0) return 'Hoje';
+    if (dayDiff === 1) return 'Ontem';
+    if (dayDiff > 1 && dayDiff < 7) {
+      const w = d.toLocaleDateString('pt-BR', { weekday: 'long' });
+      return w.charAt(0).toUpperCase() + w.slice(1);
+    }
+    if (d.getFullYear() === now.getFullYear()) {
+      return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' });
+    }
+    return d.toLocaleDateString('pt-BR');
+  };
 
   return (
     // min-h-0 é load-bearing: sem ele, o scroll-container interno cresce
@@ -818,6 +862,8 @@ export function ChatPanel({
         onUpdate={onConversationUpdate}
         onToggleAgentLogs={onToggleAgentLogs}
         agentLogsOpen={agentLogsOpen}
+        onToggleProject={onToggleProject}
+        projectOpen={projectOpen}
       />
 
       <PendingActionsList conversationId={conversation.id} />
@@ -863,14 +909,27 @@ export function ChatPanel({
                   }
                 }
               }
-              return messages.filter((m) => m.type !== 'REACTION').map((msg) => {
+              const visibleMessages = messages.filter((m) => m.type !== 'REACTION');
+              let lastDateKey = '';
+              return visibleMessages.map((msg) => {
                 const isOutbound = msg.direction === 'OUTBOUND';
                 const StatusIcon = statusIcons[msg.status] || Clock;
                 const reactions = reactionMap.get(msg.externalId || '') || [];
                 const isRevoked = !!msg.revokedAt;
+                const msgDate = new Date(msg.createdAt);
+                const dateKey = `${msgDate.getFullYear()}-${msgDate.getMonth()}-${msgDate.getDate()}`;
+                const showDateSeparator = dateKey !== lastDateKey;
+                lastDateKey = dateKey;
                 return (
+                  <Fragment key={msg.id}>
+                  {showDateSeparator && (
+                    <div className="flex justify-center pb-1 pt-3 first:pt-0">
+                      <span className="rounded-full bg-zinc-200/80 px-3 py-1 text-[11px] font-medium text-zinc-600 shadow-sm dark:bg-zinc-800 dark:text-zinc-300">
+                        {formatDateSeparator(msg.createdAt)}
+                      </span>
+                    </div>
+                  )}
                   <div
-                    key={msg.id}
                     id={`msg-${msg.id}`}
                     className={`group flex items-end gap-2 ${isOutbound ? 'justify-end' : 'justify-start'}`}
                   >
@@ -1139,6 +1198,7 @@ export function ChatPanel({
                       </div>
                     )}
                   </div>
+                  </Fragment>
                 );
               });
             })()}
