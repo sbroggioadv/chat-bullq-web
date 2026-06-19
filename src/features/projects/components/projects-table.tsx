@@ -49,7 +49,7 @@ export function ProjectsTable() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-6xl p-6">
+    <div className="mx-auto h-full w-full max-w-6xl overflow-y-auto p-6">
       <div className="flex items-center gap-2">
         <FolderKanban className="h-6 w-6 text-primary" />
         <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
