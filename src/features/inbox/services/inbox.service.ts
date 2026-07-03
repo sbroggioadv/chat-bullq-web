@@ -141,7 +141,13 @@ export interface Message {
 }
 
 export interface PaginatedResponse<T> {
-  pagination: { page: number; limit: number; total: number; totalPages: number };
+  pagination: {
+    page: number;
+    limit: number;
+    total: number | null;
+    totalPages: number | null;
+    hasMore?: boolean;
+  };
 }
 
 export const inboxService = {
@@ -163,7 +169,7 @@ export const inboxService = {
     pagination: any;
   }> {
     const { data } = await api.get('/messages', {
-      params: { conversationId, page, limit },
+      params: { conversationId, page, limit, includeTotal: false },
     });
     return data.data;
   },

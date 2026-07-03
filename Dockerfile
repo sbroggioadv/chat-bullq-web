@@ -1,12 +1,12 @@
 # syntax=docker/dockerfile:1.6
 
-FROM node:20-alpine AS deps
+FROM node:24-alpine AS deps
 WORKDIR /app
 ENV NODE_ENV=development
 COPY package.json yarn.lock ./
 RUN corepack enable && yarn install --frozen-lockfile --production=false
 
-FROM node:20-alpine AS builder
+FROM node:24-alpine AS builder
 WORKDIR /app
 ENV NODE_ENV=production
 ARG NEXT_PUBLIC_API_URL
@@ -16,7 +16,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN corepack enable && yarn build
 
-FROM node:20-alpine AS runner
+FROM node:24-alpine AS runner
 RUN apk add --no-cache curl tini
 WORKDIR /app
 ENV NODE_ENV=production

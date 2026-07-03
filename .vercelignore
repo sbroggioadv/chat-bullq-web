@@ -1,0 +1,8 @@
+.env
+.env.*
+.next
+node_modules
+coverage
+tmp
+temp
+*.log
