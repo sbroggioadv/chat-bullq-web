@@ -108,7 +108,12 @@ function RunRow({
           </div>
         </td>
         <td className="px-3 py-2 text-xs text-zinc-500">
-          {run.modelId.replace('anthropic/', '').replace('openai/', '')}
+          {run.modelId
+            .replace('zai/', '')
+            .replace('zhipu/', '')
+            .replace('anthropic/', '')
+            .replace('openai/', '')
+            .replace('google/', '')}
         </td>
         <td className="px-3 py-2">
           <span className="inline-flex items-center gap-1.5 text-xs">

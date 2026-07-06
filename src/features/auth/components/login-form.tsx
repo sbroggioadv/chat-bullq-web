@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { Loader2, MessageSquare } from 'lucide-react';
@@ -13,6 +13,7 @@ import { useAuthStore } from '@/stores/auth-store';
 
 export function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { setAuth, setActiveOrg } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -33,7 +34,8 @@ export function LoginForm() {
       // setAuth already picks the best org (stored or first available)
 
       toast.success(`Bem-vindo, ${result.user.name}!`);
-      router.push('/inbox');
+      const next = searchParams.get('next');
+      router.push(next?.startsWith('/') && !next.startsWith('//') ? next : '/inbox');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erro ao fazer login');
     } finally {

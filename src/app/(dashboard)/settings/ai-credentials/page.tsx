@@ -37,6 +37,18 @@ interface ProviderMeta {
 
 const PROVIDERS: ProviderMeta[] = [
   {
+    id: 'ZAI',
+    name: 'Z.AI',
+    description: 'GLM-5.2, GLM-5.1, GLM-4.7',
+    keyExampleHint: 'sk-...',
+  },
+  {
+    id: 'KIMI',
+    name: 'Kimi',
+    description: 'Moonshot Kimi K2',
+    keyExampleHint: 'sk-...',
+  },
+  {
     id: 'ANTHROPIC',
     name: 'Anthropic',
     description: 'Claude (Sonnet, Haiku, Opus)',
@@ -60,7 +72,7 @@ const CAPABILITY_LABELS: Record<AiCapability, { label: string; help: string; all
   LLM_AGENT: {
     label: 'Agentes IA',
     help: 'Provider usado nas conversas com agentes (Augusto, Sales, Support)',
-    allowed: ['ANTHROPIC', 'OPENAI', 'GEMINI'],
+    allowed: ['ZAI', 'OPENAI', 'GEMINI', 'KIMI', 'ANTHROPIC'],
   },
   TRANSCRIPTION: {
     label: 'Transcrição de áudio',
@@ -145,7 +157,7 @@ export default function SettingsAiCredentialsPage() {
           Credenciais de IA
         </h2>
         <p className="mt-0.5 text-sm text-zinc-500">
-          Use suas próprias chaves Anthropic / OpenAI / Gemini, com escolha de provider por capacidade.
+          Use suas próprias chaves Z.AI / OpenAI / Gemini, com escolha de provider por capacidade.
         </p>
       </div>
 
@@ -439,7 +451,7 @@ function RoutingTab({
   routing: CapabilityRouting[];
   credByProvider: Map<AiProvider, MaskedCredential>;
   loading: boolean;
-  envFallback?: { anthropic: boolean; openai: boolean; gemini: boolean };
+  envFallback?: { zai: boolean; kimi: boolean; anthropic: boolean; openai: boolean; gemini: boolean };
   onChanged: () => void;
 }) {
   // Estado local pra batch save
@@ -452,7 +464,7 @@ function RoutingTab({
       map[r.capability] = r.providerSelected;
     });
     return {
-      LLM_AGENT: map.LLM_AGENT ?? 'ANTHROPIC',
+      LLM_AGENT: map.LLM_AGENT ?? 'ZAI',
       TRANSCRIPTION: map.TRANSCRIPTION ?? 'OPENAI',
       EMBEDDINGS: map.EMBEDDINGS ?? 'OPENAI',
     };

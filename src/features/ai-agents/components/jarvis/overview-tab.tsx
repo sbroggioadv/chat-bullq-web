@@ -200,8 +200,11 @@ export function JarvisOverviewTab() {
             .sort((a, b) => b.cost - a.cost)
             .map((m) => ({
               label: m.modelId
+                .replace('zai/', '')
+                .replace('zhipu/', '')
                 .replace('anthropic/', '')
                 .replace('openai/', '')
+                .replace('google/', '')
                 .replace('google/', ''),
               value: Number(m.cost.toFixed(4)),
               secondaryLabel: `${fmtNum(m.tokens)} tk`,

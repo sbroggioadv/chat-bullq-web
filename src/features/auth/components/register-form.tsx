@@ -66,10 +66,12 @@ export function RegisterForm() {
 
       toast.success(
         inviteInfo
-          ? `Bem-vindo! Você entrou em ${inviteInfo.organization.name}`
+          ? `Acesso criado em ${inviteInfo.organization.name}. Conecte seu WhatsApp para começar.`
           : 'Conta criada com sucesso!',
       );
-      router.push('/inbox');
+      router.push(
+        inviteInfo ? '/settings/channels?onboarding=channels&source=invite' : '/inbox',
+      );
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erro ao criar conta');
     } finally {
@@ -91,16 +93,21 @@ export function RegisterForm() {
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-primary">
           <MessageSquare className="h-6 w-6 text-primary-foreground" />
         </div>
-        <h1 className="text-2xl font-bold tracking-tight">Criar Conta</h1>
+        <h1 className="text-2xl font-bold tracking-tight">
+          {inviteInfo ? 'Criar seu acesso' : 'Criar Conta'}
+        </h1>
         {inviteInfo ? (
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">
-              Você foi convidado para entrar em:
+              Você está criando acesso para:
             </p>
             <div className="inline-flex items-center gap-2 rounded-lg bg-primary/5 px-3 py-1.5 text-sm font-medium text-primary">
               <Building2 className="h-4 w-4" />
               {inviteInfo.organization.name}
             </div>
+            <p className="pt-1 text-xs text-muted-foreground">
+              Depois do cadastro, conecte seu WhatsApp em Meus canais.
+            </p>
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">
@@ -195,13 +202,20 @@ export function RegisterForm() {
           className="inline-flex h-10 w-full items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:pointer-events-none disabled:opacity-50"
         >
           {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {inviteInfo ? 'Criar conta e entrar' : 'Criar conta'}
+          {inviteInfo ? 'Criar acesso' : 'Criar conta'}
         </button>
       </form>
 
       <p className="text-center text-sm text-muted-foreground">
         Já tem conta?{' '}
-        <Link href="/login" className="font-medium text-primary hover:underline">
+        <Link
+          href={
+            inviteInfo
+              ? '/login?next=/settings/channels%3Fonboarding%3Dchannels%26source%3Dinvite'
+              : '/login'
+          }
+          className="font-medium text-primary hover:underline"
+        >
           Fazer login
         </Link>
       </p>

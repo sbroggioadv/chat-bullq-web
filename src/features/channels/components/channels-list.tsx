@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, Radio } from 'lucide-react';
+import { Plus, Radio, ShieldCheck } from 'lucide-react';
 import { channelsService } from '../services/channels.service';
 import { ChannelCard } from './channel-card';
 import { CreateChannelDialog } from './create-channel-dialog';
@@ -39,6 +39,21 @@ export function ChannelsList() {
           Novo Canal
         </button>
       </div>
+
+      {!isLoading && (!channels || channels.length === 0) && (
+        <div className="mt-5 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-100">
+          <div className="flex items-start gap-3">
+            <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
+            <div>
+              <p className="font-medium">Conecte seu WhatsApp</p>
+              <p className="mt-1 text-xs text-emerald-800 dark:text-emerald-200">
+                O primeiro canal fica privado por padrão. Só quem receber permissão explícita
+                consegue ver ou responder mensagens desse número.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
         {isLoading ? (

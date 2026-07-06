@@ -76,9 +76,9 @@ export function CreateChannelDialog({ open, onClose, onCreated }: CreateChannelD
   const [selectedType, setSelectedType] = useState<ChannelType | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [copied, setCopied] = useState(false);
-  // Default ORG = qualquer membro com permissão padrão enxerga.
-  // PRIVATE = apenas quem tiver grant explícito (pra canais sensíveis).
-  const [visibility, setVisibility] = useState<'ORG' | 'PRIVATE'>('ORG');
+  // PRIVATE por padrão: cliente/convidado conecta o próprio WhatsApp sem abrir
+  // o canal para a organização inteira.
+  const [visibility, setVisibility] = useState<'ORG' | 'PRIVATE'>('PRIVATE');
 
   const zappfyForm = useForm<ZappfyFormData>({
     resolver: zodResolver(zappfySchema),
@@ -112,7 +112,11 @@ export function CreateChannelDialog({ open, onClose, onCreated }: CreateChannelD
     setIsLoading(true);
     try {
       await channelsService.create({ type, name, config, webhookSecret, visibility });
-      toast.success('Canal criado com sucesso!');
+      toast.success(
+        visibility === 'PRIVATE'
+          ? 'Canal privado criado com sucesso!'
+          : 'Canal criado com sucesso!',
+      );
       handleClose();
       onCreated();
     } catch (err) {
@@ -158,6 +162,7 @@ export function CreateChannelDialog({ open, onClose, onCreated }: CreateChannelD
     zappfyForm.reset();
     waForm.reset();
     igForm.reset();
+    setVisibility('PRIVATE');
     onClose();
   };
 
@@ -184,6 +189,9 @@ export function CreateChannelDialog({ open, onClose, onCreated }: CreateChannelD
 
         {step === 'type' ? (
           <div className="mt-6 grid gap-3">
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200">
+              Novos canais nascem privados. Depois você pode liberar acesso para outros membros.
+            </div>
             {channelTypes.map((ct) => (
               <button
                 key={ct.value}

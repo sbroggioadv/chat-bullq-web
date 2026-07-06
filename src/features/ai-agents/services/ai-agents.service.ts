@@ -366,22 +366,28 @@ export interface AgentStats {
 
 export const CURATED_MODELS = [
   {
-    id: 'anthropic/claude-haiku-4-5',
-    label: 'Claude Haiku 4.5',
-    badge: 'Rápido · barato',
+    id: 'zai/glm-5.2',
+    label: 'GLM-5.2',
+    badge: 'Z.AI · padrão',
+    recommendedFor: 'worker',
+  },
+  {
+    id: 'zai/glm-5.1',
+    label: 'GLM-5.1',
+    badge: 'Z.AI · equilíbrio',
+    recommendedFor: 'worker',
+  },
+  {
+    id: 'zai/glm-5-turbo',
+    label: 'GLM-5 Turbo',
+    badge: 'Z.AI · rápido',
     recommendedFor: 'orchestrator',
   },
   {
-    id: 'anthropic/claude-sonnet-4-6',
-    label: 'Claude Sonnet 4.6',
-    badge: 'Equilíbrio · padrão',
-    recommendedFor: 'worker',
-  },
-  {
-    id: 'anthropic/claude-opus-4-7',
-    label: 'Claude Opus 4.7',
-    badge: 'Premium · mais caro',
-    recommendedFor: 'worker',
+    id: 'zai/glm-4.7-flash',
+    label: 'GLM-4.7 Flash',
+    badge: 'Z.AI · econômico',
+    recommendedFor: 'orchestrator',
   },
   {
     id: 'openai/gpt-4o-mini',

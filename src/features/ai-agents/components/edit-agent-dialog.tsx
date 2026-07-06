@@ -29,7 +29,7 @@ export function EditAgentDialog({
   const orgId = useOrgId();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [modelId, setModelId] = useState('anthropic/claude-sonnet-4-6');
+  const [modelId, setModelId] = useState('zai/glm-5.2');
   const [systemPrompt, setSystemPrompt] = useState('');
   const [temperature, setTemperature] = useState(0.7);
   const [parentAgentId, setParentAgentId] = useState<string>('');

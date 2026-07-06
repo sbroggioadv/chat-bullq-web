@@ -4,7 +4,7 @@ import { api } from '@/lib/api';
  * S18 Wave 2 — AI credentials per-org services
  */
 
-export type AiProvider = 'ANTHROPIC' | 'OPENAI' | 'GEMINI';
+export type AiProvider = 'ZAI' | 'KIMI' | 'ANTHROPIC' | 'OPENAI' | 'GEMINI';
 export type AiCapability = 'LLM_AGENT' | 'TRANSCRIPTION' | 'EMBEDDINGS';
 export type CredentialTestStatus = 'UNTESTED' | 'SUCCESS' | 'FAILURE';
 
@@ -28,7 +28,7 @@ export interface CapabilityRouting {
 }
 
 export interface LlmHealth {
-  env: { anthropic: boolean; openai: boolean; gemini: boolean };
+  env: { zai: boolean; kimi: boolean; anthropic: boolean; openai: boolean; gemini: boolean };
   orgsWithCustomCredentials: number;
   timestamp: string;
 }

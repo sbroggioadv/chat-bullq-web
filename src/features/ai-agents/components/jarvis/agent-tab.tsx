@@ -84,7 +84,12 @@ export function JarvisAgentTab() {
           </select>
           {agent && (
             <span className="text-xs text-zinc-500">
-              {agent.modelId.replace('anthropic/', '').replace('openai/', '')}
+              {agent.modelId
+                .replace('zai/', '')
+                .replace('zhipu/', '')
+                .replace('anthropic/', '')
+                .replace('openai/', '')
+                .replace('google/', '')}
             </span>
           )}
         </div>

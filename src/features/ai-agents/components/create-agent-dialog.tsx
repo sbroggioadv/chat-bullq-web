@@ -35,7 +35,7 @@ export function CreateAgentDialog({
   const [description, setDescription] = useState('');
   const [kind, setKind] = useState<AgentKind>('WORKER');
   const [category, setCategory] = useState('');
-  const [modelId, setModelId] = useState('anthropic/claude-sonnet-4-6');
+  const [modelId, setModelId] = useState('zai/glm-5.2');
   const [systemPrompt, setSystemPrompt] = useState(DEFAULT_PROMPT);
   const [temperature, setTemperature] = useState(0.7);
   const [parentAgentId, setParentAgentId] = useState<string>('');
@@ -99,7 +99,7 @@ export function CreateAgentDialog({
     setDescription('');
     setKind('WORKER');
     setCategory('');
-    setModelId('anthropic/claude-sonnet-4-6');
+    setModelId('zai/glm-5.2');
     setSystemPrompt(DEFAULT_PROMPT);
     setTemperature(0.7);
     setParentAgentId('');
