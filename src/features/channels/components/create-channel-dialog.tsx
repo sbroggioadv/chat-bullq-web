@@ -12,17 +12,17 @@ import { ZappfyIcon, MetaIcon, InstagramIcon } from '@/components/ui/icons';
 const channelTypes: { value: ChannelType; label: string; icon: React.ElementType; color: string; description: string }[] = [
   {
     value: 'WHATSAPP_ZAPPFY',
-    label: 'WhatsApp (Zappfy)',
+    label: 'WhatsApp via Zappfy',
     icon: ZappfyIcon,
     color: 'bg-zinc-50 dark:bg-zinc-800',
-    description: 'Conecte via Zappfy/Uazapi — sem restrição de 24h',
+    description: 'Recomendado para conectar seu número rapidamente',
   },
   {
     value: 'WHATSAPP_OFFICIAL',
-    label: 'WhatsApp Official',
+    label: 'WhatsApp Oficial',
     icon: MetaIcon,
     color: 'bg-zinc-50 dark:bg-zinc-800',
-    description: 'Meta Cloud API — templates HSM, alta escala',
+    description: 'Para número configurado na plataforma da Meta',
   },
   {
     value: 'INSTAGRAM',
@@ -43,7 +43,7 @@ const waOfficialSchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório'),
   phoneNumberId: z.string().min(1, 'Phone Number ID é obrigatório'),
   accessToken: z.string().min(1, 'Access Token é obrigatório'),
-  appSecret: z.string().min(1, 'App Secret é obrigatório (valida assinatura dos webhooks)'),
+  appSecret: z.string().min(1, 'App Secret é obrigatório'),
   businessAccountId: z.string().optional(),
   webhookSecret: z.string().optional(),
 });
@@ -169,9 +169,15 @@ export function CreateChannelDialog({ open, onClose, onCreated }: CreateChannelD
   if (!open) return null;
 
   const titleMap: Record<string, string> = {
-    WHATSAPP_ZAPPFY: 'Configurar Zappfy',
-    WHATSAPP_OFFICIAL: 'Configurar WhatsApp Official',
-    INSTAGRAM: 'Configurar Instagram',
+    WHATSAPP_ZAPPFY: 'Conectar WhatsApp',
+    WHATSAPP_OFFICIAL: 'Conectar WhatsApp Oficial',
+    INSTAGRAM: 'Conectar Instagram',
+  };
+
+  const submitLabelMap: Record<string, string> = {
+    WHATSAPP_ZAPPFY: 'Conectar WhatsApp',
+    WHATSAPP_OFFICIAL: 'Conectar WhatsApp',
+    INSTAGRAM: 'Conectar Instagram',
   };
 
   return (
@@ -180,7 +186,7 @@ export function CreateChannelDialog({ open, onClose, onCreated }: CreateChannelD
       <div className="relative z-50 w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl dark:bg-zinc-900">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-            {step === 'type' ? 'Novo Canal' : titleMap[selectedType || '']}
+            {step === 'type' ? 'Conectar canal' : titleMap[selectedType || '']}
           </h2>
           <button onClick={handleClose} className="rounded-md p-1 text-zinc-400 hover:text-zinc-600">
             <X className="h-5 w-5" />
@@ -210,22 +216,22 @@ export function CreateChannelDialog({ open, onClose, onCreated }: CreateChannelD
           </div>
         ) : selectedType === 'WHATSAPP_ZAPPFY' ? (
           <form onSubmit={zappfyForm.handleSubmit(onSubmitZappfy)} className="mt-6 space-y-4">
-            <Field label="Nome do canal" placeholder="Ex: WhatsApp Principal" error={zappfyForm.formState.errors.name?.message} {...zappfyForm.register('name')} />
-            <Field label="Token" placeholder="Token da instância Zappfy" error={zappfyForm.formState.errors.token?.message} {...zappfyForm.register('token')} />
-            <Field label="Webhook Secret" placeholder="Opcional" optional {...zappfyForm.register('webhookSecret')} />
+            <Field label="Nome do WhatsApp" placeholder="Ex: WhatsApp da Marcela" error={zappfyForm.formState.errors.name?.message} {...zappfyForm.register('name')} />
+            <Field label="Token da instância" placeholder="Cole o token da Zappfy" error={zappfyForm.formState.errors.token?.message} {...zappfyForm.register('token')} />
+            <Field label="Segredo do webhook" placeholder="Opcional" optional {...zappfyForm.register('webhookSecret')} />
             <WebhookUrl url={`${apiBaseUrl}/webhooks/WHATSAPP_ZAPPFY`} copied={copied} onCopy={() => handleCopyWebhook('WHATSAPP_ZAPPFY')} />
-            <FormFooter isLoading={isLoading} onBack={() => setStep('type')} />
+            <FormFooter isLoading={isLoading} onBack={() => setStep('type')} submitLabel={submitLabelMap[selectedType]} />
           </form>
         ) : selectedType === 'WHATSAPP_OFFICIAL' ? (
           <form onSubmit={waForm.handleSubmit(onSubmitWaOfficial)} className="mt-6 space-y-4">
-            <Field label="Nome do canal" placeholder="Ex: WhatsApp Business" error={waForm.formState.errors.name?.message} {...waForm.register('name')} />
+            <Field label="Nome do WhatsApp" placeholder="Ex: WhatsApp Business" error={waForm.formState.errors.name?.message} {...waForm.register('name')} />
             <Field label="Phone Number ID" placeholder="Encontrado no Meta Business Suite" error={waForm.formState.errors.phoneNumberId?.message} {...waForm.register('phoneNumberId')} />
             <Field label="Access Token" type="text" placeholder="System User Token ou Temporary Token" error={waForm.formState.errors.accessToken?.message} {...waForm.register('accessToken')} />
-            <Field label="App Secret" type="text" placeholder="Chave secreta do app (Settings → Basic na Meta)" error={waForm.formState.errors.appSecret?.message} {...waForm.register('appSecret')} />
+            <Field label="App Secret" type="text" placeholder="Chave secreta do app na Meta" error={waForm.formState.errors.appSecret?.message} {...waForm.register('appSecret')} />
             <Field label="Business Account ID (WABA)" placeholder="Opcional — habilita auto-subscribe do webhook" optional {...waForm.register('businessAccountId')} />
-            <Field label="Webhook Verify Token" placeholder="Token que você definiu no Meta" optional {...waForm.register('webhookSecret')} />
+            <Field label="Verify Token" placeholder="Token que você definiu na Meta" optional {...waForm.register('webhookSecret')} />
             <WebhookUrl url={`${apiBaseUrl}/webhooks/WHATSAPP_OFFICIAL`} copied={copied} onCopy={() => handleCopyWebhook('WHATSAPP_OFFICIAL')} />
-            <FormFooter isLoading={isLoading} onBack={() => setStep('type')} />
+            <FormFooter isLoading={isLoading} onBack={() => setStep('type')} submitLabel={submitLabelMap[selectedType]} />
           </form>
         ) : selectedType === 'INSTAGRAM' ? (
           <form onSubmit={igForm.handleSubmit(onSubmitInstagram)} className="mt-6 space-y-4">
@@ -236,7 +242,7 @@ export function CreateChannelDialog({ open, onClose, onCreated }: CreateChannelD
             <Field label="Instagram App ID" placeholder="Opcional — ID do app do Instagram" optional {...igForm.register('igAppId')} />
             <Field label="Webhook Verify Token" placeholder="Token que você definiu no Meta" optional {...igForm.register('webhookSecret')} />
             <WebhookUrl url={`${apiBaseUrl}/webhooks/INSTAGRAM`} copied={copied} onCopy={() => handleCopyWebhook('INSTAGRAM')} />
-            <FormFooter isLoading={isLoading} onBack={() => setStep('type')} />
+            <FormFooter isLoading={isLoading} onBack={() => setStep('type')} submitLabel={submitLabelMap[selectedType]} />
           </form>
         ) : null}
       </div>
@@ -287,7 +293,15 @@ function WebhookUrl({ url, copied, onCopy }: { url: string; copied: boolean; onC
   );
 }
 
-function FormFooter({ isLoading, onBack }: { isLoading: boolean; onBack: () => void }) {
+function FormFooter({
+  isLoading,
+  onBack,
+  submitLabel,
+}: {
+  isLoading: boolean;
+  onBack: () => void;
+  submitLabel: string;
+}) {
   return (
     <div className="flex items-center justify-end gap-3 pt-2">
       <button
@@ -303,7 +317,7 @@ function FormFooter({ isLoading, onBack }: { isLoading: boolean; onBack: () => v
         className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
       >
         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-        Criar Canal
+        {submitLabel}
       </button>
     </div>
   );
