@@ -476,6 +476,9 @@ function RoutingTab({
   const isAvailable = (provider: AiProvider): boolean => {
     return credByProvider.has(provider) || (envFallback?.[provider.toLowerCase() as keyof typeof envFallback] ?? false);
   };
+  const unavailableSelections = (Object.keys(current) as AiCapability[]).filter(
+    (cap) => !isAvailable(current[cap]),
+  );
 
   const handleSelect = (capability: AiCapability, provider: AiProvider) => {
     setDraft({ ...current, [capability]: provider });
@@ -524,9 +527,20 @@ function RoutingTab({
         </p>
       </div>
 
+      {unavailableSelections.length > 0 && (
+        <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-100">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <p>
+            Há capacidade apontando para provider sem credencial. Configure a chave na aba
+            Credenciais ou selecione outro provider antes de usar em produção.
+          </p>
+        </div>
+      )}
+
       {(Object.keys(CAPABILITY_LABELS) as AiCapability[]).map((cap) => {
         const meta = CAPABILITY_LABELS[cap];
         const isLocked = cap === 'EMBEDDINGS'; // só OPENAI por enquanto
+        const selectedAvailable = isAvailable(current[cap]);
         return (
           <div
             key={cap}
@@ -538,6 +552,12 @@ function RoutingTab({
                   {meta.label}
                 </h3>
                 <p className="mt-0.5 text-xs text-zinc-500">{meta.help}</p>
+                {!selectedAvailable && (
+                  <p className="mt-2 flex items-start gap-1 text-xs text-amber-700 dark:text-amber-300">
+                    <AlertCircle className="mt-0.5 h-3 w-3 shrink-0" />
+                    <span>Provider selecionado sem credencial ou fallback de servidor.</span>
+                  </p>
+                )}
               </div>
               <div className="flex gap-2">
                 {meta.allowed.map((provider) => {
