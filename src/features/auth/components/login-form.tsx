@@ -31,7 +31,13 @@ export function LoginForm() {
       localStorage.setItem('refresh_token', result.refreshToken);
 
       setAuth(result.user, result.organizations);
-      // setAuth already picks the best org (stored or first available)
+      const requestedOrgId = searchParams.get('orgId');
+      if (
+        requestedOrgId &&
+        result.organizations.some((org) => org.id === requestedOrgId)
+      ) {
+        setActiveOrg(requestedOrgId);
+      }
 
       toast.success(`Bem-vindo, ${result.user.name}!`);
       const next = searchParams.get('next');

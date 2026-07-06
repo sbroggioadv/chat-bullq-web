@@ -11,7 +11,7 @@ import { MemberChannelsDrawer } from '@/features/settings/components/member-chan
 const roleLabels: Record<string, { label: string; icon: React.ElementType; color: string }> = {
   OWNER: { label: 'Proprietário', icon: ShieldCheck, color: 'text-amber-600 bg-amber-50 dark:bg-amber-900/20 dark:text-amber-400' },
   ADMIN: { label: 'Admin', icon: Shield, color: 'text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400' },
-  AGENT: { label: 'Agente', icon: User, color: 'text-zinc-600 bg-zinc-100 dark:bg-zinc-800 dark:text-zinc-400' },
+  AGENT: { label: 'Atendente', icon: User, color: 'text-zinc-600 bg-zinc-100 dark:bg-zinc-800 dark:text-zinc-400' },
 };
 
 export default function SettingsMembersPage() {
@@ -102,15 +102,18 @@ export default function SettingsMembersPage() {
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">Role</label>
+          <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">Perfil</label>
           <select
             value={inviteRole}
             onChange={(e) => setInviteRole(e.target.value)}
             className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
           >
-            <option value="AGENT">Agente</option>
+            <option value="AGENT">Atendente</option>
             <option value="ADMIN">Admin</option>
           </select>
+          <p className="mt-1 max-w-[12rem] text-[11px] leading-snug text-zinc-500 dark:text-zinc-400">
+            Use Atendente para quem vai conectar e operar o próprio WhatsApp.
+          </p>
         </div>
         <button
           onClick={handleInvite}
@@ -148,7 +151,7 @@ export default function SettingsMembersPage() {
           <thead>
             <tr className="border-b border-zinc-100 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/50">
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">Membro</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">Role</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">Perfil</th>
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">Canais</th>
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">Entrou em</th>
               <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-500">Ações</th>
@@ -201,7 +204,7 @@ export default function SettingsMembersPage() {
                           className="rounded-md border border-zinc-200 bg-white px-2 py-1 text-xs dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
                         >
                           <option value="ADMIN">Admin</option>
-                          <option value="AGENT">Agente</option>
+                          <option value="AGENT">Atendente</option>
                         </select>
                       )}
                     </td>

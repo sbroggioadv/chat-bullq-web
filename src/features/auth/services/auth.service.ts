@@ -51,6 +51,7 @@ interface MeResponse {
 interface InvitationInfo {
   email: string;
   role: string;
+  status: 'PENDING' | 'ACCEPTED';
   organization: { id: string; name: string; slug: string };
 }
 
