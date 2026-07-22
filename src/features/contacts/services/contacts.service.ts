@@ -33,6 +33,8 @@ export interface SyncAvatarsResult {
   enriched: number;
   skipped: number;
   failed: number;
+  /** How many profile pics were saved under BullQ /uploads (stable URL). */
+  rehosted?: number;
   durationMs: number;
 }
 

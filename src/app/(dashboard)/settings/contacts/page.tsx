@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Search, Users, MessageSquare, ExternalLink, RefreshCw, X, AlertTriangle } from 'lucide-react';
 import { contactsService, type Contact, type SyncAvatarsResult } from '@/features/contacts/services/contacts.service';
+import { channelsService } from '@/features/channels/services/channels.service';
 import { useOrgId } from '@/hooks/use-org-query-key';
 import { useAuthStore } from '@/stores/auth-store';
 import { ZappfyIcon, MetaIcon, InstagramIcon } from '@/components/ui/icons';
@@ -41,10 +42,11 @@ export default function ContactsPage() {
     mutationFn: () => contactsService.syncAvatars(),
     onSuccess: (result) => {
       const seconds = Math.round(result.durationMs / 1000);
+      const rehosted = (result as SyncAvatarsResult & { rehosted?: number }).rehosted ?? 0;
       toast.success(
         `${result.enriched} foto${result.enriched === 1 ? '' : 's'} atualizada${result.enriched === 1 ? '' : 's'}`,
         {
-          description: `${result.total} contatos verificados em ${seconds}s. ${result.skipped > 0 ? `${result.skipped} sem foto disponivel. ` : ''}${result.failed > 0 ? `${result.failed} erros.` : ''}`,
+          description: `${result.total} contatos em ${seconds}s. ${rehosted > 0 ? `${rehosted} salvas no BullQ (não expiram). ` : ''}${result.skipped > 0 ? `${result.skipped} sem foto. ` : ''}${result.failed > 0 ? `${result.failed} erros.` : ''}`,
         },
       );
       // Invalida cache de contatos pra re-renderizar com fotos novas
@@ -55,6 +57,25 @@ export default function ContactsPage() {
     onError: (err) => {
       const msg = err instanceof Error ? err.message : 'Erro ao sincronizar';
       toast.error('Falha na sincronizacao', { description: msg });
+    },
+  });
+
+  // Reprocess [Unsupported message type] history via rawPayload mappers.
+  const backfillMutation = useMutation({
+    mutationFn: () => channelsService.backfillContentAll(),
+    onSuccess: (result) => {
+      toast.success(
+        `${result.updated} mensagem${result.updated === 1 ? '' : 'ns'} reprocessada${result.updated === 1 ? '' : 's'}`,
+        {
+          description: `${result.scanned} lidas em ${result.channels} canal(is). ${result.unchanged} sem mudança (sem rawPayload ou já ok). ${result.errors} erros.`,
+        },
+      );
+      queryClient.invalidateQueries({ queryKey: ['messages'] });
+      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+    },
+    onError: (err) => {
+      const msg = err instanceof Error ? err.message : 'Erro no reprocessamento';
+      toast.error('Falha ao reprocessar histórico', { description: msg });
     },
   });
 
@@ -69,16 +90,32 @@ export default function ContactsPage() {
             </p>
           </div>
           {canSync && (
-            <button
-              type="button"
-              onClick={() => setShowSyncConfirm(true)}
-              disabled={syncMutation.isPending}
-              className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 shadow-sm transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
-              title="Buscar fotos de perfil dos contatos via WhatsApp"
-            >
-              <RefreshCw className={`h-4 w-4 ${syncMutation.isPending ? 'animate-spin' : ''}`} />
-              {syncMutation.isPending ? 'Sincronizando…' : 'Sincronizar fotos do WhatsApp'}
-            </button>
+            <div className="flex shrink-0 flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => backfillMutation.mutate()}
+                disabled={backfillMutation.isPending || syncMutation.isPending}
+                className="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-900 shadow-sm transition-colors hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100 dark:hover:bg-amber-950/70"
+                title="Reescreve mensagens antigas de bot/automação que aparecem como 'Unsupported' ou 'reprocessar histórico'"
+              >
+                <RefreshCw
+                  className={`h-4 w-4 ${backfillMutation.isPending ? 'animate-spin' : ''}`}
+                />
+                {backfillMutation.isPending
+                  ? 'Reprocessando…'
+                  : 'Reprocessar mensagens de bot'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowSyncConfirm(true)}
+                disabled={syncMutation.isPending || backfillMutation.isPending}
+                className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 shadow-sm transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                title="Buscar fotos de perfil dos contatos via WhatsApp e salvar no BullQ"
+              >
+                <RefreshCw className={`h-4 w-4 ${syncMutation.isPending ? 'animate-spin' : ''}`} />
+                {syncMutation.isPending ? 'Sincronizando…' : 'Sincronizar fotos do WhatsApp'}
+              </button>
+            </div>
           )}
         </div>
 

@@ -113,4 +113,23 @@ export const channelsService = {
     const { data } = await api.post<{ data: { job: ChannelSyncJob | null } }>(`/channels/${id}/sync/cancel`);
     return data.data.job;
   },
+
+  /**
+   * SPEC-003: reprocess [Unsupported message type] / placeholder messages
+   * across all WhatsApp + Instagram channels using stored rawPayload.
+   */
+  async backfillContentAll(): Promise<{
+    channels: number;
+    scanned: number;
+    updated: number;
+    unchanged: number;
+    errors: number;
+  }> {
+    const { data } = await api.post(
+      '/channels/backfill-content-all',
+      {},
+      { timeout: 300_000 },
+    );
+    return data.data ?? data;
+  },
 };
