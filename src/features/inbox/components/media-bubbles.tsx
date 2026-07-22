@@ -13,8 +13,12 @@ import {
   FileAudio,
   File as FileIcon,
   MapPin,
+  UserRound,
+  Phone,
+  Copy,
   X,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { useResolvedMedia } from '../hooks/use-resolved-media';
 import type { Message } from '../services/inbox.service';
 
@@ -224,6 +228,96 @@ export function MediaLocation({ message, isOutbound }: MediaProps) {
         </p>
       </div>
     </a>
+  );
+}
+
+/**
+ * SPEC-003 W3 / S21 W3: shared contact card.
+ * Prefers structured content.contact; falls back to content.text lines.
+ */
+export function MediaContact({ message, isOutbound }: MediaProps) {
+  const structured = message.content?.contact as
+    | { fullName?: string; phones?: string[] }
+    | undefined;
+  const text = (message.content?.text as string | undefined) || '';
+  const fullName =
+    structured?.fullName ||
+    text.replace(/^Contato[s]?( \(\d+\))?:\s*/i, '').split('\n')[0]?.split(' (')[0] ||
+    'Contato';
+  const phones: string[] =
+    structured?.phones && structured.phones.length > 0
+      ? structured.phones
+      : Array.from(text.matchAll(/(?:\+?\d[\d\s\-()]{7,}\d)/g)).map((m) => m[0].trim());
+
+  const primaryPhone = phones[0]?.replace(/\D/g, '') || '';
+  const waMe =
+    primaryPhone.length >= 10 ? `https://wa.me/${primaryPhone.replace(/^\+/, '')}` : null;
+
+  const copyPhone = async (phone: string) => {
+    try {
+      await navigator.clipboard.writeText(phone);
+      toast.success('Telefone copiado');
+    } catch {
+      toast.error('Não foi possível copiar');
+    }
+  };
+
+  return (
+    <div
+      className={`min-w-[200px] max-w-[280px] rounded-lg border px-3 py-2.5 ${
+        isOutbound
+          ? 'border-primary-foreground/20 bg-primary-foreground/10'
+          : 'border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/60'
+      }`}
+    >
+      <div className="flex items-start gap-2.5">
+        <div
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
+            isOutbound ? 'bg-primary-foreground/15' : 'bg-zinc-200 dark:bg-zinc-700'
+          }`}
+        >
+          <UserRound className="h-5 w-5 opacity-70" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold" title={fullName}>
+            {fullName.length > 48 ? `${fullName.slice(0, 48)}…` : fullName}
+          </p>
+          {phones.length === 0 ? (
+            <p className="mt-0.5 text-xs opacity-60">Sem telefone no vCard</p>
+          ) : (
+            <ul className="mt-1 space-y-0.5">
+              {phones.map((p) => (
+                <li key={p} className="flex items-center gap-1 text-xs opacity-80">
+                  <Phone className="h-3 w-3 shrink-0 opacity-60" />
+                  <span className="truncate tabular-nums">{p}</span>
+                  <button
+                    type="button"
+                    onClick={() => void copyPhone(p)}
+                    className="ml-auto rounded p-0.5 opacity-60 hover:opacity-100"
+                    aria-label={`Copiar ${p}`}
+                    title="Copiar"
+                  >
+                    <Copy className="h-3 w-3" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {waMe && (
+            <a
+              href={waMe}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`mt-2 inline-flex text-xs font-medium underline-offset-2 hover:underline ${
+                isOutbound ? 'text-primary-foreground' : 'text-primary'
+              }`}
+            >
+              Abrir no WhatsApp
+            </a>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 

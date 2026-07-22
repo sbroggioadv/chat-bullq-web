@@ -481,4 +481,39 @@ export const inboxService = {
       },
     });
   },
+
+  /**
+   * SPEC-003 W3 / S21 W3: share one org contact as a WhatsApp vCard.
+   * Multi-pick callers loop this once per contact.
+   */
+  async sendContactMessage(
+    conversationId: string,
+    contact: { fullName: string; phones: string[]; vcard?: string },
+  ): Promise<Message> {
+    const phones = contact.phones.map((p) => p.replace(/\D/g, '')).filter(Boolean);
+    const fullName = contact.fullName.trim() || 'Contato';
+    const primary = phones[0] || '';
+    const vcard =
+      contact.vcard ||
+      [
+        'BEGIN:VCARD',
+        'VERSION:3.0',
+        `FN:${fullName}`,
+        primary
+          ? `TEL;type=CELL;type=VOICE;waid=${primary}:+${primary}`
+          : '',
+        'END:VCARD',
+      ]
+        .filter(Boolean)
+        .join('\n');
+
+    return this.sendMessage({
+      conversationId,
+      type: 'CONTACT',
+      content: {
+        text: `Contato: ${fullName}${primary ? ` (+${primary})` : ''}`,
+        contact: { fullName, phones, vcard },
+      },
+    });
+  },
 };

@@ -13,6 +13,7 @@ import {
   FileArchive,
   Video,
   Music,
+  Contact,
   File as FileIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -20,6 +21,8 @@ import { useAudioRecorder } from '../hooks/use-audio-recorder';
 import { ComposerAutocomplete, type AutocompleteItem } from './composer-autocomplete';
 import { useQuickReplyTrigger } from '../hooks/use-quick-reply-trigger';
 import { useQuickReplies } from '@/features/quick-replies/hooks/use-quick-replies';
+import { ShareContactDialog } from './share-contact-dialog';
+import type { Contact as OrgContact } from '@/features/contacts/services/contacts.service';
 
 interface ChatInputProps {
   onSend: (text: string) => Promise<void>;
@@ -37,6 +40,8 @@ interface ChatInputProps {
    * preserve clipboard pattern). Host decides at chat-panel level.
    */
   onSendFile?: (file: File, caption?: string) => Promise<void>;
+  /** SPEC-003 W3: share one or more org contacts as vCards. */
+  onShareContacts?: (contacts: OrgContact[]) => Promise<void>;
   disabled?: boolean;
 }
 
@@ -166,11 +171,13 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
   onSendAudio,
   onSendImage,
   onSendFile,
+  onShareContacts,
   disabled,
 }, ref) {
   const [text, setText] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [isSendingAudio, setIsSendingAudio] = useState(false);
+  const [shareContactOpen, setShareContactOpen] = useState(false);
 
   // S18/W3-Z: pendingAttachment substitui pendingImage (este vira alias quando bucket=IMAGE).
   // Set by paste/drop/picker, cleared on send/cancel.
@@ -483,6 +490,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
   // IDLE MODE: text input + mic button + optional attachment preview overlay.
   const canRecord = !!onSendAudio;
   const canSendImage = !!onSendImage || !!onSendFile;
+  const canShareContact = !!onShareContacts;
   const showMic = canRecord && !text.trim() && !pendingAttachment;
   const PreviewIcon = iconForBucket(pendingBucket);
   // Accept attribute do file picker: amplo no modo polimorfico, restrito a imagem no legacy.
@@ -565,6 +573,18 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
         >
           <Paperclip className="h-5 w-5" />
         </button>
+        {canShareContact && (
+          <button
+            type="button"
+            onClick={() => setShareContactOpen(true)}
+            disabled={disabled || !!pendingAttachment}
+            className="mb-1 rounded-lg p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-zinc-800"
+            aria-label="Compartilhar contato"
+            title="Compartilhar contato"
+          >
+            <Contact className="h-5 w-5" />
+          </button>
+        )}
         <div className="relative min-w-0 flex-1">
           <ComposerAutocomplete
             open={trigger.open}
@@ -636,6 +656,15 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
         <p className="mt-1.5 text-center text-xs font-medium text-primary">
           {acceptsAnyFile ? 'Solte o arquivo aqui para anexar' : 'Solte a imagem aqui para anexar'}
         </p>
+      )}
+      {canShareContact && (
+        <ShareContactDialog
+          open={shareContactOpen}
+          onClose={() => setShareContactOpen(false)}
+          onShare={async (contacts) => {
+            await onShareContacts?.(contacts);
+          }}
+        />
       )}
     </div>
   );

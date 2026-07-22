@@ -16,10 +16,12 @@ import {
   MediaDocument,
   MediaSticker,
   MediaLocation,
+  MediaContact,
 } from './media-bubbles';
 import { useSocket } from '../hooks/use-socket';
 import { useAuthStore } from '@/stores/auth-store';
 import { PendingActionsList } from '../pending-actions/pending-actions-list';
+import type { Contact as OrgContact } from '@/features/contacts/services/contacts.service';
 
 function translateSkipReason(reason: string): string {
   const map: Record<string, string> = {
@@ -751,6 +753,28 @@ export function ChatPanel({
     }
   };
 
+  /** SPEC-003 W3: multi-pick share contact → one CONTACT message per pick. */
+  const handleShareContacts = async (contacts: OrgContact[]) => {
+    for (const c of contacts) {
+      const phone = (c.phone || '').trim();
+      if (!phone) continue;
+      try {
+        const created = await inboxService.sendContactMessage(conversation.id, {
+          fullName: c.name?.trim() || phone,
+          phones: [phone],
+        });
+        if (created) upsertMessageInCache(created);
+        // Zappfy rate limit ~1 msg/s
+        if (contacts.length > 1) {
+          await new Promise((r) => setTimeout(r, 1100));
+        }
+      } catch (err) {
+        queryClient.invalidateQueries({ queryKey: ['messages', conversation.id] });
+        throw err;
+      }
+    }
+  };
+
   // Panel-wide drag-and-drop — the composer's drop zone is tiny compared to
   // the timeline, and users naturally drag onto the messages area. We hand
   // the file off to ChatInput's imperative `queueImage` so the preview +
@@ -1122,13 +1146,13 @@ export function ChatPanel({
                               : 'rounded-bl-md bg-white shadow-sm dark:bg-zinc-800 dark:text-zinc-100'
                           }`}
                         >
-                          {msg.type === 'TEXT' ||
-                          msg.type === 'INTERACTIVE' ||
-                          msg.type === 'SYSTEM' ||
-                          msg.type === 'CONTACT' ? (
-                            // SPEC-003 W1/W3: chatbot buttons/lists land as INTERACTIVE
-                            // with content.text; contact share as CONTACT/TEXT with
-                            // "Contato: …". Never show raw [INTERACTIVE] when text exists.
+                          {msg.type === 'CONTACT' ? (
+                            <MediaContact message={msg} isOutbound={isOutbound} />
+                          ) : msg.type === 'TEXT' ||
+                            msg.type === 'INTERACTIVE' ||
+                            msg.type === 'SYSTEM' ? (
+                            // SPEC-003 W1: chatbot buttons/lists land as INTERACTIVE
+                            // with content.text. Never show raw [INTERACTIVE] when text exists.
                             msg.content?.template ? (
                               <TemplateMessage content={msg.content} isOutbound={isOutbound} />
                             ) : (
@@ -1137,11 +1161,9 @@ export function ChatPanel({
                                   (msg.content?.text as string | undefined) ||
                                   (msg.type === 'INTERACTIVE'
                                     ? 'Mensagem interativa'
-                                    : msg.type === 'CONTACT'
-                                      ? 'Contato'
-                                      : msg.type === 'SYSTEM'
-                                        ? 'Mensagem de sistema'
-                                        : '')
+                                    : msg.type === 'SYSTEM'
+                                      ? 'Mensagem de sistema'
+                                      : '')
                                 }
                                 isOutbound={isOutbound}
                               />
@@ -1234,6 +1256,7 @@ export function ChatPanel({
         onSend={handleSend}
         onSendAudio={handleSendAudio}
         onSendFile={handleSendFile}
+        onShareContacts={handleShareContacts}
         disabled={conversation.status === 'CLOSED'}
       />
       {forwarding && (
