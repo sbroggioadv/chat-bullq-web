@@ -8,7 +8,16 @@ export interface Contact {
   avatarUrl: string | null;
   notes: string | null;
   metadata: Record<string, any>;
-  channels: { id: string; channelId: string; externalId: string; channel: { id: string; type: string; name: string } }[];
+  /** Resolved by API when shareable=1 (name → profileName → phone). */
+  displayName?: string;
+  channels: {
+    id: string;
+    channelId: string;
+    externalId: string;
+    profileName?: string | null;
+    profileAvatarUrl?: string | null;
+    channel: { id: string; type: string; name: string };
+  }[];
   tags: { tag: { id: string; name: string; color: string } }[];
   conversations?: any[];
   _count?: { conversations: number };

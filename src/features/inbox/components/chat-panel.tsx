@@ -1146,7 +1146,10 @@ export function ChatPanel({
                               : 'rounded-bl-md bg-white shadow-sm dark:bg-zinc-800 dark:text-zinc-100'
                           }`}
                         >
-                          {msg.type === 'CONTACT' ? (
+                          {msg.type === 'CONTACT' ||
+                          (msg.type === 'TEXT' &&
+                            typeof msg.content?.text === 'string' &&
+                            /^Contato[s]?[:\s]/i.test(msg.content.text)) ? (
                             <MediaContact message={msg} isOutbound={isOutbound} />
                           ) : msg.type === 'TEXT' ||
                             msg.type === 'INTERACTIVE' ||
@@ -1158,12 +1161,25 @@ export function ChatPanel({
                             ) : (
                               <MessageText
                                 text={
-                                  (msg.content?.text as string | undefined) ||
-                                  (msg.type === 'INTERACTIVE'
-                                    ? 'Mensagem interativa'
-                                    : msg.type === 'SYSTEM'
-                                      ? 'Mensagem de sistema'
-                                      : '')
+                                  (() => {
+                                    const t = msg.content?.text as string | undefined;
+                                    // Old placeholder still in DB until backfill — friendlier label
+                                    if (
+                                      t &&
+                                      (/^\[Unsupported message type\]$/i.test(t.trim()) ||
+                                        /^\[Unsupported message\]$/i.test(t.trim()))
+                                    ) {
+                                      return 'Mensagem de automação/botão (reprocessar histórico para ver o conteúdo)';
+                                    }
+                                    return (
+                                      t ||
+                                      (msg.type === 'INTERACTIVE'
+                                        ? 'Mensagem interativa'
+                                        : msg.type === 'SYSTEM'
+                                          ? 'Mensagem de sistema'
+                                          : '')
+                                    );
+                                  })()
                                 }
                                 isOutbound={isOutbound}
                               />

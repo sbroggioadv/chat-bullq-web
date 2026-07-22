@@ -12,8 +12,54 @@ interface Props {
   onShare: (contacts: Contact[]) => Promise<void>;
 }
 
-function displayLabel(c: Contact): string {
-  return c.name?.trim() || c.phone?.trim() || c.email?.trim() || 'Sem nome';
+type ContactWithDisplay = Contact & { displayName?: string };
+
+/** Reject WhatsApp LID / junk ids that look like "24386…@lid". */
+function isRealPhone(phone: string | null | undefined): boolean {
+  if (!phone) return false;
+  const p = phone.trim();
+  if (!p || p.includes('@') || /lid/i.test(p)) return false;
+  const digits = p.replace(/\D/g, '');
+  return digits.length >= 10 && digits.length <= 15;
+}
+
+function isJunkLabel(label: string): boolean {
+  const t = label.trim();
+  if (!t) return true;
+  if (t.includes('@')) return true;
+  if (/lid/i.test(t)) return true;
+  // pure long digit string without formatting = likely an id, not a name
+  if (/^\d{12,}$/.test(t.replace(/\D/g, '')) && t.replace(/\D/g, '').length === t.length) {
+    return true;
+  }
+  return false;
+}
+
+function displayLabel(c: ContactWithDisplay): string {
+  const candidates = [
+    c.displayName,
+    c.name,
+    ...(c.channels || []).map((ch) => ch.profileName || (ch as any).profileName),
+    c.phone,
+    c.email,
+  ];
+  for (const raw of candidates) {
+    const v = (raw || '').trim();
+    if (v && !isJunkLabel(v)) return v;
+  }
+  return 'Sem nome';
+}
+
+function formatPhone(phone: string): string {
+  const d = phone.replace(/\D/g, '');
+  if (d.length === 13 && d.startsWith('55')) {
+    // BR mobile +55 11 9xxxx-xxxx
+    return `+${d.slice(0, 2)} ${d.slice(2, 4)} ${d.slice(4, 9)}-${d.slice(9)}`;
+  }
+  if (d.length === 12 && d.startsWith('55')) {
+    return `+${d.slice(0, 2)} ${d.slice(2, 4)} ${d.slice(4, 8)}-${d.slice(8)}`;
+  }
+  return phone.startsWith('+') ? phone : `+${d}`;
 }
 
 export function ShareContactDialog({ open, onClose, onShare }: Props) {
@@ -25,33 +71,43 @@ export function ShareContactDialog({ open, onClose, onShare }: Props) {
     queryKey: ['contacts', 'share-picker', query],
     queryFn: () =>
       contactsService.list({
-        limit: '100',
+        limit: '200',
         page: '1',
+        shareable: '1',
         ...(query.trim() ? { search: query.trim() } : {}),
       }),
     enabled: open,
     staleTime: 30_000,
   });
 
-  const contacts = data?.contacts ?? [];
+  const contacts = (data?.contacts ?? []) as ContactWithDisplay[];
 
   const filtered = useMemo(() => {
-    // Backend already filters by search; keep client filter as safety net.
+    // Client-side safety: never show @lid junk even if API drifts.
+    const shareable = contacts.filter(
+      (c) => isRealPhone(c.phone) && !isJunkLabel(displayLabel(c)),
+    );
     const q = query.toLowerCase().trim();
-    if (!q) return contacts;
-    return contacts.filter((c) => {
-      const blob = `${c.name || ''} ${c.phone || ''} ${c.email || ''}`.toLowerCase();
-      return blob.includes(q);
-    });
+    if (!q) {
+      return [...shareable].sort((a, b) =>
+        displayLabel(a).localeCompare(displayLabel(b), 'pt-BR'),
+      );
+    }
+    return shareable
+      .filter((c) => {
+        const blob = `${displayLabel(c)} ${c.phone || ''} ${c.email || ''}`.toLowerCase();
+        return blob.includes(q);
+      })
+      .sort((a, b) => displayLabel(a).localeCompare(displayLabel(b), 'pt-BR'));
   }, [contacts, query]);
 
   const selected = useMemo(
-    () => contacts.filter((c) => selectedIds.has(c.id)),
-    [contacts, selectedIds],
+    () => filtered.filter((c) => selectedIds.has(c.id)),
+    [filtered, selectedIds],
   );
 
   const toggle = (c: Contact) => {
-    if (!c.phone?.trim()) return;
+    if (!isRealPhone(c.phone)) return;
     setSelectedIds((prev) => {
       const next = new Set(prev);
       if (next.has(c.id)) next.delete(c.id);
@@ -67,8 +123,8 @@ export function ShareContactDialog({ open, onClose, onShare }: Props) {
       await onShare(selected);
       toast.success(
         selected.length === 1
-          ? 'Contato compartilhado'
-          : `${selected.length} contatos compartilhados`,
+          ? `Contato enviado: ${displayLabel(selected[0])}`
+          : `${selected.length} contatos enviados`,
       );
       setSelectedIds(new Set());
       setQuery('');
@@ -93,7 +149,12 @@ export function ShareContactDialog({ open, onClose, onShare }: Props) {
       />
       <div className="relative z-10 flex max-h-[85vh] w-full max-w-md flex-col rounded-t-2xl border border-zinc-200 bg-white shadow-xl dark:border-zinc-700 dark:bg-zinc-900 sm:rounded-2xl">
         <div className="flex items-center justify-between border-b border-zinc-200 px-4 py-3 dark:border-zinc-700">
-          <h2 className="text-sm font-semibold">Compartilhar contato</h2>
+          <div>
+            <h2 className="text-sm font-semibold">Compartilhar contato</h2>
+            <p className="text-[11px] text-zinc-500">
+              Só contatos com nome e telefone reais (sem IDs do WhatsApp)
+            </p>
+          </div>
           <button
             type="button"
             onClick={onClose}
@@ -124,31 +185,29 @@ export function ShareContactDialog({ open, onClose, onShare }: Props) {
               Carregando contatos…
             </div>
           ) : filtered.length === 0 ? (
-            <p className="px-3 py-10 text-center text-sm text-zinc-500">
-              Nenhum contato encontrado
-            </p>
+            <div className="px-3 py-10 text-center text-sm text-zinc-500">
+              <p>Nenhum contato com nome + telefone encontrado.</p>
+              <p className="mt-2 text-xs opacity-80">
+                IDs tipo <code className="rounded bg-zinc-800 px-1">…@lid</code> são
+                ocultados. Cadastre o nome em Contatos ou use um número com perfil.
+              </p>
+            </div>
           ) : (
             <ul className="space-y-0.5">
               {filtered.map((c) => {
-                const hasPhone = !!c.phone?.trim();
+                const label = displayLabel(c);
+                const phone = c.phone!.trim();
                 const checked = selectedIds.has(c.id);
                 return (
                   <li key={c.id}>
                     <button
                       type="button"
-                      disabled={!hasPhone}
                       onClick={() => toggle(c)}
-                      title={
-                        hasPhone
-                          ? `Compartilhar ${c.phone}`
-                          : 'Contato sem número cadastrado'
-                      }
+                      title={`Compartilhar ${label} (${formatPhone(phone)})`}
                       className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${
-                        !hasPhone
-                          ? 'cursor-not-allowed opacity-40'
-                          : checked
-                            ? 'bg-primary/10'
-                            : 'hover:bg-zinc-50 dark:hover:bg-zinc-800'
+                        checked
+                          ? 'bg-primary/10'
+                          : 'hover:bg-zinc-50 dark:hover:bg-zinc-800'
                       }`}
                     >
                       <span
@@ -173,11 +232,9 @@ export function ShareContactDialog({ open, onClose, onShare }: Props) {
                         </span>
                       )}
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-medium">
-                          {displayLabel(c)}
-                        </span>
+                        <span className="block truncate text-sm font-medium">{label}</span>
                         <span className="block truncate text-xs text-zinc-500 tabular-nums">
-                          {c.phone || 'Sem número'}
+                          {formatPhone(phone)}
                         </span>
                       </span>
                     </button>
@@ -191,7 +248,7 @@ export function ShareContactDialog({ open, onClose, onShare }: Props) {
         <div className="flex items-center justify-between gap-2 border-t border-zinc-200 px-4 py-3 dark:border-zinc-700">
           <span className="text-xs text-zinc-500">
             {selectedIds.size === 0
-              ? 'Selecione um ou mais contatos com telefone'
+              ? 'Selecione contatos com nome real'
               : `${selectedIds.size} selecionado${selectedIds.size === 1 ? '' : 's'}`}
           </span>
           <button
