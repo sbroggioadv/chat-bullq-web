@@ -1122,11 +1122,30 @@ export function ChatPanel({
                               : 'rounded-bl-md bg-white shadow-sm dark:bg-zinc-800 dark:text-zinc-100'
                           }`}
                         >
-                          {msg.type === 'TEXT' ? (
-                            <MessageText
-                              text={msg.content?.text || ''}
-                              isOutbound={isOutbound}
-                            />
+                          {msg.type === 'TEXT' ||
+                          msg.type === 'INTERACTIVE' ||
+                          msg.type === 'SYSTEM' ||
+                          msg.type === 'CONTACT' ? (
+                            // SPEC-003 W1/W3: chatbot buttons/lists land as INTERACTIVE
+                            // with content.text; contact share as CONTACT/TEXT with
+                            // "Contato: …". Never show raw [INTERACTIVE] when text exists.
+                            msg.content?.template ? (
+                              <TemplateMessage content={msg.content} isOutbound={isOutbound} />
+                            ) : (
+                              <MessageText
+                                text={
+                                  (msg.content?.text as string | undefined) ||
+                                  (msg.type === 'INTERACTIVE'
+                                    ? 'Mensagem interativa'
+                                    : msg.type === 'CONTACT'
+                                      ? 'Contato'
+                                      : msg.type === 'SYSTEM'
+                                        ? 'Mensagem de sistema'
+                                        : '')
+                                }
+                                isOutbound={isOutbound}
+                              />
+                            )
                           ) : msg.type === 'IMAGE' ? (
                             <MediaImage message={msg} isOutbound={isOutbound} />
                           ) : msg.type === 'VIDEO' ? (
