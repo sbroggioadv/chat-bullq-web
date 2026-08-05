@@ -58,6 +58,10 @@ export interface EmailThreadDetail {
   canSend?: boolean;
   needsReauthForSend?: boolean;
   myEmail?: string | null;
+  starred?: boolean;
+  spam?: boolean;
+  important?: boolean;
+  labelIds?: string[];
 }
 
 export const emailService = {
@@ -126,6 +130,26 @@ export const emailService = {
     threadId: string;
   }): Promise<{ success: boolean; threadId: string }> {
     const { data } = await api.post('/email/archive', input);
+    return data.data ?? data;
+  },
+
+  async modify(input: {
+    channelId: string;
+    threadId: string;
+    action?:
+      | 'star'
+      | 'unstar'
+      | 'spam'
+      | 'unspam'
+      | 'read'
+      | 'unread'
+      | 'archive'
+      | 'important'
+      | 'unimportant';
+    addLabelIds?: string[];
+    removeLabelIds?: string[];
+  }): Promise<{ success: boolean; threadId: string; labelIds?: string[] }> {
+    const { data } = await api.post('/email/modify', input);
     return data.data ?? data;
   },
 };

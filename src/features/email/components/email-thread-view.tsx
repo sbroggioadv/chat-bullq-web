@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import {
+  AlertOctagon,
   Archive,
   ArrowLeft,
   Forward,
@@ -11,6 +12,7 @@ import {
   Reply,
   ReplyAll,
   Send,
+  Star,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { EmailThreadDetail } from '../services/email.service';
@@ -52,8 +54,16 @@ export function EmailThreadView({
   const [forwardTo, setForwardTo] = useState('');
   const [sending, setSending] = useState(false);
   const [archiving, setArchiving] = useState(false);
+  const [modifying, setModifying] = useState(false);
   const [reauthHint, setReauthHint] = useState(false);
   const [recent, setRecent] = useState<string[]>([]);
+  const [starred, setStarred] = useState(!!detail?.starred);
+  const [spam, setSpam] = useState(!!detail?.spam);
+
+  useEffect(() => {
+    setStarred(!!detail?.starred);
+    setSpam(!!detail?.spam);
+  }, [detail?.id, detail?.starred, detail?.spam]);
 
   useEffect(() => {
     setRecent(loadRecentRecipients());
@@ -178,6 +188,33 @@ export function EmailThreadView({
     }
   };
 
+  const runModify = async (
+    action: 'star' | 'unstar' | 'spam' | 'unspam',
+    okMsg: string,
+  ) => {
+    if (!channelId || !detail?.id) return;
+    setModifying(true);
+    try {
+      await emailService.modify({ channelId, threadId: detail.id, action });
+      if (action === 'star') setStarred(true);
+      if (action === 'unstar') setStarred(false);
+      if (action === 'spam') {
+        setSpam(true);
+        toast.success(okMsg);
+        onSent();
+        onBack();
+        return;
+      }
+      if (action === 'unspam') setSpam(false);
+      toast.success(okMsg);
+      onSent();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Falha ao atualizar');
+    } finally {
+      setModifying(false);
+    }
+  };
+
   const handleSend = async () => {
     if (!channelId || !detail.id || !mode) return;
     if ((mode === 'reply' || mode === 'replyAll') && !body.trim()) {
@@ -274,6 +311,39 @@ export function EmailThreadView({
         >
           <Forward className="h-3.5 w-3.5" />
           Encaminhar
+        </button>
+        <button
+          type="button"
+          onClick={() =>
+            runModify(starred ? 'unstar' : 'star', starred ? 'Estrela removida' : 'Com estrela')
+          }
+          disabled={modifying}
+          title={starred ? 'Remover estrela' : 'Marcar com estrela'}
+          className={`inline-flex shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium disabled:opacity-50 ${
+            starred
+              ? 'border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200'
+              : 'border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800'
+          }`}
+        >
+          <Star className={`h-3.5 w-3.5 ${starred ? 'fill-current' : ''}`} />
+        </button>
+        <button
+          type="button"
+          onClick={() =>
+            runModify(
+              spam ? 'unspam' : 'spam',
+              spam ? 'Removido do spam' : 'Movido para spam',
+            )
+          }
+          disabled={modifying}
+          title={spam ? 'Tirar do spam' : 'Marcar como spam'}
+          className={`inline-flex shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium disabled:opacity-50 ${
+            spam
+              ? 'border-red-300 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300'
+              : 'border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800'
+          }`}
+        >
+          <AlertOctagon className="h-3.5 w-3.5" />
         </button>
         <button
           type="button"

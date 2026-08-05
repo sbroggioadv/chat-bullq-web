@@ -325,11 +325,27 @@ function AgendaTab({
           : [],
       });
       setLastMeet(res.meetLink || null);
-      toast.success(
-        res.meetLink
-          ? 'Evento no Google · Meet pronto'
-          : 'Evento criado no Google',
-      );
+      // Copia nota pronta pro operador colar no chat (sem disparar msg pro cliente)
+      const note = [
+        `📅 Reunião agendada: ${summary.trim() || 'Reunião'}`,
+        res.meetLink ? `Meet: ${res.meetLink}` : null,
+        res.htmlLink ? `Agenda: ${res.htmlLink}` : null,
+        'Gravação/transcrição: ative no Meet se precisar.',
+      ]
+        .filter(Boolean)
+        .join('\n');
+      try {
+        await navigator.clipboard.writeText(note);
+        toast.success(
+          res.meetLink
+            ? 'No Google · Meet pronto (nota copiada p/ colar no chat)'
+            : 'Evento no Google (nota copiada)',
+        );
+      } catch {
+        toast.success(
+          res.meetLink ? 'Evento no Google · Meet pronto' : 'Evento criado no Google',
+        );
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Falha ao agendar');
     } finally {
