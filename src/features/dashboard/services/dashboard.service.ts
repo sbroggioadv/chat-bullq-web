@@ -67,6 +67,25 @@ export interface KpiSparklines {
 
 export interface VolumeByDay { date: string; count: number; }
 export interface VolumeByChannel { channelId: string; channelName: string; channelType: string; count: number; }
+
+export interface ChannelPremise {
+  kind: 'WHATSAPP' | 'INSTAGRAM' | 'GMAIL';
+  connected: boolean;
+  channelIds: string[];
+  channelNames: string[];
+  conversationsInPeriod: number;
+  open: number;
+  unreadApprox: number;
+  inboundMessages: number;
+  outboundMessages: number;
+  avgFirstResponseMinutes: number | null;
+}
+
+export interface ChannelPremises {
+  whatsapp: ChannelPremise;
+  instagram: ChannelPremise;
+  email: ChannelPremise;
+}
 export interface VolumeByStatus { status: string; count: number; }
 export interface VolumeFlow { date: string; created: number; closed: number; }
 export interface MessagesFlow { date: string; inbound: number; outbound: number; }
@@ -111,6 +130,13 @@ export const dashboardService = {
     if (to) params.to = to;
     const { data } = await api.get('/dashboard/volume-by-channel', { params });
     return data.data;
+  },
+  async getChannelPremises(from?: string, to?: string): Promise<ChannelPremises> {
+    const params: Record<string, string> = {};
+    if (from) params.from = from;
+    if (to) params.to = to;
+    const { data } = await api.get('/dashboard/channel-premises', { params });
+    return data.data ?? data;
   },
   async getVolumeByStatus(): Promise<VolumeByStatus[]> {
     const { data } = await api.get('/dashboard/volume-by-status');

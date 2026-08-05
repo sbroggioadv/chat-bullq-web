@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import {
+  Archive,
   ArrowLeft,
   Forward,
   Loader2,
@@ -50,6 +51,7 @@ export function EmailThreadView({
   const [body, setBody] = useState('');
   const [forwardTo, setForwardTo] = useState('');
   const [sending, setSending] = useState(false);
+  const [archiving, setArchiving] = useState(false);
   const [reauthHint, setReauthHint] = useState(false);
   const [recent, setRecent] = useState<string[]>([]);
 
@@ -161,6 +163,21 @@ export function EmailThreadView({
     setRecent(rememberRecipients(email));
   };
 
+  const handleArchive = async () => {
+    if (!channelId || !detail?.id) return;
+    setArchiving(true);
+    try {
+      await emailService.archive({ channelId, threadId: detail.id });
+      toast.success('Arquivado');
+      onSent();
+      onBack();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Falha ao arquivar');
+    } finally {
+      setArchiving(false);
+    }
+  };
+
   const handleSend = async () => {
     if (!channelId || !detail.id || !mode) return;
     if ((mode === 'reply' || mode === 'replyAll') && !body.trim()) {
@@ -257,6 +274,20 @@ export function EmailThreadView({
         >
           <Forward className="h-3.5 w-3.5" />
           Encaminhar
+        </button>
+        <button
+          type="button"
+          onClick={handleArchive}
+          disabled={archiving}
+          title="Arquivar (remove da Caixa de entrada)"
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-zinc-200 bg-white px-2.5 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+        >
+          {archiving ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Archive className="h-3.5 w-3.5" />
+          )}
+          <span className="hidden sm:inline">Arquivar</span>
         </button>
       </div>
 

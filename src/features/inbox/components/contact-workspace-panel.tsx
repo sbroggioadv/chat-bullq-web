@@ -1,0 +1,379 @@
+'use client';
+
+import { useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import {
+  CalendarDays,
+  FolderKanban,
+  Loader2,
+  Mail,
+  Send,
+  User,
+  X,
+} from 'lucide-react';
+import { toast } from 'sonner';
+import type { Conversation } from '../services/inbox.service';
+import { ProjectPanel } from './project-panel';
+import { emailService } from '@/features/email/services/email.service';
+import { calendarService } from '@/features/calendar/services/calendar.service';
+import { rememberRecipients } from '@/features/email/lib/recent-recipients';
+
+type Tab = 'contact' | 'email' | 'agenda' | 'project';
+
+interface ContactWorkspacePanelProps {
+  conversation: Conversation;
+  onClose: () => void;
+}
+
+/**
+ * ADR-004 D6 — Contact Workspace: Contato | E-mail | Agenda | Projeto.
+ * Substitui o painel só-projeto na inbox omnichannel.
+ */
+export function ContactWorkspacePanel({
+  conversation,
+  onClose,
+}: ContactWorkspacePanelProps) {
+  const isGroup = conversation.isGroup;
+  const [tab, setTab] = useState<Tab>(isGroup ? 'project' : 'contact');
+
+  const contact = conversation.contact;
+  const contactEmail =
+    contact.email ||
+    (contact.phone && contact.phone.includes('@') ? contact.phone : '') ||
+    '';
+
+  const tabs: Array<{ id: Tab; label: string; icon: any; show: boolean }> = [
+    { id: 'contact', label: 'Contato', icon: User, show: true },
+    { id: 'email', label: 'E-mail', icon: Mail, show: true },
+    { id: 'agenda', label: 'Agenda', icon: CalendarDays, show: true },
+    { id: 'project', label: 'Projeto', icon: FolderKanban, show: isGroup },
+  ];
+
+  return (
+    <aside className="flex w-80 shrink-0 flex-col border-l border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+      <div className="flex items-center justify-between border-b border-zinc-200 px-3 py-2.5 dark:border-zinc-800">
+        <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+          Contato
+        </span>
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-md p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+
+      <div className="flex gap-0.5 overflow-x-auto border-b border-zinc-200 px-2 py-1.5 dark:border-zinc-800">
+        {tabs
+          .filter((t) => t.show)
+          .map((t) => {
+            const Icon = t.icon;
+            const active = tab === t.id;
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setTab(t.id)}
+                className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium ${
+                  active
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-900'
+                }`}
+              >
+                <Icon className="h-3 w-3" />
+                {t.label}
+              </button>
+            );
+          })}
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        {tab === 'contact' && (
+          <div className="space-y-3 p-4">
+            <div>
+              <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-400">
+                Nome
+              </p>
+              <p className="text-sm text-zinc-900 dark:text-zinc-100">
+                {contact.name || '—'}
+              </p>
+            </div>
+            <div>
+              <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-400">
+                Telefone
+              </p>
+              <p className="text-sm text-zinc-900 dark:text-zinc-100">
+                {contact.phone || '—'}
+              </p>
+            </div>
+            <div>
+              <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-400">
+                E-mail
+              </p>
+              <p className="text-sm text-zinc-900 dark:text-zinc-100">
+                {contactEmail || '—'}
+              </p>
+            </div>
+            <div>
+              <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-400">
+                Canal
+              </p>
+              <p className="text-sm text-zinc-900 dark:text-zinc-100">
+                {conversation.channel.name} · {conversation.channel.type}
+              </p>
+            </div>
+            {conversation.channel.type === 'GMAIL' && (
+              <a
+                href={`/email?thread=${encodeURIComponent(
+                  // external id when gmail
+                  (conversation as any).externalConversationId || conversation.id,
+                )}`}
+                className="inline-flex text-xs font-medium text-primary hover:underline"
+              >
+                Abrir no E-mail →
+              </a>
+            )}
+          </div>
+        )}
+
+        {tab === 'email' && (
+          <EmailComposeTab
+            defaultTo={contactEmail}
+            contactName={contact.name || contact.phone || 'contato'}
+          />
+        )}
+
+        {tab === 'agenda' && (
+          <AgendaTab defaultAttendee={contactEmail} contactName={contact.name || ''} />
+        )}
+
+        {tab === 'project' && isGroup && (
+          <div className="h-full [&_aside]:w-full [&_aside]:border-0">
+            <ProjectPanel conversationId={conversation.id} onClose={onClose} />
+          </div>
+        )}
+      </div>
+    </aside>
+  );
+}
+
+function EmailComposeTab({
+  defaultTo,
+  contactName,
+}: {
+  defaultTo: string;
+  contactName: string;
+}) {
+  const statusQ = useQuery({
+    queryKey: ['email-status'],
+    queryFn: () => emailService.status(),
+    staleTime: 60_000,
+  });
+  const channelId = statusQ.data?.channels[0]?.id;
+  const [to, setTo] = useState(defaultTo);
+  const [subject, setSubject] = useState('');
+  const [body, setBody] = useState('');
+  const [sending, setSending] = useState(false);
+
+  const send = async () => {
+    if (!channelId) {
+      toast.error('Conecte um canal Gmail em Canais');
+      return;
+    }
+    if (!to.includes('@') || !subject.trim() || !body.trim()) {
+      toast.error('Preencha destinatário, assunto e corpo');
+      return;
+    }
+    setSending(true);
+    try {
+      rememberRecipients(to);
+      await emailService.compose({
+        channelId,
+        to: to.trim(),
+        subject: subject.trim(),
+        body: body.trim(),
+      });
+      toast.success(`E-mail enviado para ${contactName}`);
+      setBody('');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Falha ao enviar');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  if (statusQ.isLoading) {
+    return (
+      <div className="flex justify-center p-6">
+        <Loader2 className="h-5 w-5 animate-spin text-zinc-400" />
+      </div>
+    );
+  }
+
+  if (!channelId) {
+    return (
+      <p className="p-4 text-xs text-zinc-500">
+        Nenhum Gmail conectado. Vá em Canais → Conectar Gmail.
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-2 p-4">
+      <input
+        value={to}
+        onChange={(e) => setTo(e.target.value)}
+        placeholder="Para"
+        className="w-full rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-1.5 text-xs dark:border-zinc-700 dark:bg-zinc-900"
+      />
+      <input
+        value={subject}
+        onChange={(e) => setSubject(e.target.value)}
+        placeholder="Assunto"
+        className="w-full rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-1.5 text-xs dark:border-zinc-700 dark:bg-zinc-900"
+      />
+      <textarea
+        value={body}
+        onChange={(e) => setBody(e.target.value)}
+        rows={8}
+        placeholder="Escreva o e-mail…"
+        className="w-full resize-y rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-1.5 text-xs dark:border-zinc-700 dark:bg-zinc-900"
+      />
+      <button
+        type="button"
+        disabled={sending}
+        onClick={send}
+        className="inline-flex w-full items-center justify-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50"
+      >
+        {sending ? (
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        ) : (
+          <Send className="h-3.5 w-3.5" />
+        )}
+        Enviar e-mail
+      </button>
+    </div>
+  );
+}
+
+function AgendaTab({
+  defaultAttendee,
+  contactName,
+}: {
+  defaultAttendee: string;
+  contactName: string;
+}) {
+  const statusQ = useQuery({
+    queryKey: ['calendar-status'],
+    queryFn: () => calendarService.status(),
+    staleTime: 60_000,
+  });
+  const [summary, setSummary] = useState(
+    contactName ? `Reunião com ${contactName}` : 'Reunião',
+  );
+  const [minutes, setMinutes] = useState(30);
+  const [withMeet, setWithMeet] = useState(true);
+  const [creating, setCreating] = useState(false);
+
+  const startDefault = useMemo(() => {
+    const d = new Date();
+    d.setMinutes(0, 0, 0);
+    d.setHours(d.getHours() + 1);
+    return d;
+  }, []);
+
+  const create = async () => {
+    if (!statusQ.data?.connected) {
+      toast.error('Conecte o Google em Canais');
+      return;
+    }
+    if (statusQ.data.needsReauthForCalendar) {
+      toast.error('Reconecte o Google autorizando a Agenda');
+      return;
+    }
+    setCreating(true);
+    try {
+      const start = new Date(startDefault);
+      const end = new Date(start.getTime() + minutes * 60_000);
+      const res = await calendarService.create({
+        channelId: statusQ.data.channelId || undefined,
+        summary: summary.trim() || 'Reunião',
+        startIso: start.toISOString(),
+        endIso: end.toISOString(),
+        withMeet,
+        attendeeEmails: defaultAttendee.includes('@')
+          ? [defaultAttendee]
+          : [],
+      });
+      toast.success(
+        res.meetLink
+          ? `Evento criado · Meet pronto`
+          : 'Evento criado na Agenda',
+      );
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Falha ao agendar');
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  return (
+    <div className="space-y-3 p-4">
+      <p className="text-xs text-zinc-500">
+        Cria evento na agenda Google da org (primary) a partir de daqui a 1h.
+      </p>
+      <input
+        value={summary}
+        onChange={(e) => setSummary(e.target.value)}
+        className="w-full rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-1.5 text-xs dark:border-zinc-700 dark:bg-zinc-900"
+      />
+      <div className="flex gap-2">
+        {[15, 30, 45, 60].map((m) => (
+          <button
+            key={m}
+            type="button"
+            onClick={() => setMinutes(m)}
+            className={`rounded-md px-2 py-1 text-[11px] ${
+              minutes === m
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-900 dark:text-zinc-300'
+            }`}
+          >
+            {m}m
+          </button>
+        ))}
+      </div>
+      <label className="flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-300">
+        <input
+          type="checkbox"
+          checked={withMeet}
+          onChange={(e) => setWithMeet(e.target.checked)}
+        />
+        Google Meet
+      </label>
+      {defaultAttendee ? (
+        <p className="text-[11px] text-zinc-400">Convidado: {defaultAttendee}</p>
+      ) : (
+        <p className="text-[11px] text-amber-600">
+          Contato sem e-mail — evento só na sua agenda.
+        </p>
+      )}
+      <button
+        type="button"
+        disabled={creating}
+        onClick={create}
+        className="inline-flex w-full items-center justify-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50"
+      >
+        {creating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+        Agendar reunião
+      </button>
+      <a
+        href="/calendar"
+        className="block text-center text-[11px] text-primary hover:underline"
+      >
+        Abrir Agenda completa →
+      </a>
+    </div>
+  );
+}

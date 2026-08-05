@@ -1,0 +1,61 @@
+import { api } from '@/lib/api';
+
+export interface CalendarStatus {
+  connected: boolean;
+  calendarAuthorized: boolean;
+  channelId: string | null;
+  email: string | null;
+  scopes: string[];
+  needsReauthForCalendar: boolean;
+  note?: string;
+}
+
+export interface CalendarEvent {
+  id: string;
+  summary: string;
+  description: string;
+  htmlLink: string | null;
+  meetLink: string | null;
+  start: string | null;
+  end: string | null;
+  allDay: boolean;
+  attendees: Array<{
+    email: string;
+    displayName?: string;
+    responseStatus?: string;
+  }>;
+  status?: string;
+}
+
+export const calendarService = {
+  async status(): Promise<CalendarStatus> {
+    const { data } = await api.get('/calendar/status');
+    return data.data ?? data;
+  },
+  async events(opts?: {
+    channelId?: string;
+    from?: string;
+    to?: string;
+  }): Promise<{ channelId: string; events: CalendarEvent[] }> {
+    const { data } = await api.get('/calendar/events', { params: opts });
+    return data.data ?? data;
+  },
+  async create(input: {
+    channelId?: string;
+    summary: string;
+    description?: string;
+    startIso: string;
+    endIso: string;
+    attendeeEmails?: string[];
+    withMeet?: boolean;
+    timeZone?: string;
+  }): Promise<{
+    success: boolean;
+    id: string;
+    htmlLink: string | null;
+    meetLink: string | null;
+  }> {
+    const { data } = await api.post('/calendar/events', input);
+    return data.data ?? data;
+  },
+};

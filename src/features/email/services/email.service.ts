@@ -109,6 +109,25 @@ export const emailService = {
     const { data } = await api.post('/email/forward', input);
     return data.data ?? data;
   },
+
+  async compose(input: {
+    channelId: string;
+    to: string;
+    subject: string;
+    body: string;
+    cc?: string;
+  }): Promise<{ success: boolean; id: string; threadId: string }> {
+    const { data } = await api.post('/email/compose', input);
+    return data.data ?? data;
+  },
+
+  async archive(input: {
+    channelId: string;
+    threadId: string;
+  }): Promise<{ success: boolean; threadId: string }> {
+    const { data } = await api.post('/email/archive', input);
+    return data.data ?? data;
+  },
 };
 
 /** URL ?folder= usa a forma da SPEC (inbox|sent|spam|label:<id>). */

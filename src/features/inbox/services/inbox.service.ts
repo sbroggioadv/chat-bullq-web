@@ -15,6 +15,7 @@ export interface Contact {
   id: string;
   name: string | null;
   phone: string | null;
+  email?: string | null;
   avatarUrl: string | null;
   tags?: TagLink[];
 }

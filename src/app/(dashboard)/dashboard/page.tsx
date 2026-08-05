@@ -9,7 +9,7 @@ import {
 import {
   Activity, Clock, Target, CheckCircle2, TrendingUp, TrendingDown, Minus,
   Bot, Tag as TagIcon, MessageCircle, CalendarClock,
-  Star, RotateCcw, ShieldCheck,
+  Star, RotateCcw, ShieldCheck, Mail, Instagram, Phone,
 } from 'lucide-react';
 import { dashboardService, type SparklinePoint } from '@/features/dashboard/services/dashboard.service';
 import { useOrgId } from '@/hooks/use-org-query-key';
@@ -168,6 +168,10 @@ export default function DashboardPage() {
   const { data: volumeByChannel } = useQuery({
     queryKey: ['dashboard-volume-channel', orgId],
     queryFn: () => dashboardService.getVolumeByChannel(),
+  });
+  const { data: channelPremises } = useQuery({
+    queryKey: ['dashboard-channel-premises', orgId],
+    queryFn: () => dashboardService.getChannelPremises(),
   });
   const { data: botPerf } = useQuery({
     queryKey: ['dashboard-bot-performance', orgId],
@@ -382,6 +386,106 @@ export default function DashboardPage() {
             </BarChart>
           </ResponsiveContainer>
         </ChartCard>
+      </div>
+
+      {/* Premissas por canal — ADR-004 W4 */}
+      <div className="mt-6">
+        <h2 className="mb-3 text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+          Premissas · WhatsApp · Instagram · E-mail
+        </h2>
+        <div className="grid gap-3 md:grid-cols-3">
+          {([
+            {
+              key: 'whatsapp',
+              title: 'WhatsApp',
+              icon: Phone,
+              accent: '#10b981',
+              data: channelPremises?.whatsapp,
+            },
+            {
+              key: 'instagram',
+              title: 'Instagram DM',
+              icon: Instagram,
+              accent: '#ec4899',
+              data: channelPremises?.instagram,
+            },
+            {
+              key: 'email',
+              title: 'E-mail',
+              icon: Mail,
+              accent: '#3b82f6',
+              data: channelPremises?.email,
+            },
+          ] as const).map((card) => {
+            const Icon = card.icon;
+            const d = card.data;
+            return (
+              <div
+                key={card.key}
+                className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+              >
+                <div className="flex items-center gap-2">
+                  <div
+                    className="flex h-7 w-7 items-center justify-center rounded-lg"
+                    style={{ backgroundColor: `${card.accent}1a`, color: card.accent }}
+                  >
+                    <Icon className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                      {card.title}
+                    </p>
+                    <p className="truncate text-[11px] text-zinc-400">
+                      {d?.connected
+                        ? d.channelNames.join(', ') || 'Conectado'
+                        : 'Não conectado'}
+                    </p>
+                  </div>
+                </div>
+                {d?.connected ? (
+                  <dl className="mt-3 grid grid-cols-2 gap-2 text-[11px]">
+                    <div>
+                      <dt className="text-zinc-400">Conversas (30d)</dt>
+                      <dd className="text-base font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">
+                        {d.conversationsInPeriod}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-zinc-400">Abertas</dt>
+                      <dd className="text-base font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">
+                        {d.open}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-zinc-400">Inbound</dt>
+                      <dd className="tabular-nums text-zinc-700 dark:text-zinc-300">
+                        {d.inboundMessages}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-zinc-400">Outbound</dt>
+                      <dd className="tabular-nums text-zinc-700 dark:text-zinc-300">
+                        {d.outboundMessages}
+                      </dd>
+                    </div>
+                    <div className="col-span-2">
+                      <dt className="text-zinc-400">1ª resposta (média)</dt>
+                      <dd className="tabular-nums text-zinc-700 dark:text-zinc-300">
+                        {d.avgFirstResponseMinutes != null
+                          ? `${d.avgFirstResponseMinutes} min`
+                          : '—'}
+                      </dd>
+                    </div>
+                  </dl>
+                ) : (
+                  <p className="mt-3 text-xs text-zinc-400">
+                    Conecte o canal em Configurações → Canais.
+                  </p>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* ROW 3 — bot + tags */}

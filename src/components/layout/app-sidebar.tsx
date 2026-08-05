@@ -11,6 +11,7 @@ import {
   Palette,
   UserCircle,
   FolderKanban,
+  CalendarDays,
 } from 'lucide-react';
 import { InboxTree } from '@/features/inbox-views/components/inbox-tree';
 import { EmailTree } from '@/features/email/components/email-tree';
@@ -41,6 +42,7 @@ import { ThemeModeToggle } from '@/features/theme/components/theme-mode-toggle';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/calendar', label: 'Agenda', icon: CalendarDays },
   { href: '/projects', label: 'Projetos', icon: FolderKanban },
   { href: '/automations', label: 'Automações', icon: Zap },
 ];

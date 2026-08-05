@@ -14,6 +14,7 @@ import {
   Send,
   Activity,
   FolderKanban,
+  PanelRight,
 } from 'lucide-react';
 import { ConversationAiToggle } from './conversation-ai-toggle';
 import { AssignmentPopover } from './assignment-popover';
@@ -28,7 +29,7 @@ interface ConversationHeaderProps {
   /** When provided, renders a toggle button for the agent-runs sidebar. */
   onToggleAgentLogs?: () => void;
   agentLogsOpen?: boolean;
-  /** When provided + conversation is a group, renders the Project panel toggle. */
+  /** Painel lateral Contact Workspace (Contato/E-mail/Agenda/Projeto). */
   onToggleProject?: () => void;
   projectOpen?: boolean;
 }
@@ -228,17 +229,21 @@ export function ConversationHeader({
         >
           <RefreshCw className={`h-3.5 w-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
         </button>
-        {onToggleProject && conversation.isGroup && (
+        {onToggleProject && (
           <button
             onClick={onToggleProject}
-            title={projectOpen ? 'Fechar projeto' : 'Abrir projeto'}
+            title={projectOpen ? 'Fechar painel do contato' : 'Abrir painel do contato'}
             className={`inline-flex h-8 w-8 items-center justify-center rounded-md transition-colors ${
               projectOpen
                 ? 'bg-primary/10 text-primary dark:bg-primary/15'
                 : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-300'
             }`}
           >
-            <FolderKanban className="h-3.5 w-3.5" />
+            {conversation.isGroup ? (
+              <FolderKanban className="h-3.5 w-3.5" />
+            ) : (
+              <PanelRight className="h-3.5 w-3.5" />
+            )}
           </button>
         )}
         {onToggleAgentLogs && (
