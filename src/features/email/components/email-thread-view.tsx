@@ -16,11 +16,10 @@ interface EmailThreadViewProps {
   onRetry: () => void;
   onBack: () => void;
   onSent: () => void;
-  /** Canal precisa reconectar OAuth com gmail.send */
   onReauth?: () => void;
 }
 
-/** Coluna 3 do /email — leitura + composer de resposta (W2). */
+/** Coluna 3 — leitura + responder (W2). Não bloqueia UI por flag canSend. */
 export function EmailThreadView({
   detail,
   channelId,
@@ -35,6 +34,7 @@ export function EmailThreadView({
   const [replyOpen, setReplyOpen] = useState(false);
   const [replyBody, setReplyBody] = useState('');
   const [sending, setSending] = useState(false);
+  const [reauthHint, setReauthHint] = useState(false);
 
   const defaultTo = useMemo(() => {
     if (!detail?.messages?.length) return '';
@@ -58,7 +58,6 @@ export function EmailThreadView({
       <div className="h-full w-full space-y-3 bg-zinc-50 p-6 dark:bg-zinc-950">
         <div className="h-6 w-2/3 animate-pulse rounded-md bg-zinc-200 dark:bg-zinc-900" />
         <div className="h-28 animate-pulse rounded-lg bg-zinc-200 dark:bg-zinc-900" />
-        <div className="h-28 animate-pulse rounded-lg bg-zinc-200 dark:bg-zinc-900" />
       </div>
     );
   }
@@ -80,9 +79,6 @@ export function EmailThreadView({
     );
   }
 
-  const canSend = detail.canSend !== false && !detail.needsReauthForSend;
-  const needsReauth = !!detail.needsReauthForSend || detail.canSend === false;
-
   const handleSend = async () => {
     if (!channelId || !detail.id) return;
     const body = replyBody.trim();
@@ -101,9 +97,13 @@ export function EmailThreadView({
       toast.success('Resposta enviada');
       setReplyBody('');
       setReplyOpen(false);
+      setReauthHint(false);
       onSent();
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Falha ao enviar';
+      const needs =
+        /leitura|reconect|gmail\.send|permiss|scope|403|autoriz/i.test(msg);
+      if (needs) setReauthHint(true);
       toast.error(msg);
     } finally {
       setSending(false);
@@ -124,35 +124,27 @@ export function EmailThreadView({
         <h1 className="min-w-0 flex-1 truncate text-base font-semibold text-zinc-900 dark:text-zinc-100">
           {detail.subject}
         </h1>
-        {!needsReauth && (
-          <button
-            type="button"
-            onClick={() => setReplyOpen((v) => !v)}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-primary px-2.5 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
-          >
-            <Reply className="h-3.5 w-3.5" />
-            Responder
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={() => setReplyOpen((v) => !v)}
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-primary px-2.5 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+        >
+          <Reply className="h-3.5 w-3.5" />
+          Responder
+        </button>
       </div>
 
-      {needsReauth && (
+      {reauthHint && (
         <div className="border-b border-amber-200/80 bg-amber-50 px-5 py-2.5 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100">
-          Este canal só tem permissão de leitura. Para responder daqui, reconecte o Gmail
-          autorizando envio.{' '}
-          {onReauth ? (
-            <button
-              type="button"
-              onClick={onReauth}
-              className="font-semibold underline underline-offset-2"
-            >
-              Reconectar com Google
-            </button>
-          ) : (
-            <a href="/settings/channels" className="font-semibold underline underline-offset-2">
-              Ir para Canais
-            </a>
-          )}
+          O Google recusou o envio. Use{' '}
+          <button
+            type="button"
+            onClick={onReauth}
+            className="font-semibold underline underline-offset-2"
+          >
+            Reconectar Google
+          </button>{' '}
+          <strong>uma vez</strong> no canal (não cria caixa nova) e autorize o envio.
         </div>
       )}
 
@@ -194,7 +186,7 @@ export function EmailThreadView({
         })}
       </div>
 
-      {replyOpen && canSend && (
+      {replyOpen && (
         <div className="border-t border-zinc-200/80 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
           <div className="mb-2 flex items-center justify-between gap-2">
             <p className="text-xs text-zinc-500 dark:text-zinc-400">
@@ -215,7 +207,16 @@ export function EmailThreadView({
             placeholder="Escreva sua resposta…"
             className="w-full resize-y rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-900 outline-none ring-primary/30 placeholder:text-zinc-400 focus:border-primary focus:ring-2 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100"
           />
-          <div className="mt-2 flex justify-end">
+          <div className="mt-2 flex justify-end gap-2">
+            {onReauth && (
+              <button
+                type="button"
+                onClick={onReauth}
+                className="inline-flex items-center gap-1.5 rounded-md border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300"
+              >
+                Reconectar Google
+              </button>
+            )}
             <button
               type="button"
               onClick={handleSend}
