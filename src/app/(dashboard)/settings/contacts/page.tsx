@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Search, Users, MessageSquare, ExternalLink, RefreshCw, X, AlertTriangle } from 'lucide-react';
+import { Search, Users, MessageSquare, ExternalLink, RefreshCw, X, AlertTriangle, Mail } from 'lucide-react';
 import { contactsService, type Contact, type SyncAvatarsResult } from '@/features/contacts/services/contacts.service';
 import { channelsService } from '@/features/channels/services/channels.service';
 import { useOrgId } from '@/hooks/use-org-query-key';
@@ -15,6 +15,7 @@ const channelIcons: Record<string, React.ElementType> = {
   WHATSAPP_ZAPPFY: ZappfyIcon,
   WHATSAPP_OFFICIAL: MetaIcon,
   INSTAGRAM: InstagramIcon,
+  GMAIL: Mail,
 };
 
 export default function ContactsPage() {

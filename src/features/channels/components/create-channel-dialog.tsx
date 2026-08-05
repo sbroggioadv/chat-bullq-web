@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import { Loader2, X, Copy, Check } from 'lucide-react';
+import { Loader2, X, Copy, Check, Mail } from 'lucide-react';
 import { channelsService, type ChannelType } from '../services/channels.service';
 import { ZappfyIcon, MetaIcon, InstagramIcon } from '@/components/ui/icons';
 
@@ -30,6 +30,13 @@ const channelTypes: { value: ChannelType; label: string; icon: React.ElementType
     icon: InstagramIcon,
     color: 'bg-zinc-50 dark:bg-zinc-800',
     description: 'Instagram API com login empresarial — DMs e stories',
+  },
+  {
+    value: 'GMAIL',
+    label: 'Gmail',
+    icon: Mail,
+    color: 'bg-red-50 dark:bg-red-950/30',
+    description: 'Caixa de e-mail no inbox (somente leitura no MVP)',
   },
 ];
 
@@ -57,9 +64,19 @@ const instagramSchema = z.object({
   webhookSecret: z.string().optional(),
 });
 
+const gmailSchema = z.object({
+  name: z.string().min(1, 'Nome é obrigatório'),
+  email: z.string().email('E-mail inválido').optional().or(z.literal('')),
+  refreshToken: z.string().min(1, 'Refresh Token OAuth é obrigatório'),
+  clientId: z.string().optional(),
+  clientSecret: z.string().optional(),
+  query: z.string().optional(),
+});
+
 type ZappfyFormData = z.infer<typeof zappfySchema>;
 type WaOfficialFormData = z.infer<typeof waOfficialSchema>;
 type InstagramFormData = z.infer<typeof instagramSchema>;
+type GmailFormData = z.infer<typeof gmailSchema>;
 
 const inputCls = 'flex h-10 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm ring-offset-background placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100';
 const labelCls = 'text-sm font-medium text-zinc-700 dark:text-zinc-300';
@@ -93,6 +110,11 @@ export function CreateChannelDialog({ open, onClose, onCreated }: CreateChannelD
   const igForm = useForm<InstagramFormData>({
     resolver: zodResolver(instagramSchema),
     defaultValues: { name: '', accessToken: '', appSecret: '', igBusinessId: '', igAppId: '', webhookSecret: '' },
+  });
+
+  const gmailForm = useForm<GmailFormData>({
+    resolver: zodResolver(gmailSchema),
+    defaultValues: { name: '', email: '', refreshToken: '', clientId: '', clientSecret: '', query: 'in:inbox' },
   });
 
   const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
@@ -156,12 +178,50 @@ export function CreateChannelDialog({ open, onClose, onCreated }: CreateChannelD
       data.webhookSecret,
     );
 
+  const onSubmitGmail = (data: GmailFormData) => {
+    // Caminho avançado (colagem manual) — preferir OAuth.
+    const config: Record<string, string> = {
+      refreshToken: data.refreshToken,
+    };
+    if (data.email) config.email = data.email;
+    if (data.query) config.query = data.query;
+    // clientId/secret NÃO vão pro banco em multi-tenant — ficam na plataforma
+    submitChannel('GMAIL', data.name, config);
+  };
+
+  const [gmailAdvanced, setGmailAdvanced] = useState(false);
+  const [gmailConnecting, setGmailConnecting] = useState(false);
+
+  const connectGmailOAuth = async () => {
+    setGmailConnecting(true);
+    try {
+      const status = await channelsService.gmailOAuthStatus();
+      if (!status.configured) {
+        toast.error(
+          'Conector Gmail ainda não está configurado no servidor. Peça ao admin da plataforma pra setar GMAIL_OAUTH_CLIENT_ID/SECRET.',
+        );
+        return;
+      }
+      const name = gmailForm.getValues('name') || undefined;
+      const { url } = await channelsService.gmailOAuthStart({
+        name,
+        visibility,
+      });
+      // Full redirect — Google volta no callback da API e redireciona pra /settings/channels
+      window.location.href = url;
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Falha ao iniciar OAuth Gmail');
+      setGmailConnecting(false);
+    }
+  };
+
   const handleClose = () => {
     setStep('type');
     setSelectedType(null);
     zappfyForm.reset();
     waForm.reset();
     igForm.reset();
+    gmailForm.reset();
     setVisibility('PRIVATE');
     onClose();
   };
@@ -172,12 +232,14 @@ export function CreateChannelDialog({ open, onClose, onCreated }: CreateChannelD
     WHATSAPP_ZAPPFY: 'Conectar WhatsApp',
     WHATSAPP_OFFICIAL: 'Conectar WhatsApp Oficial',
     INSTAGRAM: 'Conectar Instagram',
+    GMAIL: 'Conectar Gmail',
   };
 
   const submitLabelMap: Record<string, string> = {
     WHATSAPP_ZAPPFY: 'Conectar WhatsApp',
     WHATSAPP_OFFICIAL: 'Conectar WhatsApp',
     INSTAGRAM: 'Conectar Instagram',
+    GMAIL: 'Conectar Gmail',
   };
 
   return (
@@ -244,6 +306,67 @@ export function CreateChannelDialog({ open, onClose, onCreated }: CreateChannelD
             <WebhookUrl url={`${apiBaseUrl}/webhooks/INSTAGRAM`} copied={copied} onCopy={() => handleCopyWebhook('INSTAGRAM')} />
             <FormFooter isLoading={isLoading} onBack={() => setStep('type')} submitLabel={submitLabelMap[selectedType]} />
           </form>
+        ) : selectedType === 'GMAIL' ? (
+          <div className="mt-6 space-y-4">
+            <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-900 dark:border-red-900 dark:bg-red-950/40 dark:text-red-100">
+              <strong>Multi-tenant:</strong> cada organização conecta a <em>própria</em> conta Google.
+              O token fica só no canal dessa org. MVP = ler a caixa no inbox (sem enviar).
+            </div>
+
+            <Field
+              label="Nome do canal (opcional)"
+              placeholder="Ex: Gmail Escritório — se vazio, usa o e-mail"
+              optional
+              {...gmailForm.register('name')}
+            />
+
+            <button
+              type="button"
+              onClick={connectGmailOAuth}
+              disabled={gmailConnecting || isLoading}
+              className="flex w-full items-center justify-center gap-3 rounded-xl bg-white px-4 py-3 text-sm font-medium text-zinc-800 shadow-sm ring-1 ring-zinc-200 transition hover:bg-zinc-50 disabled:opacity-60 dark:bg-zinc-800 dark:text-zinc-100 dark:ring-zinc-700 dark:hover:bg-zinc-750"
+            >
+              {gmailConnecting ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <Mail className="h-5 w-5 text-red-500" />
+              )}
+              {gmailConnecting ? 'Abrindo Google…' : 'Conectar com Google'}
+            </button>
+
+            <p className="text-center text-[11px] text-zinc-500">
+              Você será redirecionado ao Google e volta aqui com a caixa conectada.
+            </p>
+
+            <button
+              type="button"
+              onClick={() => setGmailAdvanced((v) => !v)}
+              className="text-xs text-zinc-500 underline underline-offset-2 hover:text-zinc-700 dark:hover:text-zinc-300"
+            >
+              {gmailAdvanced ? 'Ocultar opção avançada' : 'Opção avançada: colar refresh token'}
+            </button>
+
+            {gmailAdvanced && (
+              <form onSubmit={gmailForm.handleSubmit(onSubmitGmail)} className="space-y-3 rounded-lg border border-zinc-200 p-3 dark:border-zinc-700">
+                <Field label="Refresh Token" type="text" placeholder="1//..." error={gmailForm.formState.errors.refreshToken?.message} {...gmailForm.register('refreshToken')} />
+                <Field label="E-mail" placeholder="opcional" optional {...gmailForm.register('email')} />
+                <Field label="Filtro (query)" placeholder="in:inbox" optional {...gmailForm.register('query')} />
+                <FormFooter isLoading={isLoading} onBack={() => setStep('type')} submitLabel="Salvar token manual" />
+              </form>
+            )}
+
+            {!gmailAdvanced && (
+              <div className="flex justify-start">
+                <button
+                  type="button"
+                  onClick={() => setStep('type')}
+                  className="text-sm text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
+                >
+                  ← Voltar
+                </button>
+              </div>
+            )}
+          </div>
         ) : null}
       </div>
     </div>

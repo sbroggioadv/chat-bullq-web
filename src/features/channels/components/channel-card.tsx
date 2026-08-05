@@ -16,6 +16,7 @@ import {
   XCircle,
   Lock,
   Globe,
+  Mail,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Channel } from '../services/channels.service';
@@ -28,6 +29,7 @@ const channelTypeMap: Record<string, { label: string; icon: React.ElementType; c
   WHATSAPP_ZAPPFY: { label: 'WhatsApp (Zappfy)', icon: ZappfyIcon, color: 'bg-zinc-50 dark:bg-zinc-800' },
   WHATSAPP_OFFICIAL: { label: 'WhatsApp Official', icon: MetaIcon, color: 'bg-zinc-50 dark:bg-zinc-800' },
   INSTAGRAM: { label: 'Instagram', icon: InstagramIcon, color: 'bg-zinc-50 dark:bg-zinc-800' },
+  GMAIL: { label: 'Gmail', icon: Mail, color: 'bg-red-50 dark:bg-red-950/30' },
 };
 
 interface ChannelCardProps {

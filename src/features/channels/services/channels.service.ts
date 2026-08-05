@@ -1,6 +1,6 @@
 import { api } from '@/lib/api';
 
-export type ChannelType = 'WHATSAPP_OFFICIAL' | 'WHATSAPP_ZAPPFY' | 'INSTAGRAM';
+export type ChannelType = 'WHATSAPP_OFFICIAL' | 'WHATSAPP_ZAPPFY' | 'INSTAGRAM' | 'GMAIL';
 
 export type ChannelVisibility = 'ORG' | 'PRIVATE';
 
@@ -130,6 +130,30 @@ export const channelsService = {
       {},
       { timeout: 300_000 },
     );
+    return data.data ?? data;
+  },
+
+  /** Status do conector Gmail na plataforma (multi-tenant ready). */
+  async gmailOAuthStatus(): Promise<{
+    configured: boolean;
+    redirectUri: string | null;
+    scopes: string[];
+    multiTenant: boolean;
+    note?: string;
+  }> {
+    const { data } = await api.get('/channels/gmail/oauth/status');
+    return data.data ?? data;
+  },
+
+  /**
+   * Inicia OAuth Google da org ativa.
+   * Redirect do browser pra `url` (Google → callback API → /settings/channels).
+   */
+  async gmailOAuthStart(input?: {
+    name?: string;
+    visibility?: 'ORG' | 'PRIVATE';
+  }): Promise<{ url: string; expiresInSec: number }> {
+    const { data } = await api.post('/channels/gmail/oauth/start', input || {});
     return data.data ?? data;
   },
 };

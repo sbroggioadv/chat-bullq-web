@@ -9,7 +9,7 @@ interface UseChannelSyncOptions {
   pollIntervalMs?: number;
 }
 
-const SUPPORTED_SYNC_TYPES = new Set(['INSTAGRAM', 'WHATSAPP_ZAPPFY']);
+const SUPPORTED_SYNC_TYPES = new Set(['INSTAGRAM', 'WHATSAPP_ZAPPFY', 'GMAIL']);
 
 export function useChannelSync({ channelId, channelType, pollIntervalMs = 3000 }: UseChannelSyncOptions) {
   const [job, setJob] = useState<ChannelSyncJob | null>(null);

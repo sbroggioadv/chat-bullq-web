@@ -200,5 +200,14 @@ function fieldsFor(type: Channel['type']): FieldDef[] {
       { key: 'igAppId', label: 'Instagram App ID', optional: true },
     ];
   }
+  if (type === 'GMAIL') {
+    return [
+      { key: 'email', label: 'E-mail', placeholder: 'caixa@dominio.com', optional: true },
+      { key: 'refreshToken', label: 'Refresh Token OAuth', placeholder: '1//...' },
+      { key: 'clientId', label: 'Client ID', optional: true },
+      { key: 'clientSecret', label: 'Client Secret', optional: true },
+      { key: 'query', label: 'Filtro Gmail (query)', placeholder: 'in:inbox', optional: true },
+    ];
+  }
   return [];
 }

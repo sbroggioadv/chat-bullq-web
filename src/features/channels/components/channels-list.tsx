@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { MessageCircle, Plus, Radio, ShieldCheck } from 'lucide-react';
+import { toast } from 'sonner';
 import { channelsService } from '../services/channels.service';
 import { ChannelCard } from './channel-card';
 import { CreateChannelDialog } from './create-channel-dialog';
@@ -32,13 +33,40 @@ export function ChannelsList() {
     setShowCreate(true);
   }, [hasNoChannels, isInviteOnboarding]);
 
+  // Retorno do OAuth Gmail (?gmail=connected|error)
+  useEffect(() => {
+    const gmail = searchParams.get('gmail');
+    if (!gmail) return;
+    const email = searchParams.get('email') || '';
+    const reason = searchParams.get('reason') || '';
+    if (gmail === 'connected') {
+      toast.success(email ? `Gmail conectado: ${email}` : 'Gmail conectado — sincronizando caixa…');
+      refresh();
+    } else if (gmail === 'error') {
+      toast.error(
+        reason === 'no_refresh_token'
+          ? 'Google não devolveu refresh token. Revogue o app em myaccount.google.com/permissions e tente de novo.'
+          : `Falha ao conectar Gmail: ${reason || 'erro desconhecido'}`,
+      );
+    }
+    // limpa query da URL sem reload
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('gmail');
+      url.searchParams.delete('email');
+      url.searchParams.delete('reason');
+      window.history.replaceState({}, '', url.pathname + (url.search || ''));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
   return (
     <div>
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Meus canais</h2>
           <p className="mt-0.5 text-sm text-zinc-500 dark:text-zinc-400">
-            Conecte WhatsApp, Instagram e demais caixas de entrada
+            Conecte WhatsApp, Instagram, Gmail e demais caixas de entrada
           </p>
         </div>
         <button
