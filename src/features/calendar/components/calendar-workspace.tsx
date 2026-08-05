@@ -1,7 +1,8 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   CalendarDays,
   Loader2,
@@ -44,6 +45,8 @@ function toLocalInputValue(d: Date) {
 
 export function CalendarWorkspace() {
   const qc = useQueryClient();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [anchor, setAnchor] = useState(() => startOfWeek(new Date()));
   const [showCreate, setShowCreate] = useState(false);
   const [summary, setSummary] = useState('');
@@ -76,6 +79,29 @@ export function CalendarWorkspace() {
     staleTime: 30_000,
   });
 
+  // Pós-OAuth: /calendar?gmail=connected&calendar=0|1
+  useEffect(() => {
+    const gmail = searchParams.get('gmail');
+    if (!gmail) return;
+    const cal = searchParams.get('calendar');
+    if (gmail === 'connected') {
+      if (cal === '0') {
+        toast.error(
+          'Google conectou, mas a Agenda não foi autorizada. Em Canais use Autorizar Agenda e aceite o Calendar.',
+        );
+      } else {
+        toast.success('Google conectado — carregando Agenda…');
+      }
+      qc.invalidateQueries({ queryKey: ['calendar-status'] });
+      qc.invalidateQueries({ queryKey: ['calendar-events'] });
+    } else if (gmail === 'error') {
+      toast.error(
+        searchParams.get('reason') || 'Falha na autorização Google',
+      );
+    }
+    router.replace('/calendar');
+  }, [searchParams, qc, router]);
+
   const eventsQ = useQuery({
     queryKey: ['calendar-events', from, to, statusQ.data?.channelId],
     queryFn: () =>
@@ -106,6 +132,7 @@ export function CalendarWorkspace() {
       const { url } = await channelsService.gmailOAuthStart({
         channelId: statusQ.data?.channelId || undefined,
         name: 'Gmail',
+        returnTo: '/calendar',
       });
       window.location.href = url;
     } catch (err) {
@@ -166,21 +193,68 @@ export function CalendarWorkspace() {
     );
   }
 
-  if (statusQ.data.needsReauthForCalendar || eventsQ.isError) {
+  if (statusQ.data.needsReauthForCalendar) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3 p-8 text-center">
         <CalendarDays className="h-10 w-10 text-amber-400" />
         <p className="max-w-md text-sm text-zinc-600 dark:text-zinc-300">
-          A conta Google ainda não autorizou a Agenda. Reconecte uma vez e aceite
-          o acesso ao Calendar.
+          A Agenda ainda não está autorizada neste Google. Faça isso em{' '}
+          <strong>Canais → Autorizar Agenda</strong> (ou pelo botão abaixo) e
+          aceite o acesso ao Calendar na tela do Google.
         </p>
-        <button
-          type="button"
-          onClick={reauth}
-          className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground"
-        >
-          Autorizar Agenda
-        </button>
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          <button
+            type="button"
+            onClick={reauth}
+            className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground"
+          >
+            Autorizar Agenda
+          </button>
+          <a
+            href="/settings/channels"
+            className="rounded-md border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-700 dark:border-zinc-700 dark:text-zinc-200"
+          >
+            Abrir Canais
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  if (eventsQ.isError) {
+    const msg =
+      eventsQ.error instanceof Error
+        ? eventsQ.error.message
+        : 'Falha ao carregar eventos';
+    const needsAuth = /permiss|agenda|calendar|scope|403|autoriz/i.test(msg);
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-3 p-8 text-center">
+        <CalendarDays className="h-10 w-10 text-amber-400" />
+        <p className="max-w-md text-sm text-zinc-600 dark:text-zinc-300">{msg}</p>
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          {needsAuth && (
+            <button
+              type="button"
+              onClick={reauth}
+              className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground"
+            >
+              Autorizar Agenda
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => eventsQ.refetch()}
+            className="rounded-md border border-zinc-200 px-3 py-1.5 text-xs dark:border-zinc-700"
+          >
+            Tentar de novo
+          </button>
+          <a
+            href="/settings/channels"
+            className="rounded-md border border-zinc-200 px-3 py-1.5 text-xs dark:border-zinc-700"
+          >
+            Canais
+          </a>
+        </div>
       </div>
     );
   }

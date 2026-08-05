@@ -153,6 +153,8 @@ export const channelsService = {
     name?: string;
     visibility?: 'ORG' | 'PRIVATE';
     channelId?: string;
+    /** Volta pra esta rota após o Google (ex.: /calendar). */
+    returnTo?: string;
   }): Promise<{ url: string; expiresInSec: number }> {
     const { data } = await api.post('/channels/gmail/oauth/start', input || {});
     return data.data ?? data;

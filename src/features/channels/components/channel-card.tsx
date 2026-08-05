@@ -19,6 +19,7 @@ import {
   Mail,
   ExternalLink,
   Inbox,
+  CalendarDays,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Channel } from '../services/channels.service';
@@ -186,6 +187,38 @@ export function ChannelCard({ channel, onUpdate }: ChannelCardProps) {
           )}
         </div>
         <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">{meta.label}</p>
+        {channel.type === 'GMAIL' && (() => {
+          const cfg = (channel.config as any) || {};
+          const granted = String(cfg.scopeGranted || cfg.scope || '');
+          const hasMail =
+            cfg.hasGmailModify === true ||
+            /gmail\.(modify|readonly|send)/i.test(granted) ||
+            !!cfg.refreshToken;
+          const hasCal =
+            cfg.hasCalendar === true || /calendar(\.events)?/i.test(granted);
+          return (
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              <span
+                className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+                  hasMail
+                    ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
+                    : 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800'
+                }`}
+              >
+                E-mail {hasMail ? '✓' : '—'}
+              </span>
+              <span
+                className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+                  hasCal
+                    ? 'bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300'
+                    : 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300'
+                }`}
+              >
+                Agenda {hasCal ? '✓' : 'pendente'}
+              </span>
+            </div>
+          );
+        })()}
 
         {sync.supported && sync.job && (
           <div className="mt-3">
@@ -284,6 +317,7 @@ export function ChannelCard({ channel, onUpdate }: ChannelCardProps) {
                     const { url } = await channelsService.gmailOAuthStart({
                       name: channel.name,
                       channelId: channel.id,
+                      returnTo: '/settings/channels',
                     });
                     window.location.href = url;
                   } catch (err) {
@@ -295,6 +329,35 @@ export function ChannelCard({ channel, onUpdate }: ChannelCardProps) {
                 className="inline-flex items-center gap-1.5 rounded-md bg-zinc-100 px-2.5 py-1.5 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
               >
                 Reconectar Google
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    const { url } = await channelsService.gmailOAuthStart({
+                      name: channel.name,
+                      channelId: channel.id,
+                      returnTo: '/calendar',
+                    });
+                    window.location.href = url;
+                  } catch (err) {
+                    toast.error(
+                      err instanceof Error ? err.message : 'Falha ao autorizar Agenda',
+                    );
+                  }
+                }}
+                className="inline-flex items-center gap-1.5 rounded-md bg-sky-50 px-2.5 py-1.5 text-xs font-medium text-sky-800 transition-colors hover:bg-sky-100 dark:bg-sky-950/40 dark:text-sky-200 dark:hover:bg-sky-950/60"
+                title="Autoriza calendar.events no mesmo Google do e-mail"
+              >
+                <CalendarDays className="h-3 w-3" />
+                {/calendar(\.events)?/i.test(
+                  String(
+                    (channel.config as any)?.scopeGranted ||
+                      (channel.config as any)?.scope ||
+                      '',
+                  ),
+                ) || (channel.config as any)?.hasCalendar
+                  ? 'Reautorizar Agenda'
+                  : 'Autorizar Agenda'}
               </button>
             </>
           )}
