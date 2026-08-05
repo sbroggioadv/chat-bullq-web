@@ -95,6 +95,17 @@ export const emailService = {
     const { data } = await api.post('/email/reply', input);
     return data.data ?? data;
   },
+
+  async forward(input: {
+    channelId: string;
+    threadId: string;
+    to: string;
+    body?: string;
+    subject?: string;
+  }): Promise<{ success: boolean; id: string; threadId: string }> {
+    const { data } = await api.post('/email/forward', input);
+    return data.data ?? data;
+  },
 };
 
 /** URL ?folder= usa a forma da SPEC (inbox|sent|spam|label:<id>). */

@@ -1,11 +1,21 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { ArrowLeft, Loader2, MailOpen, RefreshCw, Reply, Send } from 'lucide-react';
+import {
+  ArrowLeft,
+  Forward,
+  Loader2,
+  MailOpen,
+  RefreshCw,
+  Reply,
+  Send,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import type { EmailThreadDetail } from '../services/email.service';
 import { emailService } from '../services/email.service';
 import { formatLongDate } from '../lib/format';
+
+type ComposeMode = 'reply' | 'forward' | null;
 
 interface EmailThreadViewProps {
   detail: EmailThreadDetail | undefined;
@@ -19,7 +29,6 @@ interface EmailThreadViewProps {
   onReauth?: () => void;
 }
 
-/** Coluna 3 — leitura + responder (W2). Não bloqueia UI por flag canSend. */
 export function EmailThreadView({
   detail,
   channelId,
@@ -31,8 +40,9 @@ export function EmailThreadView({
   onSent,
   onReauth,
 }: EmailThreadViewProps) {
-  const [replyOpen, setReplyOpen] = useState(false);
-  const [replyBody, setReplyBody] = useState('');
+  const [mode, setMode] = useState<ComposeMode>(null);
+  const [body, setBody] = useState('');
+  const [forwardTo, setForwardTo] = useState('');
   const [sending, setSending] = useState(false);
   const [reauthHint, setReauthHint] = useState(false);
 
@@ -79,31 +89,52 @@ export function EmailThreadView({
     );
   }
 
+  const openCompose = (m: ComposeMode) => {
+    setMode(m);
+    setBody('');
+    setForwardTo('');
+    setReauthHint(false);
+  };
+
   const handleSend = async () => {
-    if (!channelId || !detail.id) return;
-    const body = replyBody.trim();
-    if (!body) {
+    if (!channelId || !detail.id || !mode) return;
+    if (mode === 'reply' && !body.trim()) {
       toast.error('Escreva a resposta antes de enviar');
+      return;
+    }
+    if (mode === 'forward' && !forwardTo.trim()) {
+      toast.error('Informe o destinatário para encaminhar');
       return;
     }
     setSending(true);
     try {
-      await emailService.reply({
-        channelId,
-        threadId: detail.id,
-        body,
-        to: defaultTo || undefined,
-      });
-      toast.success('Resposta enviada');
-      setReplyBody('');
-      setReplyOpen(false);
+      if (mode === 'reply') {
+        await emailService.reply({
+          channelId,
+          threadId: detail.id,
+          body: body.trim(),
+          to: defaultTo || undefined,
+        });
+        toast.success('Resposta enviada');
+      } else {
+        await emailService.forward({
+          channelId,
+          threadId: detail.id,
+          to: forwardTo.trim(),
+          body: body.trim() || undefined,
+        });
+        toast.success('E-mail encaminhado');
+      }
+      setBody('');
+      setForwardTo('');
+      setMode(null);
       setReauthHint(false);
       onSent();
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Falha ao enviar';
-      const needs =
-        /leitura|reconect|gmail\.send|permiss|scope|403|autoriz/i.test(msg);
-      if (needs) setReauthHint(true);
+      if (/leitura|reconect|gmail\.send|gmail\.modify|permiss|scope|403|autoriz/i.test(msg)) {
+        setReauthHint(true);
+      }
       toast.error(msg);
     } finally {
       setSending(false);
@@ -126,25 +157,33 @@ export function EmailThreadView({
         </h1>
         <button
           type="button"
-          onClick={() => setReplyOpen((v) => !v)}
+          onClick={() => openCompose(mode === 'reply' ? null : 'reply')}
           className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-primary px-2.5 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
         >
           <Reply className="h-3.5 w-3.5" />
           Responder
         </button>
+        <button
+          type="button"
+          onClick={() => openCompose(mode === 'forward' ? null : 'forward')}
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-zinc-200 bg-white px-2.5 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+        >
+          <Forward className="h-3.5 w-3.5" />
+          Encaminhar
+        </button>
       </div>
 
       {reauthHint && (
         <div className="border-b border-amber-200/80 bg-amber-50 px-5 py-2.5 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100">
-          O Google recusou o envio. Use{' '}
+          O Google ainda não autorizou envio nesta conexão.{' '}
           <button
             type="button"
             onClick={onReauth}
             className="font-semibold underline underline-offset-2"
           >
-            Reconectar Google
+            Reconectar Google uma vez
           </button>{' '}
-          <strong>uma vez</strong> no canal (não cria caixa nova) e autorize o envio.
+          (no canal existente — não cria caixa nova) e marque o acesso ao Gmail.
         </div>
       )}
 
@@ -186,41 +225,52 @@ export function EmailThreadView({
         })}
       </div>
 
-      {replyOpen && (
+      {mode && (
         <div className="border-t border-zinc-200/80 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
           <div className="mb-2 flex items-center justify-between gap-2">
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">
-              Responder{defaultTo ? ` para ${defaultTo}` : ''}
+            <p className="text-xs font-medium text-zinc-600 dark:text-zinc-300">
+              {mode === 'reply'
+                ? `Responder${defaultTo ? ` para ${defaultTo}` : ''}`
+                : 'Encaminhar e-mail'}
             </p>
             <button
               type="button"
-              onClick={() => setReplyOpen(false)}
+              onClick={() => setMode(null)}
               className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
             >
               Cancelar
             </button>
           </div>
+
+          {mode === 'forward' && (
+            <input
+              type="text"
+              value={forwardTo}
+              onChange={(e) => setForwardTo(e.target.value)}
+              placeholder="Para: email@cliente.com (vírgula para vários)"
+              className="mb-2 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-900 outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100"
+            />
+          )}
+
           <textarea
-            value={replyBody}
-            onChange={(e) => setReplyBody(e.target.value)}
-            rows={5}
-            placeholder="Escreva sua resposta…"
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            rows={mode === 'forward' ? 3 : 5}
+            placeholder={
+              mode === 'reply'
+                ? 'Escreva sua resposta…'
+                : 'Nota opcional acima da mensagem encaminhada…'
+            }
             className="w-full resize-y rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-900 outline-none ring-primary/30 placeholder:text-zinc-400 focus:border-primary focus:ring-2 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100"
           />
-          <div className="mt-2 flex justify-end gap-2">
-            {onReauth && (
-              <button
-                type="button"
-                onClick={onReauth}
-                className="inline-flex items-center gap-1.5 rounded-md border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300"
-              >
-                Reconectar Google
-              </button>
-            )}
+          <div className="mt-2 flex justify-end">
             <button
               type="button"
               onClick={handleSend}
-              disabled={sending || !replyBody.trim()}
+              disabled={
+                sending ||
+                (mode === 'reply' ? !body.trim() : !forwardTo.trim())
+              }
               className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
             >
               {sending ? (
@@ -228,7 +278,7 @@ export function EmailThreadView({
               ) : (
                 <Send className="h-3.5 w-3.5" />
               )}
-              Enviar
+              {mode === 'reply' ? 'Enviar resposta' : 'Encaminhar'}
             </button>
           </div>
         </div>
