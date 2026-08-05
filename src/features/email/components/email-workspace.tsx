@@ -13,6 +13,8 @@ import {
 import { EmailFolderList } from './email-folder-list';
 import { EmailThreadList } from './email-thread-list';
 import { EmailThreadView } from './email-thread-view';
+import { channelsService } from '@/features/channels/services/channels.service';
+import { toast } from 'sonner';
 
 const SYSTEM_NAMES: Record<string, string> = {
   INBOX: 'Caixa de entrada',
@@ -165,11 +167,30 @@ export function EmailWorkspace() {
       <div className={`min-w-0 flex-1 md:flex ${threadId ? 'flex' : 'hidden'}`}>
         <EmailThreadView
           detail={threadQuery.data}
+          channelId={channelId}
           threadSelected={!!threadId}
           loading={threadQuery.isPending && !!threadId}
           error={threadQuery.isError}
           onRetry={() => threadQuery.refetch()}
           onBack={() => navigate(folderId)}
+          onSent={() => {
+            threadQuery.refetch();
+            threadsQuery.refetch();
+          }}
+          onReauth={async () => {
+            try {
+              const { url } = await channelsService.gmailOAuthStart({
+                name: statusQuery.data?.channels[0]?.name,
+              });
+              window.location.href = url;
+            } catch (err) {
+              toast.error(
+                err instanceof Error
+                  ? err.message
+                  : 'Falha ao iniciar reconexão Google',
+              );
+            }
+          }}
         />
       </div>
     </div>

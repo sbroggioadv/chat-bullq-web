@@ -4,6 +4,8 @@ export interface EmailChannel {
   id: string;
   name: string;
   email: string | null;
+  canSend?: boolean;
+  needsReauthForSend?: boolean;
 }
 
 export interface EmailStatus {
@@ -44,6 +46,7 @@ export interface EmailMessage {
   snippet: string;
   unread: boolean;
   outbound: boolean;
+  messageId?: string;
 }
 
 export interface EmailThreadDetail {
@@ -51,6 +54,9 @@ export interface EmailThreadDetail {
   externalConversationId: string;
   subject: string;
   messages: EmailMessage[];
+  canSend?: boolean;
+  needsReauthForSend?: boolean;
+  myEmail?: string | null;
 }
 
 export const emailService = {
@@ -76,6 +82,17 @@ export const emailService = {
     const { data } = await api.get(`/email/threads/${threadId}`, {
       params: { channelId },
     });
+    return data.data ?? data;
+  },
+
+  async reply(input: {
+    channelId: string;
+    threadId: string;
+    body: string;
+    to?: string;
+    subject?: string;
+  }): Promise<{ success: boolean; id: string; threadId: string }> {
+    const { data } = await api.post('/email/reply', input);
     return data.data ?? data;
   },
 };

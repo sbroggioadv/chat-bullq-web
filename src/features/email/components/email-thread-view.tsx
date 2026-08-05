@@ -1,28 +1,47 @@
 'use client';
 
-import { ArrowLeft, MailOpen, RefreshCw } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { ArrowLeft, Loader2, MailOpen, RefreshCw, Reply, Send } from 'lucide-react';
+import { toast } from 'sonner';
 import type { EmailThreadDetail } from '../services/email.service';
+import { emailService } from '../services/email.service';
 import { formatLongDate } from '../lib/format';
 
 interface EmailThreadViewProps {
   detail: EmailThreadDetail | undefined;
+  channelId: string | undefined;
   threadSelected: boolean;
   loading: boolean;
   error: boolean;
   onRetry: () => void;
-  /** Mobile: volta pra lista (colunas empilham em < md). */
   onBack: () => void;
+  onSent: () => void;
+  /** Canal precisa reconectar OAuth com gmail.send */
+  onReauth?: () => void;
 }
 
-/** Coluna 3 do /email — leitura do thread (readonly, corpo em texto). */
+/** Coluna 3 do /email — leitura + composer de resposta (W2). */
 export function EmailThreadView({
   detail,
+  channelId,
   threadSelected,
   loading,
   error,
   onRetry,
   onBack,
+  onSent,
+  onReauth,
 }: EmailThreadViewProps) {
+  const [replyOpen, setReplyOpen] = useState(false);
+  const [replyBody, setReplyBody] = useState('');
+  const [sending, setSending] = useState(false);
+
+  const defaultTo = useMemo(() => {
+    if (!detail?.messages?.length) return '';
+    const inbound = [...detail.messages].reverse().find((m) => !m.outbound);
+    return inbound?.from.email || '';
+  }, [detail]);
+
   if (!threadSelected) {
     return (
       <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-zinc-50 px-6 text-center dark:bg-zinc-950">
@@ -61,6 +80,36 @@ export function EmailThreadView({
     );
   }
 
+  const canSend = detail.canSend !== false && !detail.needsReauthForSend;
+  const needsReauth = !!detail.needsReauthForSend || detail.canSend === false;
+
+  const handleSend = async () => {
+    if (!channelId || !detail.id) return;
+    const body = replyBody.trim();
+    if (!body) {
+      toast.error('Escreva a resposta antes de enviar');
+      return;
+    }
+    setSending(true);
+    try {
+      await emailService.reply({
+        channelId,
+        threadId: detail.id,
+        body,
+        to: defaultTo || undefined,
+      });
+      toast.success('Resposta enviada');
+      setReplyBody('');
+      setReplyOpen(false);
+      onSent();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Falha ao enviar';
+      toast.error(msg);
+    } finally {
+      setSending(false);
+    }
+  };
+
   return (
     <div className="flex h-full w-full min-w-0 flex-col bg-zinc-50 dark:bg-zinc-950">
       <div className="flex items-center gap-2 border-b border-zinc-200/80 bg-white px-5 py-3.5 dark:border-zinc-800 dark:bg-zinc-950">
@@ -72,10 +121,40 @@ export function EmailThreadView({
         >
           <ArrowLeft className="h-4 w-4" />
         </button>
-        <h1 className="truncate text-base font-semibold text-zinc-900 dark:text-zinc-100">
+        <h1 className="min-w-0 flex-1 truncate text-base font-semibold text-zinc-900 dark:text-zinc-100">
           {detail.subject}
         </h1>
+        {!needsReauth && (
+          <button
+            type="button"
+            onClick={() => setReplyOpen((v) => !v)}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-primary px-2.5 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+          >
+            <Reply className="h-3.5 w-3.5" />
+            Responder
+          </button>
+        )}
       </div>
+
+      {needsReauth && (
+        <div className="border-b border-amber-200/80 bg-amber-50 px-5 py-2.5 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100">
+          Este canal só tem permissão de leitura. Para responder daqui, reconecte o Gmail
+          autorizando envio.{' '}
+          {onReauth ? (
+            <button
+              type="button"
+              onClick={onReauth}
+              className="font-semibold underline underline-offset-2"
+            >
+              Reconectar com Google
+            </button>
+          ) : (
+            <a href="/settings/channels" className="font-semibold underline underline-offset-2">
+              Ir para Canais
+            </a>
+          )}
+        </div>
+      )}
 
       <div className="flex-1 space-y-3 overflow-y-auto p-4">
         {detail.messages.map((m) => {
@@ -114,6 +193,45 @@ export function EmailThreadView({
           );
         })}
       </div>
+
+      {replyOpen && canSend && (
+        <div className="border-t border-zinc-200/80 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              Responder{defaultTo ? ` para ${defaultTo}` : ''}
+            </p>
+            <button
+              type="button"
+              onClick={() => setReplyOpen(false)}
+              className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+            >
+              Cancelar
+            </button>
+          </div>
+          <textarea
+            value={replyBody}
+            onChange={(e) => setReplyBody(e.target.value)}
+            rows={5}
+            placeholder="Escreva sua resposta…"
+            className="w-full resize-y rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-900 outline-none ring-primary/30 placeholder:text-zinc-400 focus:border-primary focus:ring-2 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100"
+          />
+          <div className="mt-2 flex justify-end">
+            <button
+              type="button"
+              onClick={handleSend}
+              disabled={sending || !replyBody.trim()}
+              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            >
+              {sending ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Send className="h-3.5 w-3.5" />
+              )}
+              Enviar
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

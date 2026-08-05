@@ -41,6 +41,11 @@ export function EmailTree() {
     if (typeof window === 'undefined') return true;
     return window.localStorage.getItem(STORAGE_KEY) !== '0';
   });
+  // Marcadores recolhidos por padrão — não inflar a sidebar
+  const [labelsExpanded, setLabelsExpanded] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage.getItem('email-tree-labels-expanded') === '1';
+  });
 
   const { data: status } = useQuery({
     queryKey: ['email-status'],
@@ -134,12 +139,35 @@ export function EmailTree() {
           {systemFolders.map(renderFolder)}
 
           {userLabels.length > 0 && (
-            <>
-              <div className="px-2 pt-1 text-[10px] font-medium uppercase tracking-wide text-sidebar-foreground/40">
-                Marcadores
-              </div>
-              {userLabels.map(renderFolder)}
-            </>
+            <div className="pt-0.5">
+              <button
+                type="button"
+                onClick={() => {
+                  setLabelsExpanded((v) => {
+                    const next = !v;
+                    if (typeof window !== 'undefined') {
+                      window.localStorage.setItem(
+                        'email-tree-labels-expanded',
+                        next ? '1' : '0',
+                      );
+                    }
+                    return next;
+                  });
+                }}
+                className="flex w-full items-center gap-1 rounded-md px-2 py-1 text-left text-[10px] font-medium uppercase tracking-wide text-sidebar-foreground/40 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground/70"
+              >
+                {labelsExpanded ? (
+                  <ChevronDown className="size-3" />
+                ) : (
+                  <ChevronRight className="size-3" />
+                )}
+                <span className="flex-1">Marcadores</span>
+                <span className="normal-case tracking-normal text-sidebar-foreground/30">
+                  {userLabels.length}
+                </span>
+              </button>
+              {labelsExpanded && userLabels.map(renderFolder)}
+            </div>
           )}
         </div>
       )}
