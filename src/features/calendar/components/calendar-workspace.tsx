@@ -513,10 +513,10 @@ export function CalendarWorkspace() {
                       key={ev.id}
                       type="button"
                       onClick={() => openEdit(ev)}
-                      className="relative block w-full overflow-hidden rounded-md border border-white/10 px-2 py-1.5 pl-2.5 text-left text-[11px] shadow-sm transition hover:ring-1 hover:ring-primary/40"
+                      className="relative block w-full overflow-hidden rounded-md border border-zinc-200/80 bg-white px-2 py-1.5 pl-2.5 text-left text-[11px] shadow-sm transition hover:ring-1 hover:ring-primary/30 dark:border-white/10 dark:bg-zinc-900/80"
                       style={{
-                        backgroundColor: hexToRgba(solid, 0.22),
-                        color: '#e4e4e7',
+                        // fundo suave da cor do Google — texto sempre legível via zinc
+                        backgroundColor: hexToRgba(solid, 0.18),
                       }}
                       title="Clique para editar"
                     >
@@ -525,13 +525,13 @@ export function CalendarWorkspace() {
                         style={{ backgroundColor: solid }}
                       />
                       <div className="flex items-start gap-1">
-                        <div className="min-w-0 flex-1 font-semibold leading-snug text-zinc-100">
+                        <div className="min-w-0 flex-1 font-semibold leading-snug text-zinc-900 dark:text-zinc-100">
                           {ev.summary}
                         </div>
-                        <Pencil className="mt-0.5 h-3 w-3 shrink-0 text-zinc-500" />
+                        <Pencil className="mt-0.5 h-3 w-3 shrink-0 text-zinc-400" />
                       </div>
                       {ev.start && !ev.allDay && (
-                        <div className="text-zinc-400">
+                        <div className="text-zinc-600 dark:text-zinc-400">
                           {new Date(ev.start).toLocaleTimeString('pt-BR', {
                             hour: '2-digit',
                             minute: '2-digit',
@@ -544,11 +544,11 @@ export function CalendarWorkspace() {
                             : ''}
                         </div>
                       )}
-                      <div className="mt-1 flex flex-wrap items-center gap-1.5 text-zinc-400">
+                      <div className="mt-1 flex flex-wrap items-center gap-1.5 text-zinc-600 dark:text-zinc-400">
                         {ev.calendarSummary && (
                           <span
-                            className="inline-flex max-w-[9rem] truncate rounded px-1 py-0.5 text-[10px] font-medium text-zinc-100"
-                            style={{ backgroundColor: hexToRgba(solid, 0.35) }}
+                            className="inline-flex max-w-[9rem] truncate rounded px-1 py-0.5 text-[10px] font-semibold text-zinc-800 dark:text-zinc-100"
+                            style={{ backgroundColor: hexToRgba(solid, 0.4) }}
                           >
                             {ev.calendarSummary}
                           </span>
@@ -559,7 +559,7 @@ export function CalendarWorkspace() {
                             target="_blank"
                             rel="noreferrer"
                             onClick={(e) => e.stopPropagation()}
-                            className="inline-flex items-center gap-0.5 text-sky-300 hover:underline"
+                            className="inline-flex items-center gap-0.5 font-medium text-sky-700 hover:underline dark:text-sky-300"
                           >
                             <Video className="h-3 w-3" /> Meet
                           </a>
@@ -570,7 +570,7 @@ export function CalendarWorkspace() {
                             target="_blank"
                             rel="noreferrer"
                             onClick={(e) => e.stopPropagation()}
-                            className="inline-flex items-center gap-0.5 hover:underline"
+                            className="inline-flex items-center gap-0.5 font-medium text-zinc-700 hover:underline dark:text-zinc-300"
                           >
                             <ExternalLink className="h-3 w-3" /> Google
                           </a>
