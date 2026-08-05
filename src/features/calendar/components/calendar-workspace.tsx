@@ -43,6 +43,25 @@ function toLocalInputValue(d: Date) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+/** Converte #RRGGBB em rgba() com alpha — chips legíveis no tema escuro. */
+function hexToRgba(hex: string, alpha: number): string {
+  const raw = String(hex || '').replace('#', '').trim();
+  if (raw.length !== 3 && raw.length !== 6) return `rgba(84,132,237,${alpha})`;
+  const full =
+    raw.length === 3
+      ? raw
+          .split('')
+          .map((c) => c + c)
+          .join('')
+      : raw;
+  const n = parseInt(full, 16);
+  if (Number.isNaN(n)) return `rgba(84,132,237,${alpha})`;
+  const r = (n >> 16) & 255;
+  const g = (n >> 8) & 255;
+  const b = n & 255;
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
 export function CalendarWorkspace() {
   const qc = useQueryClient();
   const router = useRouter();
@@ -377,32 +396,27 @@ export function CalendarWorkspace() {
               </div>
               <div className="space-y-1.5">
                 {list.map((ev: any) => {
-                  const bg = ev.backgroundColor || 'rgba(59,130,246,0.12)';
-                  const fg = ev.foregroundColor || undefined;
-                  const border = ev.backgroundColor
-                    ? `${ev.backgroundColor}99`
-                    : 'rgba(59,130,246,0.35)';
+                  const solid = ev.backgroundColor || '#5484ed';
+                  // Chip legível no dark: fundo suave + barra lateral na cor forte
+                  const softBg = hexToRgba(solid, 0.22);
+                  const bar = solid;
+                  const text = '#e4e4e7';
                   return (
                     <div
                       key={ev.id}
-                      className="rounded-md border px-2 py-1.5 text-[11px] shadow-sm"
-                      style={{
-                        backgroundColor: bg,
-                        borderColor: border,
-                        color: fg || undefined,
-                      }}
+                      className="relative overflow-hidden rounded-md border border-white/10 px-2 py-1.5 pl-2.5 text-[11px] shadow-sm"
+                      style={{ backgroundColor: softBg, color: text }}
+                      title={ev.calendarSummary || undefined}
                     >
-                      <div
-                        className="font-semibold leading-snug"
-                        style={{ color: fg || undefined }}
-                      >
+                      <span
+                        className="absolute bottom-0 left-0 top-0 w-1 rounded-l-md"
+                        style={{ backgroundColor: bar }}
+                      />
+                      <div className="font-semibold leading-snug text-zinc-100">
                         {ev.summary}
                       </div>
                       {ev.start && !ev.allDay && (
-                        <div
-                          className="opacity-80"
-                          style={{ color: fg || undefined }}
-                        >
+                        <div className="text-zinc-400">
                           {new Date(ev.start).toLocaleTimeString('pt-BR', {
                             hour: '2-digit',
                             minute: '2-digit',
@@ -415,14 +429,24 @@ export function CalendarWorkspace() {
                             : ''}
                         </div>
                       )}
-                      <div className="mt-1 flex flex-wrap gap-1.5 opacity-90">
+                      <div className="mt-1 flex flex-wrap items-center gap-1.5 text-zinc-400">
+                        {ev.calendarSummary && (
+                          <span
+                            className="inline-flex max-w-[9rem] truncate rounded px-1 py-0.5 text-[10px] font-medium"
+                            style={{
+                              backgroundColor: hexToRgba(solid, 0.35),
+                              color: '#fafafa',
+                            }}
+                          >
+                            {ev.calendarSummary}
+                          </span>
+                        )}
                         {ev.meetLink && (
                           <a
                             href={ev.meetLink}
                             target="_blank"
                             rel="noreferrer"
-                            className="inline-flex items-center gap-0.5 underline-offset-2 hover:underline"
-                            style={{ color: fg || undefined }}
+                            className="inline-flex items-center gap-0.5 text-sky-300 hover:underline"
                           >
                             <Video className="h-3 w-3" /> Meet
                           </a>
@@ -432,8 +456,7 @@ export function CalendarWorkspace() {
                             href={ev.htmlLink}
                             target="_blank"
                             rel="noreferrer"
-                            className="inline-flex items-center gap-0.5 underline-offset-2 hover:underline"
-                            style={{ color: fg || undefined }}
+                            className="inline-flex items-center gap-0.5 hover:underline"
                           >
                             <ExternalLink className="h-3 w-3" /> Google
                           </a>

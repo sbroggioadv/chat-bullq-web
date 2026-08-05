@@ -28,6 +28,9 @@ export interface CalendarEvent {
   colorId?: string | null;
   backgroundColor?: string;
   foregroundColor?: string;
+  calendarId?: string;
+  calendarSummary?: string;
+  eventId?: string;
 }
 
 export const calendarService = {
