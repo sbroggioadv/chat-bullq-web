@@ -6,19 +6,26 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import {
   CalendarDays,
   Loader2,
+  Pencil,
   Plus,
   RefreshCw,
+  Trash2,
   Video,
   ExternalLink,
+  X,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { calendarService } from '../services/calendar.service';
+import {
+  calendarService,
+  type CalendarEvent,
+  type GoogleCalendarRef,
+} from '../services/calendar.service';
 import { channelsService } from '@/features/channels/services/channels.service';
 
 function startOfWeek(d: Date) {
   const x = new Date(d);
-  const day = x.getDay(); // 0 sun
-  const diff = day === 0 ? -6 : 1 - day; // monday start
+  const day = x.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
   x.setDate(x.getDate() + diff);
   x.setHours(0, 0, 0, 0);
   return x;
@@ -43,7 +50,6 @@ function toLocalInputValue(d: Date) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-/** Converte #RRGGBB em rgba() com alpha — chips legíveis no tema escuro. */
 function hexToRgba(hex: string, alpha: number): string {
   const raw = String(hex || '').replace('#', '').trim();
   if (raw.length !== 3 && raw.length !== 6) return `rgba(84,132,237,${alpha})`;
@@ -62,28 +68,42 @@ function hexToRgba(hex: string, alpha: number): string {
   return `rgba(${r},${g},${b},${alpha})`;
 }
 
+type Draft = {
+  mode: 'create' | 'edit';
+  summary: string;
+  attendees: string;
+  withMeet: boolean;
+  startLocal: string;
+  endLocal: string;
+  calendarId: string;
+  eventId?: string;
+  googleCalendarId?: string;
+};
+
+function defaultDraft(calendarId = 'primary'): Draft {
+  const start = new Date();
+  start.setMinutes(0, 0, 0);
+  start.setHours(start.getHours() + 1);
+  const end = new Date(start.getTime() + 60 * 60_000);
+  return {
+    mode: 'create',
+    summary: '',
+    attendees: '',
+    withMeet: true,
+    startLocal: toLocalInputValue(start),
+    endLocal: toLocalInputValue(end),
+    calendarId,
+  };
+}
+
 export function CalendarWorkspace() {
   const qc = useQueryClient();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [anchor, setAnchor] = useState(() => startOfWeek(new Date()));
-  const [showCreate, setShowCreate] = useState(false);
-  const [summary, setSummary] = useState('');
-  const [attendees, setAttendees] = useState('');
-  const [withMeet, setWithMeet] = useState(true);
-  const [startLocal, setStartLocal] = useState(() => {
-    const d = new Date();
-    d.setMinutes(0, 0, 0);
-    d.setHours(d.getHours() + 1);
-    return toLocalInputValue(d);
-  });
-  const [endLocal, setEndLocal] = useState(() => {
-    const d = new Date();
-    d.setMinutes(0, 0, 0);
-    d.setHours(d.getHours() + 2);
-    return toLocalInputValue(d);
-  });
-  const [creating, setCreating] = useState(false);
+  const [draft, setDraft] = useState<Draft | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const weekDays = useMemo(
     () => Array.from({ length: 7 }, (_, i) => addDays(anchor, i)),
@@ -98,7 +118,16 @@ export function CalendarWorkspace() {
     staleTime: 30_000,
   });
 
-  // Pós-OAuth: /calendar?gmail=connected&calendar=0|1
+  const calendarsQ = useQuery({
+    queryKey: ['calendar-list', statusQ.data?.channelId],
+    queryFn: () =>
+      calendarService.calendars(statusQ.data?.channelId || undefined),
+    enabled: !!statusQ.data?.connected && !statusQ.data?.needsReauthForCalendar,
+    staleTime: 60_000,
+  });
+
+  const calendars: GoogleCalendarRef[] = calendarsQ.data?.calendars || [];
+
   useEffect(() => {
     const gmail = searchParams.get('gmail');
     if (!gmail) return;
@@ -106,17 +135,16 @@ export function CalendarWorkspace() {
     if (gmail === 'connected') {
       if (cal === '0') {
         toast.error(
-          'Google conectou, mas a Agenda não foi autorizada. Em Canais use Autorizar Agenda e aceite o Calendar.',
+          'Google conectou, mas a Agenda não foi autorizada. Em Canais use Autorizar Agenda.',
         );
       } else {
         toast.success('Google conectado — carregando Agenda…');
       }
       qc.invalidateQueries({ queryKey: ['calendar-status'] });
       qc.invalidateQueries({ queryKey: ['calendar-events'] });
+      qc.invalidateQueries({ queryKey: ['calendar-list'] });
     } else if (gmail === 'error') {
-      toast.error(
-        searchParams.get('reason') || 'Falha na autorização Google',
-      );
+      toast.error(searchParams.get('reason') || 'Falha na autorização Google');
     }
     router.replace('/calendar');
   }, [searchParams, qc, router]);
@@ -133,10 +161,8 @@ export function CalendarWorkspace() {
   });
 
   const eventsByDay = useMemo(() => {
-    const map = new Map<string, typeof eventsQ.data extends infer T ? any[] : never>();
-    for (const d of weekDays) {
-      map.set(d.toISOString().slice(0, 10), []);
-    }
+    const map = new Map<string, CalendarEvent[]>();
+    for (const d of weekDays) map.set(d.toISOString().slice(0, 10), []);
     for (const ev of eventsQ.data?.events || []) {
       if (!ev.start) continue;
       const key = new Date(ev.start).toISOString().slice(0, 10);
@@ -145,6 +171,9 @@ export function CalendarWorkspace() {
     }
     return map;
   }, [eventsQ.data, weekDays]);
+
+  const primaryCalId =
+    calendars.find((c) => c.primary)?.id || calendars[0]?.id || 'primary';
 
   const reauth = async () => {
     try {
@@ -159,37 +188,98 @@ export function CalendarWorkspace() {
     }
   };
 
-  const create = async () => {
-    if (!summary.trim()) {
+  const openCreate = () => setDraft(defaultDraft(primaryCalId));
+
+  const openEdit = (ev: CalendarEvent) => {
+    const start = ev.start ? new Date(ev.start) : new Date();
+    const end = ev.end ? new Date(ev.end) : new Date(start.getTime() + 3600_000);
+    setDraft({
+      mode: 'edit',
+      summary: ev.summary || '',
+      attendees: (ev.attendees || []).map((a) => a.email).join(', '),
+      withMeet: !!ev.meetLink,
+      startLocal: toLocalInputValue(start),
+      endLocal: toLocalInputValue(end),
+      calendarId: ev.calendarId || 'primary',
+      eventId: ev.eventId || ev.id.split(':').slice(1).join(':') || ev.id,
+      googleCalendarId: ev.calendarId || 'primary',
+    });
+  };
+
+  const save = async () => {
+    if (!draft) return;
+    if (!draft.summary.trim()) {
       toast.error('Informe o título');
       return;
     }
-    setCreating(true);
+    setSaving(true);
     try {
-      const startIso = new Date(startLocal).toISOString();
-      const endIso = new Date(endLocal).toISOString();
-      const res = await calendarService.create({
-        channelId: statusQ.data?.channelId || undefined,
-        summary: summary.trim(),
-        startIso,
-        endIso,
-        withMeet,
-        attendeeEmails: attendees
-          .split(/[,;]/)
-          .map((s) => s.trim())
-          .filter((s) => s.includes('@')),
-      });
-      toast.success(
-        res.meetLink ? 'Evento criado com Meet' : 'Evento criado',
-      );
-      setShowCreate(false);
-      setSummary('');
-      setAttendees('');
+      const startIso = new Date(draft.startLocal).toISOString();
+      const endIso = new Date(draft.endLocal).toISOString();
+      const attendeeEmails = draft.attendees
+        .split(/[,;]/)
+        .map((s) => s.trim())
+        .filter((s) => s.includes('@'));
+
+      if (draft.mode === 'create') {
+        const res = await calendarService.create({
+          channelId: statusQ.data?.channelId || undefined,
+          calendarId: draft.calendarId || primaryCalId,
+          summary: draft.summary.trim(),
+          startIso,
+          endIso,
+          withMeet: draft.withMeet,
+          attendeeEmails,
+        });
+        toast.success(
+          res.meetLink
+            ? 'Evento no Google · Meet pronto (gravação/transcrição no Meet)'
+            : 'Evento criado no Google',
+        );
+      } else {
+        if (!draft.eventId || !draft.googleCalendarId) {
+          toast.error('Evento inválido');
+          return;
+        }
+        await calendarService.update(draft.eventId, {
+          channelId: statusQ.data?.channelId || undefined,
+          calendarId: draft.googleCalendarId,
+          summary: draft.summary.trim(),
+          startIso,
+          endIso,
+          attendeeEmails,
+          withMeet: draft.withMeet && true,
+        });
+        toast.success('Evento atualizado no Google');
+      }
+      setDraft(null);
       qc.invalidateQueries({ queryKey: ['calendar-events'] });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Falha ao criar evento');
+      toast.error(err instanceof Error ? err.message : 'Falha ao salvar');
     } finally {
-      setCreating(false);
+      setSaving(false);
+    }
+  };
+
+  const remove = async () => {
+    if (!draft || draft.mode !== 'edit' || !draft.eventId || !draft.googleCalendarId)
+      return;
+    if (!confirm('Apagar este evento no Google? Convidados serão notificados.'))
+      return;
+    setDeleting(true);
+    try {
+      await calendarService.remove({
+        eventId: draft.eventId,
+        calendarId: draft.googleCalendarId,
+        channelId: statusQ.data?.channelId || undefined,
+      });
+      toast.success('Evento apagado no Google');
+      setDraft(null);
+      qc.invalidateQueries({ queryKey: ['calendar-events'] });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Falha ao apagar');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -217,25 +307,15 @@ export function CalendarWorkspace() {
       <div className="flex h-full flex-col items-center justify-center gap-3 p-8 text-center">
         <CalendarDays className="h-10 w-10 text-amber-400" />
         <p className="max-w-md text-sm text-zinc-600 dark:text-zinc-300">
-          A Agenda ainda não está autorizada neste Google. Faça isso em{' '}
-          <strong>Canais → Autorizar Agenda</strong> (ou pelo botão abaixo) e
-          aceite o acesso ao Calendar na tela do Google.
+          Autorize a Agenda em <strong>Canais → Autorizar Agenda</strong>.
         </p>
-        <div className="flex flex-wrap items-center justify-center gap-2">
-          <button
-            type="button"
-            onClick={reauth}
-            className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground"
-          >
-            Autorizar Agenda
-          </button>
-          <a
-            href="/settings/channels"
-            className="rounded-md border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-700 dark:border-zinc-700 dark:text-zinc-200"
-          >
-            Abrir Canais
-          </a>
-        </div>
+        <button
+          type="button"
+          onClick={reauth}
+          className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground"
+        >
+          Autorizar Agenda
+        </button>
       </div>
     );
   }
@@ -245,35 +325,16 @@ export function CalendarWorkspace() {
       eventsQ.error instanceof Error
         ? eventsQ.error.message
         : 'Falha ao carregar eventos';
-    const needsAuth = /permiss|agenda|calendar|scope|403|autoriz/i.test(msg);
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3 p-8 text-center">
-        <CalendarDays className="h-10 w-10 text-amber-400" />
         <p className="max-w-md text-sm text-zinc-600 dark:text-zinc-300">{msg}</p>
-        <div className="flex flex-wrap items-center justify-center gap-2">
-          {needsAuth && (
-            <button
-              type="button"
-              onClick={reauth}
-              className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground"
-            >
-              Autorizar Agenda
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={() => eventsQ.refetch()}
-            className="rounded-md border border-zinc-200 px-3 py-1.5 text-xs dark:border-zinc-700"
-          >
-            Tentar de novo
-          </button>
-          <a
-            href="/settings/channels"
-            className="rounded-md border border-zinc-200 px-3 py-1.5 text-xs dark:border-zinc-700"
-          >
-            Canais
-          </a>
-        </div>
+        <button
+          type="button"
+          onClick={() => eventsQ.refetch()}
+          className="rounded-md border border-zinc-200 px-3 py-1.5 text-xs dark:border-zinc-700"
+        >
+          Tentar de novo
+        </button>
       </div>
     );
   }
@@ -315,11 +376,13 @@ export function CalendarWorkspace() {
             onClick={() => eventsQ.refetch()}
             className="rounded-md p-1.5 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-900"
           >
-            <RefreshCw className={`h-3.5 w-3.5 ${eventsQ.isFetching ? 'animate-spin' : ''}`} />
+            <RefreshCw
+              className={`h-3.5 w-3.5 ${eventsQ.isFetching ? 'animate-spin' : ''}`}
+            />
           </button>
           <button
             type="button"
-            onClick={() => setShowCreate((v) => !v)}
+            onClick={openCreate}
             className="inline-flex items-center gap-1 rounded-md bg-primary px-2.5 py-1.5 text-xs font-medium text-primary-foreground"
           >
             <Plus className="h-3.5 w-3.5" /> Evento
@@ -327,51 +390,102 @@ export function CalendarWorkspace() {
         </div>
       </div>
 
-      {showCreate && (
+      {draft && (
         <div className="border-b border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
+          <div className="mb-2 flex items-center justify-between">
+            <p className="text-xs font-semibold text-zinc-700 dark:text-zinc-200">
+              {draft.mode === 'create' ? 'Novo evento (Google)' : 'Editar evento'}
+            </p>
+            <button
+              type="button"
+              onClick={() => setDraft(null)}
+              className="rounded p-1 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
           <div className="grid gap-2 md:grid-cols-2">
             <input
-              value={summary}
-              onChange={(e) => setSummary(e.target.value)}
-              placeholder="Título da reunião"
+              value={draft.summary}
+              onChange={(e) => setDraft({ ...draft, summary: e.target.value })}
+              placeholder="Título"
               className="rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
             />
+            <select
+              value={draft.calendarId}
+              disabled={draft.mode === 'edit'}
+              onChange={(e) => setDraft({ ...draft, calendarId: e.target.value })}
+              className="rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+            >
+              {(calendars.length
+                ? calendars
+                : [{ id: 'primary', summary: 'Principal', backgroundColor: '#039be5', foregroundColor: '#fff' }]
+              ).map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.summary}
+                  {c.primary ? ' (principal)' : ''}
+                </option>
+              ))}
+            </select>
             <input
-              value={attendees}
-              onChange={(e) => setAttendees(e.target.value)}
+              value={draft.attendees}
+              onChange={(e) => setDraft({ ...draft, attendees: e.target.value })}
               placeholder="Convidados (e-mails, vírgula)"
               className="rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
             />
+            <div className="flex items-center gap-3 text-xs text-zinc-600 dark:text-zinc-300">
+              <label className="inline-flex items-center gap-1.5">
+                <input
+                  type="checkbox"
+                  checked={draft.withMeet}
+                  onChange={(e) =>
+                    setDraft({ ...draft, withMeet: e.target.checked })
+                  }
+                />
+                Google Meet
+              </label>
+            </div>
             <input
               type="datetime-local"
-              value={startLocal}
-              onChange={(e) => setStartLocal(e.target.value)}
+              value={draft.startLocal}
+              onChange={(e) => setDraft({ ...draft, startLocal: e.target.value })}
               className="rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
             />
             <input
               type="datetime-local"
-              value={endLocal}
-              onChange={(e) => setEndLocal(e.target.value)}
+              value={draft.endLocal}
+              onChange={(e) => setDraft({ ...draft, endLocal: e.target.value })}
               className="rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
             />
           </div>
-          <div className="mt-2 flex items-center justify-between">
-            <label className="flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-300">
-              <input
-                type="checkbox"
-                checked={withMeet}
-                onChange={(e) => setWithMeet(e.target.checked)}
-              />
-              Google Meet
-            </label>
+          <p className="mt-2 text-[11px] text-zinc-400">
+            Espelha no Google na hora. Gravação e transcrição do Meet: ligue no
+            próprio Meet (ou política do Workspace) — a API não ativa isso no create.
+          </p>
+          <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
+            {draft.mode === 'edit' && (
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={remove}
+                className="inline-flex items-center gap-1 rounded-md border border-red-200 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50 dark:border-red-900 dark:text-red-300"
+              >
+                {deleting ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Trash2 className="h-3.5 w-3.5" />
+                )}
+                Apagar
+              </button>
+            )}
             <button
               type="button"
-              disabled={creating}
-              onClick={create}
+              disabled={saving}
+              onClick={save}
               className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50"
             >
-              {creating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
-              Criar evento
+              {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+              {draft.mode === 'create' ? 'Criar no Google' : 'Salvar no Google'}
             </button>
           </div>
         </div>
@@ -383,10 +497,7 @@ export function CalendarWorkspace() {
           const list = eventsByDay.get(key) || [];
           const isToday = key === new Date().toISOString().slice(0, 10);
           return (
-            <div
-              key={key}
-              className="min-h-[220px] bg-white p-2 dark:bg-zinc-950"
-            >
+            <div key={key} className="min-h-[220px] bg-white p-2 dark:bg-zinc-950">
               <div
                 className={`mb-2 text-[11px] font-semibold uppercase tracking-wide ${
                   isToday ? 'text-primary' : 'text-zinc-500'
@@ -395,25 +506,29 @@ export function CalendarWorkspace() {
                 {fmtDay(day)}
               </div>
               <div className="space-y-1.5">
-                {list.map((ev: any) => {
+                {list.map((ev) => {
                   const solid = ev.backgroundColor || '#5484ed';
-                  // Chip legível no dark: fundo suave + barra lateral na cor forte
-                  const softBg = hexToRgba(solid, 0.22);
-                  const bar = solid;
-                  const text = '#e4e4e7';
                   return (
-                    <div
+                    <button
                       key={ev.id}
-                      className="relative overflow-hidden rounded-md border border-white/10 px-2 py-1.5 pl-2.5 text-[11px] shadow-sm"
-                      style={{ backgroundColor: softBg, color: text }}
-                      title={ev.calendarSummary || undefined}
+                      type="button"
+                      onClick={() => openEdit(ev)}
+                      className="relative block w-full overflow-hidden rounded-md border border-white/10 px-2 py-1.5 pl-2.5 text-left text-[11px] shadow-sm transition hover:ring-1 hover:ring-primary/40"
+                      style={{
+                        backgroundColor: hexToRgba(solid, 0.22),
+                        color: '#e4e4e7',
+                      }}
+                      title="Clique para editar"
                     >
                       <span
                         className="absolute bottom-0 left-0 top-0 w-1 rounded-l-md"
-                        style={{ backgroundColor: bar }}
+                        style={{ backgroundColor: solid }}
                       />
-                      <div className="font-semibold leading-snug text-zinc-100">
-                        {ev.summary}
+                      <div className="flex items-start gap-1">
+                        <div className="min-w-0 flex-1 font-semibold leading-snug text-zinc-100">
+                          {ev.summary}
+                        </div>
+                        <Pencil className="mt-0.5 h-3 w-3 shrink-0 text-zinc-500" />
                       </div>
                       {ev.start && !ev.allDay && (
                         <div className="text-zinc-400">
@@ -432,11 +547,8 @@ export function CalendarWorkspace() {
                       <div className="mt-1 flex flex-wrap items-center gap-1.5 text-zinc-400">
                         {ev.calendarSummary && (
                           <span
-                            className="inline-flex max-w-[9rem] truncate rounded px-1 py-0.5 text-[10px] font-medium"
-                            style={{
-                              backgroundColor: hexToRgba(solid, 0.35),
-                              color: '#fafafa',
-                            }}
+                            className="inline-flex max-w-[9rem] truncate rounded px-1 py-0.5 text-[10px] font-medium text-zinc-100"
+                            style={{ backgroundColor: hexToRgba(solid, 0.35) }}
                           >
                             {ev.calendarSummary}
                           </span>
@@ -446,6 +558,7 @@ export function CalendarWorkspace() {
                             href={ev.meetLink}
                             target="_blank"
                             rel="noreferrer"
+                            onClick={(e) => e.stopPropagation()}
                             className="inline-flex items-center gap-0.5 text-sky-300 hover:underline"
                           >
                             <Video className="h-3 w-3" /> Meet
@@ -456,13 +569,14 @@ export function CalendarWorkspace() {
                             href={ev.htmlLink}
                             target="_blank"
                             rel="noreferrer"
+                            onClick={(e) => e.stopPropagation()}
                             className="inline-flex items-center gap-0.5 hover:underline"
                           >
                             <ExternalLink className="h-3 w-3" /> Google
                           </a>
                         )}
                       </div>
-                    </div>
+                    </button>
                   );
                 })}
                 {!list.length && (

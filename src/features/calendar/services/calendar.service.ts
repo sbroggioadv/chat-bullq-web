@@ -10,6 +10,14 @@ export interface CalendarStatus {
   note?: string;
 }
 
+export interface GoogleCalendarRef {
+  id: string;
+  summary: string;
+  backgroundColor: string;
+  foregroundColor: string;
+  primary?: boolean;
+}
+
 export interface CalendarEvent {
   id: string;
   summary: string;
@@ -38,16 +46,33 @@ export const calendarService = {
     const { data } = await api.get('/calendar/status');
     return data.data ?? data;
   },
+
+  async calendars(channelId?: string): Promise<{
+    channelId: string;
+    calendars: GoogleCalendarRef[];
+  }> {
+    const { data } = await api.get('/calendar/calendars', {
+      params: { channelId },
+    });
+    return data.data ?? data;
+  },
+
   async events(opts?: {
     channelId?: string;
     from?: string;
     to?: string;
-  }): Promise<{ channelId: string; events: CalendarEvent[] }> {
+  }): Promise<{
+    channelId: string;
+    events: CalendarEvent[];
+    calendars?: GoogleCalendarRef[];
+  }> {
     const { data } = await api.get('/calendar/events', { params: opts });
     return data.data ?? data;
   },
+
   async create(input: {
     channelId?: string;
+    calendarId?: string;
     summary: string;
     description?: string;
     startIso: string;
@@ -58,10 +83,58 @@ export const calendarService = {
   }): Promise<{
     success: boolean;
     id: string;
+    compositeId?: string;
+    calendarId?: string;
+    htmlLink: string | null;
+    meetLink: string | null;
+    note?: string;
+  }> {
+    const { data } = await api.post('/calendar/events', input);
+    return data.data ?? data;
+  },
+
+  async update(
+    eventId: string,
+    input: {
+      channelId?: string;
+      calendarId: string;
+      summary?: string;
+      description?: string;
+      startIso?: string;
+      endIso?: string;
+      attendeeEmails?: string[];
+      withMeet?: boolean;
+      timeZone?: string;
+    },
+  ): Promise<{
+    success: boolean;
+    id: string;
     htmlLink: string | null;
     meetLink: string | null;
   }> {
-    const { data } = await api.post('/calendar/events', input);
+    const { data } = await api.patch(
+      `/calendar/events/${encodeURIComponent(eventId)}`,
+      input,
+    );
+    return data.data ?? data;
+  },
+
+  async remove(input: {
+    eventId: string;
+    calendarId: string;
+    channelId?: string;
+    notify?: boolean;
+  }): Promise<{ success: boolean }> {
+    const { data } = await api.delete(
+      `/calendar/events/${encodeURIComponent(input.eventId)}`,
+      {
+        params: {
+          calendarId: input.calendarId,
+          channelId: input.channelId,
+          notify: input.notify === false ? '0' : '1',
+        },
+      },
+    );
     return data.data ?? data;
   },
 };

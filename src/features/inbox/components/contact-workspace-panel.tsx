@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   CalendarDays,
@@ -269,12 +269,29 @@ function AgendaTab({
     queryFn: () => calendarService.status(),
     staleTime: 60_000,
   });
+  const calsQ = useQuery({
+    queryKey: ['calendar-list', statusQ.data?.channelId],
+    queryFn: () =>
+      calendarService.calendars(statusQ.data?.channelId || undefined),
+    enabled: !!statusQ.data?.connected && !statusQ.data?.needsReauthForCalendar,
+    staleTime: 60_000,
+  });
+  const calendars = calsQ.data?.calendars || [];
+  const defaultCal =
+    calendars.find((c) => c.primary)?.id || calendars[0]?.id || 'primary';
+
   const [summary, setSummary] = useState(
     contactName ? `Reunião com ${contactName}` : 'Reunião',
   );
   const [minutes, setMinutes] = useState(30);
   const [withMeet, setWithMeet] = useState(true);
+  const [calendarId, setCalendarId] = useState(defaultCal);
   const [creating, setCreating] = useState(false);
+  const [lastMeet, setLastMeet] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (defaultCal) setCalendarId(defaultCal);
+  }, [defaultCal]);
 
   const startDefault = useMemo(() => {
     const d = new Date();
@@ -298,6 +315,7 @@ function AgendaTab({
       const end = new Date(start.getTime() + minutes * 60_000);
       const res = await calendarService.create({
         channelId: statusQ.data.channelId || undefined,
+        calendarId,
         summary: summary.trim() || 'Reunião',
         startIso: start.toISOString(),
         endIso: end.toISOString(),
@@ -306,10 +324,11 @@ function AgendaTab({
           ? [defaultAttendee]
           : [],
       });
+      setLastMeet(res.meetLink || null);
       toast.success(
         res.meetLink
-          ? `Evento criado · Meet pronto`
-          : 'Evento criado na Agenda',
+          ? 'Evento no Google · Meet pronto'
+          : 'Evento criado no Google',
       );
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Falha ao agendar');
@@ -321,13 +340,28 @@ function AgendaTab({
   return (
     <div className="space-y-3 p-4">
       <p className="text-xs text-zinc-500">
-        Cria evento na agenda Google da org (primary) a partir de daqui a 1h.
+        Cria no Google (calendário escolhido) daqui a ~1h.
       </p>
       <input
         value={summary}
         onChange={(e) => setSummary(e.target.value)}
         className="w-full rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-1.5 text-xs dark:border-zinc-700 dark:bg-zinc-900"
       />
+      <select
+        value={calendarId}
+        onChange={(e) => setCalendarId(e.target.value)}
+        className="w-full rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-1.5 text-xs dark:border-zinc-700 dark:bg-zinc-900"
+      >
+        {(calendars.length
+          ? calendars
+          : [{ id: 'primary', summary: 'Principal', backgroundColor: '', foregroundColor: '' }]
+        ).map((c) => (
+          <option key={c.id} value={c.id}>
+            {c.summary}
+            {c.primary ? ' (principal)' : ''}
+          </option>
+        ))}
+      </select>
       <div className="flex gap-2">
         {[15, 30, 45, 60].map((m) => (
           <button
@@ -352,12 +386,26 @@ function AgendaTab({
         />
         Google Meet
       </label>
+      <p className="text-[10px] leading-snug text-zinc-400">
+        Gravação/transcrição: no Meet (ou admin Workspace). A API não liga isso
+        no create.
+      </p>
       {defaultAttendee ? (
         <p className="text-[11px] text-zinc-400">Convidado: {defaultAttendee}</p>
       ) : (
         <p className="text-[11px] text-amber-600">
           Contato sem e-mail — evento só na sua agenda.
         </p>
+      )}
+      {lastMeet && (
+        <a
+          href={lastMeet}
+          target="_blank"
+          rel="noreferrer"
+          className="block truncate text-[11px] text-sky-500 hover:underline"
+        >
+          Abrir Meet →
+        </a>
       )}
       <button
         type="button"
@@ -366,7 +414,7 @@ function AgendaTab({
         className="inline-flex w-full items-center justify-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50"
       >
         {creating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
-        Agendar reunião
+        Agendar no Google
       </button>
       <a
         href="/calendar"
