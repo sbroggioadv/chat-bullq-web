@@ -13,6 +13,7 @@ import {
   FolderKanban,
 } from 'lucide-react';
 import { InboxTree } from '@/features/inbox-views/components/inbox-tree';
+import { EmailTree } from '@/features/email/components/email-tree';
 import { JarvisTree } from '@/features/ai-agents/components/jarvis-tree';
 import { PipelinesTree } from '@/features/pipelines/components/pipelines-tree';
 
@@ -101,6 +102,7 @@ export function AppSidebar() {
       <SidebarBody>
         <SidebarSection>
           <InboxTree />
+          <EmailTree />
           <PipelinesTree />
           <JarvisTree />
           {navItems.map((item) => (
