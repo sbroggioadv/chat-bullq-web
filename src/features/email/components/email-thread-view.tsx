@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ArrowLeft,
   Forward,
@@ -8,14 +8,20 @@ import {
   MailOpen,
   RefreshCw,
   Reply,
+  ReplyAll,
   Send,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { EmailThreadDetail } from '../services/email.service';
 import { emailService } from '../services/email.service';
 import { formatLongDate } from '../lib/format';
+import {
+  loadRecentRecipients,
+  rememberRecipients,
+  suggestRecipients,
+} from '../lib/recent-recipients';
 
-type ComposeMode = 'reply' | 'forward' | null;
+type ComposeMode = 'reply' | 'replyAll' | 'forward' | null;
 
 interface EmailThreadViewProps {
   detail: EmailThreadDetail | undefined;
@@ -45,12 +51,49 @@ export function EmailThreadView({
   const [forwardTo, setForwardTo] = useState('');
   const [sending, setSending] = useState(false);
   const [reauthHint, setReauthHint] = useState(false);
+  const [recent, setRecent] = useState<string[]>([]);
+
+  useEffect(() => {
+    setRecent(loadRecentRecipients());
+  }, []);
 
   const defaultTo = useMemo(() => {
     if (!detail?.messages?.length) return '';
     const inbound = [...detail.messages].reverse().find((m) => !m.outbound);
     return inbound?.from.email || '';
   }, [detail]);
+
+  const replyAllPreview = useMemo(() => {
+    if (!detail?.messages?.length) return { to: '', cc: '' };
+    const inbound = [...detail.messages].reverse().find((m) => !m.outbound);
+    if (!inbound) return { to: defaultTo, cc: '' };
+    const my = (detail.myEmail || '').toLowerCase();
+    const to = inbound.from.email || defaultTo;
+    const pool = `${inbound.to || ''}, ${inbound.cc || ''}`
+      .split(/[,;]+/)
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .map((s) => {
+        const m = s.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+        return m ? m[0].toLowerCase() : '';
+      })
+      .filter(Boolean);
+    const exclude = new Set([my, to.toLowerCase()].filter(Boolean));
+    const seen = new Set<string>();
+    const cc = pool
+      .filter((e) => {
+        if (exclude.has(e) || seen.has(e)) return false;
+        seen.add(e);
+        return true;
+      })
+      .join(', ');
+    return { to, cc };
+  }, [detail, defaultTo]);
+
+  const suggestions = useMemo(
+    () => suggestRecipients(forwardTo),
+    [forwardTo, recent],
+  );
 
   if (!threadSelected) {
     return (
@@ -96,9 +139,31 @@ export function EmailThreadView({
     setReauthHint(false);
   };
 
+  const onForwardToChange = (value: string) => {
+    setForwardTo(value);
+    // Salva automaticamente e-mails completos já digitados (antes da vírgula)
+    const chunks = value.split(/[,;]/);
+    const completed = chunks.slice(0, -1).join(',');
+    if (completed.trim()) {
+      setRecent(rememberRecipients(completed));
+    }
+  };
+
+  const pickSuggestion = (email: string) => {
+    const parts = forwardTo.split(/[,;]/);
+    parts[parts.length - 1] = parts.length > 1 ? ` ${email}` : email;
+    const next = parts
+      .map((p) => p.trim())
+      .filter(Boolean)
+      .join(', ');
+    const withComma = next.endsWith(email) ? `${next}, ` : next;
+    setForwardTo(withComma);
+    setRecent(rememberRecipients(email));
+  };
+
   const handleSend = async () => {
     if (!channelId || !detail.id || !mode) return;
-    if (mode === 'reply' && !body.trim()) {
+    if ((mode === 'reply' || mode === 'replyAll') && !body.trim()) {
       toast.error('Escreva a resposta antes de enviar');
       return;
     }
@@ -108,15 +173,18 @@ export function EmailThreadView({
     }
     setSending(true);
     try {
-      if (mode === 'reply') {
+      if (mode === 'reply' || mode === 'replyAll') {
         await emailService.reply({
           channelId,
           threadId: detail.id,
           body: body.trim(),
-          to: defaultTo || undefined,
+          to: mode === 'reply' ? defaultTo || undefined : undefined,
+          replyAll: mode === 'replyAll',
         });
-        toast.success('Resposta enviada');
+        toast.success(mode === 'replyAll' ? 'Resposta a todos enviada' : 'Resposta enviada');
       } else {
+        const saved = rememberRecipients(forwardTo);
+        setRecent(saved);
         await emailService.forward({
           channelId,
           threadId: detail.id,
@@ -141,6 +209,15 @@ export function EmailThreadView({
     }
   };
 
+  const composeTitle =
+    mode === 'reply'
+      ? `Responder${defaultTo ? ` para ${defaultTo}` : ''}`
+      : mode === 'replyAll'
+        ? `Responder a todos${replyAllPreview.to ? ` · To ${replyAllPreview.to}` : ''}${
+            replyAllPreview.cc ? ` · Cc ${replyAllPreview.cc}` : ''
+          }`
+        : 'Encaminhar e-mail';
+
   return (
     <div className="flex h-full w-full min-w-0 flex-col bg-zinc-50 dark:bg-zinc-950">
       <div className="flex items-center gap-2 border-b border-zinc-200/80 bg-white px-5 py-3.5 dark:border-zinc-800 dark:bg-zinc-950">
@@ -162,6 +239,16 @@ export function EmailThreadView({
         >
           <Reply className="h-3.5 w-3.5" />
           Responder
+        </button>
+        <button
+          type="button"
+          onClick={() => openCompose(mode === 'replyAll' ? null : 'replyAll')}
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-zinc-200 bg-white px-2.5 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+          title="Inclui todos do To/Cc originais"
+        >
+          <ReplyAll className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">Responder a todos</span>
+          <span className="sm:hidden">Todos</span>
         </button>
         <button
           type="button"
@@ -217,6 +304,11 @@ export function EmailThreadView({
                   para {m.to}
                 </p>
               )}
+              {m.cc ? (
+                <p className="truncate text-[11px] text-zinc-400 dark:text-zinc-500">
+                  cc {m.cc}
+                </p>
+              ) : null}
               <div className="mt-3 whitespace-pre-wrap break-words text-sm leading-relaxed text-zinc-800 dark:text-zinc-200">
                 {m.body || m.snippet || '(mensagem sem conteúdo)'}
               </div>
@@ -228,28 +320,58 @@ export function EmailThreadView({
       {mode && (
         <div className="border-t border-zinc-200/80 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
           <div className="mb-2 flex items-center justify-between gap-2">
-            <p className="text-xs font-medium text-zinc-600 dark:text-zinc-300">
-              {mode === 'reply'
-                ? `Responder${defaultTo ? ` para ${defaultTo}` : ''}`
-                : 'Encaminhar e-mail'}
+            <p className="min-w-0 flex-1 truncate text-xs font-medium text-zinc-600 dark:text-zinc-300">
+              {composeTitle}
             </p>
             <button
               type="button"
               onClick={() => setMode(null)}
-              className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+              className="shrink-0 text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
             >
               Cancelar
             </button>
           </div>
 
           {mode === 'forward' && (
-            <input
-              type="text"
-              value={forwardTo}
-              onChange={(e) => setForwardTo(e.target.value)}
-              placeholder="Para: email@cliente.com (vírgula para vários)"
-              className="mb-2 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-900 outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100"
-            />
+            <div className="relative mb-2">
+              <input
+                type="text"
+                value={forwardTo}
+                onChange={(e) => onForwardToChange(e.target.value)}
+                onBlur={() => setRecent(rememberRecipients(forwardTo))}
+                list="email-recent-recipients"
+                autoComplete="off"
+                placeholder="Para: email@cliente.com (vírgula para vários)"
+                className="w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-900 outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100"
+              />
+              <datalist id="email-recent-recipients">
+                {recent.map((e) => (
+                  <option key={e} value={e} />
+                ))}
+              </datalist>
+              {suggestions.length > 0 && forwardTo.trim() && (
+                <div className="absolute left-0 right-0 top-full z-20 mt-1 overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
+                  {suggestions.map((e) => (
+                    <button
+                      key={e}
+                      type="button"
+                      onMouseDown={(ev) => {
+                        ev.preventDefault();
+                        pickSuggestion(e);
+                      }}
+                      className="block w-full truncate px-3 py-1.5 text-left text-xs text-zinc-700 hover:bg-zinc-50 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                    >
+                      {e}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {recent.length > 0 && !forwardTo.trim() && (
+                <p className="mt-1 text-[11px] text-zinc-400">
+                  Destinatários recentes salvos neste navegador
+                </p>
+              )}
+            </div>
           )}
 
           <textarea
@@ -257,9 +379,9 @@ export function EmailThreadView({
             onChange={(e) => setBody(e.target.value)}
             rows={mode === 'forward' ? 3 : 5}
             placeholder={
-              mode === 'reply'
-                ? 'Escreva sua resposta…'
-                : 'Nota opcional acima da mensagem encaminhada…'
+              mode === 'forward'
+                ? 'Nota opcional acima da mensagem encaminhada…'
+                : 'Escreva sua resposta…'
             }
             className="w-full resize-y rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-900 outline-none ring-primary/30 placeholder:text-zinc-400 focus:border-primary focus:ring-2 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100"
           />
@@ -269,7 +391,7 @@ export function EmailThreadView({
               onClick={handleSend}
               disabled={
                 sending ||
-                (mode === 'reply' ? !body.trim() : !forwardTo.trim())
+                (mode === 'forward' ? !forwardTo.trim() : !body.trim())
               }
               className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
             >
@@ -278,7 +400,11 @@ export function EmailThreadView({
               ) : (
                 <Send className="h-3.5 w-3.5" />
               )}
-              {mode === 'reply' ? 'Enviar resposta' : 'Encaminhar'}
+              {mode === 'forward'
+                ? 'Encaminhar'
+                : mode === 'replyAll'
+                  ? 'Enviar a todos'
+                  : 'Enviar resposta'}
             </button>
           </div>
         </div>

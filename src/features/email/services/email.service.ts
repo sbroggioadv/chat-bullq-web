@@ -40,6 +40,7 @@ export interface EmailMessage {
   id: string;
   from: { email: string; name?: string };
   to: string;
+  cc?: string;
   subject: string;
   date: string | null;
   body: string;
@@ -90,6 +91,8 @@ export const emailService = {
     threadId: string;
     body: string;
     to?: string;
+    cc?: string;
+    replyAll?: boolean;
     subject?: string;
   }): Promise<{ success: boolean; id: string; threadId: string }> {
     const { data } = await api.post('/email/reply', input);
