@@ -1,9 +1,13 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import {
+  useInfiniteQuery,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { Mail } from 'lucide-react';
 import {
   emailService,
@@ -30,6 +34,7 @@ const SYSTEM_NAMES: Record<string, string> = {
 export function EmailWorkspace() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const queryClient = useQueryClient();
 
   const folderId = paramToFolderId(searchParams.get('folder'));
   const threadId = searchParams.get('threadId');
@@ -80,6 +85,46 @@ export function EmailWorkspace() {
       router.push(`/email?${p.toString()}`);
     },
     [router, channelParam],
+  );
+
+  const markThreadReadInCache = useCallback(
+    (id: string) => {
+      if (!channelId) return;
+      queryClient.setQueriesData(
+        { queryKey: ['email-threads', channelId] },
+        (old: any) => {
+          if (!old?.pages) return old;
+          return {
+            ...old,
+            pages: old.pages.map((page: any) => ({
+              ...page,
+              threads: (page.threads || []).map((t: any) =>
+                t.id === id ? { ...t, unread: false } : t,
+              ),
+            })),
+          };
+        },
+      );
+    },
+    [channelId, queryClient],
+  );
+
+  // Ao abrir o thread: some a bolinha na lista (cache) quando Gmail confirmou lido.
+  useEffect(() => {
+    if (!channelId || !threadId || !threadQuery.data) return;
+    const detail = threadQuery.data;
+    if (detail.markedRead === true || detail.unread === false) {
+      markThreadReadInCache(threadId);
+    }
+  }, [channelId, threadId, threadQuery.data, markThreadReadInCache]);
+
+  // Clique na lista: limpa bolinha na hora (otimista), Gmail confirma no GET thread
+  const selectThread = useCallback(
+    (id: string) => {
+      markThreadReadInCache(id);
+      navigate(folderId, id);
+    },
+    [folderId, markThreadReadInCache, navigate],
   );
 
   if (statusQuery.isPending) {
@@ -153,7 +198,7 @@ export function EmailWorkspace() {
           folderName={folderName}
           threads={threads}
           activeThreadId={threadId}
-          onSelect={(id) => navigate(folderId, id)}
+          onSelect={selectThread}
           loading={threadsQuery.isPending}
           error={threadsQuery.isError}
           onRetry={() => threadsQuery.refetch()}

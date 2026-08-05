@@ -61,6 +61,9 @@ export interface EmailThreadDetail {
   starred?: boolean;
   spam?: boolean;
   important?: boolean;
+  unread?: boolean;
+  /** true se este GET removeu UNREAD no Gmail */
+  markedRead?: boolean;
   labelIds?: string[];
 }
 
