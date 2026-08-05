@@ -156,4 +156,9 @@ export const channelsService = {
     const { data } = await api.post('/channels/gmail/oauth/start', input || {});
     return data.data ?? data;
   },
+
+  async ensureInboxView(id: string): Promise<{ success: boolean }> {
+    const { data } = await api.post(`/channels/${id}/ensure-inbox-view`);
+    return data.data ?? data;
+  },
 };

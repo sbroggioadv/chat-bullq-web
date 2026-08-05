@@ -17,6 +17,8 @@ import {
   Lock,
   Globe,
   Mail,
+  ExternalLink,
+  Inbox,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Channel } from '../services/channels.service';
@@ -39,6 +41,21 @@ interface ChannelCardProps {
 
 export function ChannelCard({ channel, onUpdate }: ChannelCardProps) {
   const [isTesting, setIsTesting] = useState(false);
+  const [openingInbox, setOpeningInbox] = useState(false);
+
+  const openInInbox = async () => {
+    setOpeningInbox(true);
+    try {
+      await channelsService.ensureInboxView(channel.id);
+      window.location.href = '/inbox';
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Não foi possível abrir na inbox');
+      // still try inbox with channel filter via query if we can
+      window.location.href = '/inbox';
+    } finally {
+      setOpeningInbox(false);
+    }
+  };
   const [showMenu, setShowMenu] = useState(false);
   const [editing, setEditing] = useState(false);
   const meta = channelTypeMap[channel.type] || { label: channel.type, icon: MessageSquare, color: 'bg-gray-500' };
@@ -245,6 +262,20 @@ export function ChannelCard({ channel, onUpdate }: ChannelCardProps) {
                 <RefreshCw className="h-3 w-3" />
               )}
               Sincronizar
+            </button>
+          )}
+          {channel.type === 'GMAIL' && (
+            <button
+              onClick={openInInbox}
+              disabled={openingInbox}
+              className="inline-flex items-center gap-1.5 rounded-md bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-700 transition-colors hover:bg-red-100 disabled:opacity-50 dark:bg-red-950/40 dark:text-red-300 dark:hover:bg-red-950/60"
+            >
+              {openingInbox ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <Inbox className="h-3 w-3" />
+              )}
+              Ver e-mails na inbox
             </button>
           )}
           <button

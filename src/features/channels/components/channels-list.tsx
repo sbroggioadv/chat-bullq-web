@@ -40,7 +40,12 @@ export function ChannelsList() {
     const email = searchParams.get('email') || '';
     const reason = searchParams.get('reason') || '';
     if (gmail === 'connected') {
-      toast.success(email ? `Gmail conectado: ${email}` : 'Gmail conectado — sincronizando caixa…');
+      toast.success(
+        email
+          ? `Gmail conectado: ${email}. Abra a Inbox e escolha o canal Gmail (ou a visão na sidebar).`
+          : 'Gmail conectado — sincronizando. Abra a Inbox e filtre pelo canal Gmail.',
+        { duration: 8000 },
+      );
       refresh();
     } else if (gmail === 'error') {
       toast.error(
@@ -69,13 +74,21 @@ export function ChannelsList() {
             Conecte WhatsApp, Instagram, Gmail e demais caixas de entrada
           </p>
         </div>
-        <button
-          onClick={() => setShowCreate(true)}
-          className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
-        >
-          <Plus className="h-4 w-4" />
-          Conectar canal
-        </button>
+        <div className="flex items-center gap-2">
+          <a
+            href="/inbox"
+            className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-sm font-medium text-zinc-700 shadow-sm transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+          >
+            Abrir inbox
+          </a>
+          <button
+            onClick={() => setShowCreate(true)}
+            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+          >
+            <Plus className="h-4 w-4" />
+            Conectar canal
+          </button>
+        </div>
       </div>
 
       {isInviteOnboarding && (

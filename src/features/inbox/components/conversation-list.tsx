@@ -21,6 +21,7 @@ import {
   Tag as TagIcon,
   Layers,
   FolderKanban,
+  Mail,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -81,6 +82,7 @@ const channelIcons: Record<string, React.ElementType> = {
   WHATSAPP_ZAPPFY: ZappfyIcon,
   WHATSAPP_OFFICIAL: MetaIcon,
   INSTAGRAM: InstagramIcon,
+  GMAIL: Mail,
 };
 
 const statusColors: Record<string, string> = {
