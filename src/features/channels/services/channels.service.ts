@@ -152,6 +152,7 @@ export const channelsService = {
   async gmailOAuthStart(input?: {
     name?: string;
     visibility?: 'ORG' | 'PRIVATE';
+    channelId?: string;
   }): Promise<{ url: string; expiresInSec: number }> {
     const { data } = await api.post('/channels/gmail/oauth/start', input || {});
     return data.data ?? data;

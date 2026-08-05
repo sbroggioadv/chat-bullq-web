@@ -40,10 +40,15 @@ export function ChannelsList() {
     const email = searchParams.get('email') || '';
     const reason = searchParams.get('reason') || '';
     if (gmail === 'connected') {
+      const updated = searchParams.get('updated') === '1';
       toast.success(
-        email
-          ? `Gmail conectado: ${email}. Abra a Inbox e escolha o canal Gmail (ou a visão na sidebar).`
-          : 'Gmail conectado — sincronizando. Abra a Inbox e filtre pelo canal Gmail.',
+        updated
+          ? email
+            ? `Gmail atualizado: ${email} (sem criar canal novo). Já pode responder se autorizou envio.`
+            : 'Gmail atualizado (canal existente).'
+          : email
+            ? `Gmail conectado: ${email}. Use a sidebar E-mail para ler e responder.`
+            : 'Gmail conectado — sincronizando.',
         { duration: 8000 },
       );
       refresh();
@@ -60,6 +65,7 @@ export function ChannelsList() {
       url.searchParams.delete('gmail');
       url.searchParams.delete('email');
       url.searchParams.delete('reason');
+      url.searchParams.delete('updated');
       window.history.replaceState({}, '', url.pathname + (url.search || ''));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

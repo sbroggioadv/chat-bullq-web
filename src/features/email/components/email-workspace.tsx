@@ -179,8 +179,10 @@ export function EmailWorkspace() {
           }}
           onReauth={async () => {
             try {
+              const ch = statusQuery.data?.channels[0];
               const { url } = await channelsService.gmailOAuthStart({
-                name: statusQuery.data?.channels[0]?.name,
+                name: ch?.name,
+                channelId: ch?.id || channelId,
               });
               window.location.href = url;
             } catch (err) {
