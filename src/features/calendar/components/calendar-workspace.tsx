@@ -376,52 +376,72 @@ export function CalendarWorkspace() {
                 {fmtDay(day)}
               </div>
               <div className="space-y-1.5">
-                {list.map((ev: any) => (
-                  <div
-                    key={ev.id}
-                    className="rounded-md border border-primary/20 bg-primary/5 px-2 py-1.5 text-[11px]"
-                  >
-                    <div className="font-medium text-zinc-900 dark:text-zinc-100">
-                      {ev.summary}
-                    </div>
-                    {ev.start && !ev.allDay && (
-                      <div className="text-zinc-500">
-                        {new Date(ev.start).toLocaleTimeString('pt-BR', {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                        {ev.end
-                          ? ` – ${new Date(ev.end).toLocaleTimeString('pt-BR', {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })}`
-                          : ''}
+                {list.map((ev: any) => {
+                  const bg = ev.backgroundColor || 'rgba(59,130,246,0.12)';
+                  const fg = ev.foregroundColor || undefined;
+                  const border = ev.backgroundColor
+                    ? `${ev.backgroundColor}99`
+                    : 'rgba(59,130,246,0.35)';
+                  return (
+                    <div
+                      key={ev.id}
+                      className="rounded-md border px-2 py-1.5 text-[11px] shadow-sm"
+                      style={{
+                        backgroundColor: bg,
+                        borderColor: border,
+                        color: fg || undefined,
+                      }}
+                    >
+                      <div
+                        className="font-semibold leading-snug"
+                        style={{ color: fg || undefined }}
+                      >
+                        {ev.summary}
                       </div>
-                    )}
-                    <div className="mt-1 flex flex-wrap gap-1">
-                      {ev.meetLink && (
-                        <a
-                          href={ev.meetLink}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-0.5 text-primary hover:underline"
+                      {ev.start && !ev.allDay && (
+                        <div
+                          className="opacity-80"
+                          style={{ color: fg || undefined }}
                         >
-                          <Video className="h-3 w-3" /> Meet
-                        </a>
+                          {new Date(ev.start).toLocaleTimeString('pt-BR', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                          {ev.end
+                            ? ` – ${new Date(ev.end).toLocaleTimeString('pt-BR', {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}`
+                            : ''}
+                        </div>
                       )}
-                      {ev.htmlLink && (
-                        <a
-                          href={ev.htmlLink}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-0.5 text-zinc-500 hover:underline"
-                        >
-                          <ExternalLink className="h-3 w-3" /> Google
-                        </a>
-                      )}
+                      <div className="mt-1 flex flex-wrap gap-1.5 opacity-90">
+                        {ev.meetLink && (
+                          <a
+                            href={ev.meetLink}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-0.5 underline-offset-2 hover:underline"
+                            style={{ color: fg || undefined }}
+                          >
+                            <Video className="h-3 w-3" /> Meet
+                          </a>
+                        )}
+                        {ev.htmlLink && (
+                          <a
+                            href={ev.htmlLink}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-0.5 underline-offset-2 hover:underline"
+                            style={{ color: fg || undefined }}
+                          >
+                            <ExternalLink className="h-3 w-3" /> Google
+                          </a>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
                 {!list.length && (
                   <p className="text-[11px] text-zinc-300 dark:text-zinc-700">—</p>
                 )}

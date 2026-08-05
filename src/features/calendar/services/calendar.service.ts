@@ -25,6 +25,9 @@ export interface CalendarEvent {
     responseStatus?: string;
   }>;
   status?: string;
+  colorId?: string | null;
+  backgroundColor?: string;
+  foregroundColor?: string;
 }
 
 export const calendarService = {
