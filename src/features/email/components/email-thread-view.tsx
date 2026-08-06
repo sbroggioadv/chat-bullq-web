@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertOctagon,
   Archive,
@@ -15,11 +15,17 @@ import {
   Send,
   Star,
   Tag,
+  X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';
 import type { EmailThreadDetail } from '../services/email.service';
-import { emailService } from '../services/email.service';
+import {
+  emailService,
+  fileToOutboundAttachment,
+  MAX_OUTBOUND_ATTACHMENTS,
+  MAX_OUTBOUND_ATTACHMENT_BYTES,
+} from '../services/email.service';
 import { formatLongDate } from '../lib/format';
 import {
   loadRecentRecipients,
@@ -55,6 +61,8 @@ export function EmailThreadView({
   const [mode, setMode] = useState<ComposeMode>(null);
   const [body, setBody] = useState('');
   const [forwardTo, setForwardTo] = useState('');
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [sending, setSending] = useState(false);
   const [archiving, setArchiving] = useState(false);
   const [modifying, setModifying] = useState(false);
@@ -165,6 +173,7 @@ export function EmailThreadView({
     setMode(m);
     setBody('');
     setForwardTo('');
+    setPendingFiles([]);
     setReauthHint(false);
   };
 
@@ -232,6 +241,28 @@ export function EmailThreadView({
     }
   };
 
+  const addPendingFiles = (list: FileList | File[] | null) => {
+    if (!list) return;
+    const incoming = Array.from(list);
+    setPendingFiles((prev) => {
+      const next = [...prev];
+      for (const f of incoming) {
+        if (next.length >= MAX_OUTBOUND_ATTACHMENTS) {
+          toast.error(`No máximo ${MAX_OUTBOUND_ATTACHMENTS} anexos`);
+          break;
+        }
+        if (f.size > MAX_OUTBOUND_ATTACHMENT_BYTES) {
+          toast.error(`"${f.name}" excede 8 MB`);
+          continue;
+        }
+        if (next.some((p) => p.name === f.name && p.size === f.size)) continue;
+        next.push(f);
+      }
+      return next;
+    });
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   const handleSend = async () => {
     if (!channelId || !detail.id || !mode) return;
     if ((mode === 'reply' || mode === 'replyAll') && !body.trim()) {
@@ -244,6 +275,10 @@ export function EmailThreadView({
     }
     setSending(true);
     try {
+      const attachments =
+        pendingFiles.length > 0
+          ? await Promise.all(pendingFiles.map((f) => fileToOutboundAttachment(f)))
+          : undefined;
       if (mode === 'reply' || mode === 'replyAll') {
         await emailService.reply({
           channelId,
@@ -251,6 +286,7 @@ export function EmailThreadView({
           body: body.trim(),
           to: mode === 'reply' ? defaultTo || undefined : undefined,
           replyAll: mode === 'replyAll',
+          attachments,
         });
         toast.success(mode === 'replyAll' ? 'Resposta a todos enviada' : 'Resposta enviada');
       } else {
@@ -261,11 +297,13 @@ export function EmailThreadView({
           threadId: detail.id,
           to: forwardTo.trim(),
           body: body.trim() || undefined,
+          attachments,
         });
         toast.success('E-mail encaminhado');
       }
       setBody('');
       setForwardTo('');
+      setPendingFiles([]);
       setMode(null);
       setReauthHint(false);
       onSent();
@@ -569,7 +607,10 @@ export function EmailThreadView({
             </p>
             <button
               type="button"
-              onClick={() => setMode(null)}
+              onClick={() => {
+                setMode(null);
+                setPendingFiles([]);
+              }}
               className="shrink-0 text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
             >
               Cancelar
@@ -629,7 +670,54 @@ export function EmailThreadView({
             }
             className="w-full resize-y rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-900 outline-none ring-primary/30 placeholder:text-zinc-400 focus:border-primary focus:ring-2 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100"
           />
-          <div className="mt-2 flex justify-end">
+          {pendingFiles.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {pendingFiles.map((f, i) => (
+                <span
+                  key={`${f.name}-${f.size}-${i}`}
+                  className="inline-flex max-w-full items-center gap-1 rounded-md border border-zinc-200 bg-zinc-50 px-2 py-1 text-[11px] text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+                >
+                  <Paperclip className="h-3 w-3 shrink-0" />
+                  <span className="truncate">{f.name}</span>
+                  <button
+                    type="button"
+                    aria-label={`Remover ${f.name}`}
+                    onClick={() =>
+                      setPendingFiles((prev) => prev.filter((_, idx) => idx !== i))
+                    }
+                    className="ml-0.5 rounded p-0.5 text-zinc-400 hover:bg-zinc-200 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+          <div className="mt-2 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                className="hidden"
+                onChange={(e) => addPendingFiles(e.target.files)}
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={sending || pendingFiles.length >= MAX_OUTBOUND_ATTACHMENTS}
+                className="inline-flex items-center gap-1.5 rounded-md border border-zinc-200 bg-white px-2.5 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                title="Anexar arquivos (máx. 5 × 8 MB)"
+              >
+                <Paperclip className="h-3.5 w-3.5" />
+                Anexar
+              </button>
+              {pendingFiles.length > 0 && (
+                <span className="text-[11px] text-zinc-400">
+                  {pendingFiles.length}/{MAX_OUTBOUND_ATTACHMENTS}
+                </span>
+              )}
+            </div>
             <button
               type="button"
               onClick={handleSend}

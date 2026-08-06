@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   CalendarDays,
   FolderKanban,
   Loader2,
   Mail,
+  Paperclip,
   Send,
   User,
   X,
@@ -14,7 +15,12 @@ import {
 import { toast } from 'sonner';
 import type { Conversation } from '../services/inbox.service';
 import { ProjectPanel } from './project-panel';
-import { emailService } from '@/features/email/services/email.service';
+import {
+  emailService,
+  fileToOutboundAttachment,
+  MAX_OUTBOUND_ATTACHMENTS,
+  MAX_OUTBOUND_ATTACHMENT_BYTES,
+} from '@/features/email/services/email.service';
 import { calendarService } from '@/features/calendar/services/calendar.service';
 import { rememberRecipients } from '@/features/email/lib/recent-recipients';
 
@@ -178,7 +184,31 @@ function EmailComposeTab({
   const [to, setTo] = useState(defaultTo);
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [sending, setSending] = useState(false);
+
+  const addPendingFiles = (list: FileList | null) => {
+    if (!list) return;
+    const incoming = Array.from(list);
+    setPendingFiles((prev) => {
+      const next = [...prev];
+      for (const f of incoming) {
+        if (next.length >= MAX_OUTBOUND_ATTACHMENTS) {
+          toast.error(`No máximo ${MAX_OUTBOUND_ATTACHMENTS} anexos`);
+          break;
+        }
+        if (f.size > MAX_OUTBOUND_ATTACHMENT_BYTES) {
+          toast.error(`"${f.name}" excede 8 MB`);
+          continue;
+        }
+        if (next.some((p) => p.name === f.name && p.size === f.size)) continue;
+        next.push(f);
+      }
+      return next;
+    });
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
 
   const send = async () => {
     if (!channelId) {
@@ -192,14 +222,20 @@ function EmailComposeTab({
     setSending(true);
     try {
       rememberRecipients(to);
+      const attachments =
+        pendingFiles.length > 0
+          ? await Promise.all(pendingFiles.map((f) => fileToOutboundAttachment(f)))
+          : undefined;
       await emailService.compose({
         channelId,
         to: to.trim(),
         subject: subject.trim(),
         body: body.trim(),
+        attachments,
       });
       toast.success(`E-mail enviado para ${contactName}`);
       setBody('');
+      setPendingFiles([]);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Falha ao enviar');
     } finally {
@@ -244,19 +280,60 @@ function EmailComposeTab({
         placeholder="Escreva o e-mail…"
         className="w-full resize-y rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-1.5 text-xs dark:border-zinc-700 dark:bg-zinc-900"
       />
-      <button
-        type="button"
-        disabled={sending}
-        onClick={send}
-        className="inline-flex w-full items-center justify-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50"
-      >
-        {sending ? (
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-        ) : (
-          <Send className="h-3.5 w-3.5" />
-        )}
-        Enviar e-mail
-      </button>
+      {pendingFiles.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {pendingFiles.map((f, i) => (
+            <span
+              key={`${f.name}-${f.size}-${i}`}
+              className="inline-flex max-w-full items-center gap-1 rounded border border-zinc-200 bg-zinc-50 px-1.5 py-0.5 text-[10px] text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+            >
+              <Paperclip className="h-2.5 w-2.5 shrink-0" />
+              <span className="truncate">{f.name}</span>
+              <button
+                type="button"
+                aria-label={`Remover ${f.name}`}
+                onClick={() =>
+                  setPendingFiles((prev) => prev.filter((_, idx) => idx !== i))
+                }
+                className="rounded p-0.5 text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800"
+              >
+                <X className="h-2.5 w-2.5" />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+      <div className="flex items-center gap-2">
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          className="hidden"
+          onChange={(e) => addPendingFiles(e.target.files)}
+        />
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={sending || pendingFiles.length >= MAX_OUTBOUND_ATTACHMENTS}
+          className="inline-flex items-center gap-1 rounded-md border border-zinc-200 bg-white px-2 py-1.5 text-[11px] font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+        >
+          <Paperclip className="h-3 w-3" />
+          Anexar
+        </button>
+        <button
+          type="button"
+          disabled={sending}
+          onClick={send}
+          className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50"
+        >
+          {sending ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Send className="h-3.5 w-3.5" />
+          )}
+          Enviar e-mail
+        </button>
+      </div>
     </div>
   );
 }

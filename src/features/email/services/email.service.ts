@@ -44,6 +44,37 @@ export interface EmailAttachment {
   messageId: string;
 }
 
+/** Anexos outbound (compose/reply/forward) — base64 JSON. */
+export interface OutboundEmailAttachment {
+  filename: string;
+  mimeType: string;
+  contentBase64: string;
+}
+
+export const MAX_OUTBOUND_ATTACHMENTS = 5;
+export const MAX_OUTBOUND_ATTACHMENT_BYTES = 8 * 1024 * 1024;
+
+/** Lê File do browser como payload de anexo outbound. */
+export async function fileToOutboundAttachment(
+  file: File,
+): Promise<OutboundEmailAttachment> {
+  if (file.size > MAX_OUTBOUND_ATTACHMENT_BYTES) {
+    throw new Error(`"${file.name}" excede 8 MB`);
+  }
+  const buf = await file.arrayBuffer();
+  const bytes = new Uint8Array(buf);
+  let binary = '';
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  }
+  return {
+    filename: file.name || 'anexo',
+    mimeType: file.type || 'application/octet-stream',
+    contentBase64: btoa(binary),
+  };
+}
+
 export interface EmailMessage {
   id: string;
   from: { email: string; name?: string };
@@ -110,6 +141,7 @@ export const emailService = {
     cc?: string;
     replyAll?: boolean;
     subject?: string;
+    attachments?: OutboundEmailAttachment[];
   }): Promise<{ success: boolean; id: string; threadId: string }> {
     const { data } = await api.post('/email/reply', input);
     return data.data ?? data;
@@ -121,6 +153,7 @@ export const emailService = {
     to: string;
     body?: string;
     subject?: string;
+    attachments?: OutboundEmailAttachment[];
   }): Promise<{ success: boolean; id: string; threadId: string }> {
     const { data } = await api.post('/email/forward', input);
     return data.data ?? data;
@@ -132,6 +165,7 @@ export const emailService = {
     subject: string;
     body: string;
     cc?: string;
+    attachments?: OutboundEmailAttachment[];
   }): Promise<{ success: boolean; id: string; threadId: string }> {
     const { data } = await api.post('/email/compose', input);
     return data.data ?? data;
