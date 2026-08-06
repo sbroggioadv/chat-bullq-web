@@ -74,6 +74,21 @@ const DISPLAY_ATTR = [
 
 export type SanitizeMode = 'compose' | 'display';
 
+/** Pré-strip: DOMPurify com KEEP_CONTENT default deixa CSS de <style> como texto. */
+function stripStyleAndHead(html: string): string {
+  let s = String(html || '');
+  s = s.replace(/<head\b[^>]*>[\s\S]*?<\/head\s*>/gi, ' ');
+  for (let i = 0; i < 6; i++) {
+    const before = s;
+    s = s.replace(/<style\b[^>]*>[\s\S]*?<\/style\s*>/gi, ' ');
+    s = s.replace(/<script\b[^>]*>[\s\S]*?<\/script\s*>/gi, ' ');
+    if (s === before) break;
+  }
+  s = s.replace(/<!--\[if[\s\S]*?<!\[endif\]-->/gi, ' ');
+  s = s.replace(/<!--[\s\S]*?-->/g, ' ');
+  return s;
+}
+
 /**
  * Sanitiza HTML de e-mail no browser antes de qualquer render.
  * Nunca passe HTML cru sem passar por aqui.
@@ -83,7 +98,7 @@ export function sanitizeEmailHtml(
   mode: SanitizeMode = 'compose',
 ): string {
   if (typeof window === 'undefined') return '';
-  const raw = String(html || '').trim();
+  const raw = stripStyleAndHead(String(html || '')).trim();
   if (!raw) return '';
 
   const clean = DOMPurify.sanitize(raw, {
@@ -91,6 +106,9 @@ export function sanitizeEmailHtml(
     ALLOWED_ATTR: mode === 'display' ? DISPLAY_ATTR : COMPOSE_ATTR,
     ALLOW_DATA_ATTR: false,
     ADD_ATTR: ['target'],
+    // remove conteúdo de tags proibidas (evita CSS virar texto)
+    FORBID_TAGS: ['style', 'script', 'head', 'link', 'meta', 'base', 'title'],
+    FORBID_CONTENTS: ['style', 'script', 'head', 'title', 'noscript'],
     // cid: vira data:image/* no server — precisa liberar data URI só em <img>
     ADD_DATA_URI_TAGS: mode === 'display' ? ['img'] : [],
     ALLOWED_URI_REGEXP:
@@ -122,9 +140,9 @@ export function htmlToPlainText(html: string): string {
 /** Detecta dump de CSS no plain (UI fallback). */
 export function looksLikeCssDump(s: string | null | undefined): boolean {
   const t = String(s || '');
-  if (t.length < 20) return false;
+  if (t.length < 12) return false;
   return (
-    /#outlook\b|\.ExternalClass\b|@media\s+only|mso-|\{\s*padding\s*:|\/\*|-ms-text-size-adjust/i.test(
+    /#outlook\b|\.ExternalClass\b|@media\s+only|@font-face\b|mso-|\{\s*padding\s*:|\/\*|-ms-text-size-adjust|u\s*\+\s*a\s*\{|a\s+img\s*\{|#MessageViewBody/i.test(
       t,
     ) && /[{};]/.test(t)
   );
