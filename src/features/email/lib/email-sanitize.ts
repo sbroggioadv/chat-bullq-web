@@ -67,6 +67,9 @@ const DISPLAY_ATTR = [
   'rowspan',
   'role',
   'style',
+  'color',
+  'face',
+  'size',
 ];
 
 export type SanitizeMode = 'compose' | 'display';
@@ -88,9 +91,10 @@ export function sanitizeEmailHtml(
     ALLOWED_ATTR: mode === 'display' ? DISPLAY_ATTR : COMPOSE_ATTR,
     ALLOW_DATA_ATTR: false,
     ADD_ATTR: ['target'],
-    // bloqueia javascript: / data: em URI attrs
+    // cid: vira data:image/* no server — precisa liberar data URI só em <img>
+    ADD_DATA_URI_TAGS: mode === 'display' ? ['img'] : [],
     ALLOWED_URI_REGEXP:
-      /^(?:(?:https?|mailto):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
+      /^(?:(?:https?|mailto):|data:image\/(?:png|jpe?g|gif|webp|bmp|svg\+xml);base64,|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
   });
 
   return String(clean);
