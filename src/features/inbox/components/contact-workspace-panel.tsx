@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   CalendarDays,
   FolderKanban,
@@ -145,7 +145,11 @@ export function ContactWorkspacePanel({
         )}
 
         {tab === 'agenda' && (
-          <AgendaTab defaultAttendee={contactEmail} contactName={contact.name || ''} />
+          <AgendaTab
+            conversationId={conversation.id}
+            defaultAttendee={contactEmail}
+            contactName={contact.name || ''}
+          />
         )}
 
         {tab === 'project' && isGroup && (
@@ -258,12 +262,15 @@ function EmailComposeTab({
 }
 
 function AgendaTab({
+  conversationId,
   defaultAttendee,
   contactName,
 }: {
+  conversationId: string;
   defaultAttendee: string;
   contactName: string;
 }) {
+  const queryClient = useQueryClient();
   const statusQ = useQuery({
     queryKey: ['calendar-status'],
     queryFn: () => calendarService.status(),
@@ -313,7 +320,8 @@ function AgendaTab({
     try {
       const start = new Date(startDefault);
       const end = new Date(start.getTime() + minutes * 60_000);
-      const res = await calendarService.create({
+      const res = await calendarService.createFromConversation({
+        conversationId,
         channelId: statusQ.data.channelId || undefined,
         calendarId,
         summary: summary.trim() || 'Reunião',
@@ -325,27 +333,15 @@ function AgendaTab({
           : [],
       });
       setLastMeet(res.meetLink || null);
-      // Copia nota pronta pro operador colar no chat (sem disparar msg pro cliente)
-      const note = [
-        `📅 Reunião agendada: ${summary.trim() || 'Reunião'}`,
-        res.meetLink ? `Meet: ${res.meetLink}` : null,
-        res.htmlLink ? `Agenda: ${res.htmlLink}` : null,
-        'Gravação/transcrição: ative no Meet se precisar.',
-      ]
-        .filter(Boolean)
-        .join('\n');
-      try {
-        await navigator.clipboard.writeText(note);
-        toast.success(
-          res.meetLink
-            ? 'No Google · Meet pronto (nota copiada p/ colar no chat)'
-            : 'Evento no Google (nota copiada)',
-        );
-      } catch {
-        toast.success(
-          res.meetLink ? 'Evento no Google · Meet pronto' : 'Evento criado no Google',
-        );
-      }
+      // Bolha SYSTEM na conversa (local) — não manda pro WhatsApp/IG
+      queryClient.invalidateQueries({ queryKey: ['messages', conversationId] });
+      queryClient.invalidateQueries({ queryKey: ['conversation', conversationId] });
+      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+      toast.success(
+        res.meetLink
+          ? 'Agendado no Google · Meet na conversa (bolha do sistema)'
+          : 'Agendado no Google · nota na conversa',
+      );
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Falha ao agendar');
     } finally {

@@ -79,6 +79,8 @@ export interface ChannelPremise {
   inboundMessages: number;
   outboundMessages: number;
   avgFirstResponseMinutes: number | null;
+  /** Instagram: inbound nas últimas 24h (proxy janela Meta). */
+  inboundLast24h?: number | null;
 }
 
 export interface ChannelPremises {

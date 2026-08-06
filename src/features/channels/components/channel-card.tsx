@@ -190,29 +190,51 @@ export function ChannelCard({ channel, onUpdate }: ChannelCardProps) {
         {channel.type === 'GMAIL' && (() => {
           const cfg = (channel.config as any) || {};
           const granted = String(cfg.scopeGranted || cfg.scope || '');
-          const hasMail =
-            cfg.hasGmailModify === true ||
-            /gmail\.(modify|readonly|send)/i.test(granted) ||
+          const hasRead =
+            /gmail\.(readonly|modify|send)|mail\.google\.com/i.test(granted) ||
             !!cfg.refreshToken;
+          const hasSend =
+            cfg.hasGmailModify === true ||
+            /gmail\.(modify|send)/i.test(granted);
           const hasCal =
-            cfg.hasCalendar === true || /calendar(\.events)?/i.test(granted);
+            cfg.hasCalendar === true ||
+            /calendar(\.events|\.readonly)?/i.test(granted);
+          const badge = (ok: boolean, okCls: string) =>
+            ok
+              ? okCls
+              : 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400';
           return (
             <div className="mt-1.5 flex flex-wrap gap-1">
               <span
                 className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
-                  hasMail
-                    ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
-                    : 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800'
+                  badge(
+                    hasRead,
+                    'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300',
+                  )
                 }`}
+                title="Leitura Gmail"
               >
-                E-mail {hasMail ? '✓' : '—'}
+                Leitura {hasRead ? '✓' : '—'}
               </span>
               <span
                 className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
-                  hasCal
-                    ? 'bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300'
-                    : 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300'
+                  badge(
+                    hasSend,
+                    'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300',
+                  )
                 }`}
+                title="Envio / reply Gmail"
+              >
+                Envio {hasSend ? '✓' : '—'}
+              </span>
+              <span
+                className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+                  badge(
+                    hasCal,
+                    'bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300',
+                  )
+                }`}
+                title="Google Agenda"
               >
                 Agenda {hasCal ? '✓' : 'pendente'}
               </span>

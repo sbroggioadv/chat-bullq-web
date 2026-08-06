@@ -8,13 +8,16 @@ import {
   Forward,
   Loader2,
   MailOpen,
+  Paperclip,
   RefreshCw,
   Reply,
   ReplyAll,
   Send,
   Star,
+  Tag,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useQuery } from '@tanstack/react-query';
 import type { EmailThreadDetail } from '../services/email.service';
 import { emailService } from '../services/email.service';
 import { formatLongDate } from '../lib/format';
@@ -60,10 +63,24 @@ export function EmailThreadView({
   const [starred, setStarred] = useState(!!detail?.starred);
   const [spam, setSpam] = useState(!!detail?.spam);
 
+  const [activeLabels, setActiveLabels] = useState<string[]>(
+    detail?.labelIds || [],
+  );
+  const [labelMenuOpen, setLabelMenuOpen] = useState(false);
+
   useEffect(() => {
     setStarred(!!detail?.starred);
     setSpam(!!detail?.spam);
-  }, [detail?.id, detail?.starred, detail?.spam]);
+    setActiveLabels(detail?.labelIds || []);
+  }, [detail?.id, detail?.starred, detail?.spam, detail?.labelIds]);
+
+  const foldersQ = useQuery({
+    queryKey: ['email-folders', channelId],
+    queryFn: () => emailService.folders(channelId!),
+    enabled: !!channelId,
+    staleTime: 60_000,
+  });
+  const userLabels = (foldersQ.data?.folders || []).filter((f) => f.kind === 'user');
 
   useEffect(() => {
     setRecent(loadRecentRecipients());
@@ -345,6 +362,71 @@ export function EmailThreadView({
         >
           <AlertOctagon className="h-3.5 w-3.5" />
         </button>
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setLabelMenuOpen((v) => !v)}
+            disabled={modifying || !userLabels.length}
+            title="Aplicar marcador"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-zinc-200 bg-white px-2.5 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+          >
+            <Tag className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Marcador</span>
+          </button>
+          {labelMenuOpen && (
+            <>
+              <div
+                className="fixed inset-0 z-20"
+                onClick={() => setLabelMenuOpen(false)}
+              />
+              <div className="absolute right-0 top-full z-30 mt-1 max-h-56 w-52 overflow-y-auto rounded-lg border border-zinc-200 bg-white py-1 shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
+                {userLabels.map((l) => {
+                  const on = activeLabels.includes(l.id);
+                  return (
+                    <button
+                      key={l.id}
+                      type="button"
+                      className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs text-zinc-700 hover:bg-zinc-50 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                      onClick={async () => {
+                        if (!channelId || !detail?.id) return;
+                        setModifying(true);
+                        try {
+                          await emailService.modify({
+                            channelId,
+                            threadId: detail.id,
+                            addLabelIds: on ? undefined : [l.id],
+                            removeLabelIds: on ? [l.id] : undefined,
+                          });
+                          setActiveLabels((prev) =>
+                            on
+                              ? prev.filter((x) => x !== l.id)
+                              : [...prev, l.id],
+                          );
+                          toast.success(on ? `Removido: ${l.name}` : `Marcador: ${l.name}`);
+                          onSent();
+                        } catch (err) {
+                          toast.error(
+                            err instanceof Error ? err.message : 'Falha no marcador',
+                          );
+                        } finally {
+                          setModifying(false);
+                          setLabelMenuOpen(false);
+                        }
+                      }}
+                    >
+                      <span
+                        className={`h-2 w-2 rounded-full ${
+                          on ? 'bg-primary' : 'bg-zinc-300 dark:bg-zinc-600'
+                        }`}
+                      />
+                      <span className="truncate">{l.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
         <button
           type="button"
           onClick={handleArchive}
@@ -360,6 +442,21 @@ export function EmailThreadView({
           <span className="hidden sm:inline">Arquivar</span>
         </button>
       </div>
+
+      {!!userLabels.length && activeLabels.some((id) => userLabels.some((u) => u.id === id)) && (
+        <div className="flex flex-wrap gap-1 border-b border-zinc-100 px-5 py-1.5 dark:border-zinc-900">
+          {userLabels
+            .filter((l) => activeLabels.includes(l.id))
+            .map((l) => (
+              <span
+                key={l.id}
+                className="rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+              >
+                {l.name}
+              </span>
+            ))}
+        </div>
+      )}
 
       {reauthHint && (
         <div className="border-b border-amber-200/80 bg-amber-50 px-5 py-2.5 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100">
@@ -413,6 +510,52 @@ export function EmailThreadView({
               <div className="mt-3 whitespace-pre-wrap break-words text-sm leading-relaxed text-zinc-800 dark:text-zinc-200">
                 {m.body || m.snippet || '(mensagem sem conteúdo)'}
               </div>
+              {!!m.attachments?.length && (
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {m.attachments.map((a) => (
+                    <button
+                      key={a.attachmentId}
+                      type="button"
+                      className="inline-flex max-w-full items-center gap-1 rounded-md border border-zinc-200 bg-zinc-50 px-2 py-1 text-[11px] text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+                      title={`Baixar ${a.filename}`}
+                      onClick={async () => {
+                        if (!channelId) return;
+                        try {
+                          const blob = await emailService.downloadAttachment({
+                            channelId,
+                            messageId: a.messageId || m.id,
+                            attachmentId: a.attachmentId,
+                            filename: a.filename,
+                            mimeType: a.mimeType,
+                          });
+                          const url = URL.createObjectURL(blob);
+                          const link = document.createElement('a');
+                          link.href = url;
+                          link.download = a.filename || 'anexo';
+                          link.click();
+                          URL.revokeObjectURL(url);
+                        } catch (err) {
+                          toast.error(
+                            err instanceof Error
+                              ? err.message
+                              : 'Falha ao baixar anexo',
+                          );
+                        }
+                      }}
+                    >
+                      <Paperclip className="h-3 w-3 shrink-0" />
+                      <span className="truncate">{a.filename}</span>
+                      {a.size > 0 && (
+                        <span className="shrink-0 text-zinc-400">
+                          {a.size > 1024 * 1024
+                            ? `${(a.size / (1024 * 1024)).toFixed(1)} MB`
+                            : `${Math.max(1, Math.round(a.size / 1024))} KB`}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
             </article>
           );
         })}

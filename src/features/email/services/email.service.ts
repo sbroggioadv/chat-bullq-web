@@ -36,6 +36,14 @@ export interface EmailThreadsPage {
   nextPageToken: string | null;
 }
 
+export interface EmailAttachment {
+  attachmentId: string;
+  filename: string;
+  mimeType: string;
+  size: number;
+  messageId: string;
+}
+
 export interface EmailMessage {
   id: string;
   from: { email: string; name?: string };
@@ -48,6 +56,7 @@ export interface EmailMessage {
   unread: boolean;
   outbound: boolean;
   messageId?: string;
+  attachments?: EmailAttachment[];
 }
 
 export interface EmailThreadDetail {
@@ -134,6 +143,20 @@ export const emailService = {
   }): Promise<{ success: boolean; threadId: string }> {
     const { data } = await api.post('/email/archive', input);
     return data.data ?? data;
+  },
+
+  async downloadAttachment(input: {
+    channelId: string;
+    messageId: string;
+    attachmentId: string;
+    filename?: string;
+    mimeType?: string;
+  }): Promise<Blob> {
+    const { data } = await api.get('/email/attachments', {
+      params: input,
+      responseType: 'blob',
+    });
+    return data as Blob;
   },
 
   async modify(input: {

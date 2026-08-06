@@ -88,8 +88,33 @@ export const calendarService = {
     htmlLink: string | null;
     meetLink: string | null;
     note?: string;
+    systemMessageId?: string;
   }> {
     const { data } = await api.post('/calendar/events', input);
+    return data.data ?? data;
+  },
+
+  /** Cria evento + bolha SYSTEM na conversa (não manda pro WA/IG). */
+  async createFromConversation(input: {
+    conversationId: string;
+    channelId?: string;
+    calendarId?: string;
+    summary: string;
+    description?: string;
+    startIso: string;
+    endIso: string;
+    attendeeEmails?: string[];
+    withMeet?: boolean;
+    timeZone?: string;
+  }): Promise<{
+    success: boolean;
+    id: string;
+    htmlLink: string | null;
+    meetLink: string | null;
+    systemMessageId?: string;
+    conversationId?: string;
+  }> {
+    const { data } = await api.post('/calendar/events/from-conversation', input);
     return data.data ?? data;
   },
 

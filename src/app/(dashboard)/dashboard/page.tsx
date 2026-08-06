@@ -476,6 +476,17 @@ export default function DashboardPage() {
                           : '—'}
                       </dd>
                     </div>
+                    {card.key === 'instagram' && d.inboundLast24h != null && (
+                      <div className="col-span-2">
+                        <dt className="text-zinc-400">Inbound (últimas 24h)</dt>
+                        <dd className="tabular-nums text-zinc-700 dark:text-zinc-300">
+                          {d.inboundLast24h}
+                          <span className="ml-1 text-[10px] text-zinc-400">
+                            janela Meta
+                          </span>
+                        </dd>
+                      </div>
+                    )}
                   </dl>
                 ) : (
                   <p className="mt-3 text-xs text-zinc-400">
