@@ -27,6 +27,8 @@ import {
   MAX_OUTBOUND_ATTACHMENT_BYTES,
 } from '../services/email.service';
 import { formatLongDate } from '../lib/format';
+import { EmailSafeBody } from './email-safe-body';
+import { EmailRichEditor } from './email-rich-editor';
 import {
   loadRecentRecipients,
   rememberRecipients,
@@ -60,6 +62,7 @@ export function EmailThreadView({
 }: EmailThreadViewProps) {
   const [mode, setMode] = useState<ComposeMode>(null);
   const [body, setBody] = useState('');
+  const [bodyHtml, setBodyHtml] = useState('');
   const [forwardTo, setForwardTo] = useState('');
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -172,6 +175,7 @@ export function EmailThreadView({
   const openCompose = (m: ComposeMode) => {
     setMode(m);
     setBody('');
+    setBodyHtml('');
     setForwardTo('');
     setPendingFiles([]);
     setReauthHint(false);
@@ -284,6 +288,7 @@ export function EmailThreadView({
           channelId,
           threadId: detail.id,
           body: body.trim(),
+          bodyHtml: bodyHtml.trim() || undefined,
           to: mode === 'reply' ? defaultTo || undefined : undefined,
           replyAll: mode === 'replyAll',
           attachments,
@@ -297,11 +302,13 @@ export function EmailThreadView({
           threadId: detail.id,
           to: forwardTo.trim(),
           body: body.trim() || undefined,
+          bodyHtml: bodyHtml.trim() || undefined,
           attachments,
         });
         toast.success('E-mail encaminhado');
       }
       setBody('');
+      setBodyHtml('');
       setForwardTo('');
       setPendingFiles([]);
       setMode(null);
@@ -545,8 +552,8 @@ export function EmailThreadView({
                   cc {m.cc}
                 </p>
               ) : null}
-              <div className="mt-3 whitespace-pre-wrap break-words text-sm leading-relaxed text-zinc-800 dark:text-zinc-200">
-                {m.body || m.snippet || '(mensagem sem conteúdo)'}
+              <div className="mt-3">
+                <EmailSafeBody body={m.body} bodyHtml={m.bodyHtml} snippet={m.snippet} />
               </div>
               {!!m.attachments?.length && (
                 <div className="mt-2 flex flex-wrap gap-1.5">
@@ -659,16 +666,19 @@ export function EmailThreadView({
             </div>
           )}
 
-          <textarea
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
+          <EmailRichEditor
+            valueHtml={bodyHtml}
+            onChange={(html, plain) => {
+              setBodyHtml(html);
+              setBody(plain);
+            }}
             rows={mode === 'forward' ? 3 : 5}
+            disabled={sending}
             placeholder={
               mode === 'forward'
                 ? 'Nota opcional acima da mensagem encaminhada…'
                 : 'Escreva sua resposta…'
             }
-            className="w-full resize-y rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-900 outline-none ring-primary/30 placeholder:text-zinc-400 focus:border-primary focus:ring-2 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100"
           />
           {pendingFiles.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-1.5">

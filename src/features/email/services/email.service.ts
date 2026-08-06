@@ -83,6 +83,8 @@ export interface EmailMessage {
   subject: string;
   date: string | null;
   body: string;
+  /** HTML sanitizado no servidor (allowlist). */
+  bodyHtml?: string;
   snippet: string;
   unread: boolean;
   outbound: boolean;
@@ -137,6 +139,7 @@ export const emailService = {
     channelId: string;
     threadId: string;
     body: string;
+    bodyHtml?: string;
     to?: string;
     cc?: string;
     replyAll?: boolean;
@@ -152,6 +155,7 @@ export const emailService = {
     threadId: string;
     to: string;
     body?: string;
+    bodyHtml?: string;
     subject?: string;
     attachments?: OutboundEmailAttachment[];
   }): Promise<{ success: boolean; id: string; threadId: string }> {
@@ -164,6 +168,7 @@ export const emailService = {
     to: string;
     subject: string;
     body: string;
+    bodyHtml?: string;
     cc?: string;
     attachments?: OutboundEmailAttachment[];
   }): Promise<{ success: boolean; id: string; threadId: string }> {

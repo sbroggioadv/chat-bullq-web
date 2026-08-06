@@ -23,6 +23,7 @@ import {
 } from '@/features/email/services/email.service';
 import { calendarService } from '@/features/calendar/services/calendar.service';
 import { rememberRecipients } from '@/features/email/lib/recent-recipients';
+import { EmailRichEditor } from '@/features/email/components/email-rich-editor';
 
 type Tab = 'contact' | 'email' | 'agenda' | 'project';
 
@@ -184,6 +185,7 @@ function EmailComposeTab({
   const [to, setTo] = useState(defaultTo);
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
+  const [bodyHtml, setBodyHtml] = useState('');
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [sending, setSending] = useState(false);
@@ -231,10 +233,12 @@ function EmailComposeTab({
         to: to.trim(),
         subject: subject.trim(),
         body: body.trim(),
+        bodyHtml: bodyHtml.trim() || undefined,
         attachments,
       });
       toast.success(`E-mail enviado para ${contactName}`);
       setBody('');
+      setBodyHtml('');
       setPendingFiles([]);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Falha ao enviar');
@@ -273,12 +277,15 @@ function EmailComposeTab({
         placeholder="Assunto"
         className="w-full rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-1.5 text-xs dark:border-zinc-700 dark:bg-zinc-900"
       />
-      <textarea
-        value={body}
-        onChange={(e) => setBody(e.target.value)}
+      <EmailRichEditor
+        valueHtml={bodyHtml}
+        onChange={(html, plain) => {
+          setBodyHtml(html);
+          setBody(plain);
+        }}
         rows={8}
+        disabled={sending}
         placeholder="Escreva o e-mail…"
-        className="w-full resize-y rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-1.5 text-xs dark:border-zinc-700 dark:bg-zinc-900"
       />
       {pendingFiles.length > 0 && (
         <div className="flex flex-wrap gap-1">
