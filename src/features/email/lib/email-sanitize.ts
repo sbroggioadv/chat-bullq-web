@@ -74,9 +74,33 @@ const DISPLAY_ATTR = [
 
 export type SanitizeMode = 'compose' | 'display';
 
+/** DOCTYPE / declarações que o browser mostra como texto se o `<` for “comido”. */
+function isDoctypeResidue(s: string): boolean {
+  const t = String(s || '').trim();
+  if (t.length < 8) return false;
+  if (/^!?DOCTYPE\b/i.test(t)) return true;
+  if (/DOCTYPE\s+html\b/i.test(t) && /(?:html|PUBLIC|XHTML|DTD|\.dtd)/i.test(t)) {
+    return true;
+  }
+  if (/DOCTYPE/i.test(t) && /&(?:lt|gt|quot);/i.test(t) && t.length < 400) {
+    return true;
+  }
+  return false;
+}
+
+function stripUnrecognizedDeclarations(html: string): string {
+  let s = String(html || '');
+  s = s.replace(/<!DOCTYPE\b[^>]*>/gi, ' ');
+  s = s.replace(/<\?[\s\S]*?\?>/g, ' ');
+  s = s.replace(/(^|>)(\s*)!?DOCTYPE\b[^<]{0,300}(?=<|$)/gi, '$1$2');
+  s = s.replace(/<![^>]*>/g, ' ');
+  s = s.replace(/<\/?(?:html|body)\b[^>]*>/gi, ' ');
+  return s;
+}
+
 /** Pré-strip: DOMPurify com KEEP_CONTENT default deixa CSS de <style> como texto. */
 function stripStyleAndHead(html: string): string {
-  let s = String(html || '');
+  let s = stripUnrecognizedDeclarations(String(html || ''));
   s = s.replace(/<head\b[^>]*>[\s\S]*?<\/head\s*>/gi, ' ');
   for (let i = 0; i < 6; i++) {
     const before = s;
@@ -106,6 +130,7 @@ function stripStyleAndHead(html: string): string {
 function isCssNoiseText(s: string): boolean {
   const t = String(s || '').trim();
   if (t.length < 8) return false;
+  if (isDoctypeResidue(t)) return true;
   if (looksLikeCssDump(t)) return true;
   const semis = (t.match(/;/g) || []).length;
   const braces = (t.match(/[{}]/g) || []).length;
