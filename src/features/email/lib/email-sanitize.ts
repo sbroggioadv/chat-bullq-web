@@ -86,7 +86,89 @@ function stripStyleAndHead(html: string): string {
   }
   s = s.replace(/<!--\[if[\s\S]*?<!\[endif\]-->/gi, ' ');
   s = s.replace(/<!--[\s\S]*?-->/g, ' ');
+  // CSS nu comum em newsletters (fora de <style>)
+  for (let i = 0; i < 10; i++) {
+    const before = s;
+    s = s.replace(
+      /(^|>)(\s*)(?:#outlook|\.ExternalClass|@media\s+only|@font-face|#MessageViewBody|u\s*\+\s*[\w.#]|body\s*,\s*table|a\[x-apple-data-detectors\]|div\[style\*=)[\s\S]{10,20000}?\}(?=\s*(?:<|$))/gi,
+      '$1$2',
+    );
+    s = s.replace(
+      /(^|>)(\s*)([^<]{40,}(?:!important|text-size-adjust|mso-table|ExternalClass)[^<]{10,})(?=<|$)/gi,
+      (full, boundary: string, sp: string, chunk: string) =>
+        isCssNoiseText(chunk) ? `${boundary}${sp}` : full,
+    );
+    if (s === before) break;
+  }
   return s;
+}
+
+function isCssNoiseText(s: string): boolean {
+  const t = String(s || '').trim();
+  if (t.length < 8) return false;
+  if (looksLikeCssDump(t)) return true;
+  const semis = (t.match(/;/g) || []).length;
+  const braces = (t.match(/[{}]/g) || []).length;
+  const importants = (t.match(/!important/gi) || []).length;
+  const letters = (t.match(/[A-Za-zÀ-ÿ]/g) || []).length || 1;
+  const punct = (t.match(/[{}:;#@!]/g) || []).length;
+  if (importants >= 2 && semis >= 2) return true;
+  if (braces >= 2 && semis >= 3) return true;
+  if (t.length >= 40 && punct >= 12 && punct / letters > 0.12 && semis >= 3) {
+    return true;
+  }
+  if (/u\s*\+\s*[\w.#]/.test(t) && /[{};]/.test(t)) return true;
+  if (
+    /(?:text-size-adjust|mso-table|ExternalClass|#outlook|interpolation-mode)/i.test(
+      t,
+    ) &&
+    /[{};]/.test(t)
+  ) {
+    return true;
+  }
+  return false;
+}
+
+/** Remove nós de texto que ainda são CSS (pós-DOMPurify). */
+function stripCssTextNodes(html: string): string {
+  try {
+    const doc = new DOMParser().parseFromString(
+      `<div id="__email_root">${html}</div>`,
+      'text/html',
+    );
+    const root = doc.getElementById('__email_root');
+    if (!root) return html;
+
+    const walk = (node: Node) => {
+      const children = Array.from(node.childNodes);
+      for (const child of children) {
+        if (child.nodeType === Node.TEXT_NODE) {
+          if (isCssNoiseText(child.textContent || '')) {
+            child.parentNode?.removeChild(child);
+          }
+        } else if (child.nodeType === Node.ELEMENT_NODE) {
+          walk(child);
+        }
+      }
+    };
+    walk(root);
+
+    // remove wrappers vazios
+    root.querySelectorAll('div,span,p,font,center').forEach((el) => {
+      if (!(el.textContent || '').trim() && !el.querySelector('img,table,br,a')) {
+        el.remove();
+      }
+    });
+
+    return root.innerHTML;
+  } catch {
+    // fallback string
+    return String(html || '')
+      .replace(/^([^<]+)/, (chunk) => (isCssNoiseText(chunk) ? '' : chunk))
+      .replace(/>([^<]+)</g, (full, chunk: string) =>
+        isCssNoiseText(chunk) ? '><' : full,
+      );
+  }
 }
 
 /**
@@ -115,7 +197,7 @@ export function sanitizeEmailHtml(
       /^(?:(?:https?|mailto):|data:image\/(?:png|jpe?g|gif|webp|bmp|svg\+xml);base64,|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
   });
 
-  return String(clean);
+  return stripCssTextNodes(String(clean));
 }
 
 /** HTML do editor → texto plain (para body fallback da API). */
@@ -140,9 +222,9 @@ export function htmlToPlainText(html: string): string {
 /** Detecta dump de CSS no plain (UI fallback). */
 export function looksLikeCssDump(s: string | null | undefined): boolean {
   const t = String(s || '');
-  if (t.length < 12) return false;
+  if (t.length < 8) return false;
   return (
-    /#outlook\b|\.ExternalClass\b|@media\s+only|@font-face\b|mso-|\{\s*padding\s*:|\/\*|-ms-text-size-adjust|u\s*\+\s*a\s*\{|a\s+img\s*\{|#MessageViewBody/i.test(
+    /#outlook\b|\.ExternalClass\b|@media\s+only|@font-face\b|mso-|\{\s*padding\s*:|\/\*|-ms-text-size-adjust|-webkit-text-size-adjust|u\s*\+\s*[\w.#]|a\s+img\s*\{|#MessageViewBody|a\[x-apple-data-detectors\]|-ms-interpolation-mode|mso-table-lspace/i.test(
       t,
     ) && /[{};]/.test(t)
   );
