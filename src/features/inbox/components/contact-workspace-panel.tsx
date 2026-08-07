@@ -13,7 +13,7 @@ import {
   X,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import type { Conversation } from '../services/inbox.service';
+import { emailDeepLink, type Conversation } from '../services/inbox.service';
 import { ProjectPanel } from './project-panel';
 import {
   emailService,
@@ -130,12 +130,9 @@ export function ContactWorkspacePanel({
                 {conversation.channel.name} · {conversation.channel.type}
               </p>
             </div>
-            {conversation.channel.type === 'GMAIL' && (
+            {emailDeepLink(conversation) && (
               <a
-                href={`/email?thread=${encodeURIComponent(
-                  // external id when gmail
-                  (conversation as any).externalConversationId || conversation.id,
-                )}`}
+                href={emailDeepLink(conversation)!}
                 className="inline-flex text-xs font-medium text-primary hover:underline"
               >
                 Abrir no E-mail →

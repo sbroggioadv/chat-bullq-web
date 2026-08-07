@@ -8,6 +8,7 @@ import {
   Forward,
   Loader2,
   MailOpen,
+  MessageSquare,
   Paperclip,
   RefreshCw,
   Reply,
@@ -19,6 +20,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';
+import Link from 'next/link';
 import type { EmailThreadDetail } from '../services/email.service';
 import {
   emailService,
@@ -34,6 +36,7 @@ import {
   rememberRecipients,
   suggestRecipients,
 } from '../lib/recent-recipients';
+import { inboxService } from '@/features/inbox/services/inbox.service';
 
 type ComposeMode = 'reply' | 'replyAll' | 'forward' | null;
 
@@ -73,6 +76,17 @@ export function EmailThreadView({
   const [recent, setRecent] = useState<string[]>([]);
   const [starred, setStarred] = useState(!!detail?.starred);
   const [spam, setSpam] = useState(!!detail?.spam);
+
+  const inboxLinkQ = useQuery({
+    queryKey: ['conversation-by-external', channelId, detail?.id],
+    queryFn: () => inboxService.lookupByExternal(channelId!, detail!.id),
+    enabled: !!channelId && !!detail?.id,
+    staleTime: 60_000,
+    retry: false,
+  });
+  const inboxHref = inboxLinkQ.data?.id
+    ? `/inbox?conversationId=${encodeURIComponent(inboxLinkQ.data.id)}`
+    : null;
 
   const [activeLabels, setActiveLabels] = useState<string[]>(
     detail?.labelIds || [],
@@ -348,6 +362,16 @@ export function EmailThreadView({
         <h1 className="min-w-0 flex-1 truncate text-base font-semibold text-zinc-900 dark:text-zinc-100">
           {detail.subject}
         </h1>
+        {inboxHref && (
+          <Link
+            href={inboxHref}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-zinc-200 bg-white px-2.5 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+            title="Abrir a conversa correspondente no atendimento"
+          >
+            <MessageSquare className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Atendimento</span>
+          </Link>
+        )}
         <button
           type="button"
           onClick={() => openCompose(mode === 'reply' ? null : 'reply')}

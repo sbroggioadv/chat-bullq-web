@@ -20,7 +20,7 @@ import { ConversationAiToggle } from './conversation-ai-toggle';
 import { AssignmentPopover } from './assignment-popover';
 import { AgentPinPopover } from './agent-pin-popover';
 import { PipelinePopover } from './pipeline-popover';
-import { inboxService, type Conversation } from '../services/inbox.service';
+import { emailDeepLink, inboxService, type Conversation } from '../services/inbox.service';
 import { useConversationAiAllowedInGroup } from '../hooks/use-conversation-ai-allowed-in-group';
 
 interface ConversationHeaderProps {
@@ -175,6 +175,15 @@ export function ConversationHeader({
             type={conversation.channel.type}
             name={conversation.channel.name}
           />
+          {emailDeepLink(conversation) && (
+            <a
+              href={emailDeepLink(conversation)!}
+              className="mt-1 inline-flex w-fit items-center gap-1 text-[11px] font-medium text-primary hover:underline"
+            >
+              <Mail className="h-3 w-3" />
+              Abrir no E-mail
+            </a>
+          )}
         </div>
       </div>
 

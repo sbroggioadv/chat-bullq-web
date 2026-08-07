@@ -70,6 +70,33 @@ export interface Conversation {
   unreadCount?: number;
   /** Projeto do grupo (quando isGroup). null = sem projeto ainda. */
   project?: ProjectSummary | null;
+  /** Metadata do provider (ex.: externalConversationId = Gmail threadId). */
+  metadata?: {
+    externalConversationId?: string;
+    [key: string]: unknown;
+  } | null;
+}
+
+/** Thread Gmail (ou outro provider) gravado em metadata. */
+export function conversationExternalId(c: Conversation): string | null {
+  const fromMeta = c.metadata?.externalConversationId;
+  if (fromMeta) return String(fromMeta);
+  return null;
+}
+
+export function isGmailConversation(c: Conversation): boolean {
+  return String(c.channel?.type || '').toUpperCase() === 'GMAIL';
+}
+
+export function emailDeepLink(c: Conversation): string | null {
+  if (!isGmailConversation(c)) return null;
+  const ext = conversationExternalId(c);
+  if (!ext) return null;
+  const p = new URLSearchParams();
+  p.set('folder', 'inbox');
+  p.set('threadId', ext);
+  p.set('channel', c.channelId);
+  return `/email?${p.toString()}`;
 }
 
 export interface MessageSender {
@@ -163,6 +190,21 @@ export const inboxService = {
   async getConversation(id: string): Promise<Conversation> {
     const { data } = await api.get(`/conversations/${id}`);
     return data.data;
+  },
+
+  /** Deep-link E-mail → Inbox: resolve conversa PG pelo thread Gmail. */
+  async lookupByExternal(
+    channelId: string,
+    externalId: string,
+  ): Promise<Conversation | null> {
+    try {
+      const { data } = await api.get('/conversations/by-external', {
+        params: { channelId, externalId },
+      });
+      return data.data ?? data ?? null;
+    } catch {
+      return null;
+    }
   },
 
   async getMessages(conversationId: string, page = 1, limit = 50): Promise<{

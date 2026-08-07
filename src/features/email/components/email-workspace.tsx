@@ -37,7 +37,7 @@ export function EmailWorkspace() {
   const queryClient = useQueryClient();
 
   const folderId = paramToFolderId(searchParams.get('folder'));
-  const threadId = searchParams.get('threadId');
+  const threadId = searchParams.get('threadId') || searchParams.get('thread');
   const channelParam = searchParams.get('channel');
 
   const statusQuery = useQuery({
