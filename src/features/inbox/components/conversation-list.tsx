@@ -59,6 +59,8 @@ function ListAvatar({ name, avatarUrl }: { name: string | null; avatarUrl: strin
       <img
         src={avatarUrl}
         alt={name || 'avatar'}
+        // WA CDN bloqueia hotlink com Referer; BullQ /uploads não se importa.
+        referrerPolicy="no-referrer"
         onError={() => setFailed(true)}
         className="h-10 w-10 rounded-full bg-zinc-100 object-cover dark:bg-zinc-800"
       />

@@ -89,6 +89,7 @@ function HeaderAvatar({ name, avatarUrl }: { name: string | null; avatarUrl: str
       <img
         src={avatarUrl}
         alt={name || 'avatar'}
+        referrerPolicy="no-referrer"
         onError={() => setFailed(true)}
         className="h-10 w-10 shrink-0 rounded-full bg-zinc-100 object-cover dark:bg-zinc-800"
       />

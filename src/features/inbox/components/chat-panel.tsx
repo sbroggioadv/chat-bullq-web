@@ -381,6 +381,7 @@ function ContactAvatar({
       <img
         src={avatarUrl}
         alt={name || 'avatar'}
+        referrerPolicy="no-referrer"
         onError={() => setFailed(true)}
         className={`${dim} shrink-0 rounded-full bg-zinc-200 object-cover dark:bg-zinc-700`}
       />

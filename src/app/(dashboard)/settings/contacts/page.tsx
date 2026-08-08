@@ -187,6 +187,7 @@ export default function ContactsPage() {
                           <img
                             src={contact.avatarUrl}
                             alt={contact.name || ''}
+                            referrerPolicy="no-referrer"
                             className="size-8 shrink-0 rounded-full object-cover"
                             onError={(e) => {
                               (e.currentTarget as HTMLImageElement).style.display = 'none';
