@@ -37,6 +37,18 @@ interface ProviderMeta {
 
 const PROVIDERS: ProviderMeta[] = [
   {
+    id: 'FUGU',
+    name: 'Sakana Fugu',
+    description: 'Fugu Ultra — agentes de atendimento',
+    keyExampleHint: 'sk-...',
+  },
+  {
+    id: 'QWEN',
+    name: 'Qwen (Alibaba)',
+    description: 'Qwen 3.7 Max — agentes de atendimento',
+    keyExampleHint: 'sk-...',
+  },
+  {
     id: 'ZAI',
     name: 'Z.AI',
     description: 'GLM-5.2, GLM-5.1, GLM-4.7',
@@ -68,11 +80,18 @@ const PROVIDERS: ProviderMeta[] = [
   },
 ];
 
+const LLM_ATTENDANCE_PROVIDERS: AiProvider[] = ['FUGU', 'QWEN'];
+
+const LLM_MODEL_OVERRIDE: Partial<Record<AiProvider, string>> = {
+  FUGU: 'fugu-ultra',
+  QWEN: 'qwen3.7-max',
+};
+
 const CAPABILITY_LABELS: Record<AiCapability, { label: string; help: string; allowed: AiProvider[] }> = {
   LLM_AGENT: {
     label: 'Agentes IA',
-    help: 'Provider usado nas conversas com agentes (Augusto, Sales, Support)',
-    allowed: ['ZAI', 'OPENAI', 'GEMINI', 'KIMI', 'ANTHROPIC'],
+    help: 'Atendimento usa só Fugu Ultra (Sakana) ou Qwen 3.7 Max (Alibaba)',
+    allowed: LLM_ATTENDANCE_PROVIDERS,
   },
   TRANSCRIPTION: {
     label: 'Transcrição de áudio',
@@ -157,7 +176,8 @@ export default function SettingsAiCredentialsPage() {
           Credenciais de IA
         </h2>
         <p className="mt-0.5 text-sm text-zinc-500">
-          Use suas próprias chaves Z.AI / OpenAI / Gemini, com escolha de provider por capacidade.
+          Cole a chave da Sakana (Fugu Ultra) ou da Alibaba (Qwen 3.7 Max) para os agentes de
+          atendimento. OpenAI continua só para transcrição e embeddings.
         </p>
       </div>
 
@@ -451,7 +471,15 @@ function RoutingTab({
   routing: CapabilityRouting[];
   credByProvider: Map<AiProvider, MaskedCredential>;
   loading: boolean;
-  envFallback?: { zai: boolean; kimi: boolean; anthropic: boolean; openai: boolean; gemini: boolean };
+  envFallback?: {
+    fugu: boolean;
+    qwen: boolean;
+    zai: boolean;
+    kimi: boolean;
+    anthropic: boolean;
+    openai: boolean;
+    gemini: boolean;
+  };
   onChanged: () => void;
 }) {
   // Estado local pra batch save
@@ -464,7 +492,7 @@ function RoutingTab({
       map[r.capability] = r.providerSelected;
     });
     return {
-      LLM_AGENT: map.LLM_AGENT ?? 'ZAI',
+      LLM_AGENT: map.LLM_AGENT ?? 'FUGU',
       TRANSCRIPTION: map.TRANSCRIPTION ?? 'OPENAI',
       EMBEDDINGS: map.EMBEDDINGS ?? 'OPENAI',
     };
@@ -492,6 +520,9 @@ function RoutingTab({
         (Object.keys(draft) as AiCapability[]).map((cap) => ({
           capability: cap,
           providerSelected: draft[cap],
+          ...(cap === 'LLM_AGENT' && LLM_MODEL_OVERRIDE[draft[cap]]
+            ? { modelOverride: LLM_MODEL_OVERRIDE[draft[cap]] }
+            : {}),
         })),
       );
       toast.success('Roteamento atualizado');
@@ -539,6 +570,10 @@ function RoutingTab({
 
       {(Object.keys(CAPABILITY_LABELS) as AiCapability[]).map((cap) => {
         const meta = CAPABILITY_LABELS[cap];
+        const allowed =
+          cap === 'LLM_AGENT' && !meta.allowed.includes(current[cap])
+            ? [...meta.allowed, current[cap]]
+            : meta.allowed;
         const isLocked = cap === 'EMBEDDINGS'; // só OPENAI por enquanto
         const selectedAvailable = isAvailable(current[cap]);
         return (
@@ -560,7 +595,7 @@ function RoutingTab({
                 )}
               </div>
               <div className="flex gap-2">
-                {meta.allowed.map((provider) => {
+                {allowed.map((provider) => {
                   const selected = current[cap] === provider;
                   const available = isAvailable(provider);
                   return (
