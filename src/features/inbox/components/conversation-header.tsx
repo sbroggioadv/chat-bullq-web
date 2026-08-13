@@ -13,6 +13,7 @@ import {
   Mail,
   Send,
   Activity,
+  Bot,
   FolderKanban,
   PanelRight,
 } from 'lucide-react';
@@ -41,13 +42,18 @@ function ChannelBadge({ type, name }: { type: string; name: string }) {
   const isTelegram = t.includes('TELEGRAM');
   const isEmail = t.includes('EMAIL') || t.includes('MAIL');
   const isSms = t.includes('SMS');
+  const isJarvis = t.includes('JARVIS');
 
   let Icon = MessageSquare;
   let label = 'Chat';
   let cls =
     'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300';
 
-  if (isWhats) {
+  if (isJarvis) {
+    Icon = Bot;
+    label = 'Jarvis';
+    cls = 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300';
+  } else if (isWhats) {
     Icon = Phone;
     label = 'WhatsApp';
     cls = 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
@@ -189,6 +195,8 @@ export function ConversationHeader({
       </div>
 
       <div className="flex items-center gap-1.5">
+        {conversation.channel.type !== 'JARVIS' && (
+          <>
         <AgentPinPopover conversation={conversation} onChanged={onUpdate} />
         <ConversationAiToggle
           conversation={conversation}
@@ -305,6 +313,8 @@ export function ConversationHeader({
             <RotateCcw className="h-3.5 w-3.5" />
             Reabrir
           </button>
+        )}
+          </>
         )}
       </div>
     </div>

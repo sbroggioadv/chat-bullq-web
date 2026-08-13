@@ -85,6 +85,7 @@ const channelIcons: Record<string, React.ElementType> = {
   WHATSAPP_OFFICIAL: MetaIcon,
   INSTAGRAM: InstagramIcon,
   GMAIL: Mail,
+  JARVIS: MessageSquare,
 };
 
 const statusColors: Record<string, string> = {

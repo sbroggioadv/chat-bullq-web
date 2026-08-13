@@ -12,6 +12,7 @@ import {
   UserCircle,
   FolderKanban,
   CalendarDays,
+  Bot,
 } from 'lucide-react';
 import { InboxTree } from '@/features/inbox-views/components/inbox-tree';
 import { EmailTree } from '@/features/email/components/email-tree';
@@ -39,6 +40,10 @@ import {
   DropdownDivider,
 } from '@/components/ui/dropdown';
 import { ThemeModeToggle } from '@/features/theme/components/theme-mode-toggle';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useState } from 'react';
+import { toast } from 'sonner';
+import { jarvisDeskService } from '@/features/ai-agents/services/jarvis-desk.service';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -48,9 +53,26 @@ const navItems = [
 ];
 
 export function AppSidebar() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [openingJarvis, setOpeningJarvis] = useState(false);
+  const jarvisOpen = searchParams.get('jarvis') === '1';
   const { user, organizations, activeOrgId, setActiveOrg, logout } =
     useAuthStore();
   const activeOrg = organizations.find((o) => o.id === activeOrgId);
+
+  const openJarvis = async () => {
+    if (openingJarvis) return;
+    setOpeningJarvis(true);
+    try {
+      const desk = await jarvisDeskService.open();
+      router.push(`/inbox?conversationId=${desk.conversationId}&jarvis=1`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Não abriu o canal do Jarvis');
+    } finally {
+      setOpeningJarvis(false);
+    }
+  };
 
   const handleOrgSwitch = (orgId: string) => {
     setActiveOrg(orgId);
@@ -103,6 +125,13 @@ export function AppSidebar() {
 
       <SidebarBody>
         <SidebarSection>
+          <SidebarItem
+            current={jarvisOpen}
+            onClick={openJarvis}
+          >
+            <Bot className="size-5" />
+            <SidebarLabel>{openingJarvis ? 'Abrindo Jarvis…' : 'Falar com o Jarvis'}</SidebarLabel>
+          </SidebarItem>
           <InboxTree />
           <EmailTree />
           <PipelinesTree />

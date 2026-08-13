@@ -33,6 +33,7 @@ const channelTypeMap: Record<string, { label: string; icon: React.ElementType; c
   WHATSAPP_OFFICIAL: { label: 'WhatsApp Official', icon: MetaIcon, color: 'bg-zinc-50 dark:bg-zinc-800' },
   INSTAGRAM: { label: 'Instagram', icon: InstagramIcon, color: 'bg-zinc-50 dark:bg-zinc-800' },
   GMAIL: { label: 'Gmail', icon: Mail, color: 'bg-red-50 dark:bg-red-950/30' },
+  JARVIS: { label: 'Jarvis (interno)', icon: Mail, color: 'bg-violet-50 dark:bg-violet-950/30' },
 };
 
 interface ChannelCardProps {
