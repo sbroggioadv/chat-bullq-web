@@ -38,6 +38,17 @@ export const DEPARTMENT_COLORS: Record<string, { bg: string; text: string; ring:
   OUTRO:       { bg: 'bg-zinc-100 dark:bg-zinc-800/50',      text: 'text-zinc-600 dark:text-zinc-400',       ring: 'ring-zinc-200 dark:ring-zinc-700' },
 };
 
+export interface AgentKnowledgeDoc {
+  id: string;
+  fileName: string;
+  mimeType: string;
+  sizeBytes: number;
+  status: 'PENDING' | 'INDEXING' | 'READY' | 'FAILED' | 'DELETED' | string;
+  errorMessage: string | null;
+  chunkCount: number;
+  createdAt: string;
+}
+
 export interface AgentChannelLink {
   id: string;
   channelId: string;
@@ -175,6 +186,32 @@ export const aiAgentsService = {
   async watchdogStats(): Promise<WatchdogStats> {
     const { data } = await api.get('/ai-agents/watchdog/stats');
     return data.data ?? data;
+  },
+
+  async listKnowledge(agentId: string): Promise<AgentKnowledgeDoc[]> {
+    const { data } = await api.get(`/ai-agents/${agentId}/knowledge`);
+    return data.data ?? data;
+  },
+
+  async uploadKnowledge(
+    agentId: string,
+    file: File,
+  ): Promise<AgentKnowledgeDoc> {
+    const form = new FormData();
+    form.append('file', file);
+    const { data } = await api.post(
+      `/ai-agents/${agentId}/knowledge`,
+      form,
+      {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 60_000,
+      },
+    );
+    return data.data ?? data;
+  },
+
+  async removeKnowledge(agentId: string, docId: string): Promise<void> {
+    await api.delete(`/ai-agents/${agentId}/knowledge/${docId}`);
   },
 
   async setSkillApproval(

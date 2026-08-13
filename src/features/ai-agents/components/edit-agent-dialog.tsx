@@ -14,6 +14,7 @@ import {
 import { aiCatalogService } from '../services/ai-catalog.service';
 import { channelsService } from '@/features/channels/services/channels.service';
 import { useOrgId } from '@/hooks/use-org-query-key';
+import { AgentKnowledgeField } from './agent-knowledge-field';
 
 interface EditAgentDialogProps {
   agent: AiAgent | null;
@@ -243,6 +244,12 @@ export function EditAgentDialog({
               {operationalContext.length}/8000
             </p>
           </div>
+
+          <AgentKnowledgeField
+            agentId={agent.id}
+            pendingFiles={[]}
+            onPendingFilesChange={() => undefined}
+          />
 
           <div>
             <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300">

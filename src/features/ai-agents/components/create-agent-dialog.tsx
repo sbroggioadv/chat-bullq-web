@@ -11,6 +11,7 @@ import {
   type AgentKind,
 } from '../services/ai-agents.service';
 import { useOrgId } from '@/hooks/use-org-query-key';
+import { AgentKnowledgeField } from './agent-knowledge-field';
 
 interface CreateAgentDialogProps {
   open: boolean;
@@ -42,6 +43,7 @@ export function CreateAgentDialog({
   const [department, setDepartment] = useState<string>('');
   const [squad, setSquad] = useState('');
   const [saving, setSaving] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
 
   // Load existing agents for the "reports to" dropdown.
   // Only enabled while dialog is open to avoid unnecessary fetches.
@@ -69,7 +71,7 @@ export function CreateAgentDialog({
     }
     setSaving(true);
     try {
-      await aiAgentsService.create({
+      const created = await aiAgentsService.create({
         name: name.trim(),
         description: description.trim() || undefined,
         kind,
@@ -81,7 +83,19 @@ export function CreateAgentDialog({
         department: department || null,
         squad: squad.trim() || null,
       });
-      toast.success('Agente criado!');
+      for (const file of pendingFiles) {
+        const saved = await aiAgentsService.uploadKnowledge(created.id, file);
+        if (saved.status === 'FAILED') {
+          toast.error(
+            `${file.name}: ${saved.errorMessage || 'não entrou na base'}`,
+          );
+        }
+      }
+      toast.success(
+        pendingFiles.length
+          ? 'Agente criado. Confira o status dos documentos na edição.'
+          : 'Agente criado!',
+      );
       reset();
       onCreated();
       onClose();
@@ -105,6 +119,7 @@ export function CreateAgentDialog({
     setParentAgentId('');
     setDepartment('');
     setSquad('');
+    setPendingFiles([]);
   };
 
   // Eligible parents: any agent in the org (the list endpoint already
@@ -279,6 +294,11 @@ export function CreateAgentDialog({
               Você não precisa repetir contexto da empresa — o sistema injeta nome, canal, hora, dados do contato e memória automaticamente.
             </p>
           </div>
+
+          <AgentKnowledgeField
+            pendingFiles={pendingFiles}
+            onPendingFilesChange={setPendingFiles}
+          />
 
           <div>
             <label className="block text-xs font-medium text-card-foreground/80">
