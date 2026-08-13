@@ -88,8 +88,8 @@ const CAPABILITY_LABELS: Record<AiCapability, { label: string; help: string; all
   },
   EMBEDDINGS: {
     label: 'Embeddings RAG',
-    help: 'Provider usado pra indexar e buscar contexto (RAG). Hoje só OpenAI.',
-    allowed: ['OPENAI'],
+    help: 'Índice da base de conhecimento. Sakana Fugu (formato OpenAI) ou OpenAI nativo.',
+    allowed: ['FUGU', 'OPENAI'],
   },
 };
 
@@ -483,7 +483,7 @@ function RoutingTab({
     return {
       LLM_AGENT: map.LLM_AGENT ?? 'FUGU',
       TRANSCRIPTION: map.TRANSCRIPTION ?? 'OPENAI',
-      EMBEDDINGS: map.EMBEDDINGS ?? 'OPENAI',
+      EMBEDDINGS: map.EMBEDDINGS ?? 'FUGU',
     };
   }, [routing]);
 
@@ -511,6 +511,9 @@ function RoutingTab({
           providerSelected: draft[cap],
           ...(cap === 'LLM_AGENT' && LLM_MODEL_OVERRIDE[draft[cap]]
             ? { modelOverride: LLM_MODEL_OVERRIDE[draft[cap]] }
+            : {}),
+          ...(cap === 'EMBEDDINGS'
+            ? { modelOverride: 'text-embedding-3-small' }
             : {}),
         })),
       );
