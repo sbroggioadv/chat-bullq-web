@@ -39,7 +39,7 @@ import {
 } from '@/features/inbox-views/services/inbox-views.service';
 import { channelsService } from '@/features/channels/services/channels.service';
 import { segmentsService } from '@/features/segments/services/segments.service';
-import { PROJECT_STATUSES } from '@/features/projects/project-fields';
+import { PHASE_LABELS, PROJECT_STATUSES } from '@/features/projects/project-fields';
 import { tagsService } from '@/features/settings/services/tags.service';
 import { ZappfyIcon, MetaIcon, InstagramIcon } from '@/components/ui/icons';
 import { useOrgId } from '@/hooks/use-org-query-key';
@@ -1075,7 +1075,7 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
                   <option value="">Status: todos</option>
                   {PROJECT_STATUSES.map((s) => (
                     <option key={s} value={s}>
-                      {s}
+                      {PHASE_LABELS[s]}
                     </option>
                   ))}
                 </select>

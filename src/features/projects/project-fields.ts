@@ -12,13 +12,32 @@ export function hoppeTaskUrl(id: string): string {
   return HOPPE_TASK_URL.replace('{id}', encodeURIComponent(id));
 }
 
-/** Opções de status do projeto (editar aqui pra adicionar/remover). */
+/** Fases do dossiê, nesta ordem. */
 export const PROJECT_STATUSES = [
-  'Onboarding',
-  'Ativo',
-  'Pausado',
-  'Concluído',
+  'TODO',
+  'WAITING_DOCS',
+  'IN_PROGRESS',
+  'PAUSED',
+  'DONE',
 ] as const;
+
+export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
+
+export const PHASE_LABELS: Record<ProjectStatus, string> = {
+  TODO: 'A fazer',
+  WAITING_DOCS: 'Aguardando documentos',
+  IN_PROGRESS: 'Em execução',
+  PAUSED: 'Paralisado',
+  DONE: 'Concluído',
+};
+
+export function phaseLabel(status: string | null | undefined): string {
+  if (!status) return '';
+  if (status in PHASE_LABELS) {
+    return PHASE_LABELS[status as ProjectStatus];
+  }
+  return status;
+}
 
 export type ProjectFieldType =
   | 'text'
@@ -49,14 +68,21 @@ export const PROJECT_FIELDS: ProjectFieldDef[] = [
     label: 'Nome do projeto',
     type: 'text',
     storage: 'column',
-    placeholder: 'Nome do projeto',
+    placeholder: 'Nome do dossiê',
+  },
+  {
+    key: 'description',
+    label: 'Descrição',
+    type: 'textarea',
+    storage: 'column',
+    placeholder: 'Resumo do holding, caso ou grupo específico…',
   },
   {
     key: 'hoppeId',
     label: 'Hoppe ID',
     type: 'link',
     storage: 'column',
-    placeholder: 'ID da task no Hoppe',
+    placeholder: 'ID da task no Hoppe (opcional)',
   },
   {
     key: 'responsibleUserId',
@@ -66,7 +92,7 @@ export const PROJECT_FIELDS: ProjectFieldDef[] = [
   },
   {
     key: 'status',
-    label: 'Status',
+    label: 'Fase',
     type: 'select',
     storage: 'column',
     options: PROJECT_STATUSES,

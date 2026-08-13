@@ -68,7 +68,7 @@ export interface Conversation {
   _count: { messages: number };
   /** Inbound messages newer than the current user's lastReadAt cursor. */
   unreadCount?: number;
-  /** Projeto do grupo (quando isGroup). null = sem projeto ainda. */
+  /** Dossiê ligado à conversa. null = sem projeto ainda. */
   project?: ProjectSummary | null;
   /** Metadata do provider (ex.: externalConversationId = Gmail threadId). */
   metadata?: {

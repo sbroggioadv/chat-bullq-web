@@ -144,7 +144,7 @@ export default function InboxPage() {
       }
       panel={
         activeConversation ? (
-          <>
+          <div className="flex min-h-0 min-w-0 flex-1">
             <ChatPanel
               key={activeConversation.id}
               conversation={activeConversation}
@@ -168,7 +168,7 @@ export default function InboxPage() {
                 onClose={toggleProjectPanel}
               />
             )}
-          </>
+          </div>
         ) : (
           <div className="flex flex-1 flex-col items-center justify-center bg-zinc-50 dark:bg-zinc-900/50">
             <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-zinc-100 dark:bg-zinc-800">

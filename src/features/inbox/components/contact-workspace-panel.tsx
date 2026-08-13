@@ -53,11 +53,11 @@ export function ContactWorkspacePanel({
     { id: 'contact', label: 'Contato', icon: User, show: true },
     { id: 'email', label: 'E-mail', icon: Mail, show: true },
     { id: 'agenda', label: 'Agenda', icon: CalendarDays, show: true },
-    { id: 'project', label: 'Projeto', icon: FolderKanban, show: isGroup },
+    { id: 'project', label: 'Projeto', icon: FolderKanban, show: true },
   ];
 
   return (
-    <aside className="flex w-80 shrink-0 flex-col border-l border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+    <aside className="flex w-72 min-w-0 shrink-0 flex-col overflow-hidden border-l border-zinc-200 bg-white sm:w-80 dark:border-zinc-800 dark:bg-zinc-950">
       <div className="flex items-center justify-between border-b border-zinc-200 px-3 py-2.5 dark:border-zinc-800">
         <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
           Contato
@@ -71,7 +71,7 @@ export function ContactWorkspacePanel({
         </button>
       </div>
 
-      <div className="flex gap-0.5 overflow-x-auto border-b border-zinc-200 px-2 py-1.5 dark:border-zinc-800">
+      <div className="flex flex-wrap gap-0.5 border-b border-zinc-200 px-2 py-1.5 dark:border-zinc-800">
         {tabs
           .filter((t) => t.show)
           .map((t) => {
@@ -156,7 +156,7 @@ export function ContactWorkspacePanel({
           />
         )}
 
-        {tab === 'project' && isGroup && (
+        {tab === 'project' && (
           <div className="h-full [&_aside]:w-full [&_aside]:border-0">
             <ProjectPanel conversationId={conversation.id} onClose={onClose} />
           </div>

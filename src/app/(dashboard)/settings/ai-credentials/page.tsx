@@ -49,18 +49,6 @@ const PROVIDERS: ProviderMeta[] = [
     keyExampleHint: 'sk-...',
   },
   {
-    id: 'ZAI',
-    name: 'Z.AI',
-    description: 'GLM-5.2, GLM-5.1, GLM-4.7',
-    keyExampleHint: 'sk-...',
-  },
-  {
-    id: 'KIMI',
-    name: 'Kimi',
-    description: 'Moonshot Kimi K2',
-    keyExampleHint: 'sk-...',
-  },
-  {
     id: 'ANTHROPIC',
     name: 'Anthropic',
     description: 'Claude (Sonnet, Haiku, Opus)',
@@ -176,8 +164,9 @@ export default function SettingsAiCredentialsPage() {
           Credenciais de IA
         </h2>
         <p className="mt-0.5 text-sm text-zinc-500">
-          Cole a chave da Sakana (Fugu Ultra) ou da Alibaba (Qwen 3.7 Max) para os agentes de
-          atendimento. OpenAI continua só para transcrição e embeddings.
+          Atendimento: Fugu Ultra e Qwen 3.7 Max. OpenAI e Gemini ficam para
+          transcrição e embeddings. Anthropic permanece disponível se já estava
+          acoplado.
         </p>
       </div>
 

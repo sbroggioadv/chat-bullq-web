@@ -2,7 +2,7 @@
 
 import { Fragment, useEffect, useRef, useState, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, CheckCheck, Clock, AlertCircle, ExternalLink, Reply, Trash2, X, Ban, Forward } from 'lucide-react';
+import { Check, CheckCheck, Clock, AlertCircle, ExternalLink, Reply, Trash2, X, Ban, Forward, Paperclip } from 'lucide-react';
 import { ForwardMessageDialog } from './forward-message-dialog';
 import { toast } from 'sonner';
 import { inboxService, type Conversation, type Message } from '../services/inbox.service';
@@ -22,6 +22,7 @@ import { useSocket } from '../hooks/use-socket';
 import { useAuthStore } from '@/stores/auth-store';
 import { PendingActionsList } from '../pending-actions/pending-actions-list';
 import type { Contact as OrgContact } from '@/features/contacts/services/contacts.service';
+import { projectsService } from '@/features/projects/services/projects.service';
 
 function translateSkipReason(reason: string): string {
   const map: Record<string, string> = {
@@ -657,6 +658,29 @@ export function ChatPanel({
     setForwarding(msg);
   }, []);
 
+  const handleAttachToProject = useCallback(
+    async (msg: Message) => {
+      try {
+        const project = await projectsService.getByConversation(conversation.id);
+        if (!project.exists || !project.id) {
+          toast.error(
+            'Abra o painel Projeto e crie ou ligue um dossiê primeiro',
+          );
+          return;
+        }
+        await projectsService.attachMessage(project.id, msg.id);
+        toast.success('Mensagem anexada ao projeto');
+        queryClient.invalidateQueries({ queryKey: ['project', conversation.id] });
+        queryClient.invalidateQueries({ queryKey: ['project', project.id] });
+      } catch (err) {
+        toast.error(
+          err instanceof Error ? err.message : 'Erro ao anexar ao projeto',
+        );
+      }
+    },
+    [conversation.id, queryClient],
+  );
+
   const forwardPreview = (msg: Message): string => {
     const c = (msg.content ?? {}) as Record<string, any>;
     if (typeof c.text === 'string' && c.text) return c.text.slice(0, 120);
@@ -986,6 +1010,15 @@ export function ChatPanel({
                         </button>
                         <button
                           type="button"
+                          onClick={() => handleAttachToProject(msg)}
+                          className="rounded-full bg-white p-1.5 text-zinc-400 shadow-sm ring-1 ring-zinc-200 hover:text-zinc-700 dark:bg-zinc-800 dark:ring-zinc-700 dark:hover:text-zinc-100"
+                          title="Anexar ao projeto"
+                          aria-label="Anexar esta mensagem ao projeto"
+                        >
+                          <Paperclip className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => handleRevoke(msg)}
                           className="rounded-full bg-white p-1.5 text-zinc-400 shadow-sm ring-1 ring-zinc-200 hover:text-red-600 dark:bg-zinc-800 dark:ring-zinc-700 dark:hover:text-red-400"
                           title="Deletar pra todos"
@@ -1252,6 +1285,15 @@ export function ChatPanel({
                           aria-label="Encaminhar esta mensagem"
                         >
                           <Forward className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleAttachToProject(msg)}
+                          className="rounded-full bg-white p-1.5 text-zinc-400 shadow-sm ring-1 ring-zinc-200 hover:text-zinc-700 dark:bg-zinc-800 dark:ring-zinc-700 dark:hover:text-zinc-100"
+                          title="Anexar ao projeto"
+                          aria-label="Anexar esta mensagem ao projeto"
+                        >
+                          <Paperclip className="h-3.5 w-3.5" />
                         </button>
                       </div>
                     )}
