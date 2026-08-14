@@ -9,6 +9,7 @@ import { ChatPanel } from '@/features/inbox/components/chat-panel';
 import { InboxLayout } from '@/features/inbox/components/inbox-layout';
 import { AgentRunsSidebar } from '@/features/inbox/components/agent-runs-sidebar';
 import { ContactWorkspacePanel } from '@/features/inbox/components/contact-workspace-panel';
+import { toast } from 'sonner';
 import { inboxService, type Conversation } from '@/features/inbox/services/inbox.service';
 
 const AGENT_LOGS_PREF_KEY = 'inbox.agentLogsOpen';
@@ -97,9 +98,12 @@ export default function InboxPage() {
       .then((conv) => {
         if (!cancelled) setActiveConversation(conv);
       })
-      .catch(() => {
-        // Silent — broken link shouldn't break the inbox; user still sees
-        // the list and can pick another conversation.
+      .catch((err) => {
+        toast.error(
+          err instanceof Error
+            ? err.message
+            : 'Não abriu a conversa do Jarvis',
+        );
       });
     return () => {
       cancelled = true;

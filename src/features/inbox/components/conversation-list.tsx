@@ -33,6 +33,7 @@ import {
   PopoverPanel,
 } from '@headlessui/react';
 import { inboxService, type Conversation } from '../services/inbox.service';
+import { jarvisDeskService } from '@/features/ai-agents/services/jarvis-desk.service';
 import {
   inboxViewsService,
   type InboxView,
@@ -434,10 +435,21 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
     staleTime: 15000,
   });
 
-  const conversations = useMemo(
-    () => data?.pages.flatMap((p) => p.conversations) || [],
-    [data],
-  );
+  const { data: jarvisDeskConv } = useQuery({
+    queryKey: ['jarvis-desk-conversation', orgId],
+    queryFn: async () => {
+      const desk = await jarvisDeskService.open();
+      return inboxService.getConversation(desk.conversationId);
+    },
+    enabled: !!orgId && !viewId,
+    staleTime: 30_000,
+  });
+
+  const conversations = useMemo(() => {
+    const list = data?.pages.flatMap((p) => p.conversations) || [];
+    if (!jarvisDeskConv || viewId) return list;
+    return [jarvisDeskConv, ...list.filter((c) => c.id !== jarvisDeskConv.id)];
+  }, [data, jarvisDeskConv, viewId]);
 
   // Total count from the paginated response — same value across pages
   // (it's the count(where) from Postgres). Used to show "Não lidas (N)"

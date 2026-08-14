@@ -2,8 +2,11 @@
 
 import { useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { toast } from 'sonner';
+import { jarvisDeskService } from '@/features/ai-agents/services/jarvis-desk.service';
 import {
   Bot,
+  MessageSquare,
   ChevronDown,
   ChevronRight,
   BarChart3,
@@ -50,6 +53,7 @@ export function JarvisTree() {
   });
 
   const isAiAgents = pathname?.startsWith('/ai-agents');
+  const deskOpen = searchParams.get('jarvis') === '1';
   const activeTab = (searchParams.get('tab') as Tab) ?? 'overview';
 
   const toggleExpanded = () => {
@@ -65,6 +69,16 @@ export function JarvisTree() {
   // limpando o param) não dispara re-render confiável no Next.js App Router.
   const goRoot = () => router.push('/ai-agents?tab=overview');
   const goTab = (tab: Tab) => router.push(`/ai-agents?tab=${tab}`);
+  const openDesk = async () => {
+    try {
+      const desk = await jarvisDeskService.open();
+      router.push(`/inbox?conversationId=${desk.conversationId}&jarvis=1`);
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : 'Não abriu o canal do Jarvis',
+      );
+    }
+  };
 
   return (
     <div className="space-y-0.5">
@@ -97,6 +111,18 @@ export function JarvisTree() {
 
       {expanded && (
         <div className="ml-5 space-y-0.5 border-l border-sidebar-border pl-2">
+          <button
+            type="button"
+            onClick={() => void openDesk()}
+            className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs ${
+              deskOpen
+                ? 'bg-sidebar-accent font-medium text-sidebar-accent-foreground'
+                : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground'
+            }`}
+          >
+            <MessageSquare className="size-3.5 text-sidebar-foreground/50" />
+            <span className="flex-1">Conversar</span>
+          </button>
           {TABS.map((t) => {
             const Icon = t.icon;
             const isActive = isAiAgents && activeTab === t.id;

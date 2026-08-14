@@ -1321,7 +1321,10 @@ export function ChatPanel({
         onSendAudio={handleSendAudio}
         onSendFile={handleSendFile}
         onShareContacts={handleShareContacts}
-        disabled={conversation.status === 'CLOSED'}
+        disabled={
+          conversation.status === 'CLOSED' &&
+          conversation.channel.type !== 'JARVIS'
+        }
       />
       {forwarding && (
         <ForwardMessageDialog
