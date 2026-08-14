@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { Loader2, MessageSquare } from 'lucide-react';
@@ -12,7 +12,6 @@ import { authService } from '../services/auth.service';
 import { useAuthStore } from '@/stores/auth-store';
 
 export function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const { setAuth, setActiveOrg } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
@@ -41,7 +40,13 @@ export function LoginForm() {
 
       toast.success(`Bem-vindo, ${result.user.name}!`);
       const next = searchParams.get('next');
-      router.push(next?.startsWith('/') && !next.startsWith('//') ? next : '/inbox');
+      // Full document load — Next.js client nav (router.push) after login
+      // dies in some Chromes as "This page couldn't load" while the API
+      // session is already 201 and inbox XHRs 200. Hard assign uses the
+      // same path as a manual refresh, which already works.
+      const dest =
+        next?.startsWith('/') && !next.startsWith('//') ? next : '/inbox';
+      window.location.assign(dest);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erro ao fazer login');
     } finally {
