@@ -474,6 +474,9 @@ export function ChatPanel({
         );
       }
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
+      if (msg.direction === 'INBOUND') {
+        setAiTyping(null);
+      }
     });
     const unsubStatus = on('message:status', (payload: any) => {
       if (payload.conversationId !== conversation.id) return;
@@ -627,7 +630,7 @@ export function ChatPanel({
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages.length]);
+  }, [messages.length, aiTyping]);
 
   // S22 — Auto-clear AI typing banner after ETA expires
   useEffect(() => {
@@ -737,6 +740,13 @@ export function ChatPanel({
       });
       if (created) {
         upsertMessageInCache(created);
+      }
+      if (conversation.channel.type === 'JARVIS') {
+        setAiTyping({
+          agentName: 'Jarvis',
+          etaMs: 25_000,
+          until: Date.now() + 25_000,
+        });
       }
       setReplyingTo(null);
     } catch (err) {
@@ -917,13 +927,7 @@ export function ChatPanel({
 
       <PendingActionsList conversationId={conversation.id} />
 
-      {aiTyping && (
-        <div className="flex items-center gap-2 border-b border-zinc-100 bg-zinc-50 px-4 py-2 text-xs text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-400">
-          <span className="inline-flex h-2 w-2 animate-pulse rounded-full bg-primary" />
-          <span>🤖 {aiTyping.agentName} está digitando…</span>
-          <span className="text-zinc-400">(~{Math.ceil(aiTyping.etaMs / 1000)}s)</span>
-        </div>
-      )}
+      {/* Indicador de digitação vive no fio (bolha), no estilo WhatsApp. */}
       {aiSkip && (
         <div className="flex items-center gap-2 border-b border-amber-100 bg-amber-50 px-4 py-2 text-xs text-amber-700 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-300">
           <span>⏸ IA pausada · {translateSkipReason(aiSkip.reason)}</span>
@@ -940,7 +944,7 @@ export function ChatPanel({
           <div className="flex h-full items-center justify-center">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           </div>
-        ) : messages.length === 0 ? (
+        ) : messages.length === 0 && !aiTyping ? (
           <div className="flex h-full items-center justify-center text-sm text-zinc-400">
             Nenhuma mensagem ainda
           </div>
@@ -1302,6 +1306,7 @@ export function ChatPanel({
                 );
               });
             })()}
+            {aiTyping && <TypingBubble name={aiTyping.agentName} />}
             <div ref={bottomRef} />
           </div>
         )}
@@ -1336,6 +1341,21 @@ export function ChatPanel({
  * resposta a uma mensagem específica. X cancela. Replica o visual do
  * WhatsApp Web — borda colorida à esquerda + sender + preview truncado.
  */
+function TypingBubble({ name }: { name: string }) {
+  return (
+    <div className="flex justify-start" aria-live="polite" aria-label={`${name} está digitando`}>
+      <div className="rounded-2xl rounded-bl-md bg-white px-3.5 py-2.5 shadow-sm dark:bg-zinc-800">
+        <p className="mb-1.5 text-[11px] font-semibold text-primary">{name}</p>
+        <div className="flex h-4 items-center gap-1 px-0.5">
+          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-zinc-400 [animation-delay:-0.32s] dark:bg-zinc-500" />
+          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-zinc-400 [animation-delay:-0.16s] dark:bg-zinc-500" />
+          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-zinc-400 dark:bg-zinc-500" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ReplyPreviewBar({
   message,
   onCancel,
