@@ -439,7 +439,10 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
     queryKey: ['jarvis-desk-conversation', orgId],
     queryFn: async () => {
       const desk = await jarvisDeskService.open();
-      return inboxService.getConversation(desk.conversationId);
+      const conv = await inboxService.getConversation(desk.conversationId);
+      // GET /conversations/:id does not always include messages[];
+      // the list renderer reads messages[0] and used to crash the page.
+      return { ...conv, messages: conv.messages ?? [] };
     },
     enabled: !!orgId && !viewId,
     staleTime: 30_000,
@@ -804,7 +807,7 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
   }, [selectedIds, clearSelection, queryClient, router]);
 
   const getLastMessagePreview = (conv: Conversation) => {
-    const last = conv.messages[0];
+    const last = conv.messages?.[0];
     if (!last) return 'Sem mensagens';
     const prefix = last.direction === 'OUTBOUND' ? 'Você: ' : '';
     const rt = (last as any).metadata?.replyTo;
@@ -1481,7 +1484,7 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
                                     : 'text-zinc-400 dark:text-zinc-500'
                                 }`}
                               >
-                                {formatTime(conv.messages[0]?.createdAt ?? conv.lastMessageAt)}
+                                {formatTime(conv.messages?.[0]?.createdAt ?? conv.lastMessageAt)}
                               </span>
                             </div>
                           </div>
