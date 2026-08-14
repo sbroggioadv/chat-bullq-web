@@ -20,6 +20,22 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  async headers() {
+    // Document HTML was going out with s-maxage=31536000. After a deploy
+    // Chrome kept the old /inbox document + old chunk hashes → 404 or the
+    // crashed bundle, and the tab died as "This page couldn't load".
+    return [
+      {
+        source: '/((?!_next/static|_next/image|favicon.ico).*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'private, no-cache, no-store, must-revalidate',
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

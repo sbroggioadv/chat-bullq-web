@@ -46,7 +46,10 @@ export function LoginForm() {
       // same path as a manual refresh, which already works.
       const dest =
         next?.startsWith('/') && !next.startsWith('//') ? next : '/inbox';
-      window.location.assign(dest);
+      // New query key so Chrome cannot reuse a cached /inbox document
+      // from the previous (crashing) bundle.
+      const sep = dest.includes('?') ? '&' : '?';
+      window.location.assign(`${dest}${sep}_v=20260814c`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erro ao fazer login');
     } finally {
