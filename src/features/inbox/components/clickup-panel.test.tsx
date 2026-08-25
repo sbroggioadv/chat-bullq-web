@@ -23,6 +23,10 @@ vi.mock('../services/clickup-inbox.service', async () => {
       postActivity: vi.fn(),
       completeActivity: vi.fn(),
       createTask: vi.fn(),
+      resolveGroup: vi.fn(),
+      searchGroupTasks: vi.fn(),
+      bindGroupTask: vi.fn(),
+      createGroupTask: vi.fn(),
     },
   };
 });
@@ -31,13 +35,17 @@ const mocked = clickupInboxService as unknown as {
   resolve: ReturnType<typeof vi.fn>;
   getTask: ReturnType<typeof vi.fn>;
   createTask: ReturnType<typeof vi.fn>;
+  resolveGroup: ReturnType<typeof vi.fn>;
+  searchGroupTasks: ReturnType<typeof vi.fn>;
+  bindGroupTask: ReturnType<typeof vi.fn>;
+  createGroupTask: ReturnType<typeof vi.fn>;
 };
 
-function renderPanel(contactName = 'Maria') {
+function renderPanel(contactName = 'Maria', isGroup = false) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <ClickUpPanel conversationId="conv-1" contactName={contactName} />
+      <ClickUpPanel conversationId="conv-1" contactName={contactName} isGroup={isGroup} />
     </QueryClientProvider>,
   );
 }
@@ -84,9 +92,29 @@ describe('AC-04 estados do painel ClickUp', () => {
   beforeEach(() => {
     mocked.resolve.mockReset();
     mocked.getTask.mockReset();
+    mocked.resolveGroup.mockReset();
+    mocked.searchGroupTasks.mockReset();
+    mocked.bindGroupTask.mockReset();
+    mocked.createGroupTask.mockReset();
   });
 
-  it('grupo', async () => {
+  it('AC-01 1:1 não chama resolveGroup; grupo não chama resolve', async () => {
+    mocked.resolve.mockResolvedValue({ status: 'sem_card' });
+    mocked.resolveGroup.mockResolvedValue({ status: 'sem_dossie' });
+    renderPanel('Maria', false);
+    expect(await screen.findByTestId('clickup-state-sem-card')).toBeInTheDocument();
+    expect(mocked.resolve).toHaveBeenCalledWith('conv-1');
+    expect(mocked.resolveGroup).not.toHaveBeenCalled();
+
+    mocked.resolve.mockClear();
+    mocked.resolveGroup.mockClear();
+    renderPanel('Maria', true);
+    expect(await screen.findByTestId('clickup-state-sem-dossie')).toBeInTheDocument();
+    expect(mocked.resolveGroup).toHaveBeenCalledWith('conv-1');
+    expect(mocked.resolve).not.toHaveBeenCalled();
+  });
+
+  it('grupo legado 1:1 ainda mostra o aviso de telefone', async () => {
     mocked.resolve.mockResolvedValue({ status: 'grupo' } satisfies ClickUpResolveResponse);
     renderPanel();
     expect(await screen.findByTestId('clickup-state-grupo')).toBeInTheDocument();
@@ -172,5 +200,85 @@ describe('AC-04 estados do painel ClickUp', () => {
     renderPanel();
     expect(await screen.findByTestId('clickup-state-upstream')).toBeInTheDocument();
     expect(screen.queryByTestId('clickup-mutations')).not.toBeInTheDocument();
+  });
+});
+
+describe('SPEC-008 estados de grupo', () => {
+  beforeEach(() => {
+    mocked.resolveGroup.mockReset();
+    mocked.searchGroupTasks.mockReset();
+    mocked.bindGroupTask.mockReset();
+    mocked.createGroupTask.mockReset();
+  });
+
+  it('AC-02 sem dossiê pede a aba Projeto e não busca task', async () => {
+    mocked.resolveGroup.mockResolvedValue({ status: 'sem_dossie' });
+    renderPanel('Grupo', true);
+    expect(await screen.findByTestId('clickup-state-sem-dossie')).toBeInTheDocument();
+    expect(screen.getByText(/aba Projeto/i)).toBeInTheDocument();
+    expect(screen.queryByTestId('clickup-group-vincular')).not.toBeInTheDocument();
+    expect(mocked.searchGroupTasks).not.toHaveBeenCalled();
+    expect(mocked.bindGroupTask).not.toHaveBeenCalled();
+  });
+
+  it('AC-06 busca mostra N candidatos e só vincula no clique', async () => {
+    const user = userEvent.setup();
+    mocked.resolveGroup.mockResolvedValue({
+      status: 'dossie_sem_task',
+      project: { id: 'proj-a', name: 'Holding Silva', clickupTaskId: null },
+      projectLists: [
+        { id: 'list-holding', label: 'Holding' },
+        { id: 'list-contencioso', label: 'Contencioso Judicial' },
+      ],
+    });
+    mocked.searchGroupTasks.mockResolvedValue({
+      candidatos: [
+        { taskId: 'h1', nome: 'Holding Alfa', status: 'novo', lista: 'Holding' },
+        { taskId: 'h2', nome: 'Holding Beta', status: 'novo', lista: 'Holding' },
+      ],
+    });
+    mocked.bindGroupTask.mockResolvedValue({ ok: true, status: 'task_vinculada', card: card({ taskId: 'h1', nome: 'Holding Alfa' }) });
+    renderPanel('Grupo', true);
+    await user.click(await screen.findByTestId('clickup-group-vincular'));
+    await user.type(screen.getByPlaceholderText(/cole a url/i), 'Holding');
+    await user.click(screen.getByTestId('clickup-group-search'));
+    expect(await screen.findByTestId('clickup-group-candidatos')).toBeInTheDocument();
+    expect(screen.getByText('h1')).toBeInTheDocument();
+    expect(screen.getByText('h2')).toBeInTheDocument();
+    expect(mocked.bindGroupTask).not.toHaveBeenCalled();
+    expect(screen.queryByTestId('clickup-state-task-vinculada')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Holding Alfa/ }));
+    expect(mocked.bindGroupTask).toHaveBeenCalledWith('conv-1', 'h1');
+    expect(await screen.findByTestId('clickup-state-task-vinculada')).toBeInTheDocument();
+    expect(screen.getByTestId('clickup-mutations')).toBeInTheDocument();
+  });
+
+  it('AC-08 seletor de criar usa só o catálogo D2', async () => {
+    const user = userEvent.setup();
+    mocked.resolveGroup.mockResolvedValue({
+      status: 'dossie_sem_task',
+      project: { id: 'proj-a', name: 'Holding Silva', clickupTaskId: null },
+      projectLists: [
+        { id: 'list-holding', label: 'Holding' },
+        { id: 'list-contencioso', label: 'Contencioso Judicial' },
+      ],
+    });
+    renderPanel('Grupo', true);
+    await user.click(await screen.findByTestId('clickup-group-criar'));
+    const select = await screen.findByTestId('clickup-group-list');
+    expect(select).toHaveTextContent('Holding');
+    expect(select).toHaveTextContent('Contencioso Judicial');
+    expect(select).not.toHaveTextContent('Processo de Vendas');
+  });
+
+  it('task vinculada reusa o card com mutações', async () => {
+    mocked.resolveGroup.mockResolvedValue({
+      status: 'task_vinculada',
+      project: { id: 'proj-a', name: 'Holding Silva', clickupTaskId: 'task-1' },
+      card: card(),
+    });
+    renderPanel('Grupo', true);
+    expect(await screen.findByTestId('clickup-state-task-vinculada')).toBeInTheDocument();
+    expect(screen.getByTestId('clickup-mutations')).toBeInTheDocument();
   });
 });

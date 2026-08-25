@@ -169,6 +169,7 @@ export function ContactWorkspacePanel({
           <ClickUpPanel
             conversationId={conversation.id}
             contactName={contact.name || ''}
+            isGroup={isGroup}
           />
         )}
       </div>

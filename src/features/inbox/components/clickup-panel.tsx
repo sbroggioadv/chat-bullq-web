@@ -9,6 +9,9 @@ import {
   clickupInboxService,
   type ClickUpCampo,
   type ClickUpCard,
+  type ClickUpCandidato,
+  type ClickUpGroupResolveResponse,
+  type ClickUpProjectList,
   type ClickUpResolveResponse,
 } from '../services/clickup-inbox.service';
 
@@ -18,6 +21,21 @@ const labelCls =
   'text-[11px] font-medium uppercase tracking-wide text-zinc-400 dark:text-zinc-500';
 
 export function ClickUpPanel({
+  conversationId,
+  contactName = '',
+  isGroup = false,
+}: {
+  conversationId: string;
+  contactName?: string;
+  isGroup?: boolean;
+}) {
+  if (isGroup) {
+    return <ClickUpGroupPanel conversationId={conversationId} />;
+  }
+  return <ClickUpPhonePanel conversationId={conversationId} contactName={contactName} />;
+}
+
+function ClickUpPhonePanel({
   conversationId,
   contactName = '',
 }: {
@@ -193,6 +211,260 @@ function SemCardCreate({
         <p className="text-[11px] text-amber-600" data-testid="clickup-create-needs-name">
           Nomeie o contato na aba Contato antes de criar o card.
         </p>
+      ) : null}
+    </div>
+  );
+}
+
+function ClickUpGroupPanel({ conversationId }: { conversationId: string }) {
+  const queryClient = useQueryClient();
+  const resolveQ = useQuery({
+    queryKey: ['clickup-inbox-group', conversationId],
+    queryFn: () => clickupInboxService.resolveGroup(conversationId),
+  });
+  const errorKind = resolveQ.error ? classifyClickUpError(resolveQ.error) : null;
+
+  if (resolveQ.isLoading) {
+    return (
+      <div className="flex justify-center p-6" data-testid="clickup-state-loading">
+        <Loader2 className="h-5 w-5 animate-spin text-zinc-400" />
+      </div>
+    );
+  }
+  if (errorKind === 'not_configured') {
+    return (
+      <p className="p-4 text-xs text-zinc-500" data-testid="clickup-state-not-configured">
+        Integração ClickUp não configurada neste ambiente.
+      </p>
+    );
+  }
+  if (errorKind === 'upstream' || resolveQ.error) {
+    return (
+      <p className="p-4 text-xs text-zinc-500" data-testid="clickup-state-upstream">
+        ClickUp indisponível no momento. Tente de novo em instantes.
+      </p>
+    );
+  }
+
+  const data = resolveQ.data;
+  if (!data) return null;
+
+  if (data.status === 'sem_dossie') {
+    return (
+      <p className="p-4 text-xs text-zinc-500" data-testid="clickup-state-sem-dossie">
+        Crie ou ligue um dossiê na aba Projeto para vincular este grupo a uma task ClickUp.
+      </p>
+    );
+  }
+
+  if (data.status === 'task_vinculada' && data.card) {
+    return (
+      <div data-testid="clickup-state-task-vinculada">
+        <ClickUpCardView
+          conversationId={conversationId}
+          card={data.card}
+          onCard={(next) => {
+            queryClient.setQueryData(['clickup-inbox-group', conversationId], {
+              ...data,
+              status: 'task_vinculada',
+              card: next,
+            } satisfies ClickUpGroupResolveResponse);
+          }}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <GroupBindCreate
+      conversationId={conversationId}
+      data={data}
+      onBound={(card) => {
+        queryClient.setQueryData(['clickup-inbox-group', conversationId], {
+          status: 'task_vinculada',
+          conversationId,
+          project: data.project,
+          card,
+        } satisfies ClickUpGroupResolveResponse);
+      }}
+    />
+  );
+}
+
+function GroupBindCreate({
+  conversationId,
+  data,
+  onBound,
+}: {
+  conversationId: string;
+  data: ClickUpGroupResolveResponse;
+  onBound: (card: ClickUpCard) => void;
+}) {
+  const [mode, setMode] = useState<'idle' | 'vincular' | 'criar'>('idle');
+  const [taskRef, setTaskRef] = useState('');
+  const [candidatos, setCandidatos] = useState<ClickUpCandidato[] | null>(null);
+  const [listId, setListId] = useState(data.projectLists?.[0]?.id ?? '');
+  const [name, setName] = useState(data.project?.name ?? '');
+
+  const searchM = useMutation({
+    mutationFn: () => clickupInboxService.searchGroupTasks(conversationId, taskRef.trim()),
+    onSuccess: (res) => setCandidatos(res.candidatos ?? []),
+    onError: (err) => toast.error(err instanceof Error ? err.message : 'Falha na busca'),
+  });
+  const bindM = useMutation({
+    mutationFn: (ref: string) => clickupInboxService.bindGroupTask(conversationId, ref),
+    onSuccess: (res) => {
+      onBound(res.card);
+      toast.success('Task vinculada ao dossiê');
+    },
+    onError: (err) => toast.error(err instanceof Error ? err.message : 'Falha ao vincular'),
+  });
+  const createM = useMutation({
+    mutationFn: () =>
+      clickupInboxService.createGroupTask(conversationId, { listId, name: name.trim() }),
+    onSuccess: (res) => {
+      onBound(res.card);
+      toast.success('Task criada no ClickUp');
+    },
+    onError: (err) => toast.error(err instanceof Error ? err.message : 'Falha ao criar no ClickUp'),
+  });
+
+  const lists: ClickUpProjectList[] = data.projectLists ?? [];
+  const invalid = data.status === 'binding_invalido';
+
+  return (
+    <div
+      className="space-y-3 p-4"
+      data-testid={invalid ? 'clickup-state-binding-invalido' : 'clickup-state-dossie-sem-task'}
+    >
+      {invalid ? (
+        <p className="text-xs text-zinc-500">
+          O vínculo ClickUp deste dossiê está inválido ou inacessível. Vincule outra task ou crie
+          uma nova — nada é escolhido automaticamente.
+        </p>
+      ) : (
+        <p className="text-xs text-zinc-500">
+          Dossiê {data.project?.name || ''} ainda não tem task ClickUp.
+        </p>
+      )}
+
+      {mode === 'idle' ? (
+        <div className="flex gap-2">
+          <button
+            type="button"
+            data-testid="clickup-group-vincular"
+            onClick={() => setMode('vincular')}
+            className="inline-flex flex-1 items-center justify-center rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground"
+          >
+            Vincular existente
+          </button>
+          <button
+            type="button"
+            data-testid="clickup-group-criar"
+            onClick={() => setMode('criar')}
+            className="inline-flex flex-1 items-center justify-center rounded-md border border-zinc-300 px-3 py-1.5 text-xs font-medium dark:border-zinc-700"
+          >
+            Criar nova
+          </button>
+        </div>
+      ) : null}
+
+      {mode === 'vincular' ? (
+        <div className="space-y-2" data-testid="clickup-group-bind">
+          <input
+            className={inputCls}
+            value={taskRef}
+            placeholder="Cole a URL/ID ou busque pelo nome"
+            onChange={(e) => {
+              setTaskRef(e.target.value);
+              setCandidatos(null);
+            }}
+          />
+          <button
+            type="button"
+            data-testid="clickup-group-search"
+            disabled={!taskRef.trim() || searchM.isPending}
+            onClick={() => searchM.mutate()}
+            className="inline-flex w-full items-center justify-center rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50"
+          >
+            {searchM.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Buscar'}
+          </button>
+          {candidatos ? (
+            candidatos.length === 0 ? (
+              <p className="text-[11px] text-zinc-500">Nenhuma task encontrada.</p>
+            ) : (
+              <div className="space-y-2" data-testid="clickup-group-candidatos">
+                <p className="text-[11px] text-zinc-500">
+                  Escolha uma task — nada é selecionado automaticamente.
+                </p>
+                {candidatos.map((c) => (
+                  <button
+                    key={c.taskId}
+                    type="button"
+                    onClick={() => bindM.mutate(c.taskId)}
+                    className="block w-full rounded-md border border-zinc-200 px-2.5 py-2 text-left text-xs hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-900"
+                  >
+                    <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                      {c.nome || '—'}
+                    </span>
+                    <span className="mt-0.5 block font-mono text-[11px] text-zinc-500">
+                      {c.taskId}
+                    </span>
+                    <span className="block text-[11px] text-zinc-400">
+                      {c.lista || 'lista'} · {c.status || '—'}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )
+          ) : (
+            <button
+              type="button"
+              data-testid="clickup-group-bind-paste"
+              disabled={!taskRef.trim() || bindM.isPending}
+              onClick={() => bindM.mutate(taskRef.trim())}
+              className="inline-flex w-full items-center justify-center rounded-md border border-zinc-300 px-3 py-1.5 text-xs font-medium disabled:opacity-50 dark:border-zinc-700"
+            >
+              Vincular esta referência
+            </button>
+          )}
+        </div>
+      ) : null}
+
+      {mode === 'criar' ? (
+        <div className="space-y-2" data-testid="clickup-group-create">
+          <label className="block">
+            <span className={labelCls}>Lista</span>
+            <select
+              className={`${inputCls} mt-1`}
+              data-testid="clickup-group-list"
+              value={listId}
+              onChange={(e) => setListId(e.target.value)}
+            >
+              <option value="">Selecione a lista</option>
+              {lists.map((lista) => (
+                <option key={lista.id} value={lista.id}>
+                  {lista.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <input
+            className={inputCls}
+            value={name}
+            placeholder="Nome da task"
+            onChange={(e) => setName(e.target.value)}
+          />
+          <button
+            type="button"
+            data-testid="clickup-group-create-submit"
+            disabled={!listId || !name.trim() || createM.isPending}
+            onClick={() => createM.mutate()}
+            className="inline-flex w-full items-center justify-center rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50"
+          >
+            {createM.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Criar no ClickUp'}
+          </button>
+        </div>
       ) : null}
     </div>
   );

@@ -20,6 +20,10 @@ vi.mock('../services/clickup-inbox.service', () => ({
     postActivity: vi.fn(),
     completeActivity: vi.fn(),
     createTask: vi.fn(),
+    resolveGroup: vi.fn(async () => ({ status: 'sem_dossie' })),
+    searchGroupTasks: vi.fn(),
+    bindGroupTask: vi.fn(),
+    createGroupTask: vi.fn(),
   },
   classifyClickUpError: () => 'generic',
 }));

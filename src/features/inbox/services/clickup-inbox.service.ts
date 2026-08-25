@@ -7,6 +7,23 @@ export type ClickUpMatchStatus =
   | 'fora_do_padrao'
   | 'grupo';
 
+export type ClickUpGroupStatus =
+  | 'sem_dossie'
+  | 'dossie_sem_task'
+  | 'task_vinculada'
+  | 'binding_invalido';
+
+export type ClickUpProjectList = {
+  id: string;
+  label: string;
+};
+
+export type ClickUpGroupProject = {
+  id: string;
+  name: string;
+  clickupTaskId: string | null;
+};
+
 export type ClickUpFieldOption = {
   id: string;
   rotulo: string;
@@ -65,6 +82,14 @@ export type ClickUpResolveResponse = {
   motivo?: string;
   card?: ClickUpCard;
   candidatos?: ClickUpCandidato[];
+};
+
+export type ClickUpGroupResolveResponse = {
+  status: ClickUpGroupStatus;
+  conversationId?: string;
+  project?: ClickUpGroupProject;
+  projectLists?: ClickUpProjectList[];
+  card?: ClickUpCard;
 };
 
 const base = (conversationId: string) =>
@@ -131,6 +156,37 @@ export const clickupInboxService = {
         headers: { 'Idempotency-Key': crypto.randomUUID() },
       },
     );
+    return data.data;
+  },
+
+  async resolveGroup(conversationId: string): Promise<ClickUpGroupResolveResponse> {
+    const { data } = await api.get<{ data: ClickUpGroupResolveResponse }>(
+      `${base(conversationId)}/group`,
+    );
+    return data.data;
+  },
+
+  async searchGroupTasks(conversationId: string, q: string): Promise<{ candidatos: ClickUpCandidato[] }> {
+    const { data } = await api.get<{ data: { candidatos: ClickUpCandidato[] } }>(
+      `${base(conversationId)}/group/tasks/search`,
+      { params: { q } },
+    );
+    return data.data;
+  },
+
+  async bindGroupTask(conversationId: string, taskRef: string) {
+    const { data } = await api.post<{
+      data: { ok: boolean; status: ClickUpGroupStatus; card: ClickUpCard };
+    }>(`${base(conversationId)}/group/bind`, { taskRef });
+    return data.data;
+  },
+
+  async createGroupTask(conversationId: string, body: { listId: string; name: string }) {
+    const { data } = await api.post<{
+      data: { ok: boolean; status: ClickUpGroupStatus; card: ClickUpCard };
+    }>(`${base(conversationId)}/group/tasks`, body, {
+      headers: { 'Idempotency-Key': crypto.randomUUID() },
+    });
     return data.data;
   },
 
