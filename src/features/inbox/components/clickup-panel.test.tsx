@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ClickUpPanel } from './clickup-panel';
 import { ApiClientError } from '@/lib/api';
@@ -487,5 +487,109 @@ describe('SPEC-009 W0 ClickUpWorkbench', () => {
     await user.selectOptions(screen.getByTestId('clickup-create-list'), 'list-holding');
     await user.click(screen.getByTestId('clickup-workbench-create-submit'));
     expect(mocked.createWorkbenchTask.mock.calls[0][1].crossLinkDossier).toBeUndefined();
+  });
+
+  it('AC-15 F-01 create A depois confirma troca para B não reenvia crossLinkDossier true', async () => {
+    const user = userEvent.setup();
+    const conflict = new ApiClientError(
+      'esta conversa já tem uma task vinculada',
+      409,
+      'CLICKUP_ANCHOR_SWITCH_REQUIRED',
+    );
+    mocked.resolveWorkbench.mockResolvedValue(
+      wb({ dossier: { id: 'proj-a', name: 'Holding Silva', clickupTaskId: null } }),
+    );
+    mocked.createWorkbenchTask
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 'task_vinculada',
+        card: card({ taskId: 'task-a' }),
+      })
+      .mockRejectedValueOnce(conflict)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 'task_vinculada',
+        card: card({ taskId: 'task-b' }),
+      });
+    renderPanel('Grupo', true);
+    await user.click(await screen.findByTestId('clickup-workbench-criar'));
+    expect((await screen.findByTestId('clickup-cross-link-dossier')).querySelector('input')).toBeChecked();
+    await user.selectOptions(screen.getByTestId('clickup-create-list'), 'list-holding');
+    await user.click(screen.getByTestId('clickup-workbench-create-submit'));
+    expect(mocked.createWorkbenchTask.mock.calls[0][1]).toEqual(
+      expect.objectContaining({ listId: 'list-holding', crossLinkDossier: true }),
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('clickup-cross-link-dossier').querySelector('input')).not.toBeChecked();
+    });
+    expect(screen.queryByTestId('clickup-cross-link-overwrite')).not.toBeInTheDocument();
+
+    await user.selectOptions(screen.getByTestId('clickup-create-list'), 'list-iniciais');
+    await user.click(screen.getByTestId('clickup-workbench-create-submit'));
+    expect(await screen.findByTestId('clickup-confirm-switch')).toBeInTheDocument();
+    expect(mocked.createWorkbenchTask.mock.calls[1][1].confirmSwitch).toBeUndefined();
+    expect(mocked.createWorkbenchTask.mock.calls[1][1].crossLinkDossier).not.toBe(true);
+    expect(screen.queryByTestId('clickup-cross-link-overwrite')).not.toBeInTheDocument();
+
+    await user.click(screen.getByTestId('clickup-confirm-switch-confirm'));
+    expect(mocked.createWorkbenchTask).toHaveBeenCalledTimes(3);
+    expect(mocked.createWorkbenchTask.mock.calls[2][1]).toEqual(
+      expect.objectContaining({ listId: 'list-iniciais', confirmSwitch: true }),
+    );
+    expect(mocked.createWorkbenchTask.mock.calls[2][1].crossLinkDossier).not.toBe(true);
+  });
+
+  it('AC-15 F-01 bind A depois confirma troca para B não reenvia crossLinkDossier true', async () => {
+    const user = userEvent.setup();
+    const conflict = new ApiClientError(
+      'esta conversa já tem uma task vinculada',
+      409,
+      'CLICKUP_ANCHOR_SWITCH_REQUIRED',
+    );
+    mocked.resolveWorkbench.mockResolvedValue(
+      wb({ dossier: { id: 'proj-a', name: 'Holding Silva', clickupTaskId: null } }),
+    );
+    mocked.bindWorkbenchTask
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 'task_vinculada',
+        card: card({ taskId: 'task-a' }),
+      })
+      .mockRejectedValueOnce(conflict)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 'task_vinculada',
+        card: card({ taskId: 'task-b' }),
+      });
+    renderPanel('Grupo', true);
+    await user.click(await screen.findByTestId('clickup-workbench-vincular'));
+    expect((await screen.findByTestId('clickup-cross-link-dossier')).querySelector('input')).toBeChecked();
+    await user.type(screen.getByPlaceholderText(/cole a url/i), 'task-a');
+    await user.click(screen.getByTestId('clickup-workbench-bind-paste'));
+    expect(mocked.bindWorkbenchTask.mock.calls[0][1]).toEqual(
+      expect.objectContaining({ taskRef: 'task-a', crossLinkDossier: true }),
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('clickup-cross-link-dossier').querySelector('input')).not.toBeChecked();
+    });
+    expect(screen.queryByTestId('clickup-cross-link-overwrite')).not.toBeInTheDocument();
+
+    const input = screen.getByPlaceholderText(/cole a url/i);
+    await user.clear(input);
+    await user.type(input, 'task-b');
+    await user.click(screen.getByTestId('clickup-workbench-bind-paste'));
+    expect(await screen.findByTestId('clickup-confirm-switch')).toBeInTheDocument();
+    expect(mocked.bindWorkbenchTask.mock.calls[1][1].confirmSwitch).toBeUndefined();
+    expect(mocked.bindWorkbenchTask.mock.calls[1][1].crossLinkDossier).not.toBe(true);
+    expect(screen.queryByTestId('clickup-cross-link-overwrite')).not.toBeInTheDocument();
+
+    await user.click(screen.getByTestId('clickup-confirm-switch-confirm'));
+    expect(mocked.bindWorkbenchTask).toHaveBeenCalledTimes(3);
+    expect(mocked.bindWorkbenchTask.mock.calls[2][1]).toEqual(
+      expect.objectContaining({ taskRef: 'task-b', confirmSwitch: true }),
+    );
+    expect(mocked.bindWorkbenchTask.mock.calls[2][1].crossLinkDossier).not.toBe(true);
   });
 });

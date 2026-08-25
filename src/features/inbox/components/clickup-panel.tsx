@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ExternalLink, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -162,7 +162,17 @@ function ClickUpWorkbench({
         conversationId={conversationId}
         data={data}
         defaultName={contactName.trim() || data.dossier?.name || ''}
-        onBound={(card) => setData({ ...data, status: 'task_vinculada', card })}
+        onBound={(card, extras) =>
+          setData({
+            ...data,
+            status: 'task_vinculada',
+            card,
+            dossier:
+              data.dossier && extras?.crossLinked
+                ? { ...data.dossier, clickupTaskId: card.taskId }
+                : data.dossier,
+          })
+        }
       />
     </div>
   );
@@ -324,7 +334,7 @@ function WorkbenchBindCreate({
   conversationId: string;
   data: ClickUpWorkbenchResponse;
   defaultName: string;
-  onBound: (card: ClickUpCard) => void;
+  onBound: (card: ClickUpCard, extras?: { crossLinked?: boolean }) => void;
 }) {
   const [mode, setMode] = useState<'idle' | 'vincular' | 'criar'>('idle');
   const [taskRef, setTaskRef] = useState('');
@@ -336,6 +346,10 @@ function WorkbenchBindCreate({
   const [switchDialog, setSwitchDialog] = useState<null | { kind: 'bind'; ref: string } | { kind: 'create' }>(
     null,
   );
+
+  useEffect(() => {
+    setCrossLink(Boolean(data.dossier && !data.dossier.clickupTaskId));
+  }, [data.dossier?.id, data.dossier?.clickupTaskId]);
 
   const catalogQ = useQuery({
     queryKey: ['clickup-workbench-catalog', conversationId],
@@ -365,7 +379,9 @@ function WorkbenchBindCreate({
         ...(confirmSwitch ? { confirmSwitch: true } : {}),
       }),
     onSuccess: (res) => {
-      onBound(res.card);
+      const crossLinked = Boolean(data.dossier && crossLink);
+      onBound(res.card, { crossLinked });
+      if (crossLinked) setCrossLink(false);
       setSwitchDialog(null);
       toast.success('Task vinculada a esta conversa');
     },
@@ -386,7 +402,9 @@ function WorkbenchBindCreate({
         ...(confirmSwitch ? { confirmSwitch: true } : {}),
       }),
     onSuccess: (res) => {
-      onBound(res.card);
+      const crossLinked = Boolean(data.dossier && crossLink);
+      onBound(res.card, { crossLinked });
+      if (crossLinked) setCrossLink(false);
       setSwitchDialog(null);
       toast.success('Task criada no ClickUp');
     },
