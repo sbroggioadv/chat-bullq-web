@@ -20,6 +20,29 @@ export type ClickUpCatalogShortcut = {
   kind: 'sales' | 'project';
 };
 
+export type ClickUpCatalogList = {
+  id: string;
+  label: string;
+};
+
+export type ClickUpCatalogFolder = {
+  id: string;
+  label: string;
+  lists: ClickUpCatalogList[];
+};
+
+export type ClickUpCatalogSpace = {
+  id: string;
+  label: string;
+  folders: ClickUpCatalogFolder[];
+  lists: ClickUpCatalogList[];
+};
+
+export type ClickUpCatalogResponse = {
+  catalogShortcuts: ClickUpCatalogShortcut[];
+  spaces: ClickUpCatalogSpace[];
+};
+
 export type ClickUpProjectList = {
   id: string;
   label: string;
@@ -223,13 +246,21 @@ export const clickupInboxService = {
     return data.data;
   },
 
+  async getWorkbenchCatalog(conversationId: string): Promise<ClickUpCatalogResponse> {
+    const { data } = await api.get<{ data: ClickUpCatalogResponse }>(
+      `${base(conversationId)}/workbench/catalog`,
+    );
+    return data.data;
+  },
+
   async searchWorkbenchTasks(
     conversationId: string,
     q: string,
+    spaceId?: string,
   ): Promise<{ candidatos: ClickUpCandidato[] }> {
     const { data } = await api.get<{ data: { candidatos: ClickUpCandidato[] } }>(
       `${base(conversationId)}/workbench/tasks/search`,
-      { params: { q } },
+      { params: { q, ...(spaceId ? { spaceId } : {}) } },
     );
     return data.data;
   },

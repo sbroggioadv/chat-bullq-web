@@ -57,10 +57,17 @@ describe('SPEC-009 workbench HTTP', () => {
     await clickupInboxService.resolveWorkbench('conv-1');
     expect(get.mock.calls[0][0]).toBe('/clickup-inbox/conversations/conv-1/workbench');
 
+    get.mockResolvedValue({ data: { data: { catalogShortcuts: [], spaces: [] } } });
+    await clickupInboxService.getWorkbenchCatalog('conv-1');
+    expect(get.mock.calls[1][0]).toBe('/clickup-inbox/conversations/conv-1/workbench/catalog');
+
     get.mockResolvedValue({ data: { data: { candidatos: [] } } });
     await clickupInboxService.searchWorkbenchTasks('conv-1', 'Holding');
-    expect(get.mock.calls[1][0]).toBe('/clickup-inbox/conversations/conv-1/workbench/tasks/search');
-    expect(get.mock.calls[1][1]).toEqual({ params: { q: 'Holding' } });
+    expect(get.mock.calls[2][0]).toBe('/clickup-inbox/conversations/conv-1/workbench/tasks/search');
+    expect(get.mock.calls[2][1]).toEqual({ params: { q: 'Holding' } });
+
+    await clickupInboxService.searchWorkbenchTasks('conv-1', 'Holding', 'space-projetos');
+    expect(get.mock.calls[3][1]).toEqual({ params: { q: 'Holding', spaceId: 'space-projetos' } });
 
     await clickupInboxService.bindWorkbenchTask('conv-1', { taskRef: 'https://app.clickup.com/t/abc' });
     expect(post.mock.calls[0][0]).toBe('/clickup-inbox/conversations/conv-1/workbench/bind');

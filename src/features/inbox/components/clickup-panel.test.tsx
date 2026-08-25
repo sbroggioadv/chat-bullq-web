@@ -29,6 +29,7 @@ vi.mock('../services/clickup-inbox.service', async () => {
       bindGroupTask: vi.fn(),
       createGroupTask: vi.fn(),
       resolveWorkbench: vi.fn(),
+      getWorkbenchCatalog: vi.fn(),
       searchWorkbenchTasks: vi.fn(),
       bindWorkbenchTask: vi.fn(),
       createWorkbenchTask: vi.fn(),
@@ -42,6 +43,7 @@ const mocked = clickupInboxService as unknown as {
   createTask: ReturnType<typeof vi.fn>;
   resolveGroup: ReturnType<typeof vi.fn>;
   resolveWorkbench: ReturnType<typeof vi.fn>;
+  getWorkbenchCatalog: ReturnType<typeof vi.fn>;
   searchWorkbenchTasks: ReturnType<typeof vi.fn>;
   bindWorkbenchTask: ReturnType<typeof vi.fn>;
   createWorkbenchTask: ReturnType<typeof vi.fn>;
@@ -117,10 +119,12 @@ describe('SPEC-009 W0 ClickUpWorkbench', () => {
     mocked.resolve.mockReset();
     mocked.resolveGroup.mockReset();
     mocked.resolveWorkbench.mockReset();
+    mocked.getWorkbenchCatalog.mockReset();
     mocked.searchWorkbenchTasks.mockReset();
     mocked.bindWorkbenchTask.mockReset();
     mocked.createWorkbenchTask.mockReset();
     mocked.createTask.mockReset();
+    mocked.getWorkbenchCatalog.mockResolvedValue({ catalogShortcuts: shortcuts, spaces: [] });
   });
 
   it('AC-01 grupo sem dossiê e 1:1 sem telefone mostram Vincular/Criar e nenhum sem_dossie', async () => {
@@ -357,5 +361,131 @@ describe('SPEC-009 W0 ClickUpWorkbench', () => {
     renderPanel();
     expect(await screen.findByTestId('clickup-state-upstream')).toBeInTheDocument();
     expect(screen.queryByTestId('clickup-mutations')).not.toBeInTheDocument();
+  });
+
+  const liveCatalog = {
+    catalogShortcuts: shortcuts,
+    spaces: [
+      {
+        id: 'space-comercial',
+        label: 'Comercial',
+        folders: [],
+        lists: [{ id: 'list-consultivo-comercial', label: 'Consultivo' }],
+      },
+      {
+        id: 'space-projetos',
+        label: 'Projetos',
+        folders: [
+          {
+            id: 'folder-iniciais',
+            label: 'Iniciais',
+            lists: [{ id: 'list-iniciais-live', label: 'Iniciais a Confeccionar' }],
+          },
+        ],
+        lists: [
+          { id: 'list-holding-live', label: 'Holding' },
+          { id: 'list-consultivo-projetos', label: 'Consultivo' },
+        ],
+      },
+    ],
+  };
+
+  it('AC-06 picker em árvore com homônimos; nada pré-selecionado pela ordem', async () => {
+    const user = userEvent.setup();
+    mocked.resolveWorkbench.mockResolvedValue(wb());
+    mocked.getWorkbenchCatalog.mockResolvedValue(liveCatalog);
+    renderPanel('Grupo', true);
+    await user.click(await screen.findByTestId('clickup-workbench-criar'));
+    const select = await screen.findByTestId('clickup-create-list');
+    expect(select).toHaveValue('');
+    expect(screen.getByTestId('clickup-catalog-shortcuts')).toBeInTheDocument();
+    expect(screen.getByTestId('clickup-catalog-space-space-comercial')).toBeInTheDocument();
+    expect(screen.getByTestId('clickup-catalog-space-space-projetos')).toBeInTheDocument();
+    expect(select).toHaveTextContent('Iniciais / Iniciais a Confeccionar');
+    const consultivo = [...select.querySelectorAll('option')].filter((opt) => opt.textContent === 'Consultivo');
+    expect(consultivo.length).toBeGreaterThanOrEqual(2);
+    expect(mocked.createWorkbenchTask).not.toHaveBeenCalled();
+  });
+
+  it('AC-07 labels dos exemplos são escolhíveis sem mapa de IDs no frontend', async () => {
+    const user = userEvent.setup();
+    mocked.resolveWorkbench.mockResolvedValue(wb());
+    mocked.getWorkbenchCatalog.mockResolvedValue(liveCatalog);
+    mocked.createWorkbenchTask.mockResolvedValue({
+      ok: true,
+      status: 'task_vinculada',
+      card: card({ taskId: 'task-inicial' }),
+    });
+    renderPanel('Grupo', true);
+    await user.click(await screen.findByTestId('clickup-workbench-criar'));
+    const select = await screen.findByTestId('clickup-create-list');
+    expect(select).toHaveTextContent('Consultivo');
+    expect(select).toHaveTextContent('Holding');
+    expect(select).toHaveTextContent('Processo de Vendas');
+    expect(select).toHaveTextContent('Iniciais Judiciais a Distribuir');
+    expect(select).toHaveTextContent('Iniciais a Confeccionar');
+    await user.selectOptions(select, 'list-iniciais-live');
+    await user.click(screen.getByTestId('clickup-workbench-create-submit'));
+    expect(mocked.createWorkbenchTask).toHaveBeenCalledWith(
+      'conv-1',
+      expect.objectContaining({ listId: 'list-iniciais-live' }),
+    );
+  });
+
+  it('AC-15 checkbox cruzar dossiê: default true se vazio, false se divergente', async () => {
+    const user = userEvent.setup();
+    mocked.resolveWorkbench.mockResolvedValue(
+      wb({ dossier: { id: 'proj-a', name: 'Holding Silva', clickupTaskId: null } }),
+    );
+    mocked.createWorkbenchTask.mockResolvedValue({
+      ok: true,
+      status: 'task_vinculada',
+      card: card({ taskId: 'task-new' }),
+    });
+    renderPanel('Grupo', true);
+    await user.click(await screen.findByTestId('clickup-workbench-criar'));
+    const box = await screen.findByTestId('clickup-cross-link-dossier');
+    expect(box.querySelector('input')).toBeChecked();
+    await user.selectOptions(screen.getByTestId('clickup-create-list'), 'list-holding');
+    await user.click(screen.getByTestId('clickup-workbench-create-submit'));
+    expect(mocked.createWorkbenchTask).toHaveBeenCalledWith(
+      'conv-1',
+      expect.objectContaining({ listId: 'list-holding', crossLinkDossier: true }),
+    );
+
+    cleanup();
+    mocked.createWorkbenchTask.mockClear();
+    mocked.resolveWorkbench.mockResolvedValue(
+      wb({ dossier: { id: 'proj-a', name: 'Holding Silva', clickupTaskId: 'task-old' } }),
+    );
+    renderPanel('Grupo', true);
+    await user.click(await screen.findByTestId('clickup-workbench-criar'));
+    const divergent = await screen.findByTestId('clickup-cross-link-dossier');
+    expect(divergent.querySelector('input')).not.toBeChecked();
+    expect(screen.queryByTestId('clickup-cross-link-overwrite')).not.toBeInTheDocument();
+    await user.click(divergent.querySelector('input')!);
+    expect(screen.getByTestId('clickup-cross-link-overwrite')).toBeInTheDocument();
+    await user.selectOptions(screen.getByTestId('clickup-create-list'), 'list-holding');
+    await user.click(screen.getByTestId('clickup-workbench-create-submit'));
+    expect(mocked.createWorkbenchTask).toHaveBeenCalledWith(
+      'conv-1',
+      expect.objectContaining({ crossLinkDossier: true }),
+    );
+  });
+
+  it('AC-15 sem dossiê não envia crossLinkDossier', async () => {
+    const user = userEvent.setup();
+    mocked.resolveWorkbench.mockResolvedValue(wb());
+    mocked.createWorkbenchTask.mockResolvedValue({
+      ok: true,
+      status: 'task_vinculada',
+      card: card(),
+    });
+    renderPanel('Grupo', true);
+    await user.click(await screen.findByTestId('clickup-workbench-criar'));
+    expect(screen.queryByTestId('clickup-cross-link-dossier')).not.toBeInTheDocument();
+    await user.selectOptions(screen.getByTestId('clickup-create-list'), 'list-holding');
+    await user.click(screen.getByTestId('clickup-workbench-create-submit'));
+    expect(mocked.createWorkbenchTask.mock.calls[0][1].crossLinkDossier).toBeUndefined();
   });
 });

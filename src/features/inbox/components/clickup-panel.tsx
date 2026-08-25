@@ -11,6 +11,7 @@ import {
   type ClickUpCampo,
   type ClickUpCard,
   type ClickUpCandidato,
+  type ClickUpCatalogResponse,
   type ClickUpCatalogShortcut,
   type ClickUpWorkbenchResponse,
 } from '../services/clickup-inbox.service';
@@ -330,12 +331,29 @@ function WorkbenchBindCreate({
   const [candidatos, setCandidatos] = useState<ClickUpCandidato[] | null>(null);
   const [listId, setListId] = useState('');
   const [name, setName] = useState(defaultName);
+  const [spaceId, setSpaceId] = useState('');
+  const [crossLink, setCrossLink] = useState(Boolean(data.dossier && !data.dossier.clickupTaskId));
   const [switchDialog, setSwitchDialog] = useState<null | { kind: 'bind'; ref: string } | { kind: 'create' }>(
     null,
   );
 
+  const catalogQ = useQuery({
+    queryKey: ['clickup-workbench-catalog', conversationId],
+    queryFn: () => clickupInboxService.getWorkbenchCatalog(conversationId),
+    enabled: mode === 'criar' || mode === 'vincular',
+  });
+  const catalog: ClickUpCatalogResponse | undefined = catalogQ.data;
+  const shortcuts: ClickUpCatalogShortcut[] = catalog?.catalogShortcuts ?? data.catalogShortcuts ?? [];
+  const spaces = catalog?.spaces ?? [];
+  const crossLinkBody = data.dossier ? { crossLinkDossier: crossLink } : {};
+
   const searchM = useMutation({
-    mutationFn: () => clickupInboxService.searchWorkbenchTasks(conversationId, taskRef.trim()),
+    mutationFn: () =>
+      clickupInboxService.searchWorkbenchTasks(
+        conversationId,
+        taskRef.trim(),
+        spaceId || undefined,
+      ),
     onSuccess: (res) => setCandidatos(res.candidatos ?? []),
     onError: (err) => toast.error(err instanceof Error ? err.message : 'Falha na busca'),
   });
@@ -343,6 +361,7 @@ function WorkbenchBindCreate({
     mutationFn: ({ ref, confirmSwitch }: { ref: string; confirmSwitch?: boolean }) =>
       clickupInboxService.bindWorkbenchTask(conversationId, {
         taskRef: ref,
+        ...crossLinkBody,
         ...(confirmSwitch ? { confirmSwitch: true } : {}),
       }),
     onSuccess: (res) => {
@@ -363,6 +382,7 @@ function WorkbenchBindCreate({
       clickupInboxService.createWorkbenchTask(conversationId, {
         listId,
         name: name.trim(),
+        ...crossLinkBody,
         ...(confirmSwitch ? { confirmSwitch: true } : {}),
       }),
     onSuccess: (res) => {
@@ -378,8 +398,6 @@ function WorkbenchBindCreate({
       toast.error(err instanceof Error ? err.message : 'Falha ao criar no ClickUp');
     },
   });
-
-  const lists: ClickUpCatalogShortcut[] = data.catalogShortcuts ?? [];
 
   return (
     <div className="space-y-3">
@@ -444,6 +462,27 @@ function WorkbenchBindCreate({
 
       {mode === 'vincular' ? (
         <div className="space-y-2" data-testid="clickup-workbench-bind">
+          {spaces.length > 0 ? (
+            <label className="block">
+              <span className={labelCls}>Space (opcional)</span>
+              <select
+                className={`${inputCls} mt-1`}
+                data-testid="clickup-search-space"
+                value={spaceId}
+                onChange={(e) => {
+                  setSpaceId(e.target.value);
+                  setCandidatos(null);
+                }}
+              >
+                <option value="">Listas de atalho</option>
+                {spaces.map((space) => (
+                  <option key={space.id} value={space.id}>
+                    {space.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
           <input
             className={inputCls}
             value={taskRef}
@@ -501,6 +540,27 @@ function WorkbenchBindCreate({
               Vincular esta referência
             </button>
           )}
+          {data.dossier ? (
+            <label
+              className="flex items-start gap-2 text-xs text-zinc-700 dark:text-zinc-300"
+              data-testid="clickup-cross-link-dossier"
+            >
+              <input
+                type="checkbox"
+                className="mt-0.5"
+                checked={crossLink}
+                onChange={(e) => setCrossLink(e.target.checked)}
+              />
+              <span>
+                Cruzar no dossiê {data.dossier.name}
+                {data.dossier.clickupTaskId && crossLink ? (
+                  <span className="mt-0.5 block text-[11px] text-amber-700 dark:text-amber-400" data-testid="clickup-cross-link-overwrite">
+                    A task atual do dossiê será substituída.
+                  </span>
+                ) : null}
+              </span>
+            </label>
+          ) : null}
         </div>
       ) : null}
 
@@ -515,10 +575,36 @@ function WorkbenchBindCreate({
               onChange={(e) => setListId(e.target.value)}
             >
               <option value="">Selecione a lista</option>
-              {lists.map((lista) => (
-                <option key={lista.id} value={lista.id}>
-                  {lista.label}
-                </option>
+              <optgroup label="Atalhos" data-testid="clickup-catalog-shortcuts">
+                {shortcuts.map((lista) => (
+                  <option key={lista.id} value={lista.id}>
+                    {lista.label}
+                  </option>
+                ))}
+              </optgroup>
+              {spaces.map((space) => (
+                <optgroup
+                  key={space.id}
+                  label={space.label}
+                  data-testid={`clickup-catalog-space-${space.id}`}
+                >
+                  {space.lists
+                    .filter((lista) => !shortcuts.some((atalho) => atalho.id === lista.id))
+                    .map((lista) => (
+                      <option key={lista.id} value={lista.id}>
+                        {lista.label}
+                      </option>
+                    ))}
+                  {space.folders.flatMap((folder) =>
+                    folder.lists
+                      .filter((lista) => !shortcuts.some((atalho) => atalho.id === lista.id))
+                      .map((lista) => (
+                        <option key={lista.id} value={lista.id}>
+                          {folder.label} / {lista.label}
+                        </option>
+                      )),
+                  )}
+                </optgroup>
               ))}
             </select>
           </label>
@@ -528,6 +614,27 @@ function WorkbenchBindCreate({
             placeholder="Nome da task"
             onChange={(e) => setName(e.target.value)}
           />
+          {data.dossier ? (
+            <label
+              className="flex items-start gap-2 text-xs text-zinc-700 dark:text-zinc-300"
+              data-testid="clickup-cross-link-dossier"
+            >
+              <input
+                type="checkbox"
+                className="mt-0.5"
+                checked={crossLink}
+                onChange={(e) => setCrossLink(e.target.checked)}
+              />
+              <span>
+                Cruzar no dossiê {data.dossier.name}
+                {data.dossier.clickupTaskId && crossLink ? (
+                  <span className="mt-0.5 block text-[11px] text-amber-700 dark:text-amber-400" data-testid="clickup-cross-link-overwrite">
+                    A task atual do dossiê será substituída.
+                  </span>
+                ) : null}
+              </span>
+            </label>
+          ) : null}
           <button
             type="button"
             data-testid="clickup-workbench-create-submit"
