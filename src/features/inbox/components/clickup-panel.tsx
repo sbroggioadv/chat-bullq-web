@@ -100,7 +100,7 @@ function ClickUpWorkbench({
           shortcut={data.phoneShortcut}
           canCreateLead={data.canCreateLead}
           contactName={contactName}
-          mutable={data.status !== 'task_vinculada'}
+          mutable={data.status !== 'task_vinculada' && data.status !== 'binding_invalido'}
           onBound={(card) =>
             setData({ ...data, status: 'task_vinculada', card, phoneShortcut: data.phoneShortcut })
           }
@@ -226,15 +226,17 @@ function PhoneShortcutStrip({
                 <ExternalLink className="h-3 w-3" />
               </a>
             ) : null}
-            <button
-              type="button"
-              data-testid="clickup-usar-nesta-conversa"
-              disabled={bindM.isPending}
-              onClick={() => bindM.mutate(shortcut.card!.taskId)}
-              className="text-[11px] font-medium text-primary hover:underline"
-            >
-              Usar nesta conversa
-            </button>
+            {mutable ? (
+              <button
+                type="button"
+                data-testid="clickup-usar-nesta-conversa"
+                disabled={bindM.isPending}
+                onClick={() => bindM.mutate(shortcut.card!.taskId)}
+                className="text-[11px] font-medium text-primary hover:underline"
+              >
+                Usar nesta conversa
+              </button>
+            ) : null}
           </div>
           {mutable ? (
             <ClickUpCardView
@@ -269,7 +271,7 @@ function PhoneShortcutStrip({
               </span>
             </button>
           ))}
-          {picked ? (
+          {picked && mutable ? (
             <button
               type="button"
               data-testid="clickup-usar-nesta-conversa"
@@ -286,7 +288,7 @@ function PhoneShortcutStrip({
       {shortcut.status === 'sem_card' ? (
         <div data-testid="clickup-state-sem-card">
           <p className="text-xs text-zinc-500">Nenhum card ClickUp para este telefone.</p>
-          {canCreateLead ? (
+          {canCreateLead && mutable ? (
             <>
               <button
                 type="button"

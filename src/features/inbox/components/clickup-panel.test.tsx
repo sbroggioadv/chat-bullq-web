@@ -274,6 +274,41 @@ describe('SPEC-009 W0 ClickUpWorkbench', () => {
     expect(screen.getByTestId('clickup-criar')).toBeInTheDocument();
   });
 
+  it('F-03 atalho telefônico é somente leitura com âncora; Vincular/Criar permanecem', async () => {
+    mocked.resolveWorkbench.mockResolvedValue(
+      wb({
+        status: 'task_vinculada',
+        card: card(),
+        canCreateLead: true,
+        phoneShortcut: { status: 'unico', card: card({ taskId: 'task-sales' }), primaryListLabel: 'Processo de Vendas' },
+      }),
+    );
+    renderPanel('Maria', false);
+    expect(await screen.findByTestId('clickup-phone-shortcut')).toBeInTheDocument();
+    expect(screen.queryByTestId('clickup-usar-nesta-conversa')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('clickup-create')).not.toBeInTheDocument();
+    expect(screen.getByTestId('clickup-workbench-vincular')).toBeInTheDocument();
+    expect(screen.getByTestId('clickup-workbench-criar')).toBeInTheDocument();
+    expect(mocked.bindWorkbenchTask).not.toHaveBeenCalled();
+    expect(mocked.createTask).not.toHaveBeenCalled();
+    expect(mocked.createWorkbenchTask).not.toHaveBeenCalled();
+
+    cleanup();
+    mocked.resolveWorkbench.mockResolvedValue(
+      wb({
+        status: 'task_vinculada',
+        card: card(),
+        canCreateLead: true,
+        phoneShortcut: { status: 'sem_card', primaryListLabel: 'Processo de Vendas' },
+      }),
+    );
+    renderPanel('Maria', false);
+    expect(await screen.findByTestId('clickup-phone-shortcut')).toBeInTheDocument();
+    expect(screen.queryByTestId('clickup-create')).not.toBeInTheDocument();
+    expect(screen.getByTestId('clickup-workbench-criar')).toBeInTheDocument();
+    expect(mocked.createTask).not.toHaveBeenCalled();
+  });
+
   it('AC-12b diálogo confirm-switch: cancelar zero POST extra; confirmar reenvia', async () => {
     const user = userEvent.setup();
     mocked.resolveWorkbench.mockResolvedValue(wb({ status: 'task_vinculada', card: card() }));

@@ -172,12 +172,12 @@ export const clickupInboxService = {
     return data.data;
   },
 
-  async createTask(conversationId: string) {
+  async createTask(conversationId: string, body: { confirmSwitch?: boolean } = {}) {
     const { data } = await api.post<{
       data: { ok: boolean; status: ClickUpMatchStatus; card: ClickUpCard };
     }>(
       `${base(conversationId)}/tasks`,
-      {},
+      body.confirmSwitch ? { confirmSwitch: true } : {},
       {
         headers: { 'Idempotency-Key': crypto.randomUUID() },
       },
