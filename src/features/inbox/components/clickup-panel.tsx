@@ -17,7 +17,13 @@ const inputCls =
 const labelCls =
   'text-[11px] font-medium uppercase tracking-wide text-zinc-400 dark:text-zinc-500';
 
-export function ClickUpPanel({ conversationId }: { conversationId: string }) {
+export function ClickUpPanel({
+  conversationId,
+  contactName = '',
+}: {
+  conversationId: string;
+  contactName?: string;
+}) {
   const queryClient = useQueryClient();
   const [pickedTaskId, setPickedTaskId] = useState<string | null>(null);
 
@@ -79,9 +85,16 @@ export function ClickUpPanel({ conversationId }: { conversationId: string }) {
 
   if (data.status === 'sem_card') {
     return (
-      <p className="p-4 text-xs text-zinc-500" data-testid="clickup-state-sem-card">
-        Nenhum card ClickUp para este telefone.
-      </p>
+      <SemCardCreate
+        conversationId={conversationId}
+        contactName={contactName}
+        onCreated={(card) => {
+          queryClient.setQueryData(['clickup-inbox', conversationId], {
+            status: 'unico',
+            card,
+          } satisfies ClickUpResolveResponse);
+        }}
+      />
     );
   }
 
@@ -142,6 +155,46 @@ export function ClickUpPanel({ conversationId }: { conversationId: string }) {
         }
       }}
     />
+  );
+}
+
+function SemCardCreate({
+  conversationId,
+  contactName,
+  onCreated,
+}: {
+  conversationId: string;
+  contactName: string;
+  onCreated: (card: ClickUpCard) => void;
+}) {
+  const named = contactName.trim().length > 0;
+  const createM = useMutation({
+    mutationFn: () => clickupInboxService.createTask(conversationId),
+    onSuccess: (res) => {
+      onCreated(res.card);
+      toast.success('Card criado no ClickUp');
+    },
+    onError: (err) => toast.error(err instanceof Error ? err.message : 'Falha ao criar no ClickUp'),
+  });
+
+  return (
+    <div className="space-y-3 p-4" data-testid="clickup-state-sem-card">
+      <p className="text-xs text-zinc-500">Nenhum card ClickUp para este telefone.</p>
+      <button
+        type="button"
+        data-testid="clickup-create"
+        disabled={!named || createM.isPending}
+        onClick={() => createM.mutate()}
+        className="inline-flex w-full items-center justify-center rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50"
+      >
+        {createM.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Criar no ClickUp'}
+      </button>
+      {!named ? (
+        <p className="text-[11px] text-amber-600" data-testid="clickup-create-needs-name">
+          Nomeie o contato na aba Contato antes de criar o card.
+        </p>
+      ) : null}
+    </div>
   );
 }
 

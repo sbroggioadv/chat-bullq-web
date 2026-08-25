@@ -22,6 +22,7 @@ vi.mock('../services/clickup-inbox.service', async () => {
       postComment: vi.fn(),
       postActivity: vi.fn(),
       completeActivity: vi.fn(),
+      createTask: vi.fn(),
     },
   };
 });
@@ -29,13 +30,14 @@ vi.mock('../services/clickup-inbox.service', async () => {
 const mocked = clickupInboxService as unknown as {
   resolve: ReturnType<typeof vi.fn>;
   getTask: ReturnType<typeof vi.fn>;
+  createTask: ReturnType<typeof vi.fn>;
 };
 
-function renderPanel() {
+function renderPanel(contactName = 'Maria') {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <ClickUpPanel conversationId="conv-1" />
+      <ClickUpPanel conversationId="conv-1" contactName={contactName} />
     </QueryClientProvider>,
   );
 }
@@ -103,6 +105,14 @@ describe('AC-04 estados do painel ClickUp', () => {
     renderPanel();
     expect(await screen.findByTestId('clickup-state-sem-card')).toBeInTheDocument();
     expect(screen.queryByTestId('clickup-mutations')).not.toBeInTheDocument();
+    expect(screen.getByTestId('clickup-create')).toBeEnabled();
+  });
+
+  it('sem_card sem nome bloqueia criar', async () => {
+    mocked.resolve.mockResolvedValue({ status: 'sem_card' });
+    renderPanel('');
+    expect(await screen.findByTestId('clickup-create')).toBeDisabled();
+    expect(screen.getByTestId('clickup-create-needs-name')).toBeInTheDocument();
   });
 
   it('N candidatos exige clique e não escolhe sozinho', async () => {

@@ -165,7 +165,12 @@ export function ContactWorkspacePanel({
           </div>
         )}
 
-        {tab === 'clickup' && <ClickUpPanel conversationId={conversation.id} />}
+        {tab === 'clickup' && (
+          <ClickUpPanel
+            conversationId={conversation.id}
+            contactName={contact.name || ''}
+          />
+        )}
       </div>
     </aside>
   );

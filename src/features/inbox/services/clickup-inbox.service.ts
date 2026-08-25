@@ -121,6 +121,19 @@ export const clickupInboxService = {
     return data.data;
   },
 
+  async createTask(conversationId: string) {
+    const { data } = await api.post<{
+      data: { ok: boolean; status: ClickUpMatchStatus; card: ClickUpCard };
+    }>(
+      `${base(conversationId)}/tasks`,
+      {},
+      {
+        headers: { 'Idempotency-Key': crypto.randomUUID() },
+      },
+    );
+    return data.data;
+  },
+
   async completeActivity(conversationId: string, taskId: string, activityId: string) {
     const { data } = await api.patch<{ data: { ok: boolean; status: string; card: ClickUpCard } }>(
       `${base(conversationId)}/tasks/${encodeURIComponent(taskId)}/activities/${encodeURIComponent(activityId)}/complete`,

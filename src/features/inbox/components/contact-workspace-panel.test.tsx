@@ -19,6 +19,7 @@ vi.mock('../services/clickup-inbox.service', () => ({
     postComment: vi.fn(),
     postActivity: vi.fn(),
     completeActivity: vi.fn(),
+    createTask: vi.fn(),
   },
   classifyClickUpError: () => 'generic',
 }));
