@@ -26,13 +26,7 @@ describe('AC-16b clip sem porta de dossiê', () => {
   });
 
   it('bound sem dossiê chama incorporations e não attachMessage', async () => {
-    const incorporate = vi.fn(async () => {
-      const err = Object.assign(new Error('incorporar fica na próxima wave'), {
-        status: 501,
-        code: 'CLICKUP_INCORPORATE_NOT_READY',
-      });
-      throw err;
-    });
+    const incorporate = vi.fn(async () => ({ ok: true, kind: 'attachment', id: 'att-1' }));
     const attachMessage = vi.fn();
     const getProject = vi.fn(async () => ({ exists: false, id: null }));
     const out = await fanOutClipAttachment({
@@ -47,7 +41,24 @@ describe('AC-16b clip sem porta de dossiê', () => {
     expect(attachMessage).not.toHaveBeenCalled();
     expect(out.needDossierToast).toBe(false);
     expect(out.calledIncorporations).toBe(true);
-    expect(out.clickupError).toBeTruthy();
+    expect(out.clickupError).toBeUndefined();
+  });
+
+  it('bound com dossiê chama incorporations e attachMessage', async () => {
+    const incorporate = vi.fn(async () => ({ ok: true, kind: 'attachment', id: 'att-1' }));
+    const attachMessage = vi.fn();
+    const out = await fanOutClipAttachment({
+      cachedWorkbench: { status: 'task_vinculada', catalogShortcuts: [], canCreateLead: false },
+      resolveWorkbench: vi.fn(),
+      incorporate,
+      getProject: async () => ({ exists: true, id: 'proj-a' }),
+      attachMessage,
+      messageId: 'msg-1',
+    });
+    expect(incorporate).toHaveBeenCalledWith({ kind: 'attachment', messageId: 'msg-1' });
+    expect(attachMessage).toHaveBeenCalledWith('proj-a', 'msg-1');
+    expect(out.calledIncorporations).toBe(true);
+    expect(out.attachedDossier).toBe(true);
   });
 
   it('unbound sem dossiê não chama ClickUp', async () => {

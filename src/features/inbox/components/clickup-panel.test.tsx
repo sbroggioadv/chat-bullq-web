@@ -3,6 +3,8 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ClickUpPanel } from './clickup-panel';
 import { ApiClientError } from '@/lib/api';
+import { inboxService } from '../services/inbox.service';
+import { projectsService } from '@/features/projects/services/projects.service';
 import {
   clickupInboxService,
   type ClickUpCard,
@@ -33,9 +35,29 @@ vi.mock('../services/clickup-inbox.service', async () => {
       searchWorkbenchTasks: vi.fn(),
       bindWorkbenchTask: vi.fn(),
       createWorkbenchTask: vi.fn(),
+      incorporateWorkbench: vi.fn(),
     },
   };
 });
+
+vi.mock('../services/inbox.service', async () => {
+  const actual = await vi.importActual<typeof import('../services/inbox.service')>(
+    '../services/inbox.service',
+  );
+  return {
+    ...actual,
+    inboxService: {
+      ...actual.inboxService,
+      getMessages: vi.fn(),
+    },
+  };
+});
+
+vi.mock('@/features/projects/services/projects.service', () => ({
+  projectsService: {
+    getByConversation: vi.fn(),
+  },
+}));
 
 const mocked = clickupInboxService as unknown as {
   resolve: ReturnType<typeof vi.fn>;
@@ -47,6 +69,7 @@ const mocked = clickupInboxService as unknown as {
   searchWorkbenchTasks: ReturnType<typeof vi.fn>;
   bindWorkbenchTask: ReturnType<typeof vi.fn>;
   createWorkbenchTask: ReturnType<typeof vi.fn>;
+  incorporateWorkbench: ReturnType<typeof vi.fn>;
 };
 
 function renderPanel(contactName = 'Maria', isGroup = false) {
@@ -124,7 +147,25 @@ describe('SPEC-009 W0 ClickUpWorkbench', () => {
     mocked.bindWorkbenchTask.mockReset();
     mocked.createWorkbenchTask.mockReset();
     mocked.createTask.mockReset();
+    mocked.incorporateWorkbench.mockReset();
     mocked.getWorkbenchCatalog.mockResolvedValue({ catalogShortcuts: shortcuts, spaces: [] });
+    vi.mocked(inboxService.getMessages).mockResolvedValue({ messages: [], pagination: {} });
+    vi.mocked(projectsService.getByConversation).mockResolvedValue({
+      exists: false,
+      id: null,
+      name: '',
+      description: null,
+      groupJid: null,
+      hoppeId: null,
+      responsibleUserId: null,
+      responsible: null,
+      status: null,
+      metadata: {},
+      conversationIds: [],
+      tasks: [],
+      attachments: [],
+      contacts: [],
+    });
   });
 
   it('AC-01 grupo sem dossiê e 1:1 sem telefone mostram Vincular/Criar e nenhum sem_dossie', async () => {
@@ -591,5 +632,49 @@ describe('SPEC-009 W0 ClickUpWorkbench', () => {
       expect.objectContaining({ taskRef: 'task-b', confirmSwitch: true }),
     );
     expect(mocked.bindWorkbenchTask.mock.calls[2][1].crossLinkDossier).not.toBe(true);
+  });
+
+  it('AC-16 comment e attachment são dois POSTs; um botão não envia os dois kinds', async () => {
+    const user = userEvent.setup();
+    vi.mocked(inboxService.getMessages).mockResolvedValue({
+      messages: [
+        {
+          id: 'msg-1',
+          conversationId: 'conv-1',
+          direction: 'INBOUND',
+          type: 'TEXT',
+          content: { text: 'contrato assinado' },
+          externalId: null,
+          status: 'DELIVERED',
+          senderName: 'Maria',
+          senderId: null,
+          sender: null,
+          sentAt: null,
+          deliveredAt: null,
+          readAt: null,
+          createdAt: '2026-08-25T21:00:00.000Z',
+        },
+      ],
+      pagination: {},
+    });
+    mocked.resolveWorkbench.mockResolvedValue(wb({ status: 'task_vinculada', card: card() }));
+    mocked.incorporateWorkbench.mockResolvedValue({ ok: true, kind: 'comment', id: 'cmt-1' });
+    renderPanel('Grupo', true);
+    expect(await screen.findByTestId('clickup-incorporate')).toBeInTheDocument();
+    await user.click(await screen.findByTestId('clickup-incorporate-comment-msg-1'));
+    expect(mocked.incorporateWorkbench).toHaveBeenCalledWith('conv-1', {
+      kind: 'comment',
+      messageId: 'msg-1',
+    });
+    mocked.incorporateWorkbench.mockResolvedValue({ ok: true, kind: 'attachment', id: 'att-1' });
+    await user.click(screen.getByTestId('clickup-incorporate-file-msg-1'));
+    expect(mocked.incorporateWorkbench).toHaveBeenCalledTimes(2);
+    expect(mocked.incorporateWorkbench.mock.calls[1][1]).toEqual({
+      kind: 'attachment',
+      messageId: 'msg-1',
+    });
+    expect(mocked.incorporateWorkbench.mock.calls.some((c) => c[1].kind === 'comment' && c[1].documentId)).toBe(
+      false,
+    );
   });
 });

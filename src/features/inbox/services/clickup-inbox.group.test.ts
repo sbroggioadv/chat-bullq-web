@@ -73,8 +73,12 @@ describe('SPEC-009 workbench HTTP', () => {
     expect(post.mock.calls[0][0]).toBe('/clickup-inbox/conversations/conv-1/workbench/bind');
     expect(post.mock.calls[0][1]).toEqual({ taskRef: 'https://app.clickup.com/t/abc' });
 
+    await clickupInboxService.incorporateWorkbench('conv-1', { kind: 'attachment', messageId: 'msg-1' });
+    expect(post.mock.calls[1][0]).toBe('/clickup-inbox/conversations/conv-1/workbench/incorporations');
+    expect(post.mock.calls[1][1]).toEqual({ kind: 'attachment', messageId: 'msg-1' });
+
     await clickupInboxService.createWorkbenchTask('conv-1', { listId: 'list-from-api', name: 'Task' });
-    const [pathName, body, config] = post.mock.calls[1];
+    const [pathName, body, config] = post.mock.calls[2];
     expect(pathName).toBe('/clickup-inbox/conversations/conv-1/workbench/tasks');
     expect(body).toEqual({ listId: 'list-from-api', name: 'Task' });
     expect(config.headers['Idempotency-Key']).toMatch(

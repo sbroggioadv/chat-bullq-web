@@ -5,6 +5,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ExternalLink, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ApiClientError } from '@/lib/api';
+import { inboxService, type Message } from '../services/inbox.service';
+import { projectsService } from '@/features/projects/services/projects.service';
 import {
   classifyClickUpError,
   clickupInboxService,
@@ -142,6 +144,7 @@ function ClickUpWorkbench({
             card={data.card}
             onCard={(card) => setData({ ...data, status: 'task_vinculada', card })}
           />
+          <ClickUpIncorporate conversationId={conversationId} hasDossier={Boolean(data.dossier)} />
         </div>
       ) : null}
 
@@ -859,6 +862,95 @@ function ClickUpCardView({
           ))}
         </ul>
       ) : null}
+    </div>
+  );
+}
+
+function messagePreview(msg: Message): string {
+  const content = msg.content ?? {};
+  return String(content.text || content.body || content.caption || content.fileName || msg.type || 'mensagem');
+}
+
+function ClickUpIncorporate({
+  conversationId,
+  hasDossier,
+}: {
+  conversationId: string;
+  hasDossier: boolean;
+}) {
+  const messagesQ = useQuery({
+    queryKey: ['messages', conversationId],
+    queryFn: () => inboxService.getMessages(conversationId),
+  });
+  const projectQ = useQuery({
+    queryKey: ['project', conversationId],
+    queryFn: () => projectsService.getByConversation(conversationId),
+    enabled: hasDossier,
+  });
+  const incorporateM = useMutation({
+    mutationFn: (body: { kind: 'comment' | 'attachment'; messageId?: string; documentId?: string }) =>
+      clickupInboxService.incorporateWorkbench(conversationId, body),
+    onSuccess: (_res, vars) => {
+      toast.success(vars.kind === 'comment' ? 'Texto enviado ao ClickUp' : 'Arquivo enviado ao ClickUp');
+    },
+    onError: (err) => toast.error(err instanceof Error ? err.message : 'Falha ao incorporar'),
+  });
+  const messages = (messagesQ.data?.messages ?? []).filter((msg) => !msg.revokedAt).slice(-20);
+  const documents = hasDossier ? (projectQ.data?.attachments ?? []) : [];
+
+  return (
+    <div className="space-y-2 border-t border-zinc-200 pt-3 dark:border-zinc-800" data-testid="clickup-incorporate">
+      <p className={labelCls}>Incorporar na task</p>
+      {messages.length === 0 && documents.length === 0 ? (
+        <p className="text-[11px] text-zinc-500">Nenhuma mensagem ou arquivo para incorporar.</p>
+      ) : null}
+      {messages.map((msg) => (
+        <div
+          key={msg.id}
+          className="rounded-md border border-zinc-200 px-2.5 py-2 text-xs dark:border-zinc-700"
+          data-testid={`clickup-incorporate-msg-${msg.id}`}
+        >
+          <p className="truncate text-zinc-700 dark:text-zinc-300">{messagePreview(msg)}</p>
+          <div className="mt-1 flex gap-2">
+            <button
+              type="button"
+              data-testid={`clickup-incorporate-comment-${msg.id}`}
+              disabled={incorporateM.isPending}
+              onClick={() => incorporateM.mutate({ kind: 'comment', messageId: msg.id })}
+              className="text-[11px] font-medium text-primary hover:underline"
+            >
+              Mandar texto
+            </button>
+            <button
+              type="button"
+              data-testid={`clickup-incorporate-file-${msg.id}`}
+              disabled={incorporateM.isPending}
+              onClick={() => incorporateM.mutate({ kind: 'attachment', messageId: msg.id })}
+              className="text-[11px] font-medium text-primary hover:underline"
+            >
+              Mandar arquivo
+            </button>
+          </div>
+        </div>
+      ))}
+      {documents.map((doc) => (
+        <div
+          key={doc.id}
+          className="rounded-md border border-zinc-200 px-2.5 py-2 text-xs dark:border-zinc-700"
+          data-testid={`clickup-incorporate-doc-${doc.id}`}
+        >
+          <p className="truncate text-zinc-700 dark:text-zinc-300">{doc.fileName || doc.label}</p>
+          <button
+            type="button"
+            data-testid={`clickup-incorporate-doc-file-${doc.id}`}
+            disabled={incorporateM.isPending}
+            onClick={() => incorporateM.mutate({ kind: 'attachment', documentId: doc.id })}
+            className="mt-1 text-[11px] font-medium text-primary hover:underline"
+          >
+            Mandar arquivo
+          </button>
+        </div>
+      ))}
     </div>
   );
 }
