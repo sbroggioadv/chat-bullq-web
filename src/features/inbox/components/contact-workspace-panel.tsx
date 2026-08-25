@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   CalendarDays,
+  ClipboardList,
   FolderKanban,
   Loader2,
   Mail,
@@ -12,6 +13,7 @@ import {
   User,
   X,
 } from 'lucide-react';
+import { ClickUpPanel } from './clickup-panel';
 import { toast } from 'sonner';
 import { emailDeepLink, type Conversation } from '../services/inbox.service';
 import { ProjectPanel } from './project-panel';
@@ -25,7 +27,7 @@ import { calendarService } from '@/features/calendar/services/calendar.service';
 import { rememberRecipients } from '@/features/email/lib/recent-recipients';
 import { EmailRichEditor } from '@/features/email/components/email-rich-editor';
 
-type Tab = 'contact' | 'email' | 'agenda' | 'project';
+type Tab = 'contact' | 'email' | 'agenda' | 'project' | 'clickup';
 
 interface ContactWorkspacePanelProps {
   conversation: Conversation;
@@ -54,6 +56,7 @@ export function ContactWorkspacePanel({
     { id: 'email', label: 'E-mail', icon: Mail, show: true },
     { id: 'agenda', label: 'Agenda', icon: CalendarDays, show: true },
     { id: 'project', label: 'Projeto', icon: FolderKanban, show: true },
+    { id: 'clickup', label: 'ClickUp', icon: ClipboardList, show: true },
   ];
 
   return (
@@ -161,6 +164,8 @@ export function ContactWorkspacePanel({
             <ProjectPanel conversationId={conversation.id} onClose={onClose} />
           </div>
         )}
+
+        {tab === 'clickup' && <ClickUpPanel conversationId={conversation.id} />}
       </div>
     </aside>
   );
