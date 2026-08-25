@@ -871,6 +871,16 @@ function messagePreview(msg: Message): string {
   return String(content.text || content.body || content.caption || content.fileName || msg.type || 'mensagem');
 }
 
+function messageHasText(msg: Message): boolean {
+  const content = msg.content ?? {};
+  return Boolean(content.text || content.body || content.caption) || msg.type === 'TEXT';
+}
+
+function messageHasFile(msg: Message): boolean {
+  const content = msg.content ?? {};
+  return Boolean(content.url || content.mediaUrl || content.fileUrl);
+}
+
 function ClickUpIncorporate({
   conversationId,
   hasDossier,
@@ -912,24 +922,28 @@ function ClickUpIncorporate({
         >
           <p className="truncate text-zinc-700 dark:text-zinc-300">{messagePreview(msg)}</p>
           <div className="mt-1 flex gap-2">
-            <button
-              type="button"
-              data-testid={`clickup-incorporate-comment-${msg.id}`}
-              disabled={incorporateM.isPending}
-              onClick={() => incorporateM.mutate({ kind: 'comment', messageId: msg.id })}
-              className="text-[11px] font-medium text-primary hover:underline"
-            >
-              Mandar texto
-            </button>
-            <button
-              type="button"
-              data-testid={`clickup-incorporate-file-${msg.id}`}
-              disabled={incorporateM.isPending}
-              onClick={() => incorporateM.mutate({ kind: 'attachment', messageId: msg.id })}
-              className="text-[11px] font-medium text-primary hover:underline"
-            >
-              Mandar arquivo
-            </button>
+            {messageHasText(msg) ? (
+              <button
+                type="button"
+                data-testid={`clickup-incorporate-comment-${msg.id}`}
+                disabled={incorporateM.isPending}
+                onClick={() => incorporateM.mutate({ kind: 'comment', messageId: msg.id })}
+                className="text-[11px] font-medium text-primary hover:underline"
+              >
+                Mandar texto
+              </button>
+            ) : null}
+            {messageHasFile(msg) ? (
+              <button
+                type="button"
+                data-testid={`clickup-incorporate-file-${msg.id}`}
+                disabled={incorporateM.isPending}
+                onClick={() => incorporateM.mutate({ kind: 'attachment', messageId: msg.id })}
+                className="text-[11px] font-medium text-primary hover:underline"
+              >
+                Mandar arquivo
+              </button>
+            ) : null}
           </div>
         </div>
       ))}

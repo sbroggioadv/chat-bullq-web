@@ -634,7 +634,7 @@ describe('SPEC-009 W0 ClickUpWorkbench', () => {
     expect(mocked.bindWorkbenchTask.mock.calls[2][1].crossLinkDossier).not.toBe(true);
   });
 
-  it('AC-16 comment e attachment são dois POSTs; um botão não envia os dois kinds', async () => {
+  it('AC-16/AC-22(6) comment XOR attachment com DOCUMENT sintético', async () => {
     const user = userEvent.setup();
     vi.mocked(inboxService.getMessages).mockResolvedValue({
       messages: [
@@ -654,6 +654,26 @@ describe('SPEC-009 W0 ClickUpWorkbench', () => {
           readAt: null,
           createdAt: '2026-08-25T21:00:00.000Z',
         },
+        {
+          id: 'msg-file',
+          conversationId: 'conv-1',
+          direction: 'INBOUND',
+          type: 'DOCUMENT',
+          content: {
+            url: '/api/v1/uploads/documents/2026-08-25/file.pdf',
+            mimeType: 'application/pdf',
+            fileName: 'contrato.pdf',
+          },
+          externalId: null,
+          status: 'DELIVERED',
+          senderName: 'Maria',
+          senderId: null,
+          sender: null,
+          sentAt: null,
+          deliveredAt: null,
+          readAt: null,
+          createdAt: '2026-08-25T21:00:00.000Z',
+        },
       ],
       pagination: {},
     });
@@ -661,17 +681,18 @@ describe('SPEC-009 W0 ClickUpWorkbench', () => {
     mocked.incorporateWorkbench.mockResolvedValue({ ok: true, kind: 'comment', id: 'cmt-1' });
     renderPanel('Grupo', true);
     expect(await screen.findByTestId('clickup-incorporate')).toBeInTheDocument();
+    expect(screen.queryByTestId('clickup-incorporate-file-msg-1')).not.toBeInTheDocument();
     await user.click(await screen.findByTestId('clickup-incorporate-comment-msg-1'));
     expect(mocked.incorporateWorkbench).toHaveBeenCalledWith('conv-1', {
       kind: 'comment',
       messageId: 'msg-1',
     });
     mocked.incorporateWorkbench.mockResolvedValue({ ok: true, kind: 'attachment', id: 'att-1' });
-    await user.click(screen.getByTestId('clickup-incorporate-file-msg-1'));
+    await user.click(await screen.findByTestId('clickup-incorporate-file-msg-file'));
     expect(mocked.incorporateWorkbench).toHaveBeenCalledTimes(2);
     expect(mocked.incorporateWorkbench.mock.calls[1][1]).toEqual({
       kind: 'attachment',
-      messageId: 'msg-1',
+      messageId: 'msg-file',
     });
     expect(mocked.incorporateWorkbench.mock.calls.some((c) => c[1].kind === 'comment' && c[1].documentId)).toBe(
       false,
