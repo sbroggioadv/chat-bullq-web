@@ -130,9 +130,20 @@ export const clickupInboxService = {
 };
 
 export function classifyClickUpError(err: unknown): 'not_configured' | 'upstream' | 'generic' {
+  const status = (err as { status?: number })?.status;
+  const code = (err as { code?: string })?.code;
+  if (code === 'CLICKUP_NOT_CONFIGURED' || status === 503) return 'not_configured';
+  if (
+    code === 'CLICKUP_TIMEOUT'
+    || code === 'CLICKUP_UPSTREAM'
+    || status === 502
+    || status === 504
+  ) {
+    return 'upstream';
+  }
   const msg = err instanceof Error ? err.message : String(err);
   if (/tempo limite|indisponível/i.test(msg)) return 'upstream';
-  if (/não configurado|inacessível|não pertence ao team|malformado|campo WhatsApp/i.test(msg)) {
+  if (/não configurado|inacessível|não pertence ao team|malformado|campo WhatsApp|perfil/i.test(msg)) {
     return 'not_configured';
   }
   return 'generic';

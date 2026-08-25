@@ -31,9 +31,10 @@ describe('AC-12 frontend', () => {
 });
 
 describe('classifyClickUpError', () => {
-  it('separa 503 de upstream', () => {
+  it('classifica por code/status, não só pela mensagem', () => {
+    expect(classifyClickUpError({ message: 'deve existir exatamente uma lista principal', status: 503, code: 'CLICKUP_NOT_CONFIGURED' })).toBe('not_configured');
+    expect(classifyClickUpError({ message: 'x', status: 502, code: 'CLICKUP_UPSTREAM' })).toBe('upstream');
+    expect(classifyClickUpError({ message: 'x', status: 504, code: 'CLICKUP_TIMEOUT' })).toBe('upstream');
     expect(classifyClickUpError(new Error('ClickUp não configurado'))).toBe('not_configured');
-    expect(classifyClickUpError(new Error('ClickUp indisponível'))).toBe('upstream');
-    expect(classifyClickUpError(new Error('ClickUp: tempo limite excedido'))).toBe('upstream');
   });
 });

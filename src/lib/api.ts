@@ -1,5 +1,17 @@
 import axios from 'axios';
 
+export class ApiClientError extends Error {
+  readonly status?: number;
+  readonly code?: string;
+
+  constructor(message: string, status?: number, code?: string) {
+    super(message);
+    this.name = 'ApiClientError';
+    this.status = status;
+    this.code = code;
+  }
+}
+
 export const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1',
   timeout: 15000,
@@ -43,7 +55,15 @@ api.interceptors.response.use(
         }
       }
     }
-    const message = error.response?.data?.message || error.message;
-    return Promise.reject(new Error(Array.isArray(message) ? message[0] : message));
+    const payload = error.response?.data;
+    const message = payload?.message || error.message;
+    const code = typeof payload?.code === 'string' ? payload.code : undefined;
+    return Promise.reject(
+      new ApiClientError(
+        Array.isArray(message) ? message[0] : message,
+        error.response?.status,
+        code,
+      ),
+    );
   },
 );

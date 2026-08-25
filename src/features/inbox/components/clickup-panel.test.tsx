@@ -117,6 +117,8 @@ describe('AC-04 estados do painel ClickUp', () => {
     mocked.getTask.mockResolvedValue({ status: 'unico', card: card({ taskId: 'a1', nome: 'A' }) });
     renderPanel();
     expect(await screen.findByTestId('clickup-state-ambiguo')).toBeInTheDocument();
+    expect(screen.getByText('a1')).toBeInTheDocument();
+    expect(screen.getByText('b2')).toBeInTheDocument();
     expect(screen.queryByTestId('clickup-state-unico')).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /A/ }));
     expect(await screen.findByTestId('clickup-state-unico')).toBeInTheDocument();

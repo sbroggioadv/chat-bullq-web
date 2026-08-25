@@ -98,8 +98,9 @@ export function ClickUpPanel({ conversationId }: { conversationId: string }) {
             onClick={() => setPickedTaskId(c.taskId)}
             className="block w-full rounded-md border border-zinc-200 px-2.5 py-2 text-left text-xs hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-900"
           >
-            <span className="font-medium text-zinc-900 dark:text-zinc-100">{c.nome || c.taskId}</span>
-            <span className="mt-0.5 block text-[11px] text-zinc-400">
+            <span className="font-medium text-zinc-900 dark:text-zinc-100">{c.nome || '—'}</span>
+            <span className="mt-0.5 block font-mono text-[11px] text-zinc-500">{c.taskId}</span>
+            <span className="block text-[11px] text-zinc-400">
               {c.lista || 'lista'} · {c.status || '—'}
             </span>
           </button>
