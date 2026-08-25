@@ -20,10 +20,19 @@ vi.mock('../services/clickup-inbox.service', () => ({
     postActivity: vi.fn(),
     completeActivity: vi.fn(),
     createTask: vi.fn(),
-    resolveGroup: vi.fn(async () => ({ status: 'sem_dossie' })),
+    resolveGroup: vi.fn(),
     searchGroupTasks: vi.fn(),
     bindGroupTask: vi.fn(),
     createGroupTask: vi.fn(),
+    resolveWorkbench: vi.fn(async () => ({
+      status: 'sem_vinculo',
+      catalogShortcuts: [],
+      canCreateLead: true,
+      dossier: null,
+    })),
+    searchWorkbenchTasks: vi.fn(),
+    bindWorkbenchTask: vi.fn(),
+    createWorkbenchTask: vi.fn(),
   },
   classifyClickUpError: () => 'generic',
 }));
@@ -71,7 +80,7 @@ describe('AC-01 Contact Workspace + ClickUp', () => {
     expect(screen.getByRole('button', { name: /clickup/i })).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /clickup/i }));
-    expect(await screen.findByTestId('clickup-state-sem-card')).toBeInTheDocument();
+    expect(await screen.findByTestId('clickup-workbench')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /projeto/i }));
     expect(screen.getByTestId('project-panel')).toHaveTextContent('projeto:conv-1');

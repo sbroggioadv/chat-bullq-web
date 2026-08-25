@@ -4,15 +4,15 @@ import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ExternalLink, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { ApiClientError } from '@/lib/api';
 import {
   classifyClickUpError,
   clickupInboxService,
   type ClickUpCampo,
   type ClickUpCard,
   type ClickUpCandidato,
-  type ClickUpGroupResolveResponse,
-  type ClickUpProjectList,
-  type ClickUpResolveResponse,
+  type ClickUpCatalogShortcut,
+  type ClickUpWorkbenchResponse,
 } from '../services/clickup-inbox.service';
 
 const inputCls =
@@ -29,33 +29,36 @@ export function ClickUpPanel({
   contactName?: string;
   isGroup?: boolean;
 }) {
-  if (isGroup) {
-    return <ClickUpGroupPanel conversationId={conversationId} />;
-  }
-  return <ClickUpPhonePanel conversationId={conversationId} contactName={contactName} />;
+  return (
+    <ClickUpWorkbench
+      conversationId={conversationId}
+      contactName={contactName}
+      isGroup={isGroup}
+    />
+  );
 }
 
-function ClickUpPhonePanel({
+function isAnchorConflict(err: unknown): boolean {
+  return (
+    err instanceof ApiClientError
+    && (err.status === 409 || err.code === 'CLICKUP_ANCHOR_EXISTS')
+  );
+}
+
+function ClickUpWorkbench({
   conversationId,
   contactName = '',
+  isGroup = false,
 }: {
   conversationId: string;
   contactName?: string;
+  isGroup?: boolean;
 }) {
   const queryClient = useQueryClient();
-  const [pickedTaskId, setPickedTaskId] = useState<string | null>(null);
-
   const resolveQ = useQuery({
-    queryKey: ['clickup-inbox', conversationId],
-    queryFn: () => clickupInboxService.resolve(conversationId),
+    queryKey: ['clickup-workbench', conversationId],
+    queryFn: () => clickupInboxService.resolveWorkbench(conversationId),
   });
-
-  const taskQ = useQuery({
-    queryKey: ['clickup-inbox-task', conversationId, pickedTaskId],
-    queryFn: () => clickupInboxService.getTask(conversationId, pickedTaskId!),
-    enabled: Boolean(pickedTaskId),
-  });
-
   const errorKind = resolveQ.error ? classifyClickUpError(resolveQ.error) : null;
 
   if (resolveQ.isLoading) {
@@ -65,7 +68,6 @@ function ClickUpPhonePanel({
       </div>
     );
   }
-
   if (errorKind === 'not_configured') {
     return (
       <p className="p-4 text-xs text-zinc-500" data-testid="clickup-state-not-configured">
@@ -73,7 +75,6 @@ function ClickUpPhonePanel({
       </p>
     );
   }
-
   if (errorKind === 'upstream' || resolveQ.error) {
     return (
       <p className="p-4 text-xs text-zinc-500" data-testid="clickup-state-upstream">
@@ -85,274 +86,302 @@ function ClickUpPhonePanel({
   const data = resolveQ.data;
   if (!data) return null;
 
-  if (data.status === 'grupo') {
-    return (
-      <p className="p-4 text-xs text-zinc-500" data-testid="clickup-state-grupo">
-        Conversas em grupo não casam com um único card.
-      </p>
-    );
-  }
-
-  if (data.status === 'fora_do_padrao') {
-    return (
-      <p className="p-4 text-xs text-zinc-500" data-testid="clickup-state-fora">
-        Telefone ausente ou fora do padrão brasileiro — o card não é aproximado.
-      </p>
-    );
-  }
-
-  if (data.status === 'sem_card') {
-    return (
-      <SemCardCreate
-        conversationId={conversationId}
-        contactName={contactName}
-        onCreated={(card) => {
-          queryClient.setQueryData(['clickup-inbox', conversationId], {
-            status: 'unico',
-            card,
-          } satisfies ClickUpResolveResponse);
-        }}
-      />
-    );
-  }
-
-  if (data.status === 'ambiguo' && !pickedTaskId) {
-    return (
-      <div className="space-y-2 p-4" data-testid="clickup-state-ambiguo">
-        <p className="text-xs text-zinc-500">
-          Há mais de um card para este telefone. Escolha um — nada é selecionado automaticamente.
-        </p>
-        {(data.candidatos ?? []).map((c) => (
-          <button
-            key={c.taskId}
-            type="button"
-            onClick={() => setPickedTaskId(c.taskId)}
-            className="block w-full rounded-md border border-zinc-200 px-2.5 py-2 text-left text-xs hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-900"
-          >
-            <span className="font-medium text-zinc-900 dark:text-zinc-100">{c.nome || '—'}</span>
-            <span className="mt-0.5 block font-mono text-[11px] text-zinc-500">{c.taskId}</span>
-            <span className="block text-[11px] text-zinc-400">
-              {c.lista || 'lista'} · {c.status || '—'}
-            </span>
-          </button>
-        ))}
-      </div>
-    );
-  }
-
-  const card = (pickedTaskId ? taskQ.data?.card : data.card) as ClickUpCard | undefined;
-  if (pickedTaskId && taskQ.isLoading) {
-    return (
-      <div className="flex justify-center p-6">
-        <Loader2 className="h-5 w-5 animate-spin text-zinc-400" />
-      </div>
-    );
-  }
-  if (!card) {
-    return (
-      <p className="p-4 text-xs text-zinc-500" data-testid="clickup-state-upstream">
-        Não foi possível carregar o card.
-      </p>
-    );
-  }
+  const setData = (next: ClickUpWorkbenchResponse) => {
+    queryClient.setQueryData(['clickup-workbench', conversationId], next);
+  };
 
   return (
-    <ClickUpCardView
-      conversationId={conversationId}
-      card={card}
-      onCard={(next) => {
-        queryClient.setQueryData(['clickup-inbox', conversationId], {
-          status: 'unico',
-          card: next,
-        } satisfies ClickUpResolveResponse);
-        if (pickedTaskId) {
-          queryClient.setQueryData(['clickup-inbox-task', conversationId, pickedTaskId], {
-            status: 'unico',
-            card: next,
-          });
-        }
-      }}
-    />
+    <div className="space-y-3 p-4" data-testid="clickup-workbench">
+      {!isGroup && data.phoneShortcut ? (
+        <PhoneShortcutStrip
+          conversationId={conversationId}
+          shortcut={data.phoneShortcut}
+          canCreateLead={data.canCreateLead}
+          contactName={contactName}
+          onBound={(card) =>
+            setData({ ...data, status: 'task_vinculada', card, phoneShortcut: data.phoneShortcut })
+          }
+        />
+      ) : null}
+
+      {data.dossier ? (
+        <div
+          className="rounded-md border border-zinc-200 px-2.5 py-2 text-xs dark:border-zinc-700"
+          data-testid="clickup-dossier-chip"
+        >
+          <p className="font-medium text-zinc-900 dark:text-zinc-100">Dossiê {data.dossier.name}</p>
+          {data.dossier.clickupTaskId && data.status !== 'task_vinculada' ? (
+            <button
+              type="button"
+              data-testid="clickup-usar-task-dossie"
+              className="mt-1 text-[11px] font-medium text-primary hover:underline"
+              onClick={() =>
+                clickupInboxService
+                  .bindWorkbenchTask(conversationId, { taskRef: data.dossier!.clickupTaskId! })
+                  .then((res) => {
+                    setData({ ...data, status: 'task_vinculada', card: res.card });
+                    toast.success('Task do dossiê vinculada a esta conversa');
+                  })
+                  .catch((err) => toast.error(err instanceof Error ? err.message : 'Falha ao vincular'))
+              }
+            >
+              Usar task do dossiê
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+
+      {data.status === 'task_vinculada' && data.card ? (
+        <div data-testid="clickup-state-task-vinculada">
+          <ClickUpCardView
+            conversationId={conversationId}
+            card={data.card}
+            onCard={(card) => setData({ ...data, status: 'task_vinculada', card })}
+          />
+        </div>
+      ) : null}
+
+      {data.status === 'binding_invalido' ? (
+        <p className="text-xs text-zinc-500" data-testid="clickup-state-binding-invalido">
+          O vínculo ClickUp desta conversa está inválido ou inacessível. Vincule outra task ou crie
+          uma nova — nada é escolhido automaticamente.
+        </p>
+      ) : null}
+
+      {data.status === 'sem_vinculo' ? (
+        <p className="text-xs text-zinc-500" data-testid="clickup-state-sem-vinculo">
+          Nenhuma task ClickUp vinculada a esta conversa.
+        </p>
+      ) : null}
+
+      <WorkbenchBindCreate
+        conversationId={conversationId}
+        data={data}
+        defaultName={contactName.trim() || data.dossier?.name || ''}
+        alreadyBound={data.status === 'task_vinculada'}
+        onBound={(card) => setData({ ...data, status: 'task_vinculada', card })}
+      />
+    </div>
   );
 }
 
-function SemCardCreate({
+function PhoneShortcutStrip({
   conversationId,
+  shortcut,
+  canCreateLead,
   contactName,
-  onCreated,
+  onBound,
 }: {
   conversationId: string;
+  shortcut: NonNullable<ClickUpWorkbenchResponse['phoneShortcut']>;
+  canCreateLead: boolean;
   contactName: string;
-  onCreated: (card: ClickUpCard) => void;
+  onBound: (card: ClickUpCard) => void;
 }) {
-  const named = contactName.trim().length > 0;
-  const createM = useMutation({
+  const queryClient = useQueryClient();
+  const [picked, setPicked] = useState<string | null>(null);
+  const bindM = useMutation({
+    mutationFn: (taskRef: string) => clickupInboxService.bindWorkbenchTask(conversationId, { taskRef }),
+    onSuccess: (res) => {
+      onBound(res.card);
+      toast.success('Task vinculada a esta conversa');
+    },
+    onError: (err) => toast.error(err instanceof Error ? err.message : 'Falha ao vincular'),
+  });
+  const leadM = useMutation({
     mutationFn: () => clickupInboxService.createTask(conversationId),
     onSuccess: (res) => {
-      onCreated(res.card);
-      toast.success('Card criado no ClickUp');
+      queryClient.invalidateQueries({ queryKey: ['clickup-workbench', conversationId] });
+      toast.success('Lead criado no ClickUp');
+      if (res.card) onBound(res.card);
     },
-    onError: (err) => toast.error(err instanceof Error ? err.message : 'Falha ao criar no ClickUp'),
+    onError: (err) => toast.error(err instanceof Error ? err.message : 'Falha ao criar lead'),
   });
 
+  if (shortcut.status === 'fora_do_padrao' || shortcut.status === 'grupo') return null;
+
   return (
-    <div className="space-y-3 p-4" data-testid="clickup-state-sem-card">
-      <p className="text-xs text-zinc-500">Nenhum card ClickUp para este telefone.</p>
-      <button
-        type="button"
-        data-testid="clickup-create"
-        disabled={!named || createM.isPending}
-        onClick={() => createM.mutate()}
-        className="inline-flex w-full items-center justify-center rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50"
-      >
-        {createM.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Criar no ClickUp'}
-      </button>
-      {!named ? (
-        <p className="text-[11px] text-amber-600" data-testid="clickup-create-needs-name">
-          Nomeie o contato na aba Contato antes de criar o card.
-        </p>
+    <div
+      className="space-y-2 rounded-md border border-zinc-200 px-2.5 py-2 dark:border-zinc-700"
+      data-testid="clickup-phone-shortcut"
+    >
+      {shortcut.status === 'unico' && shortcut.card ? (
+        <>
+          <p className="text-xs text-zinc-500">
+            Card comercial: {shortcut.card.nome} · {shortcut.card.lista}
+          </p>
+          <div className="flex gap-2">
+            {shortcut.card.url ? (
+              <a
+                href={shortcut.card.url}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
+              >
+                Abrir no ClickUp
+                <ExternalLink className="h-3 w-3" />
+              </a>
+            ) : null}
+            <button
+              type="button"
+              data-testid="clickup-usar-nesta-conversa"
+              disabled={bindM.isPending}
+              onClick={() => bindM.mutate(shortcut.card!.taskId)}
+              className="text-[11px] font-medium text-primary hover:underline"
+            >
+              Usar nesta conversa
+            </button>
+          </div>
+          <ClickUpCardView
+            conversationId={conversationId}
+            card={shortcut.card}
+            onCard={(card) => {
+              queryClient.setQueryData(['clickup-workbench', conversationId], (prev: ClickUpWorkbenchResponse | undefined) =>
+                prev ? { ...prev, phoneShortcut: { ...shortcut, card } } : prev,
+              );
+            }}
+          />
+        </>
+      ) : null}
+
+      {shortcut.status === 'ambiguo' ? (
+        <div data-testid="clickup-state-ambiguo">
+          <p className="text-xs text-zinc-500">
+            Há mais de um card para este telefone. Escolha um — nada é selecionado automaticamente.
+          </p>
+          {(shortcut.candidatos ?? []).map((c) => (
+            <button
+              key={c.taskId}
+              type="button"
+              onClick={() => setPicked(c.taskId)}
+              className="mt-1 block w-full rounded-md border border-zinc-200 px-2.5 py-2 text-left text-xs hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-900"
+            >
+              <span className="font-medium text-zinc-900 dark:text-zinc-100">{c.nome || '—'}</span>
+              <span className="mt-0.5 block font-mono text-[11px] text-zinc-500">{c.taskId}</span>
+              <span className="block text-[11px] text-zinc-400">
+                {c.lista || 'lista'} · {c.status || '—'}
+              </span>
+            </button>
+          ))}
+          {picked ? (
+            <button
+              type="button"
+              data-testid="clickup-usar-nesta-conversa"
+              disabled={bindM.isPending}
+              onClick={() => bindM.mutate(picked)}
+              className="mt-2 inline-flex w-full items-center justify-center rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground"
+            >
+              Usar nesta conversa
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+
+      {shortcut.status === 'sem_card' ? (
+        <div data-testid="clickup-state-sem-card">
+          <p className="text-xs text-zinc-500">Nenhum card ClickUp para este telefone.</p>
+          {canCreateLead ? (
+            <>
+              <button
+                type="button"
+                data-testid="clickup-create"
+                disabled={!contactName.trim() || leadM.isPending}
+                onClick={() => leadM.mutate()}
+                className="mt-2 inline-flex w-full items-center justify-center rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50"
+              >
+                {leadM.isPending
+                  ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  : `Criar lead em ${shortcut.primaryListLabel || 'Processo de Vendas'}`}
+              </button>
+              {!contactName.trim() ? (
+                <p className="mt-1 text-[11px] text-amber-600" data-testid="clickup-create-needs-name">
+                  Nomeie o contato na aba Contato antes de criar o card.
+                </p>
+              ) : null}
+            </>
+          ) : null}
+        </div>
       ) : null}
     </div>
   );
 }
 
-function ClickUpGroupPanel({ conversationId }: { conversationId: string }) {
-  const queryClient = useQueryClient();
-  const resolveQ = useQuery({
-    queryKey: ['clickup-inbox-group', conversationId],
-    queryFn: () => clickupInboxService.resolveGroup(conversationId),
-  });
-  const errorKind = resolveQ.error ? classifyClickUpError(resolveQ.error) : null;
-
-  if (resolveQ.isLoading) {
-    return (
-      <div className="flex justify-center p-6" data-testid="clickup-state-loading">
-        <Loader2 className="h-5 w-5 animate-spin text-zinc-400" />
-      </div>
-    );
-  }
-  if (errorKind === 'not_configured') {
-    return (
-      <p className="p-4 text-xs text-zinc-500" data-testid="clickup-state-not-configured">
-        Integração ClickUp não configurada neste ambiente.
-      </p>
-    );
-  }
-  if (errorKind === 'upstream' || resolveQ.error) {
-    return (
-      <p className="p-4 text-xs text-zinc-500" data-testid="clickup-state-upstream">
-        ClickUp indisponível no momento. Tente de novo em instantes.
-      </p>
-    );
-  }
-
-  const data = resolveQ.data;
-  if (!data) return null;
-
-  if (data.status === 'sem_dossie') {
-    return (
-      <p className="p-4 text-xs text-zinc-500" data-testid="clickup-state-sem-dossie">
-        Crie ou ligue um dossiê na aba Projeto para vincular este grupo a uma task ClickUp.
-      </p>
-    );
-  }
-
-  if (data.status === 'task_vinculada' && data.card) {
-    return (
-      <div data-testid="clickup-state-task-vinculada">
-        <ClickUpCardView
-          conversationId={conversationId}
-          card={data.card}
-          onCard={(next) => {
-            queryClient.setQueryData(['clickup-inbox-group', conversationId], {
-              ...data,
-              status: 'task_vinculada',
-              card: next,
-            } satisfies ClickUpGroupResolveResponse);
-          }}
-        />
-      </div>
-    );
-  }
-
-  return (
-    <GroupBindCreate
-      conversationId={conversationId}
-      data={data}
-      onBound={(card) => {
-        queryClient.setQueryData(['clickup-inbox-group', conversationId], {
-          status: 'task_vinculada',
-          conversationId,
-          project: data.project,
-          card,
-        } satisfies ClickUpGroupResolveResponse);
-      }}
-    />
-  );
-}
-
-function GroupBindCreate({
+function WorkbenchBindCreate({
   conversationId,
   data,
+  defaultName,
+  alreadyBound,
   onBound,
 }: {
   conversationId: string;
-  data: ClickUpGroupResolveResponse;
+  data: ClickUpWorkbenchResponse;
+  defaultName: string;
+  alreadyBound: boolean;
   onBound: (card: ClickUpCard) => void;
 }) {
   const [mode, setMode] = useState<'idle' | 'vincular' | 'criar'>('idle');
   const [taskRef, setTaskRef] = useState('');
   const [candidatos, setCandidatos] = useState<ClickUpCandidato[] | null>(null);
-  const [listId, setListId] = useState(data.projectLists?.[0]?.id ?? '');
-  const [name, setName] = useState(data.project?.name ?? '');
+  const [listId, setListId] = useState('');
+  const [name, setName] = useState(defaultName);
+  const [confirmSwitch, setConfirmSwitch] = useState(false);
 
   const searchM = useMutation({
-    mutationFn: () => clickupInboxService.searchGroupTasks(conversationId, taskRef.trim()),
+    mutationFn: () => clickupInboxService.searchWorkbenchTasks(conversationId, taskRef.trim()),
     onSuccess: (res) => setCandidatos(res.candidatos ?? []),
     onError: (err) => toast.error(err instanceof Error ? err.message : 'Falha na busca'),
   });
   const bindM = useMutation({
-    mutationFn: (ref: string) => clickupInboxService.bindGroupTask(conversationId, ref),
+    mutationFn: (ref: string) =>
+      clickupInboxService.bindWorkbenchTask(conversationId, {
+        taskRef: ref,
+        ...(confirmSwitch ? { confirmSwitch: true } : {}),
+      }),
     onSuccess: (res) => {
       onBound(res.card);
-      toast.success('Task vinculada ao dossiê');
+      setConfirmSwitch(false);
+      toast.success('Task vinculada a esta conversa');
     },
-    onError: (err) => toast.error(err instanceof Error ? err.message : 'Falha ao vincular'),
+    onError: (err) => {
+      if (isAnchorConflict(err)) {
+        setConfirmSwitch(true);
+        toast.error('Esta conversa já tem uma task. Confirme para trocar — a anterior permanece no ClickUp.');
+        return;
+      }
+      toast.error(err instanceof Error ? err.message : 'Falha ao vincular');
+    },
   });
   const createM = useMutation({
     mutationFn: () =>
-      clickupInboxService.createGroupTask(conversationId, { listId, name: name.trim() }),
+      clickupInboxService.createWorkbenchTask(conversationId, {
+        listId,
+        name: name.trim(),
+        ...(confirmSwitch ? { confirmSwitch: true } : {}),
+      }),
     onSuccess: (res) => {
       onBound(res.card);
+      setConfirmSwitch(false);
       toast.success('Task criada no ClickUp');
     },
-    onError: (err) => toast.error(err instanceof Error ? err.message : 'Falha ao criar no ClickUp'),
+    onError: (err) => {
+      if (isAnchorConflict(err)) {
+        setConfirmSwitch(true);
+        toast.error('Esta conversa já tem uma task. Confirme para trocar — a anterior permanece no ClickUp.');
+        return;
+      }
+      toast.error(err instanceof Error ? err.message : 'Falha ao criar no ClickUp');
+    },
   });
 
-  const lists: ClickUpProjectList[] = data.projectLists ?? [];
-  const invalid = data.status === 'binding_invalido';
+  const lists: ClickUpCatalogShortcut[] = data.catalogShortcuts ?? [];
 
   return (
-    <div
-      className="space-y-3 p-4"
-      data-testid={invalid ? 'clickup-state-binding-invalido' : 'clickup-state-dossie-sem-task'}
-    >
-      {invalid ? (
-        <p className="text-xs text-zinc-500">
-          O vínculo ClickUp deste dossiê está inválido ou inacessível. Vincule outra task ou crie
-          uma nova — nada é escolhido automaticamente.
-        </p>
-      ) : (
-        <p className="text-xs text-zinc-500">
-          Dossiê {data.project?.name || ''} ainda não tem task ClickUp.
-        </p>
-      )}
-
+    <div className="space-y-3">
       {mode === 'idle' ? (
         <div className="flex gap-2">
           <button
             type="button"
-            data-testid="clickup-group-vincular"
+            data-testid="clickup-vincular"
             onClick={() => setMode('vincular')}
             className="inline-flex flex-1 items-center justify-center rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground"
           >
@@ -360,7 +389,7 @@ function GroupBindCreate({
           </button>
           <button
             type="button"
-            data-testid="clickup-group-criar"
+            data-testid="clickup-criar"
             onClick={() => setMode('criar')}
             className="inline-flex flex-1 items-center justify-center rounded-md border border-zinc-300 px-3 py-1.5 text-xs font-medium dark:border-zinc-700"
           >
@@ -369,8 +398,19 @@ function GroupBindCreate({
         </div>
       ) : null}
 
+      {alreadyBound && mode !== 'idle' ? (
+        <label className="flex items-center gap-2 text-xs" data-testid="clickup-confirm-switch">
+          <input
+            type="checkbox"
+            checked={confirmSwitch}
+            onChange={(e) => setConfirmSwitch(e.target.checked)}
+          />
+          Trocar a task vinculada. A task anterior permanece no ClickUp.
+        </label>
+      ) : null}
+
       {mode === 'vincular' ? (
-        <div className="space-y-2" data-testid="clickup-group-bind">
+        <div className="space-y-2" data-testid="clickup-workbench-bind">
           <input
             className={inputCls}
             value={taskRef}
@@ -382,7 +422,7 @@ function GroupBindCreate({
           />
           <button
             type="button"
-            data-testid="clickup-group-search"
+            data-testid="clickup-workbench-search"
             disabled={!taskRef.trim() || searchM.isPending}
             onClick={() => searchM.mutate()}
             className="inline-flex w-full items-center justify-center rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50"
@@ -393,7 +433,7 @@ function GroupBindCreate({
             candidatos.length === 0 ? (
               <p className="text-[11px] text-zinc-500">Nenhuma task encontrada.</p>
             ) : (
-              <div className="space-y-2" data-testid="clickup-group-candidatos">
+              <div className="space-y-2" data-testid="clickup-workbench-candidatos">
                 <p className="text-[11px] text-zinc-500">
                   Escolha uma task — nada é selecionado automaticamente.
                 </p>
@@ -420,7 +460,7 @@ function GroupBindCreate({
           ) : (
             <button
               type="button"
-              data-testid="clickup-group-bind-paste"
+              data-testid="clickup-workbench-bind-paste"
               disabled={!taskRef.trim() || bindM.isPending}
               onClick={() => bindM.mutate(taskRef.trim())}
               className="inline-flex w-full items-center justify-center rounded-md border border-zinc-300 px-3 py-1.5 text-xs font-medium disabled:opacity-50 dark:border-zinc-700"
@@ -432,12 +472,12 @@ function GroupBindCreate({
       ) : null}
 
       {mode === 'criar' ? (
-        <div className="space-y-2" data-testid="clickup-group-create">
+        <div className="space-y-2" data-testid="clickup-workbench-create">
           <label className="block">
             <span className={labelCls}>Lista</span>
             <select
               className={`${inputCls} mt-1`}
-              data-testid="clickup-group-list"
+              data-testid="clickup-workbench-list"
               value={listId}
               onChange={(e) => setListId(e.target.value)}
             >
@@ -457,7 +497,7 @@ function GroupBindCreate({
           />
           <button
             type="button"
-            data-testid="clickup-group-create-submit"
+            data-testid="clickup-workbench-create-submit"
             disabled={!listId || !name.trim() || createM.isPending}
             onClick={() => createM.mutate()}
             className="inline-flex w-full items-center justify-center rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50"
@@ -469,6 +509,7 @@ function GroupBindCreate({
     </div>
   );
 }
+
 
 function ClickUpCardView({
   conversationId,

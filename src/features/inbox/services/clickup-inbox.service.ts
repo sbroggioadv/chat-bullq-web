@@ -8,10 +8,17 @@ export type ClickUpMatchStatus =
   | 'grupo';
 
 export type ClickUpGroupStatus =
-  | 'sem_dossie'
-  | 'dossie_sem_task'
+  | 'sem_vinculo'
   | 'task_vinculada'
   | 'binding_invalido';
+
+export type ClickUpWorkbenchStatus = 'sem_vinculo' | 'task_vinculada' | 'binding_invalido';
+
+export type ClickUpCatalogShortcut = {
+  id: string;
+  label: string;
+  kind: 'sales' | 'project';
+};
 
 export type ClickUpProjectList = {
   id: string;
@@ -90,6 +97,25 @@ export type ClickUpGroupResolveResponse = {
   project?: ClickUpGroupProject;
   projectLists?: ClickUpProjectList[];
   card?: ClickUpCard;
+};
+
+export type ClickUpPhoneShortcut = {
+  status: ClickUpMatchStatus;
+  canonico?: string;
+  motivo?: string;
+  card?: ClickUpCard;
+  candidatos?: ClickUpCandidato[];
+  primaryListLabel?: string | null;
+};
+
+export type ClickUpWorkbenchResponse = {
+  status: ClickUpWorkbenchStatus;
+  conversationId?: string;
+  card?: ClickUpCard;
+  phoneShortcut?: ClickUpPhoneShortcut;
+  dossier?: ClickUpGroupProject | null;
+  catalogShortcuts: ClickUpCatalogShortcut[];
+  canCreateLead: boolean;
 };
 
 const base = (conversationId: string) =>
@@ -185,6 +211,48 @@ export const clickupInboxService = {
     const { data } = await api.post<{
       data: { ok: boolean; status: ClickUpGroupStatus; card: ClickUpCard };
     }>(`${base(conversationId)}/group/tasks`, body, {
+      headers: { 'Idempotency-Key': crypto.randomUUID() },
+    });
+    return data.data;
+  },
+
+  async resolveWorkbench(conversationId: string): Promise<ClickUpWorkbenchResponse> {
+    const { data } = await api.get<{ data: ClickUpWorkbenchResponse }>(
+      `${base(conversationId)}/workbench`,
+    );
+    return data.data;
+  },
+
+  async searchWorkbenchTasks(
+    conversationId: string,
+    q: string,
+  ): Promise<{ candidatos: ClickUpCandidato[] }> {
+    const { data } = await api.get<{ data: { candidatos: ClickUpCandidato[] } }>(
+      `${base(conversationId)}/workbench/tasks/search`,
+      { params: { q } },
+    );
+    return data.data;
+  },
+
+  async bindWorkbenchTask(
+    conversationId: string,
+    body: { taskRef: string; crossLinkDossier?: boolean; confirmSwitch?: boolean },
+  ) {
+    const { data } = await api.post<{
+      data: { ok: boolean; status: ClickUpWorkbenchStatus; card: ClickUpCard };
+    }>(`${base(conversationId)}/workbench/bind`, body, {
+      headers: { 'Idempotency-Key': crypto.randomUUID() },
+    });
+    return data.data;
+  },
+
+  async createWorkbenchTask(
+    conversationId: string,
+    body: { listId: string; name: string; crossLinkDossier?: boolean; confirmSwitch?: boolean },
+  ) {
+    const { data } = await api.post<{
+      data: { ok: boolean; status: ClickUpWorkbenchStatus; card: ClickUpCard };
+    }>(`${base(conversationId)}/workbench/tasks`, body, {
       headers: { 'Idempotency-Key': crypto.randomUUID() },
     });
     return data.data;
