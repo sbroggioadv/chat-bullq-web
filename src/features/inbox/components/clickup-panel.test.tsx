@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ClickUpPanel } from './clickup-panel';
+import { ApiClientError } from '@/lib/api';
 import {
   clickupInboxService,
   type ClickUpCard,
@@ -127,6 +128,8 @@ describe('SPEC-009 W0 ClickUpWorkbench', () => {
     renderPanel('Grupo Holding', true);
     expect(await screen.findByTestId('clickup-workbench')).toBeInTheDocument();
     expect(screen.getByTestId('clickup-state-sem-vinculo')).toBeInTheDocument();
+    expect(screen.getByTestId('clickup-workbench-vincular')).toBeInTheDocument();
+    expect(screen.getByTestId('clickup-workbench-criar')).toBeInTheDocument();
     expect(screen.getByTestId('clickup-vincular')).toBeInTheDocument();
     expect(screen.getByTestId('clickup-criar')).toBeInTheDocument();
     expect(screen.queryByTestId('clickup-state-sem-dossie')).not.toBeInTheDocument();
@@ -138,8 +141,8 @@ describe('SPEC-009 W0 ClickUpWorkbench', () => {
     cleanup();
     mocked.resolveWorkbench.mockClear();
     renderPanel('', false);
-    expect(await screen.findByTestId('clickup-vincular')).toBeInTheDocument();
-    expect(screen.getByTestId('clickup-criar')).toBeInTheDocument();
+    expect(await screen.findByTestId('clickup-workbench-vincular')).toBeInTheDocument();
+    expect(screen.getByTestId('clickup-workbench-criar')).toBeInTheDocument();
     expect(screen.queryByTestId('clickup-state-sem-dossie')).not.toBeInTheDocument();
   });
 
@@ -161,6 +164,8 @@ describe('SPEC-009 W0 ClickUpWorkbench', () => {
     );
     renderPanel('Maria', false);
     expect(await screen.findByTestId('clickup-phone-shortcut')).toBeInTheDocument();
+    expect(screen.getByTestId('clickup-workbench-vincular')).toBeInTheDocument();
+    expect(screen.getByTestId('clickup-workbench-criar')).toBeInTheDocument();
     expect(screen.getByTestId('clickup-vincular')).toBeInTheDocument();
     expect(screen.getByTestId('clickup-criar')).toBeInTheDocument();
     expect(mocked.bindWorkbenchTask).not.toHaveBeenCalled();
@@ -208,6 +213,8 @@ describe('SPEC-009 W0 ClickUpWorkbench', () => {
     );
     renderPanel('Grupo', true);
     expect(await screen.findByTestId('clickup-dossier-chip')).toHaveTextContent('Holding Silva');
+    expect(screen.getByTestId('clickup-workbench-vincular')).toBeInTheDocument();
+    expect(screen.getByTestId('clickup-workbench-criar')).toBeInTheDocument();
     expect(screen.getByTestId('clickup-vincular')).toBeInTheDocument();
     expect(screen.getByTestId('clickup-criar')).toBeInTheDocument();
   });
@@ -227,7 +234,7 @@ describe('SPEC-009 W0 ClickUpWorkbench', () => {
       card: card({ taskId: 'h1', nome: 'Holding Alfa' }),
     });
     renderPanel('Grupo', true);
-    await user.click(await screen.findByTestId('clickup-vincular'));
+    await user.click(await screen.findByTestId('clickup-workbench-vincular'));
     await user.type(screen.getByPlaceholderText(/cole a url/i), 'Holding');
     await user.click(screen.getByTestId('clickup-workbench-search'));
     expect(await screen.findByTestId('clickup-workbench-candidatos')).toBeInTheDocument();
@@ -243,8 +250,9 @@ describe('SPEC-009 W0 ClickUpWorkbench', () => {
     const user = userEvent.setup();
     mocked.resolveWorkbench.mockResolvedValue(wb());
     renderPanel('Grupo', true);
-    await user.click(await screen.findByTestId('clickup-criar'));
-    const select = await screen.findByTestId('clickup-workbench-list');
+    await user.click(await screen.findByTestId('clickup-workbench-criar'));
+    const select = await screen.findByTestId('clickup-create-list');
+    expect(screen.getByTestId('clickup-workbench-list')).toBeInTheDocument();
     expect(select).toHaveTextContent('Holding');
     expect(select).toHaveTextContent('Consultivo');
     expect(select).toHaveTextContent('Iniciais Judiciais a Distribuir');
@@ -260,8 +268,46 @@ describe('SPEC-009 W0 ClickUpWorkbench', () => {
     renderPanel('Grupo', true);
     expect(await screen.findByTestId('clickup-state-task-vinculada')).toBeInTheDocument();
     expect(screen.getByTestId('clickup-mutations')).toBeInTheDocument();
+    expect(screen.getByTestId('clickup-workbench-vincular')).toBeInTheDocument();
+    expect(screen.getByTestId('clickup-workbench-criar')).toBeInTheDocument();
     expect(screen.getByTestId('clickup-vincular')).toBeInTheDocument();
     expect(screen.getByTestId('clickup-criar')).toBeInTheDocument();
+  });
+
+  it('AC-12b diálogo confirm-switch: cancelar zero POST extra; confirmar reenvia', async () => {
+    const user = userEvent.setup();
+    mocked.resolveWorkbench.mockResolvedValue(wb({ status: 'task_vinculada', card: card() }));
+    const conflict = new ApiClientError(
+      'esta conversa já tem uma task vinculada',
+      409,
+      'CLICKUP_ANCHOR_SWITCH_REQUIRED',
+    );
+    mocked.createWorkbenchTask.mockRejectedValueOnce(conflict);
+    renderPanel('Grupo', true);
+    await user.click(await screen.findByTestId('clickup-workbench-criar'));
+    await user.selectOptions(screen.getByTestId('clickup-create-list'), 'list-iniciais');
+    await user.click(screen.getByTestId('clickup-workbench-create-submit'));
+    expect(await screen.findByTestId('clickup-confirm-switch')).toBeInTheDocument();
+    expect(mocked.createWorkbenchTask).toHaveBeenCalledTimes(1);
+    expect(mocked.createWorkbenchTask.mock.calls[0][1].confirmSwitch).toBeUndefined();
+
+    await user.click(screen.getByTestId('clickup-confirm-switch-cancel'));
+    expect(screen.queryByTestId('clickup-confirm-switch')).not.toBeInTheDocument();
+    expect(mocked.createWorkbenchTask).toHaveBeenCalledTimes(1);
+
+    mocked.createWorkbenchTask.mockRejectedValueOnce(conflict);
+    await user.click(screen.getByTestId('clickup-workbench-create-submit'));
+    expect(await screen.findByTestId('clickup-confirm-switch')).toBeInTheDocument();
+    mocked.createWorkbenchTask.mockResolvedValueOnce({
+      ok: true,
+      status: 'task_vinculada',
+      card: card({ taskId: 'task-inicial' }),
+    });
+    await user.click(screen.getByTestId('clickup-confirm-switch-confirm'));
+    expect(mocked.createWorkbenchTask).toHaveBeenCalledTimes(3);
+    expect(mocked.createWorkbenchTask.mock.calls[2][1]).toEqual(
+      expect.objectContaining({ listId: 'list-iniciais', confirmSwitch: true }),
+    );
   });
 
   it('503 integração não configurada', async () => {

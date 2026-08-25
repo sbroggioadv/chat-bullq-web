@@ -36,5 +36,15 @@ describe('classifyClickUpError', () => {
     expect(classifyClickUpError({ message: 'x', status: 502, code: 'CLICKUP_UPSTREAM' })).toBe('upstream');
     expect(classifyClickUpError({ message: 'x', status: 504, code: 'CLICKUP_TIMEOUT' })).toBe('upstream');
     expect(classifyClickUpError(new Error('ClickUp não configurado'))).toBe('not_configured');
+    expect(
+      classifyClickUpError({
+        message: 'esta conversa já tem uma task vinculada',
+        status: 409,
+        code: 'CLICKUP_ANCHOR_SWITCH_REQUIRED',
+      }),
+    ).toBe('switch_required');
+    expect(
+      classifyClickUpError({ message: 'já existe card para este telefone', status: 409, code: 'CLICKUP_MATCH_CONFLICT' }),
+    ).toBe('generic');
   });
 });

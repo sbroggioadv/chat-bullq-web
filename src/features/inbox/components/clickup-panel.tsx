@@ -39,9 +39,11 @@ export function ClickUpPanel({
 }
 
 function isAnchorConflict(err: unknown): boolean {
+  if (classifyClickUpError(err) === 'switch_required') return true;
   return (
     err instanceof ApiClientError
-    && (err.status === 409 || err.code === 'CLICKUP_ANCHOR_EXISTS')
+    && err.status === 409
+    && (err.code === 'CLICKUP_ANCHOR_SWITCH_REQUIRED' || err.code === 'CLICKUP_ANCHOR_EXISTS')
   );
 }
 
@@ -98,6 +100,7 @@ function ClickUpWorkbench({
           shortcut={data.phoneShortcut}
           canCreateLead={data.canCreateLead}
           contactName={contactName}
+          mutable={data.status !== 'task_vinculada'}
           onBound={(card) =>
             setData({ ...data, status: 'task_vinculada', card, phoneShortcut: data.phoneShortcut })
           }
@@ -158,7 +161,6 @@ function ClickUpWorkbench({
         conversationId={conversationId}
         data={data}
         defaultName={contactName.trim() || data.dossier?.name || ''}
-        alreadyBound={data.status === 'task_vinculada'}
         onBound={(card) => setData({ ...data, status: 'task_vinculada', card })}
       />
     </div>
@@ -170,12 +172,14 @@ function PhoneShortcutStrip({
   shortcut,
   canCreateLead,
   contactName,
+  mutable = true,
   onBound,
 }: {
   conversationId: string;
   shortcut: NonNullable<ClickUpWorkbenchResponse['phoneShortcut']>;
   canCreateLead: boolean;
   contactName: string;
+  mutable?: boolean;
   onBound: (card: ClickUpCard) => void;
 }) {
   const queryClient = useQueryClient();
@@ -232,15 +236,17 @@ function PhoneShortcutStrip({
               Usar nesta conversa
             </button>
           </div>
-          <ClickUpCardView
-            conversationId={conversationId}
-            card={shortcut.card}
-            onCard={(card) => {
-              queryClient.setQueryData(['clickup-workbench', conversationId], (prev: ClickUpWorkbenchResponse | undefined) =>
-                prev ? { ...prev, phoneShortcut: { ...shortcut, card } } : prev,
-              );
-            }}
-          />
+          {mutable ? (
+            <ClickUpCardView
+              conversationId={conversationId}
+              card={shortcut.card}
+              onCard={(card) => {
+                queryClient.setQueryData(['clickup-workbench', conversationId], (prev: ClickUpWorkbenchResponse | undefined) =>
+                  prev ? { ...prev, phoneShortcut: { ...shortcut, card } } : prev,
+                );
+              }}
+            />
+          ) : null}
         </>
       ) : null}
 
@@ -310,13 +316,11 @@ function WorkbenchBindCreate({
   conversationId,
   data,
   defaultName,
-  alreadyBound,
   onBound,
 }: {
   conversationId: string;
   data: ClickUpWorkbenchResponse;
   defaultName: string;
-  alreadyBound: boolean;
   onBound: (card: ClickUpCard) => void;
 }) {
   const [mode, setMode] = useState<'idle' | 'vincular' | 'criar'>('idle');
@@ -324,7 +328,9 @@ function WorkbenchBindCreate({
   const [candidatos, setCandidatos] = useState<ClickUpCandidato[] | null>(null);
   const [listId, setListId] = useState('');
   const [name, setName] = useState(defaultName);
-  const [confirmSwitch, setConfirmSwitch] = useState(false);
+  const [switchDialog, setSwitchDialog] = useState<null | { kind: 'bind'; ref: string } | { kind: 'create' }>(
+    null,
+  );
 
   const searchM = useMutation({
     mutationFn: () => clickupInboxService.searchWorkbenchTasks(conversationId, taskRef.trim()),
@@ -332,27 +338,26 @@ function WorkbenchBindCreate({
     onError: (err) => toast.error(err instanceof Error ? err.message : 'Falha na busca'),
   });
   const bindM = useMutation({
-    mutationFn: (ref: string) =>
+    mutationFn: ({ ref, confirmSwitch }: { ref: string; confirmSwitch?: boolean }) =>
       clickupInboxService.bindWorkbenchTask(conversationId, {
         taskRef: ref,
         ...(confirmSwitch ? { confirmSwitch: true } : {}),
       }),
     onSuccess: (res) => {
       onBound(res.card);
-      setConfirmSwitch(false);
+      setSwitchDialog(null);
       toast.success('Task vinculada a esta conversa');
     },
-    onError: (err) => {
+    onError: (err, vars) => {
       if (isAnchorConflict(err)) {
-        setConfirmSwitch(true);
-        toast.error('Esta conversa já tem uma task. Confirme para trocar — a anterior permanece no ClickUp.');
+        setSwitchDialog({ kind: 'bind', ref: vars.ref });
         return;
       }
       toast.error(err instanceof Error ? err.message : 'Falha ao vincular');
     },
   });
   const createM = useMutation({
-    mutationFn: () =>
+    mutationFn: ({ confirmSwitch }: { confirmSwitch?: boolean } = {}) =>
       clickupInboxService.createWorkbenchTask(conversationId, {
         listId,
         name: name.trim(),
@@ -360,13 +365,12 @@ function WorkbenchBindCreate({
       }),
     onSuccess: (res) => {
       onBound(res.card);
-      setConfirmSwitch(false);
+      setSwitchDialog(null);
       toast.success('Task criada no ClickUp');
     },
     onError: (err) => {
       if (isAnchorConflict(err)) {
-        setConfirmSwitch(true);
-        toast.error('Esta conversa já tem uma task. Confirme para trocar — a anterior permanece no ClickUp.');
+        setSwitchDialog({ kind: 'create' });
         return;
       }
       toast.error(err instanceof Error ? err.message : 'Falha ao criar no ClickUp');
@@ -379,34 +383,61 @@ function WorkbenchBindCreate({
     <div className="space-y-3">
       {mode === 'idle' ? (
         <div className="flex gap-2">
-          <button
-            type="button"
-            data-testid="clickup-vincular"
-            onClick={() => setMode('vincular')}
-            className="inline-flex flex-1 items-center justify-center rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground"
-          >
-            Vincular existente
-          </button>
-          <button
-            type="button"
-            data-testid="clickup-criar"
-            onClick={() => setMode('criar')}
-            className="inline-flex flex-1 items-center justify-center rounded-md border border-zinc-300 px-3 py-1.5 text-xs font-medium dark:border-zinc-700"
-          >
-            Criar nova
-          </button>
+          <div className="flex-1" data-testid="clickup-vincular">
+            <button
+              type="button"
+              data-testid="clickup-workbench-vincular"
+              onClick={() => setMode('vincular')}
+              className="inline-flex w-full items-center justify-center rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground"
+            >
+              Vincular existente
+            </button>
+          </div>
+          <div className="flex-1" data-testid="clickup-criar">
+            <button
+              type="button"
+              data-testid="clickup-workbench-criar"
+              onClick={() => setMode('criar')}
+              className="inline-flex w-full items-center justify-center rounded-md border border-zinc-300 px-3 py-1.5 text-xs font-medium dark:border-zinc-700"
+            >
+              Criar nova
+            </button>
+          </div>
         </div>
       ) : null}
 
-      {alreadyBound && mode !== 'idle' ? (
-        <label className="flex items-center gap-2 text-xs" data-testid="clickup-confirm-switch">
-          <input
-            type="checkbox"
-            checked={confirmSwitch}
-            onChange={(e) => setConfirmSwitch(e.target.checked)}
-          />
-          Trocar a task vinculada. A task anterior permanece no ClickUp.
-        </label>
+      {switchDialog ? (
+        <div
+          role="dialog"
+          className="space-y-2 rounded-md border border-amber-300 bg-amber-50 px-2.5 py-2 text-xs dark:border-amber-700 dark:bg-amber-950"
+          data-testid="clickup-confirm-switch"
+        >
+          <p>Esta conversa já tem uma task. Trocar a âncora? A task anterior permanece no ClickUp.</p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              data-testid="clickup-confirm-switch-cancel"
+              onClick={() => setSwitchDialog(null)}
+              className="inline-flex flex-1 items-center justify-center rounded-md border border-zinc-300 px-3 py-1.5 font-medium dark:border-zinc-700"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              data-testid="clickup-confirm-switch-confirm"
+              onClick={() => {
+                if (switchDialog.kind === 'bind') {
+                  bindM.mutate({ ref: switchDialog.ref, confirmSwitch: true });
+                } else {
+                  createM.mutate({ confirmSwitch: true });
+                }
+              }}
+              className="inline-flex flex-1 items-center justify-center rounded-md bg-primary px-3 py-1.5 font-medium text-primary-foreground"
+            >
+              Confirmar
+            </button>
+          </div>
+        </div>
       ) : null}
 
       {mode === 'vincular' ? (
@@ -441,7 +472,7 @@ function WorkbenchBindCreate({
                   <button
                     key={c.taskId}
                     type="button"
-                    onClick={() => bindM.mutate(c.taskId)}
+                    onClick={() => bindM.mutate({ ref: c.taskId })}
                     className="block w-full rounded-md border border-zinc-200 px-2.5 py-2 text-left text-xs hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-900"
                   >
                     <span className="font-medium text-zinc-900 dark:text-zinc-100">
@@ -462,7 +493,7 @@ function WorkbenchBindCreate({
               type="button"
               data-testid="clickup-workbench-bind-paste"
               disabled={!taskRef.trim() || bindM.isPending}
-              onClick={() => bindM.mutate(taskRef.trim())}
+              onClick={() => bindM.mutate({ ref: taskRef.trim() })}
               className="inline-flex w-full items-center justify-center rounded-md border border-zinc-300 px-3 py-1.5 text-xs font-medium disabled:opacity-50 dark:border-zinc-700"
             >
               Vincular esta referência
@@ -473,11 +504,11 @@ function WorkbenchBindCreate({
 
       {mode === 'criar' ? (
         <div className="space-y-2" data-testid="clickup-workbench-create">
-          <label className="block">
+          <label className="block" data-testid="clickup-workbench-list">
             <span className={labelCls}>Lista</span>
             <select
               className={`${inputCls} mt-1`}
-              data-testid="clickup-workbench-list"
+              data-testid="clickup-create-list"
               value={listId}
               onChange={(e) => setListId(e.target.value)}
             >
@@ -499,7 +530,7 @@ function WorkbenchBindCreate({
             type="button"
             data-testid="clickup-workbench-create-submit"
             disabled={!listId || !name.trim() || createM.isPending}
-            onClick={() => createM.mutate()}
+            onClick={() => createM.mutate({})}
             className="inline-flex w-full items-center justify-center rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50"
           >
             {createM.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Criar no ClickUp'}

@@ -23,6 +23,11 @@ import { useAuthStore } from '@/stores/auth-store';
 import { PendingActionsList } from '../pending-actions/pending-actions-list';
 import type { Contact as OrgContact } from '@/features/contacts/services/contacts.service';
 import { projectsService } from '@/features/projects/services/projects.service';
+import {
+  clickupInboxService,
+  fanOutClipAttachment,
+  type ClickUpWorkbenchResponse,
+} from '../services/clickup-inbox.service';
 
 function translateSkipReason(reason: string): string {
   const map: Record<string, string> = {
@@ -664,17 +669,36 @@ export function ChatPanel({
   const handleAttachToProject = useCallback(
     async (msg: Message) => {
       try {
-        const project = await projectsService.getByConversation(conversation.id);
-        if (!project.exists || !project.id) {
+        const cached = queryClient.getQueryData<ClickUpWorkbenchResponse>([
+          'clickup-workbench',
+          conversation.id,
+        ]);
+        const result = await fanOutClipAttachment({
+          cachedWorkbench: cached ?? null,
+          resolveWorkbench: () => clickupInboxService.resolveWorkbench(conversation.id),
+          incorporate: (body) => clickupInboxService.incorporateWorkbench(conversation.id, body),
+          getProject: () => projectsService.getByConversation(conversation.id),
+          attachMessage: (projectId, messageId) =>
+            projectsService.attachMessage(projectId, messageId),
+          messageId: msg.id,
+        });
+        if (result.needDossierToast) {
           toast.error(
             'Abra o painel Projeto e crie ou ligue um dossiê primeiro',
           );
           return;
         }
-        await projectsService.attachMessage(project.id, msg.id);
-        toast.success('Mensagem anexada ao projeto');
-        queryClient.invalidateQueries({ queryKey: ['project', conversation.id] });
-        queryClient.invalidateQueries({ queryKey: ['project', project.id] });
+        if (result.clickupError) {
+          toast.error(
+            result.clickupError instanceof Error
+              ? result.clickupError.message
+              : 'ClickUp: incorporar indisponível',
+          );
+        }
+        if (result.attachedDossier) {
+          toast.success('Mensagem anexada ao projeto');
+          queryClient.invalidateQueries({ queryKey: ['project', conversation.id] });
+        }
       } catch (err) {
         toast.error(
           err instanceof Error ? err.message : 'Erro ao anexar ao projeto',

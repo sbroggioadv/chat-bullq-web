@@ -258,6 +258,18 @@ export const clickupInboxService = {
     return data.data;
   },
 
+  async incorporateWorkbench(
+    conversationId: string,
+    body: { kind: 'comment' | 'attachment'; messageId?: string; documentId?: string },
+  ) {
+    const { data } = await api.post<{ data: unknown }>(
+      `${base(conversationId)}/workbench/incorporations`,
+      body,
+      { headers: { 'Idempotency-Key': crypto.randomUUID() } },
+    );
+    return data.data;
+  },
+
   async completeActivity(conversationId: string, taskId: string, activityId: string) {
     const { data } = await api.patch<{ data: { ok: boolean; status: string; card: ClickUpCard } }>(
       `${base(conversationId)}/tasks/${encodeURIComponent(taskId)}/activities/${encodeURIComponent(activityId)}/complete`,
@@ -266,9 +278,17 @@ export const clickupInboxService = {
   },
 };
 
-export function classifyClickUpError(err: unknown): 'not_configured' | 'upstream' | 'generic' {
+export function classifyClickUpError(
+  err: unknown,
+): 'not_configured' | 'upstream' | 'generic' | 'switch_required' {
   const status = (err as { status?: number })?.status;
   const code = (err as { code?: string })?.code;
+  if (
+    code === 'CLICKUP_ANCHOR_SWITCH_REQUIRED'
+    || code === 'CLICKUP_ANCHOR_EXISTS'
+  ) {
+    return 'switch_required';
+  }
   if (code === 'CLICKUP_NOT_CONFIGURED' || status === 503) return 'not_configured';
   if (
     code === 'CLICKUP_TIMEOUT'
@@ -284,4 +304,56 @@ export function classifyClickUpError(err: unknown): 'not_configured' | 'upstream
     return 'not_configured';
   }
   return 'generic';
+}
+
+export function clipAttachPlan(bound: boolean, projectExists: boolean) {
+  return {
+    callIncorporations: bound,
+    attachToDossier: projectExists,
+    toastNeedDossier: !bound && !projectExists,
+  };
+}
+
+export async function fanOutClipAttachment(opts: {
+  cachedWorkbench?: ClickUpWorkbenchResponse | null;
+  resolveWorkbench: () => Promise<ClickUpWorkbenchResponse>;
+  incorporate: (body: { kind: 'attachment'; messageId: string }) => Promise<unknown>;
+  getProject: () => Promise<{ exists: boolean; id?: string | null }>;
+  attachMessage: (projectId: string, messageId: string) => Promise<unknown>;
+  messageId: string;
+}): Promise<{
+  calledIncorporations: boolean;
+  attachedDossier: boolean;
+  needDossierToast: boolean;
+  clickupError?: unknown;
+}> {
+  let wb = opts.cachedWorkbench ?? null;
+  if (!wb) {
+    try {
+      wb = await opts.resolveWorkbench();
+    } catch {
+      wb = null;
+    }
+  }
+  const bound = wb?.status === 'task_vinculada';
+  const project = await opts.getProject();
+  const projectExists = Boolean(project.exists && project.id);
+  const plan = clipAttachPlan(bound, projectExists);
+  let clickupError: unknown;
+  if (plan.callIncorporations) {
+    try {
+      await opts.incorporate({ kind: 'attachment', messageId: opts.messageId });
+    } catch (err) {
+      clickupError = err;
+    }
+  }
+  if (plan.attachToDossier && project.id) {
+    await opts.attachMessage(project.id, opts.messageId);
+  }
+  return {
+    calledIncorporations: plan.callIncorporations,
+    attachedDossier: plan.attachToDossier,
+    needDossierToast: plan.toastNeedDossier,
+    clickupError,
+  };
 }
