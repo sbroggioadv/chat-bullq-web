@@ -115,6 +115,18 @@ describe('AC-04 estados do painel ClickUp', () => {
     expect(screen.getByTestId('clickup-create-needs-name')).toBeInTheDocument();
   });
 
+  it('clique em criar envia só conversationId e mostra o card após sucesso', async () => {
+    const user = userEvent.setup();
+    mocked.resolve.mockResolvedValue({ status: 'sem_card' });
+    mocked.createTask.mockResolvedValue({ ok: true, status: 'unico', card: card() });
+    renderPanel('Maria');
+    await user.click(await screen.findByTestId('clickup-create'));
+    expect(mocked.createTask).toHaveBeenCalledWith('conv-1');
+    expect(mocked.createTask.mock.calls[0]).toHaveLength(1);
+    expect(await screen.findByTestId('clickup-state-unico')).toBeInTheDocument();
+    expect(screen.getByText('Maria Silva')).toBeInTheDocument();
+  });
+
   it('N candidatos exige clique e não escolhe sozinho', async () => {
     const user = userEvent.setup();
     mocked.resolve.mockResolvedValue({
