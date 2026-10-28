@@ -3,7 +3,9 @@
 import { SettingsSaveBar } from '@/features/settings/components/settings-save-bar';
 import { useState } from 'react';
 import Link from 'next/link';
-import { Building2, User, Lock, Sparkles, ArrowRight, Check } from 'lucide-react';
+import { Lock } from 'lucide-react';
+import { SettingRow } from '@/components/ui/foundation';
+import styles from '@/features/settings/components/settings.module.css';
 import { useOrgBrand } from '@/features/theme/hooks/use-org-brand';
 import { ORG_BRANDS, type OrgBrand } from '@/features/theme/types/brand';
 import { BrandPreviewCard } from '@/features/theme/components/brand-preview-card';
@@ -25,113 +27,27 @@ export default function SettingsAppearancePage() {
     setPending(null);
   };
 
-  return (
-    <div className="space-y-10">
-      {/* ─── Seção: Identidade visual da banca (org-level, OWNER/ADMIN) ─── */}
-      <section aria-labelledby="brand-section">
-        <header className="mb-5">
-          <div className="flex items-center gap-2">
-            <Building2 className="size-5 text-fg-muted" />
-            <h2 id="brand-section" className="text-base font-semibold text-fg">
-              Identidade visual da banca
-            </h2>
-            {!canEditBrand && (
-              <span
-                className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-fg-muted"
-                title="Apenas OWNER/ADMIN podem alterar"
-              >
-                <Lock className="size-3" />
-                Restrito
-              </span>
-            )}
-          </div>
-          <p className="mt-1 text-sm text-fg-muted">
-            Define a aparência do BullQ para todos os membros da organização.{' '}
-            {canEditBrand
-              ? 'Mudanças aplicam imediatamente.'
-              : 'Apenas o OWNER ou ADMIN pode mudar.'}
-          </p>
-        </header>
-
-        <div
-          role="radiogroup"
-          aria-label="Identidade visual da banca"
-          aria-disabled={!canEditBrand || isUpdating}
-          className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
-        >
-          {ORG_BRANDS.map((b) => (
-            <BrandPreviewCard
-              key={b}
-              brand={b}
-              selected={selected === b}
-              onSelect={(next) => canEditBrand && setPending(next)}
-              disabled={!canEditBrand || isUpdating}
-              size="md"
-            />
-          ))}
-        </div>
-
-        {/* ─── Custom Theme Builder (Sprint S18 Wave 3) ─── */}
-        {canEditBrand && (
-          <div className="mt-6">
-            <Link
-              href="/settings/appearance/builder"
-              className="group flex items-center justify-between gap-3 rounded-xl border-2 border-dashed border-border bg-gradient-to-br from-primary/5 to-accent/5 p-5 transition-all hover:border-primary hover:from-primary/10 hover:to-accent/10"
-            >
-              <div className="flex items-center gap-3">
-                <span className="inline-flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground">
-                  <Sparkles className="size-5" />
-                </span>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-semibold text-fg">Theme Builder Custom</h3>
-                    {hasCustomTheme && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
-                        <Check className="size-3" /> Ativo
-                      </span>
-                    )}
-                  </div>
-                  <p className="mt-0.5 text-xs text-fg-muted">
-                    {hasCustomTheme
-                      ? `Tema customizado aplicado (base: ${themeTokens?.base}). Clique pra editar.`
-                      : 'Edite cores OKLCH + radius + densidade com preview live e validacao WCAG.'}
-                  </p>
-                </div>
-              </div>
-              <ArrowRight className="size-4 text-fg-muted transition-transform group-hover:translate-x-1 group-hover:text-primary" />
-            </Link>
-          </div>
-        )}
-      </section>
-
-      {/* ─── Seção: Biblioteca de presets (Sprint S18 Wave 4) ─── */}
-      <ThemePresetsSection canEdit={canEditBrand} />
-
-      {/* ─── Seção: Tema pessoal (user-level, qualquer membro) ─── */}
-      <section aria-labelledby="mode-section" className="border-t border-border pt-10">
-        <header className="mb-5">
-          <div className="flex items-center gap-2">
-            <User className="size-5 text-fg-muted" />
-            <h2 id="mode-section" className="text-base font-semibold text-fg">
-              Seu tema
-            </h2>
-            <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-fg-muted">
-              Pessoal
-            </span>
-          </div>
-          <p className="mt-1 text-sm text-fg-muted">
-            Preferência salva só pra você, neste navegador. Não afeta outros membros da banca.
-          </p>
-        </header>
-
-        <ThemeModeToggle variant="expanded" />
-
-        <p className="mt-3 text-xs text-fg-subtle">
-          <strong className="text-fg-muted">Sistema</strong> respeita a preferência de dark/light
-          do seu sistema operacional automaticamente.
-        </p>
-      </section>
-      {canEditBrand && <SettingsSaveBar dirty={hasChanges} saving={isUpdating} onDiscard={() => setPending(null)} onSave={() => void handleSave()} />}
-    </div>
-  );
+  return <div className="space-y-5">
+    <section aria-labelledby="mode-section">
+      <h2 id="mode-section" className={styles.sectionTitle}>Só para você</h2>
+      <div className={styles.block}>
+        <SettingRow title="Tema" description="Neste navegador. Não muda o tema dos outros membros."><ThemeModeToggle variant="expanded" /></SettingRow>
+        <SettingRow title="Densidade" description="Espaço entre as linhas das listas e do chat."><span className={styles.unavailable}>Ainda não disponível</span></SettingRow>
+        <SettingRow title="Vidro nas janelas" description="Fundo translúcido como no macOS."><span className={styles.unavailable}>Ainda não disponível</span></SettingRow>
+      </div>
+    </section>
+    <section aria-labelledby="brand-section">
+      <h2 id="brand-section" className={styles.sectionTitle}>Escritório · vale para todos</h2>
+      <div className={styles.block}>
+        <SettingRow title="Identidade visual" description="Só proprietário e administrador mudam. Escolha uma marca e salve.">{!canEditBrand && <span className="bq-pill"><Lock size={12} /> Restrito</span>}</SettingRow>
+        <details className={styles.details}><summary>Escolher marca e ver prévias</summary><div role="radiogroup" aria-label="Identidade visual da banca" aria-disabled={!canEditBrand || isUpdating} className="grid gap-3 p-3 sm:grid-cols-3">
+          {ORG_BRANDS.map(b => <BrandPreviewCard key={b} brand={b} selected={selected === b} onSelect={next => canEditBrand && setPending(next)} disabled={!canEditBrand || isUpdating} size="md" />)}
+        </div></details>
+        <SettingRow title="Logo do escritório" description="Fica em Organização."><Link className="bq-button" href="/settings/general">Abrir Organização</Link></SettingRow>
+        {canEditBrand && <SettingRow title="Theme Builder" description={hasCustomTheme ? `Tema customizado ativo (base: ${themeTokens?.base}).` : 'Cores, raio e densidade da organização, com prévia.'}><Link className="bq-button" href="/settings/appearance/builder">Editar tema</Link></SettingRow>}
+      </div>
+    </section>
+    <ThemePresetsSection canEdit={canEditBrand} />
+    {canEditBrand && <SettingsSaveBar dirty={hasChanges} saving={isUpdating} onDiscard={() => setPending(null)} onSave={() => void handleSave()} />}
+  </div>;
 }

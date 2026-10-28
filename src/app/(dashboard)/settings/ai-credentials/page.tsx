@@ -1,5 +1,6 @@
 'use client';
 
+import styles from '@/features/settings/components/settings.module.css';
 import { useState, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -26,7 +27,6 @@ import {
 import { SettingsSaveBar } from '@/features/settings/components/settings-save-bar';
 import { useOrgId } from '@/hooks/use-org-query-key';
 
-type Tab = 'credentials' | 'routing';
 
 interface ProviderMeta {
   id: AiProvider;
@@ -140,7 +140,6 @@ function formatRelative(iso: string | null): string {
 export default function SettingsAiCredentialsPage() {
   const qc = useQueryClient();
   const orgId = useOrgId();
-  const [tab, setTab] = useState<Tab>('credentials');
 
   const { data: credentials, isLoading: loadingCreds, isError: credentialsError } = useQuery({
     queryKey: ['ai-credentials', orgId],
@@ -169,27 +168,9 @@ export default function SettingsAiCredentialsPage() {
 
   return (
     <div>
-      <div>
-        <p className="mt-0.5 text-sm text-zinc-500">
-          Atendimento: Fugu Ultra e Qwen 3.7 Max. OpenAI e Gemini ficam para
-          transcrição e embeddings. Anthropic permanece disponível se já estava
-          acoplado.
-        </p>
-      </div>
-
       <p className="mt-4 text-xs text-[var(--bq-t3)]">Gasto do mês e quantidade de agentes por provedor ainda não disponíveis.</p>
-      {missing && missing.length > 0 && <p role="alert" className="mt-3 text-sm text-[var(--bq-warn)]">Há capacidade em uso sem chave nem fallback disponível: {missing.map(item => CAPABILITY_LABELS[item.capability].label).join(', ')}.</p>}
-      {/* Tabs */}
-      <div className="mt-6 flex gap-1 border-b border-zinc-200 dark:border-zinc-800">
-        <TabButton active={tab === 'credentials'} onClick={() => setTab('credentials')}>
-          Credenciais
-        </TabButton>
-        <TabButton active={tab === 'routing'} onClick={() => setTab('routing')}>
-          Roteamento
-        </TabButton>
-      </div>
-
-      {tab === 'credentials' && (
+      {missing && missing.length > 0 && <p role="alert" className={styles.warning}>Há capacidade em uso sem chave nem fallback disponível: {missing.map(item => CAPABILITY_LABELS[item.capability].label).join(', ')}.</p>}
+      <section className="mt-5"><h2 className={styles.sectionTitle}>Chaves por provedor</h2>
         <CredentialsTab
           providers={PROVIDERS}
           credByProvider={credByProvider}
@@ -199,9 +180,9 @@ export default function SettingsAiCredentialsPage() {
             qc.invalidateQueries({ queryKey: ['llm-health'] });
           }}
         />
-      )}
+      </section>
 
-      {tab === 'routing' && (
+      <section className="mt-5"><h2 className={styles.sectionTitle}>Padrão por tarefa</h2>
         <RoutingTab
           routing={routing ?? []}
           credByProvider={credByProvider}
@@ -209,31 +190,8 @@ export default function SettingsAiCredentialsPage() {
           envFallback={health?.env}
           onChanged={() => qc.invalidateQueries({ queryKey: ['ai-routing'] })}
         />
-      )}
+      </section>
     </div>
-  );
-}
-
-function TabButton({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
-        active
-          ? 'border-primary text-primary'
-          : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200'
-      }`}
-    >
-      {children}
-    </button>
   );
 }
 
@@ -250,7 +208,7 @@ function CredentialsTab({
 }) {
   if (loading) {
     return (
-      <div className="mt-6 space-y-3">
+      <div className={styles.providerList}>
         {Array.from({ length: 3 }).map((_, i) => (
           <div
             key={i}
@@ -262,7 +220,7 @@ function CredentialsTab({
   }
 
   return (
-    <div className="mt-6 space-y-3">
+    <div className={styles.providerList}>
       {providers.map((p) => (
         <ProviderCard
           key={p.id}
@@ -344,7 +302,7 @@ function ProviderCard({
   };
 
   return (
-    <div className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+    <div className={styles.providerRow}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
@@ -538,7 +496,7 @@ function RoutingTab({
 
   if (loading) {
     return (
-      <div className="mt-6 space-y-3">
+      <div className={styles.providerList}>
         {Array.from({ length: 3 }).map((_, i) => (
           <div
             key={i}
@@ -563,7 +521,7 @@ function RoutingTab({
         <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-100">
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
           <p>
-            Há capacidade apontando para provider sem credencial. Configure a chave na aba
+            Há capacidade apontando para provider sem credencial. Configure a chave na seção
             Credenciais ou selecione outro provider antes de usar em produção.
           </p>
         </div>
@@ -580,7 +538,7 @@ function RoutingTab({
         return (
           <div
             key={cap}
-            className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900"
+            className={styles.providerRow}
           >
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
@@ -595,29 +553,9 @@ function RoutingTab({
                   </p>
                 )}
               </div>
-              <div className="flex gap-2">
-                {allowed.map((provider) => {
-                  const selected = current[cap] === provider;
-                  const available = isAvailable(provider);
-                  return (
-                    <button
-                      key={provider}
-                      onClick={() => !isLocked && available && handleSelect(cap, provider)}
-                      disabled={isLocked || !available}
-                      className={`rounded-md border px-3 py-1.5 text-xs font-medium transition-colors ${
-                        selected
-                          ? 'border-primary bg-primary text-primary-foreground'
-                          : available
-                            ? 'border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700'
-                            : 'cursor-not-allowed border-zinc-200 bg-zinc-50 text-zinc-400 dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-600'
-                      }`}
-                      title={!available ? 'Provider sem credencial — configure na aba Credenciais' : undefined}
-                    >
-                      {PROVIDERS.find((p) => p.id === provider)?.name ?? provider}
-                    </button>
-                  );
-                })}
-              </div>
+              <select aria-label={meta.label} value={current[cap]} disabled={isLocked} onChange={event => handleSelect(cap,event.target.value as AiProvider)} className="h-[30px] min-w-0 max-w-full rounded-lg border px-2.5 text-[12.5px]">
+                {allowed.map(provider => <option key={provider} value={provider} disabled={!isAvailable(provider)}>{PROVIDERS.find(p => p.id === provider)?.name ?? provider}</option>)}
+              </select>
             </div>
           </div>
         );

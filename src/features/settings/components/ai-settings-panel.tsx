@@ -2,11 +2,12 @@
 
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, Trash2, ShieldAlert, Link2 } from 'lucide-react';
+import { Plus, Trash2, Link2 } from 'lucide-react';
 import { SettingsSaveBar } from '@/features/settings/components/settings-save-bar';
 import { WatchdogSummary } from '@/features/settings/components/watchdog-summary';
 import { useOrgId } from '@/hooks/use-org-query-key';
-import { Switch } from '@/components/ui/foundation';
+import styles from '@/features/settings/components/settings.module.css';
+import { Button, SettingRow, Switch } from '@/components/ui/foundation';
 import { toast } from 'sonner';
 import {
   aiSettingsService,
@@ -184,58 +185,30 @@ function AiSettingsEditor({ data, watchdogOnly, onDiscard }: { data: Organizatio
   };
 
   return (
-    <div>
+    <div className={styles.aiPanel}>
       {!watchdogOnly && <>
-      {/* S22.2 — PANIC MODE (botão vermelho de emergência) */}
-      <section
-        className={`mt-6 rounded-xl border-2 p-5 transition-colors ${
-          aiPanicMode
-            ? 'border-red-500 bg-red-50 dark:border-red-500 dark:bg-red-950/30'
-            : 'border-red-200 bg-white dark:border-red-900/40 dark:bg-zinc-900'
-        }`}
-      >
-        <label className="flex cursor-pointer items-start justify-between gap-4">
-          <div>
-            <p className={`flex items-center gap-2 text-sm font-bold ${aiPanicMode ? 'text-red-700 dark:text-red-300' : 'text-red-600 dark:text-red-400'}`}>
-              🚨 Pausar TODA IA imediatamente
-            </p>
-            <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
-              Kill switch absoluto. Ignora qualquer scope, override de conversa ou canal.
-              Use em emergência (suspeita de ban, agente fora de controle). Efeito imediato
-              após salvar — ~1s pra propagar globalmente.
-              {aiPanicMode && (
-                <span className="mt-2 block font-semibold text-red-700 dark:text-red-300">
-                  ⚠ MODO PÂNICO ATIVO — nenhum agente está respondendo. Desligue pra restaurar operação normal.
-                </span>
-              )}
-            </p>
-          </div>
-          <Toggle label="Pausar toda a IA" checked={aiPanicMode} onChange={setAiPanicMode} />
-        </label>
+      <section className={styles.kill}>
+        <div className={styles.rowText}><h3>{aiPanicMode ? 'Toda a IA será pausada' : 'Controle de toda a IA'}</h3><p>Desliga a IA em todos os canais e pipelines. A alteração entra em vigor ao salvar.</p></div>
+        <Button className={styles.danger} role="switch" aria-label="Pausar toda a IA" aria-checked={aiPanicMode} onClick={() => setAiPanicMode(!aiPanicMode)}>{aiPanicMode ? 'Religar a IA' : 'Desligar toda a IA'}</Button>
       </section>
 
-      {/* Kill switch */}
-      <section className="mt-4 rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
+      <section><h2 className={styles.sectionTitle}>Quando atende</h2><div className={styles.block}>
+      <section className={styles.aiRow}>
         <label className="flex cursor-pointer items-start justify-between gap-4">
           <div>
             <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
               IA habilitada (geral)
             </p>
             <p className="mt-0.5 text-xs text-zinc-500">
-              Padrão pra novas conversas. Canais individuais podem sobrepor
-              esse toggle (abaixo). Conversas individuais também podem forçar
-              IA ON/OFF. <strong>Agentes scopados a Pipelines</strong> sobrevivem a esse switch (S22.1) — pra calar até eles, use o botão vermelho acima.
+              Padrão para novas conversas; cada canal e conversa pode ter sua regra. Agentes de pipeline só param com o controle de toda a IA acima.
             </p>
           </div>
           <Toggle label="IA habilitada" checked={aiEnabled} onChange={setAiEnabled} />
         </label>
       </section>
 
-      {/* Override por canal */}
-      <ChannelAiOverrides />
-
       {/* Auto-disable on human */}
-      <section className="mt-4 rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
+      <section className={styles.aiRow}>
         <label className="flex cursor-pointer items-start justify-between gap-4">
           <div>
             <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
@@ -249,9 +222,12 @@ function AiSettingsEditor({ data, watchdogOnly, onDiscard }: { data: Organizatio
           <Toggle label="Pausar IA quando humano responde" checked={autoDisable} onChange={setAutoDisable} />
         </label>
       </section>
+      <SettingRow title="Resumir as conversas"><span className={styles.unavailable}>Ainda não disponível</span></SettingRow>
+      <SettingRow title="Sugerir tasks, reuniões e demandas"><span className={styles.unavailable}>Ainda não disponível</span></SettingRow>
+      </div></section>
 
       {/* Business hours */}
-      <section className="mt-4 rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
+      <section className={styles.aiBlock}>
         <div className="flex items-center justify-between gap-4">
           <div className="min-w-0">
             <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
@@ -359,7 +335,7 @@ function AiSettingsEditor({ data, watchdogOnly, onDiscard }: { data: Organizatio
       </section>
 
       {/* Out of hours message */}
-      <section className="mt-4 rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
+      <section className={styles.aiBlock}>
         <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
           Mensagem fora de horário (opcional)
         </p>
@@ -377,7 +353,7 @@ function AiSettingsEditor({ data, watchdogOnly, onDiscard }: { data: Organizatio
       </section>
 
       {/* Business notes — vai pro contexto de TODOS os agentes da org */}
-      <section className="mt-4 rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
+      <section className={styles.aiBlock}>
         <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
           Contexto do negócio (visto por todos os agentes)
         </p>
@@ -412,7 +388,7 @@ Reembolso:
       </section>
 
       {/* Token cap */}
-      <section className="mt-4 rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
+      <section className={styles.aiBlock}>
         <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
           Limite mensal de tokens
         </p>
@@ -430,7 +406,7 @@ Reembolso:
       </section>
 
       {/* URL Whitelist */}
-      <section className="mt-4 rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
+      <section className={styles.aiBlock}>
         <div className="flex items-start gap-3">
           <Link2 className="mt-0.5 h-5 w-5 shrink-0 text-blue-500" />
           <div className="flex-1">
@@ -460,25 +436,12 @@ Reembolso:
         </div>
       </section>
 
+      <details className={`${styles.block} ${styles.details}`}><summary>IA por canal · ajustes imediatos</summary><ChannelAiOverrides /></details>
       </>}
       {watchdogOnly && <>
       <WatchdogSummary />
-      {/* Watchdog header */}
-      <div className="mt-10 mb-2 flex items-center gap-2">
-        <ShieldAlert className="h-5 w-5 text-amber-500" />
-        <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
-          Watchdog de conversas presas
-        </h3>
-      </div>
-      <p className="mb-4 text-xs text-zinc-500">
-        Detecta conversas onde a IA travou ou o humano abandonou e reativa o
-        atendimento automaticamente. Roda em camadas: agenda um timer toda vez
-        que o cliente manda mensagem e tem um cron de fallback que varre
-        conversas presas a cada 15 minutos.
-      </p>
-
       {/* Watchdog kill switch */}
-      <section className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
+      <section className={styles.aiBlock}>
         <label className="flex cursor-pointer items-start justify-between gap-4">
           <div>
             <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
@@ -493,8 +456,9 @@ Reembolso:
         </label>
       </section>
 
+      <section><h2 className={styles.sectionTitle}>Ritmo</h2><div className={styles.block}><SettingRow title="Quanto esperar" description="Ajuste os tempos abaixo individualmente."><span className={styles.unavailable}>Ritmos predefinidos ainda não disponíveis</span></SettingRow></div></section>
       {/* Watchdog params */}
-      <section className="mt-4 rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
+      <section className={styles.aiBlock}>
         <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
           Parâmetros
         </p>
@@ -502,7 +466,7 @@ Reembolso:
           Controle quanto o watchdog espera antes de reagir e quantas vezes
           tenta antes de marcar a conversa como presa.
         </p>
-        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className={styles.numberRows}>
           <NumberField
             label="IA travou (status BOT)"
             hint="Minutos sem resposta com IA atendendo."
@@ -549,7 +513,7 @@ Reembolso:
       </section>
 
       {/* Watchdog business hours */}
-      <section className="mt-4 rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
+      <section className={styles.aiBlock}>
         <div className="flex items-center justify-between gap-4">
           <div className="min-w-0">
             <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
@@ -673,10 +637,8 @@ function NumberField({
   max?: number;
 }) {
   return (
-    <div>
-      <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300">
-        {label}
-      </label>
+    <div className={styles.numberRow}>
+      <div className={styles.rowText}><label className="text-[13px] font-medium">{label}</label><p>{hint}</p></div>
       <div className="mt-1 flex items-center gap-1">
         <input
           type="number"
@@ -695,7 +657,6 @@ function NumberField({
           <span className="text-xs text-zinc-500">{suffix}</span>
         ) : null}
       </div>
-      <p className="mt-1 text-[11px] text-zinc-500">{hint}</p>
     </div>
   );
 }
@@ -746,7 +707,7 @@ function ChannelAiOverrides() {
   const visible = (channels ?? []).filter((c) => !!c.isActive);
 
   return (
-    <section className="mt-4 rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
+    <section className={styles.aiBlock}>
       <div className="mb-3">
         <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
           IA por canal
