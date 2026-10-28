@@ -1,37 +1,80 @@
-'use client';
+"use client";
 
-import { useQuery } from '@tanstack/react-query';
+import { useMemo, useState } from "react";
+import { Button, SegmentedControl } from "@/components/ui/foundation";
+import { useQuery } from "@tanstack/react-query";
 import {
-  LineChart, Line, BarChart, Bar, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
-  AreaChart, Area,
-} from 'recharts';
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+  AreaChart,
+  Area,
+} from "recharts";
 import {
-  Activity, Clock, Target, CheckCircle2, TrendingUp, TrendingDown, Minus,
-  Bot, Tag as TagIcon, MessageCircle, CalendarClock,
-  Star, RotateCcw, ShieldCheck, Mail, Instagram, Phone,
-} from 'lucide-react';
-import { dashboardService, type SparklinePoint } from '@/features/dashboard/services/dashboard.service';
-import { useOrgId } from '@/hooks/use-org-query-key';
-import { Heatmap } from '@/features/dashboard/components/Heatmap';
-import { AgentList } from '@/features/dashboard/components/AgentList';
+  Activity,
+  Clock,
+  Target,
+  CheckCircle2,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  Tag as TagIcon,
+  MessageCircle,
+  CalendarClock,
+  Star,
+  RotateCcw,
+  ShieldCheck,
+  Mail,
+  Instagram,
+  Phone,
+} from "lucide-react";
+import {
+  dashboardService,
+  type SparklinePoint,
+} from "@/features/dashboard/services/dashboard.service";
+import { useOrgId } from "@/hooks/use-org-query-key";
+import { Heatmap } from "@/features/dashboard/components/Heatmap";
+import { AgentList } from "@/features/dashboard/components/AgentList";
 
-const CHANNEL_COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4'];
+const CHANNEL_COLORS = [
+  "var(--bq-ok)",
+  "var(--bq-info)",
+  "var(--bq-warn)",
+  "var(--bq-agent)",
+  "var(--bq-agent)",
+  "var(--bq-info)",
+];
 
-type TrendDirection = 'higher-is-better' | 'lower-is-better';
+type TrendDirection = "higher-is-better" | "lower-is-better";
 
-function TrendBadge({ value, direction }: { value: number; direction: TrendDirection }) {
+function TrendBadge({
+  value,
+  direction,
+}: {
+  value: number;
+  direction: TrendDirection;
+}) {
   if (value === 0) {
     return (
-      <span className="flex items-center gap-0.5 text-xs font-medium text-zinc-400">
+      <span className="flex items-center gap-0.5 text-xs font-medium text-[var(--bq-t3)]">
         <Minus className="h-3 w-3" /> 0%
       </span>
     );
   }
-  const isPositive = direction === 'higher-is-better' ? value > 0 : value < 0;
+  const isPositive = direction === "higher-is-better" ? value > 0 : value < 0;
   const Icon = value > 0 ? TrendingUp : TrendingDown;
   return (
-    <span className={`flex items-center gap-0.5 text-xs font-medium ${isPositive ? 'text-green-600' : 'text-red-500'}`}>
+    <span
+      className={`flex items-center gap-0.5 text-xs font-medium ${isPositive ? "text-[var(--bq-ok)]" : "text-[var(--bq-err)]"}`}
+    >
       <Icon className="h-3 w-3" />
       {Math.abs(value)}%
     </span>
@@ -39,7 +82,16 @@ function TrendBadge({ value, direction }: { value: number; direction: TrendDirec
 }
 
 function HeroKpi({
-  label, value, suffix, trend, trendDirection, icon: Icon, accent, sparkline, sparklineSuffix, footer,
+  label,
+  value,
+  suffix,
+  trend,
+  trendDirection,
+  icon: Icon,
+  accent,
+  sparkline,
+  sparklineSuffix,
+  footer,
 }: {
   label: string;
   value: string | number;
@@ -52,28 +104,43 @@ function HeroKpi({
   sparklineSuffix?: string;
   footer?: React.ReactNode;
 }) {
-  const gradientId = `grad-${label.replace(/\s+/g, '-')}`;
+  const gradientId = `grad-${label.replace(/\s+/g, "-")}`;
   return (
-    <div className="relative flex flex-col rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+    <div className="relative min-w-0 flex flex-col rounded-[14px] border border-[var(--bq-hair)] bg-[var(--bq-surface)] p-3   ">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-medium uppercase tracking-wider text-zinc-500">{label}</span>
-        <div className="flex h-7 w-7 items-center justify-center rounded-lg" style={{ backgroundColor: `${accent}1a`, color: accent }}>
+        <span className="text-[11.5px] font-medium text-[var(--bq-t3)]">
+          {label}
+        </span>
+        <div
+          className="flex h-7 w-7 items-center justify-center rounded-lg"
+          style={{
+            backgroundColor: `color-mix(in srgb, ${accent} 12%, transparent)`,
+            color: accent,
+          }}
+        >
           <Icon className="h-4 w-4" />
         </div>
       </div>
 
-      <div className="mt-3 flex items-end gap-2">
-        <span className="text-3xl font-bold tabular-nums text-zinc-900 dark:text-zinc-100">
+      <div className="mt-1 flex items-end gap-2">
+        <span className="text-[23px] font-medium tabular-nums text-[var(--bq-t1)] ">
           {value}
-          {suffix && <span className="ml-0.5 text-lg text-zinc-400">{suffix}</span>}
+          {suffix && (
+            <span className="ml-0.5 text-lg text-[var(--bq-t3)]">{suffix}</span>
+          )}
         </span>
-        {trend !== undefined && trendDirection && <TrendBadge value={trend} direction={trendDirection} />}
+        {trend !== undefined && trendDirection && (
+          <TrendBadge value={trend} direction={trendDirection} />
+        )}
       </div>
 
       {sparkline && sparkline.length > 0 && (
-        <div className="mt-3 -mx-1 h-12">
+        <div className="mt-1 -mx-1 h-[26px]">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={sparkline} margin={{ top: 2, right: 2, bottom: 2, left: 2 }}>
+            <AreaChart
+              data={sparkline}
+              margin={{ top: 2, right: 2, bottom: 2, left: 2 }}
+            >
               <defs>
                 <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor={accent} stopOpacity={0.35} />
@@ -81,13 +148,23 @@ function HeroKpi({
                 </linearGradient>
               </defs>
               <Tooltip
-                cursor={{ stroke: accent, strokeWidth: 1, strokeDasharray: '3 3' }}
-                contentStyle={{
-                  background: 'rgba(24,24,27,0.92)', border: 'none', borderRadius: 6,
-                  fontSize: 11, padding: '4px 8px', color: '#fff',
+                cursor={{
+                  stroke: accent,
+                  strokeWidth: 1,
+                  strokeDasharray: "3 3",
                 }}
-                labelFormatter={(d) => (typeof d === 'string' ? d.slice(5) : '')}
-                formatter={(v) => [`${v}${sparklineSuffix ?? ''}`, '']}
+                contentStyle={{
+                  background: "var(--bq-glass-strong)",
+                  border: "none",
+                  borderRadius: 6,
+                  fontSize: 11,
+                  padding: "4px 8px",
+                  color: "var(--bq-t1)",
+                }}
+                labelFormatter={(d) =>
+                  typeof d === "string" ? d.slice(5) : ""
+                }
+                formatter={(v) => [`${v}${sparklineSuffix ?? ""}`, ""]}
                 separator=""
               />
               <Area
@@ -104,17 +181,25 @@ function HeroKpi({
         </div>
       )}
 
-      {footer && <div className="mt-2 text-[11px] text-zinc-500">{footer}</div>}
+      {footer && (
+        <div className="mt-2 text-[11px] text-[var(--bq-t3)]">{footer}</div>
+      )}
     </div>
   );
 }
 
 function HeroSkeleton() {
-  return <div className="h-44 animate-pulse rounded-xl border border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900" />;
+  return (
+    <div className="h-44 animate-pulse min-w-0 rounded-xl border border-[var(--bq-hair)] bg-[var(--bq-surface)]  " />
+  );
 }
 
 function ChartCard({
-  title, icon: Icon, children, height = 'h-64', subtitle,
+  title,
+  icon: Icon,
+  children,
+  height = "h-[190px]",
+  subtitle,
 }: {
   title: string;
   icon?: React.ElementType;
@@ -123,14 +208,16 @@ function ChartCard({
   subtitle?: string;
 }) {
   return (
-    <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+    <div className="min-w-0 rounded-xl border border-[var(--bq-hair)] bg-[var(--bq-surface)] p-3   ">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="flex items-center gap-1.5 text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-            {Icon && <Icon className="h-4 w-4 text-zinc-400" />}
+          <h3 className="flex items-center gap-1.5 text-sm font-semibold text-[var(--bq-t2)] ">
+            {Icon && <Icon className="h-4 w-4 text-[var(--bq-t3)]" />}
             {title}
           </h3>
-          {subtitle && <p className="text-[11px] text-zinc-400">{subtitle}</p>}
+          {subtitle && (
+            <p className="text-[11px] text-[var(--bq-t3)]">{subtitle}</p>
+          )}
         </div>
       </div>
       <div className={`mt-4 ${height}`}>{children}</div>
@@ -139,408 +226,692 @@ function ChartCard({
 }
 
 const tooltipStyle = {
-  background: 'rgba(24,24,27,0.92)', border: 'none', borderRadius: 6,
-  fontSize: 11, padding: '6px 10px', color: '#fff',
+  background: "var(--bq-glass-strong)",
+  border: "none",
+  borderRadius: 6,
+  fontSize: 11,
+  padding: "6px 10px",
+  color: "var(--bq-t1)",
 };
 
 export default function DashboardPage() {
   const orgId = useOrgId();
-  const { data: overview, isLoading: loadingOverview } = useQuery({
-    queryKey: ['dashboard-overview', orgId],
-    queryFn: () => dashboardService.getOverview(),
+  const [period, setPeriod] = useState("30");
+  const range = useMemo(() => {
+    const to = new Date();
+    const from = new Date(to);
+    from.setDate(from.getDate() - Number(period));
+    return { from: from.toISOString(), to: to.toISOString() };
+  }, [period]);
+  const {
+    data: overview,
+    isLoading: loadingOverview,
+    isError: overviewError,
+    refetch: retryOverview,
+  } = useQuery({
+    queryKey: ["dashboard-overview", orgId, range],
+    queryFn: () => dashboardService.getOverview(range.from, range.to),
   });
   const { data: sparklines } = useQuery({
-    queryKey: ['dashboard-sparklines', orgId],
-    queryFn: () => dashboardService.getKpiSparklines(),
+    queryKey: ["dashboard-sparklines", orgId, range],
+    queryFn: () => dashboardService.getKpiSparklines(range.from, range.to),
   });
   const { data: volumeFlow } = useQuery({
-    queryKey: ['dashboard-volume-flow', orgId],
-    queryFn: () => dashboardService.getVolumeFlow(),
+    queryKey: ["dashboard-volume-flow", orgId, range],
+    queryFn: () => dashboardService.getVolumeFlow(range.from, range.to),
   });
   const { data: messagesFlow } = useQuery({
-    queryKey: ['dashboard-messages-flow', orgId],
-    queryFn: () => dashboardService.getMessagesFlow(),
+    queryKey: ["dashboard-messages-flow", orgId, range],
+    queryFn: () => dashboardService.getMessagesFlow(range.from, range.to),
   });
   const { data: peakHours } = useQuery({
-    queryKey: ['dashboard-peak-hours', orgId],
-    queryFn: () => dashboardService.getPeakHours(),
+    queryKey: ["dashboard-peak-hours", orgId, range],
+    queryFn: () => dashboardService.getPeakHours(range.from, range.to),
   });
   const { data: volumeByChannel } = useQuery({
-    queryKey: ['dashboard-volume-channel', orgId],
-    queryFn: () => dashboardService.getVolumeByChannel(),
+    queryKey: ["dashboard-volume-channel", orgId, range],
+    queryFn: () => dashboardService.getVolumeByChannel(range.from, range.to),
   });
   const { data: channelPremises } = useQuery({
-    queryKey: ['dashboard-channel-premises', orgId],
-    queryFn: () => dashboardService.getChannelPremises(),
+    queryKey: ["dashboard-channel-premises", orgId, range],
+    queryFn: () => dashboardService.getChannelPremises(range.from, range.to),
   });
   const { data: botPerf } = useQuery({
-    queryKey: ['dashboard-bot-performance', orgId],
-    queryFn: () => dashboardService.getBotPerformance(),
+    queryKey: ["dashboard-bot-performance", orgId, range],
+    queryFn: () => dashboardService.getBotPerformance(range.from, range.to),
   });
   const { data: topTags } = useQuery({
-    queryKey: ['dashboard-top-tags', orgId],
-    queryFn: () => dashboardService.getTopTags(),
+    queryKey: ["dashboard-top-tags", orgId, range],
+    queryFn: () => dashboardService.getTopTags(range.from, range.to),
   });
   const { data: agents } = useQuery({
-    queryKey: ['dashboard-agents', orgId],
-    queryFn: () => dashboardService.getAgentPerformance(),
+    queryKey: ["dashboard-agents", orgId, range],
+    queryFn: () => dashboardService.getAgentPerformance(range.from, range.to),
   });
   const { data: csat } = useQuery({
-    queryKey: ['dashboard-csat', orgId],
-    queryFn: () => dashboardService.getCsat(),
+    queryKey: ["dashboard-csat", orgId, range],
+    queryFn: () => dashboardService.getCsat(range.from, range.to),
   });
   const { data: reopens } = useQuery({
-    queryKey: ['dashboard-reopens', orgId],
-    queryFn: () => dashboardService.getReopens(),
+    queryKey: ["dashboard-reopens", orgId, range],
+    queryFn: () => dashboardService.getReopens(range.from, range.to),
   });
 
   return (
     <div className="h-full min-h-0 overflow-y-auto">
-      <div className="mx-auto w-full max-w-6xl p-6">
-      <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Dashboard</h1>
-      <p className="mt-1 text-sm text-zinc-500">Últimos 30 dias</p>
-
-      {/* HERO KPIs */}
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {loadingOverview || !overview ? (
-          <>
-            <HeroSkeleton /><HeroSkeleton /><HeroSkeleton /><HeroSkeleton />
-          </>
-        ) : (
-          <>
-            <HeroKpi
-              label="Conversas ativas"
-              value={overview.activeConversations}
-              icon={Activity}
-              accent="#3b82f6"
-              sparkline={sparklines?.active}
-              footer={
-                <span>
-                  {overview.activeBreakdown.pending} fila · {overview.activeBreakdown.open} aberta · {overview.activeBreakdown.waiting} aguardando
-                  {overview.stuckConversations > 0 ? (
-                    <>
-                      {' · '}
-                      <a
-                        href="/inbox?stuck=true"
-                        className="font-medium text-amber-600 hover:underline dark:text-amber-400"
-                      >
-                        {overview.stuckConversations} presa{overview.stuckConversations === 1 ? '' : 's'}
-                      </a>
-                    </>
-                  ) : null}
-                </span>
-              }
+      <div className="mx-auto w-full max-w-none px-5 py-[18px] text-[13px] text-[var(--bq-t1)]">
+        <header className="mb-[14px] flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-medium tracking-tight">Dashboard</h1>
+            <p className="mt-1 text-[var(--bq-t3)]">
+              Premissas · WhatsApp · Instagram · E-mail · últimos {period} dias
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <SegmentedControl
+              label="Período"
+              value={period}
+              options={[
+                { value: "7", label: "7 dias" },
+                { value: "30", label: "30 dias" },
+                { value: "90", label: "90 dias" },
+              ]}
+              onChange={setPeriod}
             />
-            <HeroKpi
-              label="Tempo 1ª resposta"
-              value={overview.avgFirstResponseMinutes ?? '—'}
-              suffix={overview.avgFirstResponseMinutes !== null ? 'min' : undefined}
-              trend={overview.avgFirstResponseTrend}
-              trendDirection="lower-is-better"
-              icon={Clock}
-              accent="#f59e0b"
-              sparkline={sparklines?.firstResponse}
-              sparklineSuffix="min"
-              footer={<span>Média do período · menor é melhor</span>}
-            />
-            <HeroKpi
-              label="SLA Compliance"
-              value={overview.slaCompliancePercent ?? '—'}
-              suffix={overview.slaCompliancePercent !== null ? '%' : undefined}
-              trend={overview.slaTrend}
-              trendDirection="higher-is-better"
-              icon={Target}
-              accent="#10b981"
-              sparkline={sparklines?.sla}
-              sparklineSuffix="%"
-              footer={
-                overview.slaCompliancePercent === null
-                  ? <span className="text-amber-500">SLA do depto. não configurado</span>
-                  : <span>% conversas dentro do SLA</span>
-              }
-            />
-            <HeroKpi
-              label="Taxa de resolução"
-              value={overview.resolutionRatePercent ?? '—'}
-              suffix={overview.resolutionRatePercent !== null ? '%' : undefined}
-              trend={overview.resolutionTrend}
-              trendDirection="higher-is-better"
-              icon={CheckCircle2}
-              accent="#8b5cf6"
-              sparkline={sparklines?.resolution}
-              sparklineSuffix="%"
-              footer={<span>Fechadas / abertas no período</span>}
-            />
-          </>
+            <Button
+              disabled={!overview}
+              onClick={() => {
+                if (!overview) return;
+                const csv = [
+                  "Indicador;Valor",
+                  ...Object.entries(overview)
+                    .filter(([, value]) => typeof value !== "object")
+                    .map(([key, value]) => `${key};${value ?? ""}`),
+                ].join("\n");
+                const url = URL.createObjectURL(
+                  new Blob(["\ufeff" + csv], {
+                    type: "text/csv;charset=utf-8",
+                  }),
+                );
+                const link = document.createElement("a");
+                link.href = url;
+                link.download = `bullq-dashboard-${period}d.csv`;
+                link.click();
+                URL.revokeObjectURL(url);
+              }}
+            >
+              Exportar
+            </Button>
+          </div>
+        </header>
+        {overviewError && (
+          <div
+            role="alert"
+            className="mb-3 flex flex-wrap items-center gap-3 min-w-0 rounded-xl border border-[var(--bq-hair)] p-3"
+          >
+            Não foi possível carregar os indicadores.{" "}
+            <Button onClick={() => retryOverview()}>Tentar novamente</Button>
+          </div>
         )}
-      </div>
-
-      {/* Quality KPIs row */}
-      {overview && (
-        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <HeroKpi
-            label="CSAT"
-            value={overview.csatScore ?? '—'}
-            suffix={overview.csatScore !== null ? '/5' : undefined}
-            trend={overview.csatScore !== null ? Math.round(overview.csatTrend * 10) : 0}
-            trendDirection="higher-is-better"
-            icon={Star}
-            accent="#eab308"
-            footer={
-              overview.csatResponses === 0
-                ? <span className="text-zinc-400">Aguardando primeiras avaliações</span>
-                : <span>{overview.csatResponses} resposta{overview.csatResponses === 1 ? '' : 's'} no período</span>
-            }
-          />
-          <HeroKpi
-            label="FCR (sem reabertura)"
-            value={overview.fcrPercent ?? '—'}
-            suffix={overview.fcrPercent !== null ? '%' : undefined}
-            icon={ShieldCheck}
-            accent="#0ea5e9"
-            footer={<span>% das fechadas que não foram reabertas</span>}
-          />
-          <HeroKpi
-            label="Taxa de reabertura"
-            value={reopens?.reopenRate ?? '—'}
-            suffix={reopens?.reopenRate !== null && reopens?.reopenRate !== undefined ? '%' : undefined}
-            icon={RotateCcw}
-            accent="#ef4444"
-            footer={
-              reopens
-                ? <span>{reopens.uniqueConversationsReopened} conversa{reopens.uniqueConversationsReopened === 1 ? '' : 's'} reaberta{reopens.uniqueConversationsReopened === 1 ? '' : 's'} · {reopens.totalReopens} total</span>
-                : <span>Carregando…</span>
-            }
-          />
-        </div>
-      )}
-
-      {/* ROW 1 — fluxo + heatmap */}
-      <div className="mt-8 grid gap-6 lg:grid-cols-2">
-        <ChartCard title="Volume × resolução" subtitle="Conversas criadas vs fechadas por dia">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={volumeFlow || []}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" vertical={false} />
-              <XAxis dataKey="date" tick={{ fontSize: 10 }} tickFormatter={(d: string) => d.slice(5)} />
-              <YAxis tick={{ fontSize: 10 }} />
-              <Tooltip contentStyle={tooltipStyle} labelFormatter={(d) => (typeof d === 'string' ? d : '')} />
-              <Legend wrapperStyle={{ fontSize: 11 }} iconSize={8} />
-              <Line type="monotone" dataKey="created" name="Criadas" stroke="#3b82f6" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="closed" name="Fechadas" stroke="#10b981" strokeWidth={2} dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
-        </ChartCard>
-
-        <ChartCard
-          title="Picos de horário"
-          icon={CalendarClock}
-          subtitle="Dia da semana × hora (UTC)"
-          height=""
-        >
-          {peakHours ? (
-            <Heatmap matrix={peakHours.matrix} max={peakHours.max} accent="#3b82f6" />
+        {/* HERO KPIs */}
+        <div className="grid gap-[10px] grid-cols-[repeat(auto-fit,minmax(158px,1fr))]">
+          {loadingOverview ? (
+            <>
+              {Array.from({ length: 7 }, (_, i) => (
+                <HeroSkeleton key={i} />
+              ))}
+            </>
+          ) : overview ? (
+            <>
+              <HeroKpi
+                label="Conversas ativas"
+                value={overview.activeConversations}
+                icon={Activity}
+                accent="var(--bq-info)"
+                sparkline={sparklines?.active}
+                footer={
+                  <span>
+                    {overview.activeBreakdown.pending} fila ·{" "}
+                    {overview.activeBreakdown.open} aberta ·{" "}
+                    {overview.activeBreakdown.waiting} aguardando
+                    {overview.stuckConversations > 0 ? (
+                      <>
+                        {" · "}
+                        <a
+                          href="/inbox?stuck=true"
+                          className="font-medium text-[var(--bq-warn)] hover:underline "
+                        >
+                          {overview.stuckConversations} presa
+                          {overview.stuckConversations === 1 ? "" : "s"}
+                        </a>
+                      </>
+                    ) : null}
+                  </span>
+                }
+              />
+              <HeroKpi
+                label="Tempo 1ª resposta"
+                value={overview.avgFirstResponseMinutes ?? "—"}
+                suffix={
+                  overview.avgFirstResponseMinutes !== null ? "min" : undefined
+                }
+                trend={overview.avgFirstResponseTrend}
+                trendDirection="lower-is-better"
+                icon={Clock}
+                accent="var(--bq-warn)"
+                sparkline={sparklines?.firstResponse}
+                sparklineSuffix="min"
+                footer={<span>Média do período · menor é melhor</span>}
+              />
+              <HeroKpi
+                label="Dentro do SLA"
+                value={overview.slaCompliancePercent ?? "—"}
+                suffix={
+                  overview.slaCompliancePercent !== null ? "%" : undefined
+                }
+                trend={overview.slaTrend}
+                trendDirection="higher-is-better"
+                icon={Target}
+                accent="var(--bq-ok)"
+                sparkline={sparklines?.sla}
+                sparklineSuffix="%"
+                footer={
+                  overview.slaCompliancePercent === null ? (
+                    <span className="text-[var(--bq-warn)]">
+                      SLA do depto. não configurado
+                    </span>
+                  ) : (
+                    <span>% conversas dentro do SLA</span>
+                  )
+                }
+              />
+              <HeroKpi
+                label="Taxa de resolução"
+                value={overview.resolutionRatePercent ?? "—"}
+                suffix={
+                  overview.resolutionRatePercent !== null ? "%" : undefined
+                }
+                trend={overview.resolutionTrend}
+                trendDirection="higher-is-better"
+                icon={CheckCircle2}
+                accent="var(--bq-agent)"
+                sparkline={sparklines?.resolution}
+                sparklineSuffix="%"
+                footer={<span>Fechadas / abertas no período</span>}
+              />
+            </>
           ) : (
-            <div className="h-48 animate-pulse rounded bg-zinc-50 dark:bg-zinc-800" />
+            <p className="text-xs text-[var(--bq-t3)]">
+              Indicadores ainda não disponíveis.
+            </p>
           )}
-        </ChartCard>
-      </div>
 
-      {/* ROW 2 — mensagens + canal */}
-      <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        <ChartCard title="Mensagens" icon={MessageCircle} subtitle="Recebidas vs enviadas">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={messagesFlow || []}>
-              <defs>
-                <linearGradient id="grad-in" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#06b6d4" stopOpacity={0.4} />
-                  <stop offset="100%" stopColor="#06b6d4" stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="grad-out" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.4} />
-                  <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" vertical={false} />
-              <XAxis dataKey="date" tick={{ fontSize: 10 }} tickFormatter={(d: string) => d.slice(5)} />
-              <YAxis tick={{ fontSize: 10 }} />
-              <Tooltip contentStyle={tooltipStyle} labelFormatter={(d) => (typeof d === 'string' ? d : '')} />
-              <Legend wrapperStyle={{ fontSize: 11 }} iconSize={8} />
-              <Area type="monotone" dataKey="inbound" name="Recebidas" stroke="#06b6d4" fill="url(#grad-in)" strokeWidth={2} />
-              <Area type="monotone" dataKey="outbound" name="Enviadas" stroke="#8b5cf6" fill="url(#grad-out)" strokeWidth={2} />
-            </AreaChart>
-          </ResponsiveContainer>
-        </ChartCard>
+          {/* Quality KPIs remain alongside the four operational indicators. */}
+          {overview && (
+            <>
+              <HeroKpi
+                label="CSAT"
+                value={overview.csatScore ?? "—"}
+                suffix={overview.csatScore !== null ? "/5" : undefined}
+                trend={
+                  overview.csatScore !== null
+                    ? Math.round(overview.csatTrend * 10)
+                    : 0
+                }
+                trendDirection="higher-is-better"
+                icon={Star}
+                accent="var(--bq-warn)"
+                footer={
+                  overview.csatResponses === 0 ? (
+                    <span className="text-[var(--bq-t3)]">
+                      Aguardando primeiras avaliações
+                    </span>
+                  ) : (
+                    <span>
+                      {overview.csatResponses} resposta
+                      {overview.csatResponses === 1 ? "" : "s"} no período
+                    </span>
+                  )
+                }
+              />
+              <HeroKpi
+                label="FCR (sem reabertura)"
+                value={overview.fcrPercent ?? "—"}
+                suffix={overview.fcrPercent !== null ? "%" : undefined}
+                icon={ShieldCheck}
+                accent="var(--bq-info)"
+                footer={<span>% das fechadas que não foram reabertas</span>}
+              />
+              <HeroKpi
+                label="Taxa de reabertura"
+                value={reopens?.reopenRate ?? "—"}
+                suffix={
+                  reopens?.reopenRate !== null &&
+                  reopens?.reopenRate !== undefined
+                    ? "%"
+                    : undefined
+                }
+                icon={RotateCcw}
+                accent="var(--bq-err)"
+                footer={
+                  reopens ? (
+                    <span>
+                      {reopens.uniqueConversationsReopened} conversa
+                      {reopens.uniqueConversationsReopened === 1 ? "" : "s"}{" "}
+                      reaberta
+                      {reopens.uniqueConversationsReopened === 1 ? "" : "s"} ·{" "}
+                      {reopens.totalReopens} total
+                    </span>
+                  ) : (
+                    <span>Carregando…</span>
+                  )
+                }
+              />
+            </>
+          )}
+        </div>
 
-        <ChartCard title="Por canal" subtitle="Volume de conversas">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={volumeByChannel || []}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" vertical={false} />
-              <XAxis dataKey="channelName" tick={{ fontSize: 10 }} />
-              <YAxis tick={{ fontSize: 10 }} />
-              <Tooltip contentStyle={tooltipStyle} cursor={{ fill: 'rgba(228,228,231,0.3)' }} />
-              <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                {(volumeByChannel || []).map((_, i) => (
-                  <Cell key={i} fill={CHANNEL_COLORS[i % CHANNEL_COLORS.length]} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </ChartCard>
-      </div>
+        {/* ROW 1 — fluxo + heatmap */}
+        <div className="mt-[14px] grid gap-3 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+          <ChartCard
+            title="Volume × resolução"
+            subtitle="Conversas criadas vs fechadas por dia"
+          >
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={volumeFlow || []}>
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="var(--bq-hair)"
+                  vertical={false}
+                />
+                <XAxis
+                  dataKey="date"
+                  tick={{ fontSize: 10 }}
+                  tickFormatter={(d: string) => d.slice(5)}
+                />
+                <YAxis tick={{ fontSize: 10 }} />
+                <Tooltip
+                  contentStyle={tooltipStyle}
+                  labelFormatter={(d) => (typeof d === "string" ? d : "")}
+                />
+                <Legend wrapperStyle={{ fontSize: 11 }} iconSize={8} />
+                <Line
+                  type="monotone"
+                  dataKey="created"
+                  name="Criadas"
+                  stroke="var(--bq-info)"
+                  strokeWidth={2}
+                  dot={false}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="closed"
+                  name="Fechadas"
+                  stroke="var(--bq-ok)"
+                  strokeWidth={2}
+                  dot={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </ChartCard>
 
-      {/* Premissas por canal — ADR-004 W4 */}
-      <div className="mt-6">
-        <h2 className="mb-3 text-sm font-semibold text-zinc-800 dark:text-zinc-200">
-          Premissas · WhatsApp · Instagram · E-mail
-        </h2>
-        <div className="grid gap-3 md:grid-cols-3">
-          {([
-            {
-              key: 'whatsapp',
-              title: 'WhatsApp',
-              icon: Phone,
-              accent: '#10b981',
-              data: channelPremises?.whatsapp,
-            },
-            {
-              key: 'instagram',
-              title: 'Instagram DM',
-              icon: Instagram,
-              accent: '#ec4899',
-              data: channelPremises?.instagram,
-            },
-            {
-              key: 'email',
-              title: 'E-mail',
-              icon: Mail,
-              accent: '#3b82f6',
-              data: channelPremises?.email,
-            },
-          ] as const).map((card) => {
-            const Icon = card.icon;
-            const d = card.data;
-            return (
-              <div
-                key={card.key}
-                className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
-              >
-                <div className="flex items-center gap-2">
-                  <div
-                    className="flex h-7 w-7 items-center justify-center rounded-lg"
-                    style={{ backgroundColor: `${card.accent}1a`, color: card.accent }}
-                  >
-                    <Icon className="h-4 w-4" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                      {card.title}
-                    </p>
-                    <p className="truncate text-[11px] text-zinc-400">
-                      {d?.connected
-                        ? d.channelNames.join(', ') || 'Conectado'
-                        : 'Não conectado'}
-                    </p>
-                  </div>
+          <div className="min-w-0 rounded-xl border border-[var(--bq-hair)] bg-[var(--bq-surface)] p-3">
+            <h2 className="mb-3 text-sm font-semibold">Incoming</h2>
+            <div className="grid grid-cols-3 gap-2">
+              {["Chegou", "Agendado", "Resolvido"].map((label) => (
+                <div
+                  key={label}
+                  className="min-w-0 rounded-xl border border-[var(--bq-hair)] bg-[var(--bq-raised)] p-2"
+                >
+                  <b className="text-[22px] font-medium">—</b>
+                  <p className="text-[11px] text-[var(--bq-t3)]">{label}</p>
                 </div>
-                {d?.connected ? (
-                  <dl className="mt-3 grid grid-cols-2 gap-2 text-[11px]">
-                    <div>
-                      <dt className="text-zinc-400">Conversas (30d)</dt>
-                      <dd className="text-base font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">
-                        {d.conversationsInPeriod}
-                      </dd>
+              ))}
+            </div>
+            <p className="my-3 text-xs text-[var(--bq-t3)]">
+              Resumo ainda não disponível.
+            </p>
+            <h2 className="mb-2 text-sm font-semibold">Performance do bot</h2>
+            {botPerf ? (
+              <BotPerformancePanel data={botPerf} />
+            ) : (
+              <p className="text-xs text-[var(--bq-t3)]">
+                Dados ainda não disponíveis.
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* ROW 2 — mensagens + canal */}
+        <div className="mt-3 grid gap-3 lg:grid-cols-2">
+          <ChartCard
+            title="Mensagens"
+            icon={MessageCircle}
+            subtitle="Recebidas vs enviadas"
+          >
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={messagesFlow || []}>
+                <defs>
+                  <linearGradient id="grad-in" x1="0" y1="0" x2="0" y2="1">
+                    <stop
+                      offset="0%"
+                      stopColor="var(--bq-info)"
+                      stopOpacity={0.4}
+                    />
+                    <stop
+                      offset="100%"
+                      stopColor="var(--bq-info)"
+                      stopOpacity={0}
+                    />
+                  </linearGradient>
+                  <linearGradient id="grad-out" x1="0" y1="0" x2="0" y2="1">
+                    <stop
+                      offset="0%"
+                      stopColor="var(--bq-agent)"
+                      stopOpacity={0.4}
+                    />
+                    <stop
+                      offset="100%"
+                      stopColor="var(--bq-agent)"
+                      stopOpacity={0}
+                    />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="var(--bq-hair)"
+                  vertical={false}
+                />
+                <XAxis
+                  dataKey="date"
+                  tick={{ fontSize: 10 }}
+                  tickFormatter={(d: string) => d.slice(5)}
+                />
+                <YAxis tick={{ fontSize: 10 }} />
+                <Tooltip
+                  contentStyle={tooltipStyle}
+                  labelFormatter={(d) => (typeof d === "string" ? d : "")}
+                />
+                <Legend wrapperStyle={{ fontSize: 11 }} iconSize={8} />
+                <Area
+                  type="monotone"
+                  dataKey="inbound"
+                  name="Recebidas"
+                  stroke="var(--bq-info)"
+                  fill="url(#grad-in)"
+                  strokeWidth={2}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="outbound"
+                  name="Enviadas"
+                  stroke="var(--bq-agent)"
+                  fill="url(#grad-out)"
+                  strokeWidth={2}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </ChartCard>
+
+          <ChartCard title="Por canal" subtitle="Volume de conversas">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={volumeByChannel || []}>
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="var(--bq-hair)"
+                  vertical={false}
+                />
+                <XAxis dataKey="channelName" tick={{ fontSize: 10 }} />
+                <YAxis tick={{ fontSize: 10 }} />
+                <Tooltip
+                  contentStyle={tooltipStyle}
+                  cursor={{ fill: "var(--bq-raised)" }}
+                />
+                <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                  {(volumeByChannel || []).map((_, i) => (
+                    <Cell
+                      key={i}
+                      fill={CHANNEL_COLORS[i % CHANNEL_COLORS.length]}
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartCard>
+        </div>
+
+        {/* Premissas por canal — ADR-004 W4 */}
+        <div className="mt-3">
+          <h2 className="mb-3 text-sm font-semibold text-[var(--bq-t1)] ">
+            Premissas · WhatsApp · Instagram · E-mail
+          </h2>
+          <div className="grid gap-3 md:grid-cols-3">
+            {(
+              [
+                {
+                  key: "whatsapp",
+                  title: "WhatsApp",
+                  icon: Phone,
+                  accent: "var(--bq-ok)",
+                  data: channelPremises?.whatsapp,
+                },
+                {
+                  key: "instagram",
+                  title: "Instagram DM",
+                  icon: Instagram,
+                  accent: "var(--bq-agent)",
+                  data: channelPremises?.instagram,
+                },
+                {
+                  key: "email",
+                  title: "E-mail",
+                  icon: Mail,
+                  accent: "var(--bq-info)",
+                  data: channelPremises?.email,
+                },
+              ] as const
+            ).map((card) => {
+              const Icon = card.icon;
+              const d = card.data;
+              return (
+                <div
+                  key={card.key}
+                  className="min-w-0 rounded-xl border border-[var(--bq-hair)] bg-[var(--bq-surface)] p-4   "
+                >
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="flex h-7 w-7 items-center justify-center rounded-lg"
+                      style={{
+                        backgroundColor: `color-mix(in srgb, ${card.accent} 12%, transparent)`,
+                        color: card.accent,
+                      }}
+                    >
+                      <Icon className="h-4 w-4" />
                     </div>
-                    <div>
-                      <dt className="text-zinc-400">Abertas</dt>
-                      <dd className="text-base font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">
-                        {d.open}
-                      </dd>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-[var(--bq-t1)] ">
+                        {card.title}
+                      </p>
+                      <p className="truncate text-[11px] text-[var(--bq-t3)]">
+                        {d?.connected
+                          ? d.channelNames.join(", ") || "Conectado"
+                          : d
+                            ? "Não conectado"
+                            : "Estado ainda não disponível"}
+                      </p>
                     </div>
-                    <div>
-                      <dt className="text-zinc-400">Inbound</dt>
-                      <dd className="tabular-nums text-zinc-700 dark:text-zinc-300">
-                        {d.inboundMessages}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-zinc-400">Outbound</dt>
-                      <dd className="tabular-nums text-zinc-700 dark:text-zinc-300">
-                        {d.outboundMessages}
-                      </dd>
-                    </div>
-                    <div className="col-span-2">
-                      <dt className="text-zinc-400">1ª resposta (média)</dt>
-                      <dd className="tabular-nums text-zinc-700 dark:text-zinc-300">
-                        {d.avgFirstResponseMinutes != null
-                          ? `${d.avgFirstResponseMinutes} min`
-                          : '—'}
-                      </dd>
-                    </div>
-                    {card.key === 'instagram' && d.inboundLast24h != null && (
-                      <div className="col-span-2">
-                        <dt className="text-zinc-400">Inbound (últimas 24h)</dt>
-                        <dd className="tabular-nums text-zinc-700 dark:text-zinc-300">
-                          {d.inboundLast24h}
-                          <span className="ml-1 text-[10px] text-zinc-400">
-                            janela Meta
-                          </span>
+                  </div>
+                  {d?.connected ? (
+                    <dl className="mt-3 grid grid-cols-2 gap-2 text-[11px]">
+                      <div>
+                        <dt className="text-[var(--bq-t3)]">Conversas (30d)</dt>
+                        <dd className="text-base font-semibold tabular-nums text-[var(--bq-t1)] ">
+                          {d.conversationsInPeriod}
                         </dd>
                       </div>
-                    )}
-                  </dl>
-                ) : (
-                  <p className="mt-3 text-xs text-zinc-400">
-                    Conecte o canal em Configurações → Canais.
-                  </p>
-                )}
-              </div>
-            );
-          })}
+                      <div>
+                        <dt className="text-[var(--bq-t3)]">Abertas</dt>
+                        <dd className="text-base font-semibold tabular-nums text-[var(--bq-t1)] ">
+                          {d.open}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-[var(--bq-t3)]">Inbound</dt>
+                        <dd className="tabular-nums text-[var(--bq-t2)] ">
+                          {d.inboundMessages}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-[var(--bq-t3)]">Outbound</dt>
+                        <dd className="tabular-nums text-[var(--bq-t2)] ">
+                          {d.outboundMessages}
+                        </dd>
+                      </div>
+                      <div className="col-span-2">
+                        <dt className="text-[var(--bq-t3)]">
+                          1ª resposta (média)
+                        </dt>
+                        <dd className="tabular-nums text-[var(--bq-t2)] ">
+                          {d.avgFirstResponseMinutes != null
+                            ? `${d.avgFirstResponseMinutes} min`
+                            : "—"}
+                        </dd>
+                      </div>
+                      {card.key === "instagram" && d.inboundLast24h != null && (
+                        <div className="col-span-2">
+                          <dt className="text-[var(--bq-t3)]">
+                            Inbound (últimas 24h)
+                          </dt>
+                          <dd className="tabular-nums text-[var(--bq-t2)] ">
+                            {d.inboundLast24h}
+                            <span className="ml-1 text-[10px] text-[var(--bq-t3)]">
+                              janela Meta
+                            </span>
+                          </dd>
+                        </div>
+                      )}
+                    </dl>
+                  ) : (
+                    <p className="mt-3 text-xs text-[var(--bq-t3)]">
+                      {d
+                        ? "Conecte o canal em Configurações → Canais."
+                        : "Não foi possível obter os dados deste canal."}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
-      </div>
 
-      {/* ROW 3 — bot + tags */}
-      <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        <ChartCard title="Performance do bot" icon={Bot} subtitle="Resolvidas pelo bot vs encaminhadas" height="">
-          {botPerf ? <BotPerformancePanel data={botPerf} /> : <div className="h-32 animate-pulse rounded bg-zinc-50 dark:bg-zinc-800" />}
-        </ChartCard>
+        {/* ROW 3 — bot + tags */}
+        <div className="mt-3 grid gap-3 lg:grid-cols-2">
+          <ChartCard
+            title="Picos de horário"
+            icon={CalendarClock}
+            subtitle="Dia da semana × hora (UTC)"
+            height=""
+          >
+            {peakHours ? (
+              <Heatmap
+                matrix={peakHours.matrix}
+                max={peakHours.max}
+                accent="var(--bq-info)"
+              />
+            ) : (
+              <p className="py-6 text-xs text-[var(--bq-t3)]">
+                Dados ainda não disponíveis.
+              </p>
+            )}
+          </ChartCard>
 
-        <ChartCard title="Top motivos" icon={TagIcon} subtitle="Tags mais frequentes" height="">
-          {topTags ? <TopTagsPanel tags={topTags} /> : <div className="h-32 animate-pulse rounded bg-zinc-50 dark:bg-zinc-800" />}
-        </ChartCard>
-      </div>
+          <ChartCard
+            title="Top motivos"
+            icon={TagIcon}
+            subtitle="Tags mais frequentes"
+            height=""
+          >
+            {topTags ? (
+              <TopTagsPanel tags={topTags} />
+            ) : (
+              <p className="py-6 text-xs text-[var(--bq-t3)]">
+                Dados ainda não disponíveis.
+              </p>
+            )}
+          </ChartCard>
+        </div>
 
-      {/* ROW 4 — CSAT + reaberturas */}
-      <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        <ChartCard title="CSAT detalhado" icon={Star} subtitle="Distribuição + comentários recentes" height="">
-          {csat ? <CsatPanel data={csat} /> : <div className="h-32 animate-pulse rounded bg-zinc-50 dark:bg-zinc-800" />}
-        </ChartCard>
+        {/* ROW 4 — CSAT + reaberturas */}
+        <div className="mt-3 grid gap-3 lg:grid-cols-2">
+          <ChartCard
+            title="CSAT detalhado"
+            icon={Star}
+            subtitle="Distribuição + comentários recentes"
+            height=""
+          >
+            {csat ? (
+              <CsatPanel data={csat} />
+            ) : (
+              <p className="py-6 text-xs text-[var(--bq-t3)]">
+                Dados ainda não disponíveis.
+              </p>
+            )}
+          </ChartCard>
 
-        <ChartCard title="Reaberturas" icon={RotateCcw} subtitle="Conversas que voltaram após fechamento" height="">
-          {reopens ? <ReopensPanel data={reopens} /> : <div className="h-32 animate-pulse rounded bg-zinc-50 dark:bg-zinc-800" />}
-        </ChartCard>
-      </div>
+          <ChartCard
+            title="Reaberturas"
+            icon={RotateCcw}
+            subtitle="Conversas que voltaram após fechamento"
+            height=""
+          >
+            {reopens ? (
+              <ReopensPanel data={reopens} />
+            ) : (
+              <p className="py-6 text-xs text-[var(--bq-t3)]">
+                Dados ainda não disponíveis.
+              </p>
+            )}
+          </ChartCard>
+        </div>
 
-      {/* ROW 5 — agentes (full width) */}
-      <div className="mt-6">
-        <ChartCard title="Performance dos agentes" subtitle="Carga atual + métricas no período" height="">
-          <AgentList agents={agents || []} />
-        </ChartCard>
-      </div>
+        {/* ROW 5 — agentes (full width) */}
+        <div className="mt-3">
+          <ChartCard
+            title="Performance dos agentes"
+            subtitle="Carga atual + métricas no período"
+            height=""
+          >
+            <AgentList agents={agents || []} />
+          </ChartCard>
+        </div>
       </div>
     </div>
   );
 }
 
-function BotPerformancePanel({ data }: { data: NonNullable<Awaited<ReturnType<typeof dashboardService.getBotPerformance>>> }) {
+function BotPerformancePanel({
+  data,
+}: {
+  data: NonNullable<
+    Awaited<ReturnType<typeof dashboardService.getBotPerformance>>
+  >;
+}) {
   if (data.total === 0) {
-    return <p className="py-6 text-center text-xs text-zinc-400">Sem conversas no período</p>;
+    return (
+      <p className="py-6 text-center text-xs text-[var(--bq-t3)]">
+        Sem conversas no período
+      </p>
+    );
   }
 
   const segments = [
-    { label: 'Bot resolveu', value: data.botResolved, color: '#3b82f6' },
-    { label: 'Encaminhada', value: data.humanHandled, color: '#8b5cf6' },
-    { label: 'Em andamento', value: data.inFlight, color: '#71717a' },
+    { label: "Bot resolveu", value: data.botResolved, color: "var(--bq-info)" },
+    {
+      label: "Encaminhada",
+      value: data.humanHandled,
+      color: "var(--bq-agent)",
+    },
+    { label: "Em andamento", value: data.inFlight, color: "var(--bq-t3)" },
   ];
 
   return (
@@ -548,33 +919,44 @@ function BotPerformancePanel({ data }: { data: NonNullable<Awaited<ReturnType<ty
       <div className="grid grid-cols-2 gap-3">
         <Stat
           label="Resolução pelo bot"
-          value={data.botResolutionRate !== null ? `${data.botResolutionRate}%` : '—'}
-          accent="#3b82f6"
-          hint={`${data.botResolved} conversa${data.botResolved === 1 ? '' : 's'}`}
+          value={
+            data.botResolutionRate !== null ? `${data.botResolutionRate}%` : "—"
+          }
+          accent="var(--bq-info)"
+          hint={`${data.botResolved} conversa${data.botResolved === 1 ? "" : "s"}`}
         />
         <Stat
           label="Taxa de transbordo"
-          value={data.escalationRate !== null ? `${data.escalationRate}%` : '—'}
-          accent="#8b5cf6"
-          hint={`${data.humanHandled} transferida${data.humanHandled === 1 ? '' : 's'}`}
+          value={data.escalationRate !== null ? `${data.escalationRate}%` : "—"}
+          accent="var(--bq-agent)"
+          hint={`${data.humanHandled} transferida${data.humanHandled === 1 ? "" : "s"}`}
         />
       </div>
 
       <div>
-        <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
+        <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-[var(--bq-raised)] ">
           {segments.map((s) => (
             <div
               key={s.label}
-              style={{ backgroundColor: s.color, width: `${(s.value / data.total) * 100}%` }}
+              style={{
+                backgroundColor: s.color,
+                width: `${(s.value / data.total) * 100}%`,
+              }}
               title={`${s.label}: ${s.value}`}
             />
           ))}
         </div>
-        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-zinc-500">
+        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-[var(--bq-t3)]">
           {segments.map((s) => (
             <span key={s.label} className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: s.color }} />
-              {s.label} <span className="tabular-nums text-zinc-400">{s.value}</span>
+              <span
+                className="h-2 w-2 rounded-full"
+                style={{ backgroundColor: s.color }}
+              />
+              {s.label}{" "}
+              <span className="tabular-nums text-[var(--bq-t3)]">
+                {s.value}
+              </span>
             </span>
           ))}
         </div>
@@ -583,31 +965,65 @@ function BotPerformancePanel({ data }: { data: NonNullable<Awaited<ReturnType<ty
   );
 }
 
-function Stat({ label, value, accent, hint }: { label: string; value: string; accent: string; hint?: string }) {
+function Stat({
+  label,
+  value,
+  accent,
+  hint,
+}: {
+  label: string;
+  value: string;
+  accent: string;
+  hint?: string;
+}) {
   return (
-    <div className="rounded-lg bg-zinc-50 px-3 py-2.5 dark:bg-zinc-800/60">
-      <p className="text-[10px] font-medium uppercase tracking-wider text-zinc-500">{label}</p>
-      <p className="mt-1 text-xl font-bold tabular-nums" style={{ color: accent }}>{value}</p>
-      {hint && <p className="text-[10px] text-zinc-400">{hint}</p>}
+    <div className="rounded-lg bg-[var(--bq-surface)] px-3 py-2.5 ">
+      <p className="text-[10px] font-medium uppercase tracking-wider text-[var(--bq-t3)]">
+        {label}
+      </p>
+      <p
+        className="mt-1 text-xl font-bold tabular-nums"
+        style={{ color: accent }}
+      >
+        {value}
+      </p>
+      {hint && <p className="text-[10px] text-[var(--bq-t3)]">{hint}</p>}
     </div>
   );
 }
 
-function CsatPanel({ data }: { data: NonNullable<Awaited<ReturnType<typeof dashboardService.getCsat>>> }) {
+function CsatPanel({
+  data,
+}: {
+  data: NonNullable<Awaited<ReturnType<typeof dashboardService.getCsat>>>;
+}) {
   if (data.totalResponses === 0) {
-    return <p className="py-6 text-center text-xs text-zinc-400">Nenhuma avaliação respondida ainda</p>;
+    return (
+      <p className="py-6 text-center text-xs text-[var(--bq-t3)]">
+        Nenhuma avaliação respondida ainda
+      </p>
+    );
   }
   const max = Math.max(...Object.values(data.distribution));
 
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-3 gap-3">
-        <Stat label="Score médio" value={data.avgScore !== null ? `${data.avgScore}/5` : '—'} accent="#eab308" />
-        <Stat label="Respostas" value={String(data.totalResponses)} accent="#3b82f6" hint={`de ${data.totalRequested} pedidas`} />
+        <Stat
+          label="Score médio"
+          value={data.avgScore !== null ? `${data.avgScore}/5` : "—"}
+          accent="var(--bq-warn)"
+        />
+        <Stat
+          label="Respostas"
+          value={String(data.totalResponses)}
+          accent="var(--bq-info)"
+          hint={`de ${data.totalRequested} pedidas`}
+        />
         <Stat
           label="Taxa de resposta"
-          value={data.responseRate !== null ? `${data.responseRate}%` : '—'}
-          accent="#10b981"
+          value={data.responseRate !== null ? `${data.responseRate}%` : "—"}
+          accent="var(--bq-ok)"
         />
       </div>
 
@@ -616,38 +1032,59 @@ function CsatPanel({ data }: { data: NonNullable<Awaited<ReturnType<typeof dashb
           const count = data.distribution[s] ?? 0;
           return (
             <div key={s} className="flex items-center gap-2 text-xs">
-              <span className="w-3 text-right tabular-nums text-zinc-500">{s}</span>
-              <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-              <div className="relative h-3 flex-1 overflow-hidden rounded bg-zinc-100 dark:bg-zinc-800">
+              <span className="w-3 text-right tabular-nums text-[var(--bq-t3)]">
+                {s}
+              </span>
+              <Star className="h-3 w-3 fill-[var(--bq-warn)] text-[var(--bq-warn)]" />
+              <div className="relative h-3 flex-1 overflow-hidden rounded bg-[var(--bq-raised)] ">
                 <div
                   className="h-full rounded"
                   style={{
-                    width: max > 0 ? `${(count / max) * 100}%` : '0%',
-                    backgroundColor: s >= 4 ? '#10b981' : s === 3 ? '#f59e0b' : '#ef4444',
+                    width: max > 0 ? `${(count / max) * 100}%` : "0%",
+                    backgroundColor:
+                      s >= 4
+                        ? "var(--bq-ok)"
+                        : s === 3
+                          ? "var(--bq-warn)"
+                          : "var(--bq-err)",
                     opacity: 0.8,
                   }}
                 />
               </div>
-              <span className="w-8 text-right tabular-nums text-zinc-500">{count}</span>
+              <span className="w-8 text-right tabular-nums text-[var(--bq-t3)]">
+                {count}
+              </span>
             </div>
           );
         })}
       </div>
 
       {data.recentComments.length > 0 && (
-        <div className="space-y-2 border-t border-zinc-200 pt-3 dark:border-zinc-800">
-          <p className="text-[10px] font-medium uppercase tracking-wider text-zinc-400">Comentários recentes</p>
+        <div className="space-y-2 border-t border-[var(--bq-hair)] pt-3 ">
+          <p className="text-[10px] font-medium uppercase tracking-wider text-[var(--bq-t3)]">
+            Comentários recentes
+          </p>
           {data.recentComments.map((c) => (
-            <div key={c.id} className="rounded-lg bg-zinc-50 px-3 py-2 dark:bg-zinc-800/60">
+            <div
+              key={c.id}
+              className="rounded-lg bg-[var(--bq-surface)] px-3 py-2 "
+            >
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-zinc-700 dark:text-zinc-200">{c.contactName}</span>
-                <span className="flex items-center gap-0.5 text-[10px] text-zinc-500">
+                <span className="text-xs font-medium text-[var(--bq-t2)] ">
+                  {c.contactName}
+                </span>
+                <span className="flex items-center gap-0.5 text-[10px] text-[var(--bq-t3)]">
                   {Array.from({ length: 5 }).map((_, i) => (
-                    <Star key={i} className={`h-2.5 w-2.5 ${i < c.score ? 'fill-yellow-400 text-yellow-400' : 'text-zinc-300 dark:text-zinc-600'}`} />
+                    <Star
+                      key={i}
+                      className={`h-2.5 w-2.5 ${i < c.score ? "fill-[var(--bq-warn)] text-[var(--bq-warn)]" : "text-[var(--bq-t3)] "}`}
+                    />
                   ))}
                 </span>
               </div>
-              <p className="mt-1 line-clamp-2 text-[11px] text-zinc-600 dark:text-zinc-400">{c.comment}</p>
+              <p className="mt-1 line-clamp-2 text-[11px] text-[var(--bq-t2)] ">
+                {c.comment}
+              </p>
             </div>
           ))}
         </div>
@@ -656,20 +1093,36 @@ function CsatPanel({ data }: { data: NonNullable<Awaited<ReturnType<typeof dashb
   );
 }
 
-function ReopensPanel({ data }: { data: NonNullable<Awaited<ReturnType<typeof dashboardService.getReopens>>> }) {
+function ReopensPanel({
+  data,
+}: {
+  data: NonNullable<Awaited<ReturnType<typeof dashboardService.getReopens>>>;
+}) {
   if (data.totalReopens === 0 && data.uniqueConversationsReopened === 0) {
-    return <p className="py-6 text-center text-xs text-zinc-400">Nenhuma reabertura no período</p>;
+    return (
+      <p className="py-6 text-center text-xs text-[var(--bq-t3)]">
+        Nenhuma reabertura no período
+      </p>
+    );
   }
 
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-3 gap-3">
-        <Stat label="Total reaberturas" value={String(data.totalReopens)} accent="#ef4444" />
-        <Stat label="Conversas únicas" value={String(data.uniqueConversationsReopened)} accent="#f59e0b" />
+        <Stat
+          label="Total reaberturas"
+          value={String(data.totalReopens)}
+          accent="var(--bq-err)"
+        />
+        <Stat
+          label="Conversas únicas"
+          value={String(data.uniqueConversationsReopened)}
+          accent="var(--bq-warn)"
+        />
         <Stat
           label="Taxa"
-          value={data.reopenRate !== null ? `${data.reopenRate}%` : '—'}
-          accent="#8b5cf6"
+          value={data.reopenRate !== null ? `${data.reopenRate}%` : "—"}
+          accent="var(--bq-agent)"
         />
       </div>
 
@@ -678,30 +1131,46 @@ function ReopensPanel({ data }: { data: NonNullable<Awaited<ReturnType<typeof da
           <AreaChart data={data.series}>
             <defs>
               <linearGradient id="grad-reopen" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#ef4444" stopOpacity={0.4} />
-                <stop offset="100%" stopColor="#ef4444" stopOpacity={0} />
+                <stop offset="0%" stopColor="var(--bq-err)" stopOpacity={0.4} />
+                <stop offset="100%" stopColor="var(--bq-err)" stopOpacity={0} />
               </linearGradient>
             </defs>
             <Tooltip
               contentStyle={tooltipStyle}
-              labelFormatter={(d) => (typeof d === 'string' ? d : '')}
-              formatter={(v) => [v, 'reaberturas']}
+              labelFormatter={(d) => (typeof d === "string" ? d : "")}
+              formatter={(v) => [v, "reaberturas"]}
             />
-            <Area type="monotone" dataKey="value" stroke="#ef4444" fill="url(#grad-reopen)" strokeWidth={1.75} dot={false} />
+            <Area
+              type="monotone"
+              dataKey="value"
+              stroke="var(--bq-err)"
+              fill="url(#grad-reopen)"
+              strokeWidth={1.75}
+              dot={false}
+            />
           </AreaChart>
         </ResponsiveContainer>
       </div>
 
       {data.worstOffenders.length > 0 && (
-        <div className="space-y-1.5 border-t border-zinc-200 pt-3 dark:border-zinc-800">
-          <p className="text-[10px] font-medium uppercase tracking-wider text-zinc-400">Mais reabertas</p>
+        <div className="space-y-1.5 border-t border-[var(--bq-hair)] pt-3 ">
+          <p className="text-[10px] font-medium uppercase tracking-wider text-[var(--bq-t3)]">
+            Mais reabertas
+          </p>
           {data.worstOffenders.map((o) => (
-            <div key={o.conversationId} className="flex items-center justify-between rounded bg-zinc-50 px-3 py-1.5 dark:bg-zinc-800/60">
+            <div
+              key={o.conversationId}
+              className="flex items-center justify-between rounded bg-[var(--bq-surface)] px-3 py-1.5 "
+            >
               <div className="min-w-0">
-                <p className="truncate text-xs font-medium text-zinc-700 dark:text-zinc-200">{o.contactName}</p>
-                <p className="text-[10px] text-zinc-400">{o.agentName ?? 'sem responsável'}</p>
+                <p className="truncate text-xs font-medium text-[var(--bq-t2)] ">
+                  {o.contactName}
+                </p>
+                <p className="text-[10px] text-[var(--bq-t3)]">
+                  {o.agentName ?? "sem responsável"}
+                </p>
               </div>
-              <span className="rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold text-red-700 dark:bg-red-900/30 dark:text-red-400">
+              <span className="rounded bg-[var(--bq-err-soft)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--bq-err)]  ">
                 {o.reopenedCount}×
               </span>
             </div>
@@ -712,9 +1181,17 @@ function ReopensPanel({ data }: { data: NonNullable<Awaited<ReturnType<typeof da
   );
 }
 
-function TopTagsPanel({ tags }: { tags: Array<{ id: string; name: string; color: string; count: number }> }) {
+function TopTagsPanel({
+  tags,
+}: {
+  tags: Array<{ id: string; name: string; color: string; count: number }>;
+}) {
   if (tags.length === 0) {
-    return <p className="py-6 text-center text-xs text-zinc-400">Nenhuma tag aplicada no período</p>;
+    return (
+      <p className="py-6 text-center text-xs text-[var(--bq-t3)]">
+        Nenhuma tag aplicada no período
+      </p>
+    );
   }
   const max = Math.max(...tags.map((t) => t.count));
 
@@ -723,17 +1200,26 @@ function TopTagsPanel({ tags }: { tags: Array<{ id: string; name: string; color:
       {tags.map((t) => (
         <div key={t.id} className="flex items-center gap-3">
           <div className="flex w-32 shrink-0 items-center gap-2 min-w-0">
-            <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: t.color }} />
-            <span className="truncate text-xs font-medium text-zinc-700 dark:text-zinc-300">{t.name}</span>
+            <span
+              className="h-2 w-2 shrink-0 rounded-full"
+              style={{ backgroundColor: t.color }}
+            />
+            <span className="truncate text-xs font-medium text-[var(--bq-t2)] ">
+              {t.name}
+            </span>
           </div>
           <div className="flex flex-1 items-center gap-2">
-            <div className="relative h-5 flex-1 overflow-hidden rounded bg-zinc-100 dark:bg-zinc-800">
+            <div className="relative h-5 flex-1 overflow-hidden rounded bg-[var(--bq-raised)] ">
               <div
                 className="h-full rounded transition-all"
-                style={{ width: `${(t.count / max) * 100}%`, backgroundColor: t.color, opacity: 0.85 }}
+                style={{
+                  width: `${(t.count / max) * 100}%`,
+                  backgroundColor: t.color,
+                  opacity: 0.85,
+                }}
               />
             </div>
-            <span className="w-10 text-right text-xs font-semibold tabular-nums text-zinc-600 dark:text-zinc-300">
+            <span className="w-10 text-right text-xs font-semibold tabular-nums text-[var(--bq-t2)] ">
               {t.count}
             </span>
           </div>
