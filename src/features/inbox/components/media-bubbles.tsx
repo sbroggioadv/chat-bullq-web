@@ -124,7 +124,13 @@ export function MediaDocument({ message, isOutbound }: MediaProps) {
   const filename = (message.content?.fileName as string | undefined) || 'Documento';
   const mimeType = (message.content?.mimeType as string | undefined) || '';
   const caption = message.content?.caption as string | undefined;
-  const documentIcon = pickDocIcon(mimeType, filename);
+  const extension = filename.split('.').pop()?.toLowerCase();
+  const documentKind = mimeType === 'application/pdf' || extension === 'pdf'
+    ? 'pdf'
+    : /word|officedocument.wordprocessingml/.test(mimeType) || extension === 'doc' || extension === 'docx'
+      ? 'doc'
+      : undefined;
+  const documentIcon = documentKind ? documentKind.toUpperCase() : pickDocIcon(mimeType, filename);
 
   const onClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     if (!url) {
@@ -143,7 +149,7 @@ export function MediaDocument({ message, isOutbound }: MediaProps) {
         download={filename}
         className="bq-message-file" data-outbound={isOutbound}
       >
-        <div className="bq-file-icon">{documentIcon}</div>
+        <div className="bq-file-icon" data-kind={documentKind}>{documentIcon}</div>
         <div className="min-w-0 flex-1">
           <p className="bq-file-title truncate">{filename}</p>
           <p className="bq-file-meta truncate">

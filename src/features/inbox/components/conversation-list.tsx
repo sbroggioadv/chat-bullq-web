@@ -1444,7 +1444,11 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
                       const ChannelIcon = channelIcons[conv.channel.type] || MessageSquare;
                       return (
                         <div className="bq-channel-badge" style={{ "--bq-channel-color": `var(--bq-${conv.channel.type.startsWith("WHATSAPP") ? "wa" : conv.channel.type === "INSTAGRAM" ? "ig" : conv.channel.type === "GMAIL" ? "mail" : "t3"})` } as React.CSSProperties}>
-                          <ChannelIcon />
+                          {conv.channel.type.startsWith('WHATSAPP') ? (
+                            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" /></svg>
+                          ) : conv.channel.type === 'INSTAGRAM' ? (
+                            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="5" /><circle cx="12" cy="12" r="4" /></svg>
+                          ) : <ChannelIcon />}
                         </div>
                       );
                     })()}

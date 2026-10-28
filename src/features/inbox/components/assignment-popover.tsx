@@ -109,7 +109,7 @@ export function AssignmentPopover({ conversation, onChanged }: Props) {
     <Popover className="relative">
       <PopoverButton
         aria-label={`Responsável: ${currentAssignee?.user.name || "ninguém"}`}
-        className="inline-flex items-center gap-1.5 rounded-md bg-[var(--bq-raised)] px-2.5 py-1.5 text-xs font-medium text-[var(--bq-t2)] hover:bg-[var(--bq-raised-2)] disabled:opacity-50   "
+        className="bq-owner-button inline-flex items-center gap-1.5 rounded-md bg-[var(--bq-raised)] px-2.5 py-1.5 text-xs font-medium text-[var(--bq-t2)] hover:bg-[var(--bq-raised-2)] disabled:opacity-50   "
         disabled={busy}
       >
         {currentAssignee ? (
@@ -125,7 +125,7 @@ export function AssignmentPopover({ conversation, onChanged }: Props) {
           </>
         ) : (
           <>
-            <UserPlus className="h-3.5 w-3.5" />
+            <div className="bq-owner-unassigned"><UserPlus className="h-3.5 w-3.5" /></div>
             <span>Atribuir</span>
           </>
         )}

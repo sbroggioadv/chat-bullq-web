@@ -1,6 +1,6 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { MediaImage } from '@/features/inbox/components/media-bubbles';
+import { MediaImage, MediaDocument } from '@/features/inbox/components/media-bubbles';
 import { AudioMessagePlayer } from '@/features/inbox/components/audio-message-player';
 import { inboxService, type Message } from '@/features/inbox/services/inbox.service';
 vi.mock('@/features/inbox/services/inbox.service', () => ({ inboxService: { resolveMediaUrl: vi.fn().mockResolvedValue({ url: 'https://fixture.invalid/image.jpg' }) } }));
@@ -69,4 +69,20 @@ it('áudio com URL e externalId nulo toca sem IntersectionObserver', async () =>
   fireEvent.click(screen.getByRole('button', { name: 'Reproduzir' }));
   await screen.findByRole('button', { name: 'Pausar' });
   expect(play).toHaveBeenCalledTimes(1);
+});
+
+
+it.each([
+  ['application/pdf', 'anexo', 'PDF'],
+  ['', 'MINUTA.DOCX', 'DOC'],
+  ['application/msword', 'anexo', 'DOC'],
+])('identifica o documento %s / %s sem antecipar o download', async (mimeType, fileName, badge) => {
+  render(<MediaDocument message={{ ...message, type: 'DOCUMENT', content: { mimeType, fileName } }} isOutbound={false} />);
+  expect(screen.getByText(badge)).toBeInTheDocument();
+  const link = screen.getByRole('link');
+  expect(link).toHaveAttribute('download', fileName);
+  expect(inboxService.resolveMediaUrl).not.toHaveBeenCalled();
+  fireEvent.click(link);
+  await waitFor(() => expect(inboxService.resolveMediaUrl).toHaveBeenCalledTimes(1));
+  await waitFor(() => expect(link).toHaveAttribute('href', 'https://fixture.invalid/image.jpg'));
 });
