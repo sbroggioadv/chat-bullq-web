@@ -1,5 +1,6 @@
 'use client';
 
+import { SettingsSaveBar } from '@/features/settings/components/settings-save-bar';
 import { useEffect, useState } from 'react';
 import {
   Building2,
@@ -13,8 +14,8 @@ import {
 import { useAuthStore } from '@/stores/auth-store';
 import { Avatar } from '@/components/ui/avatar';
 import { ImageUpload } from '@/components/ui/image-upload';
-import { useOrganizationProfile } from '../hooks/use-organization-profile';
-import { useCreateOrganization } from '../hooks/use-create-organization';
+import { useOrganizationProfile } from '@/features/settings/hooks/use-organization-profile';
+import { useCreateOrganization } from '@/features/settings/hooks/use-create-organization';
 
 /**
  * S19 Wave 1: aba `/settings/general`. Substitui placeholder "em breve".
@@ -41,16 +42,11 @@ export function OrganizationGeneralForm() {
   const organizations = useAuthStore((s) => s.organizations);
   const activeOrgId = useAuthStore((s) => s.activeOrgId);
 
-  const [name, setName] = useState('');
-  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [draftName, setName] = useState<string | undefined>();
+  const name = draftName ?? profile?.name ?? '';
+  const [draftLogo, setLogoUrl] = useState<string | null | undefined>();
+  const logoUrl = draftLogo !== undefined ? draftLogo : profile?.logoUrl ?? null;
   const [showCreateWorkspace, setShowCreateWorkspace] = useState(false);
-
-  // Sincroniza estado local quando o profile chega/atualiza
-  useEffect(() => {
-    if (!profile) return;
-    setName(profile.name);
-    setLogoUrl(profile.logoUrl);
-  }, [profile?.id, profile?.name, profile?.logoUrl]);
 
   const isDirty =
     profile !== undefined &&
@@ -72,6 +68,7 @@ export function OrganizationGeneralForm() {
     if (profile && logoUrl !== profile.logoUrl) payload.logoUrl = logoUrl;
     try {
       await save(payload);
+      setName(undefined); setLogoUrl(undefined);
     } catch {
       // Toast ja foi disparado pelo hook
     }
@@ -79,8 +76,8 @@ export function OrganizationGeneralForm() {
 
   const handleCancel = () => {
     if (!profile) return;
-    setName(profile.name);
-    setLogoUrl(profile.logoUrl);
+    setName(undefined);
+    setLogoUrl(undefined);
   };
 
   // ─── Loading state ─────────────────────────────────────────────────────
@@ -219,39 +216,7 @@ export function OrganizationGeneralForm() {
             </div>
           </div>
 
-          {/* Footer com acoes */}
-          {canEdit && (
-            <div className="mt-6 flex flex-col-reverse items-stretch justify-end gap-3 border-t border-border pt-5 sm:flex-row sm:items-center">
-              {isDirty && (
-                <button
-                  type="button"
-                  onClick={handleCancel}
-                  disabled={isSaving}
-                  className="text-sm font-medium text-fg-muted hover:text-fg disabled:opacity-50"
-                >
-                  Cancelar
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={handleSave}
-                disabled={!canSave}
-                className="inline-flex h-10 items-center justify-center gap-1.5 rounded-lg bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {isSaving ? (
-                  <>
-                    <span className="size-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                    Salvando…
-                  </>
-                ) : (
-                  <>
-                    <Check className="size-4" />
-                    Salvar alterações
-                  </>
-                )}
-              </button>
-            </div>
-          )}
+
         </div>
       </section>
 
@@ -320,6 +285,8 @@ export function OrganizationGeneralForm() {
       {/* ═══════════════════════════════════════════════════════════════ */}
       {/* MODAL — criar novo workspace (S19 Wave 3)                        */}
       {/* ═══════════════════════════════════════════════════════════════ */}
+      {canEdit && <SettingsSaveBar dirty={isDirty} saving={isSaving} disabled={!canSave} onSave={() => void handleSave()} onDiscard={handleCancel} />}
+
       {showCreateWorkspace && (
         <CreateWorkspaceModal onClose={() => setShowCreateWorkspace(false)} />
       )}

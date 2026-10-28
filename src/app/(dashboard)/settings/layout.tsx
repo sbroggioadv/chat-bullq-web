@@ -1,62 +1,54 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Radio, Users, Tags, Bell, Building2, KeyRound, Sparkles, BookUser, Palette, Brain, UserCircle, MessageSquare, Layers } from 'lucide-react';
-
-const tabs = [
-  { href: '/settings/channels', label: 'Canais', icon: Radio },
-  { href: '/settings/segments', label: 'Segmentos', icon: Layers },
-  { href: '/settings/general', label: 'Geral', icon: Building2 },
-  { href: '/settings/profile', label: 'Perfil', icon: UserCircle },
-  { href: '/settings/appearance', label: 'Aparência', icon: Palette },
-  { href: '/settings/ai', label: 'IA', icon: Sparkles },
-  { href: '/settings/ai-credentials', label: 'Credenciais IA', icon: Brain },
-  { href: '/settings/members', label: 'Membros', icon: Users },
-  { href: '/settings/contacts', label: 'Contatos', icon: BookUser },
-  { href: '/settings/tags', label: 'Tags', icon: Tags },
-  { href: '/settings/notifications', label: 'Notificações', icon: Bell },
-  { href: '/settings/api-keys', label: 'API Keys', icon: KeyRound },
-  { href: '/settings/quick-replies', label: 'Mensagens rápidas', icon: MessageSquare },
-];
+import { ArrowLeft, Search, ChevronRight, Settings } from 'lucide-react';
+import { Button } from '@/components/ui/foundation';
+import { Avatar } from '@/components/ui/avatar';
+import { useAuthStore } from '@/stores/auth-store';
+import { settingsGroups, settingsItems, normalizeSearch } from '@/features/settings/components/settings-navigation';
+import styles from '@/features/settings/components/settings.module.css';
 
 export default function SettingsLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-
-  return (
-    <div className="flex h-full min-h-0 flex-col">
-      <div className="mx-auto w-full max-w-4xl shrink-0 px-6 pt-6">
-        <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Configurações</h1>
-        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-          Gerencie sua organização e integrações
-        </p>
-
-        <div className="relative mt-6 border-b border-zinc-200 dark:border-zinc-800">
-          <nav className="scrollbar-thin horizontal-fade flex gap-1 overflow-x-auto">
-            {tabs.map((tab) => {
-              const isActive = pathname === tab.href;
-              return (
-                <Link
-                  key={tab.href}
-                  href={tab.href}
-                  className={`inline-flex items-center gap-2 whitespace-nowrap border-b-2 px-4 text-sm font-medium transition-colors [padding-block:var(--density-py-row,0.75rem)] ${
-                    isActive
-                      ? 'border-primary text-primary'
-                      : 'border-transparent text-zinc-500 hover:border-zinc-300 hover:text-zinc-700 dark:text-zinc-400 dark:hover:border-zinc-600 dark:hover:text-zinc-300'
-                  }`}
-                >
-                  <tab.icon className="h-4 w-4" />
-                  {tab.label}
-                </Link>
-              );
-            })}
-          </nav>
+  const [query, setQuery] = useState('');
+  const user = useAuthStore(state => state.user);
+  const orgId = useAuthStore(state => state.activeOrgId);
+  const org = useAuthStore(state => state.organizations.find(item => item.id === state.activeOrgId));
+  const selected = settingsItems.find(item => pathname === `/settings/${item.id}` || pathname.startsWith(`/settings/${item.id}/`));
+  const Icon = selected?.icon ?? Settings;
+  const search = normalizeSearch(query);
+  const groups = settingsGroups.map(group => ({ ...group, items: group.items.filter(item => normalizeSearch(`${group.label} ${item.label} ${item.keywords}`).includes(search)) })).filter(group => group.items.length);
+  return <div className={styles.settings} data-panel={Boolean(selected)}>
+    <nav className={styles.nav} aria-label="Seções das configurações">
+      <Link className={styles.me} href="/settings/profile">
+        <Avatar src={user?.avatarUrl} initials={user?.name?.slice(0, 2).toUpperCase() ?? 'BQ'} className="size-10 shrink-0" />
+        <span><strong>{user?.name ?? 'Seu perfil'}</strong><small>{org?.name ?? 'Configurações da conta'}</small></span><ChevronRight size={14} />
+      </Link>
+      <label className={styles.search}><Search size={14} /><input aria-label="Buscar nas configurações" placeholder="Buscar nas configurações" value={query} onChange={event => setQuery(event.target.value)} /></label>
+      <div className={styles.groups}>
+        {groups.map(group => <section key={group.label} aria-label={group.label}>
+          <h2>{group.label}</h2>
+          {group.items.map(item => <Link key={item.id} prefetch href={`/settings/${item.id}`} aria-current={selected?.id === item.id ? 'page' : undefined} className={styles.item}>
+            <span className={styles.tile} data-tone={item.tone}><item.icon size={13} /></span><span>{item.label}</span>
+          </Link>)}
+        </section>)}
+        {!groups.length && <p className={styles.empty} role="status">Nenhuma configuração encontrada.</p>}
+      </div>
+    </nav>
+    <div className={styles.main}>
+      <div className={styles.inner}>
+        <Link href="/settings/sections" className={`bq-button ${styles.back}`}><ArrowLeft size={14} />Configurações</Link>
+        <header className={styles.heading}><span className={`${styles.tile} ${styles.large}`} data-tone={selected?.tone ?? 'neutral'}><Icon size={22} /></span><div><h1>{selected?.label ?? 'Configurações'}</h1><p>{selected?.description ?? 'Escolha uma seção para começar.'}</p></div></header>
+        <div className={styles.content} data-section={selected?.id} key={`${orgId}:${pathname}`}>
+          {selected?.id === 'appearance' && <p className="mb-4 text-xs text-[var(--bq-t3)]">Densidade da organização no Theme Builder. Preferências pessoais de densidade e vidro ainda não disponíveis.</p>}
+          {selected?.id === 'ai' && <p className="mb-4 text-xs text-[var(--bq-t3)]">Controles de resumo e sugestões ainda não disponíveis nesta configuração.</p>}
+          {selected?.id === 'tags' && <p className="mb-4 text-xs text-[var(--bq-t3)]">Contagem de conversas por tag ainda não disponível.</p>}
+          {selected?.id === 'contacts' && <div className="mb-4 flex flex-wrap items-center gap-3"><Button disabled>Importar contatos</Button><p className="text-xs text-[var(--bq-t3)]">Importação ainda não disponível.</p></div>}
+          {children}
         </div>
       </div>
-
-      <div className="scrollbar-thin flex-1 overflow-y-auto">
-        <div className="mx-auto w-full max-w-4xl px-6 py-8">{children}</div>
-      </div>
     </div>
-  );
+  </div>;
 }

@@ -1,5 +1,6 @@
 'use client';
 
+import { SettingsSaveBar } from '@/features/settings/components/settings-save-bar';
 import { useState } from 'react';
 import Link from 'next/link';
 import { Building2, User, Lock, Sparkles, ArrowRight, Check } from 'lucide-react';
@@ -70,29 +71,6 @@ export default function SettingsAppearancePage() {
           ))}
         </div>
 
-        {canEditBrand && (
-          <div className="mt-5 flex flex-col-reverse items-stretch justify-end gap-3 sm:flex-row sm:items-center">
-            {hasChanges && (
-              <button
-                type="button"
-                onClick={() => setPending(null)}
-                disabled={isUpdating}
-                className="text-sm font-medium text-fg-muted hover:text-fg disabled:opacity-50"
-              >
-                Cancelar
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={!hasChanges || isUpdating}
-              className="inline-flex h-10 items-center justify-center rounded-lg bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {isUpdating ? 'Salvando…' : 'Aplicar para toda a banca'}
-            </button>
-          </div>
-        )}
-
         {/* ─── Custom Theme Builder (Sprint S18 Wave 3) ─── */}
         {canEditBrand && (
           <div className="mt-6">
@@ -153,6 +131,7 @@ export default function SettingsAppearancePage() {
           do seu sistema operacional automaticamente.
         </p>
       </section>
+      {canEditBrand && <SettingsSaveBar dirty={hasChanges} saving={isUpdating} onDiscard={() => setPending(null)} onSave={() => void handleSave()} />}
     </div>
   );
 }

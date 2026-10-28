@@ -1,0 +1,1 @@
+export default function SettingsPage() { return <p role="status" className="rounded-xl border border-[var(--bq-hair)] bg-[var(--bq-raised)] p-5 text-sm text-[var(--bq-t3)]">A configuração de assinatura pelo Autentique ainda não está disponível nesta tela.</p>; }

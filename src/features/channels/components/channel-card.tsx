@@ -1,5 +1,6 @@
 'use client';
 
+import { Button } from '@/components/ui/foundation';
 import { useState } from 'react';
 import {
   MessageSquare,
@@ -21,11 +22,11 @@ import {
   CalendarDays,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import type { Channel } from '../services/channels.service';
-import { channelsService } from '../services/channels.service';
-import { useChannelSync } from '../hooks/use-channel-sync';
+import type { Channel } from '@/features/channels/services/channels.service';
+import { channelsService } from '@/features/channels/services/channels.service';
+import { useChannelSync } from '@/features/channels/hooks/use-channel-sync';
 import { ZappfyIcon, MetaIcon, InstagramIcon } from '@/components/ui/icons';
-import { EditChannelDialog } from './edit-channel-dialog';
+import { EditChannelDialog } from '@/features/channels/components/edit-channel-dialog';
 
 const channelTypeMap: Record<string, { label: string; icon: React.ElementType; color: string }> = {
   WHATSAPP_ZAPPFY: { label: 'WhatsApp (Zappfy)', icon: ZappfyIcon, color: 'bg-zinc-50 dark:bg-zinc-800' },
@@ -158,12 +159,12 @@ export function ChannelCard({ channel, onUpdate }: ChannelCardProps) {
       : 0;
 
   return (
-    <div className="relative flex items-start gap-4 rounded-xl border border-zinc-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900">
-      <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-zinc-200/60 dark:border-zinc-700/60 ${meta.color}`}>
+    <div className="relative grid min-w-0 grid-cols-[40px_minmax(0,1fr)_auto] items-start gap-3 rounded-xl border border-zinc-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900">
+      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-zinc-200/60 dark:border-zinc-700/60 ${meta.color}`}>
         <Icon className="h-7 w-7" />
       </div>
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <h3 className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">
             {channel.name}
           </h3>
@@ -246,12 +247,11 @@ export function ChannelCard({ channel, onUpdate }: ChannelCardProps) {
                       </span>
                     )}
                   </span>
-                  <button
+                  <Button
                     onClick={handleCancelSync}
-                    className="text-xs font-medium text-zinc-500 hover:text-red-600 dark:text-zinc-400 dark:hover:text-red-400"
                   >
                     Cancelar
-                  </button>
+                  </Button>
                 </div>
                 <div className="h-1.5 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
                   <div
@@ -283,10 +283,9 @@ export function ChannelCard({ channel, onUpdate }: ChannelCardProps) {
         )}
 
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          <button
+          <Button
             onClick={handleTest}
             disabled={isTesting}
-            className="inline-flex items-center gap-1.5 rounded-md bg-zinc-100 px-2.5 py-1.5 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-200 disabled:opacity-50 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
           >
             {isTesting ? (
               <Loader2 className="h-3 w-3 animate-spin" />
@@ -294,12 +293,11 @@ export function ChannelCard({ channel, onUpdate }: ChannelCardProps) {
               <Zap className="h-3 w-3" />
             )}
             Testar Conexão
-          </button>
+          </Button>
           {sync.supported && (
-            <button
+            <Button
               onClick={handleSync}
               disabled={isSyncRunning || sync.loading}
-              className="inline-flex items-center gap-1.5 rounded-md bg-zinc-100 px-2.5 py-1.5 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-200 disabled:opacity-50 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
             >
               {sync.loading || isSyncRunning ? (
                 <Loader2 className="h-3 w-3 animate-spin" />
@@ -307,14 +305,13 @@ export function ChannelCard({ channel, onUpdate }: ChannelCardProps) {
                 <RefreshCw className="h-3 w-3" />
               )}
               Sincronizar
-            </button>
+            </Button>
           )}
           {channel.type === 'GMAIL' && (
             <>
-              <button
+              <Button
                 onClick={openInInbox}
                 disabled={openingInbox}
-                className="inline-flex items-center gap-1.5 rounded-md bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-700 transition-colors hover:bg-red-100 disabled:opacity-50 dark:bg-red-950/40 dark:text-red-300 dark:hover:bg-red-950/60"
               >
                 {openingInbox ? (
                   <Loader2 className="h-3 w-3 animate-spin" />
@@ -322,8 +319,8 @@ export function ChannelCard({ channel, onUpdate }: ChannelCardProps) {
                   <Inbox className="h-3 w-3" />
                 )}
                 Ver e-mails na inbox
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={async () => {
                   try {
                     const { url } = await channelsService.gmailOAuthStart({
@@ -338,11 +335,10 @@ export function ChannelCard({ channel, onUpdate }: ChannelCardProps) {
                     );
                   }
                 }}
-                className="inline-flex items-center gap-1.5 rounded-md bg-zinc-100 px-2.5 py-1.5 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
               >
                 Reconectar Google
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={async () => {
                   try {
                     const { url } = await channelsService.gmailOAuthStart({
@@ -357,19 +353,17 @@ export function ChannelCard({ channel, onUpdate }: ChannelCardProps) {
                     );
                   }
                 }}
-                className="inline-flex items-center gap-1.5 rounded-md bg-sky-50 px-2.5 py-1.5 text-xs font-medium text-sky-800 transition-colors hover:bg-sky-100 dark:bg-sky-950/40 dark:text-sky-200 dark:hover:bg-sky-950/60"
                 title="Autoriza calendar.events no mesmo Google do e-mail"
               >
                 <CalendarDays className="h-3 w-3" />
                 {channel.googlePermissions?.hasCalendar
                   ? 'Reautorizar Agenda'
                   : 'Autorizar Agenda'}
-              </button>
+              </Button>
             </>
           )}
-          <button
+          <Button
             onClick={handleToggle}
-            className="inline-flex items-center gap-1.5 rounded-md bg-zinc-100 px-2.5 py-1.5 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
           >
             {channel.isActive ? (
               <PowerOff className="h-3 w-3" />
@@ -377,50 +371,48 @@ export function ChannelCard({ channel, onUpdate }: ChannelCardProps) {
               <Power className="h-3 w-3" />
             )}
             {channel.isActive ? 'Desativar' : 'Ativar'}
-          </button>
+          </Button>
         </div>
       </div>
       <div className="relative">
-        <button
+        <Button
+          aria-label={`Ações do canal ${channel.name}`}
+          aria-expanded={showMenu}
           onClick={() => setShowMenu(!showMenu)}
-          className="rounded-md p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
         >
-          <MoreVertical className="h-4 w-4" />
-        </button>
+          <MoreVertical className="h-3 w-3" />
+        </Button>
         {showMenu && (
           <>
             <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
-            <div className="absolute right-0 top-full z-20 mt-1 w-48 rounded-lg border border-zinc-200 bg-white py-1 shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
-              <button
+            <div className="bq-popover absolute right-0 top-full z-20 mt-1 flex flex-col items-stretch gap-1">
+              <Button
                 onClick={() => { setEditing(true); setShowMenu(false); }}
-                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-50 dark:text-zinc-200 dark:hover:bg-zinc-700"
               >
-                <Pencil className="h-4 w-4" />
+                <Pencil className="h-3 w-3" />
                 Editar credenciais
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={() => { handleToggleVisibility(); setShowMenu(false); }}
-                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-50 dark:text-zinc-200 dark:hover:bg-zinc-700"
               >
                 {channel.visibility === 'PRIVATE' ? (
                   <>
-                    <Globe className="h-4 w-4" />
+                    <Globe className="h-3 w-3" />
                     Tornar público na org
                   </>
                 ) : (
                   <>
-                    <Lock className="h-4 w-4" />
+                    <Lock className="h-3 w-3" />
                     Tornar privado
                   </>
                 )}
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={() => { handleDelete(); setShowMenu(false); }}
-                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
               >
-                <Trash2 className="h-4 w-4" />
+                <Trash2 className="h-3 w-3" />
                 Remover
-              </button>
+              </Button>
             </div>
           </>
         )}
