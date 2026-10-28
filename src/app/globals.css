@@ -523,7 +523,7 @@ html[data-brand="C"][data-mode="dark"] {
   --bq-hair-strong: rgb(255 255 255 / 0.13);
   --bq-t1: #f1f2f4;
   --bq-t2: #b8bdc7;
-  --bq-t3: #868c98;
+  --bq-t3: #8b919c;
   --bq-accent: #e6e7eb;
   --bq-accent-text: #f1f2f4;
   --bq-accent-soft: rgb(255 255 255 / 0.09);
@@ -574,7 +574,7 @@ html[data-mode="light"] {
   --bq-hair-strong: rgb(15 18 25 / 0.15);
   --bq-t1: #12141a;
   --bq-t2: #474d59;
-  --bq-t3: #6f7684;
+  --bq-t3: #686f7c;
   --bq-accent: #c4623f;
   --bq-accent-text: #a94f2e;
   --bq-accent-soft: rgb(196 98 63 / 0.11);
@@ -1108,8 +1108,6 @@ html[data-mode="light"] {
   --bq-owner-c: 0.08;
   --bq-on-channel: #ffffff;
   --color-bq-on-channel: #ffffff;
-  --bq-on-agent-forced: #ffffff;
-  --color-bq-on-agent-forced: #ffffff;
   --bq-on-avatar-owner: #ffffff;
   --color-bq-on-avatar-owner: #ffffff;
   --bq-blur-contact: 28px;
@@ -1118,6 +1116,11 @@ html[data-mode="light"] {
   --bq-layer-contact: 20;
   --bq-opacity-dragging: 0.45;
 }
+
+/* SPEC-010 amendment 23(b): Doc-approved contrast, 2026-10-28. */
+:root { --bq-on-agent-forced: #0f1014; }
+html[data-mode="light"] { --bq-on-agent-forced: #ffffff; }
+@theme inline { --color-bq-on-agent-forced: var(--bq-on-agent-forced); }
 
 /* Opt-in geometry for the existing Avatar; default rendering is preserved. */
 .bq-avatar-mockup { --bq-avatar-size: var(--bq-size-avatar-row); width: var(--bq-avatar-size); height: var(--bq-avatar-size); border-radius: var(--bq-radius-circle); background: oklch(var(--bq-av-l) var(--bq-av-c) var(--bq-avatar-hue, var(--bq-avatar-hue-fallback))); color: var(--bq-av-fg); font-family: var(--bq-f-ui); font-size: calc(var(--bq-avatar-size) * var(--bq-avatar-font-ratio)); font-weight: var(--bq-weight-semibold); letter-spacing: var(--bq-tracking-avatar); outline: none; }
@@ -1221,7 +1224,7 @@ html[data-mode="light"] { --bq-scrim: rgb(20 24 34 / 0.22); }
  .bq-rail-item, .bq-window[data-expanded] .bq-rail-item { width: 36px; height: 36px; min-height: 36px; justify-content: center; padding: 0; }
  .bq-window[data-expanded] .bq-rail-label { display: none; }
  .bq-collapse { display: none; } .bq-live > span { display: none; }
- .bq-toolbar { gap: 8px; padding-inline: 8px; }
+ .bq-toolbar { gap: 8px; padding-inline: var(--bq-space-lg); }
  .bq-app-toolbar { gap: var(--bq-space-md); }
 }
 @media (prefers-reduced-motion: reduce) { .bq-wall *, .bq-dialog * { transition: none !important; animation: none !important; } }

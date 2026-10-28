@@ -36,7 +36,7 @@ colors:
   hair-strong: rgb(15 18 25 / 0.15)
   t1: "#12141a"
   t2: "#474d59"
-  t3: "#6f7684"
+  t3: "#686f7c"
   accent: "#c4623f"
   accent-text: "#a94f2e"
   accent-soft: rgb(196 98 63 / 0.11)
@@ -99,7 +99,7 @@ dark:
   hair-strong: rgb(255 255 255 / 0.13)
   t1: "#f1f2f4"
   t2: "#b8bdc7"
-  t3: "#868c98"
+  t3: "#8b919c"
   accent: "#e6e7eb"
   accent-text: "#f1f2f4"
   accent-soft: rgb(255 255 255 / 0.09)
@@ -148,7 +148,7 @@ dark:
   neutral: "#868c98"
   switch-thumb-on: "#ffffff"
   on-channel: "#ffffff"
-  on-agent-forced: "#ffffff"
+  on-agent-forced: "#0f1014"
   on-avatar-owner: "#ffffff"
 fonts:
   sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Geist", "Segoe UI", system-ui, sans-serif
@@ -359,7 +359,7 @@ brand_primitives:
   hair-strong: rgb(255 255 255 / 0.13)
   t1: "#f1f2f4"
   t2: "#b8bdc7"
-  t3: "#868c98"
+  t3: "#8b919c"
   accent: "#e6e7eb"
   accent-text: "#f1f2f4"
   accent-soft: rgb(255 255 255 / 0.09)
@@ -414,7 +414,7 @@ source_tokens:
     hair-strong: rgb(15 18 25 / 0.15)
     t1: "#12141a"
     t2: "#474d59"
-    t3: "#6f7684"
+    t3: "#686f7c"
     accent: "#c4623f"
     accent-text: "#a94f2e"
     accent-soft: rgb(196 98 63 / 0.11)
@@ -475,7 +475,7 @@ source_tokens:
     hair-strong: rgb(255 255 255 / 0.13)
     t1: "#f1f2f4"
     t2: "#b8bdc7"
-    t3: "#868c98"
+    t3: "#8b919c"
     accent: "#e6e7eb"
     accent-text: "#f1f2f4"
     accent-soft: rgb(255 255 255 / 0.09)
@@ -783,7 +783,7 @@ mockup_support:
   bq-owner-l: "0.5"
   bq-owner-c: "0.08"
   bq-on-channel: "#ffffff"
-  bq-on-agent-forced: "#ffffff"
+  bq-on-agent-forced: "#0f1014"
   bq-on-avatar-owner: "#ffffff"
   bq-blur-contact: "28px"
   bq-saturate-contact: "170%"
@@ -829,7 +829,11 @@ mockup_support:
 Janela macOS de vidro sobre gradiente grafite. Fonte canônica: `docs/design/2026-10-27-repaginacao/mockup.html` no workspace BullQ; aprovação e escopo na SPEC-010. Este documento materializa essa aprovação, sem uma nova decisão visual.
 
 ## 2. Color Palette & Roles
-Valores literais dos dois primeiros blocos :root do mockup estão no front matter. Transparências preservadas. `t1`, `t2`, `t3` formam a hierarquia; `agent` identifica IA, `info` informação e `ok/warn/err` estados. No CSS, todos recebem prefixo `--bq-` para coexistir com os temas legados e o editor de marca.
+Os valores dos dois primeiros blocos :root do mockup estão no front matter, com as exceções deliberadas de contraste abaixo. Transparências preservadas. `t1`, `t2`, `t3` formam a hierarquia; `agent` identifica IA, `info` informação e `ok/warn/err` estados. No CSS, todos recebem prefixo `--bq-` para coexistir com os temas legados e o editor de marca.
+
+Por decisão do Doc em 28/10/2026 (SPEC-010, Emenda 1, item 23(a)), `t3` diverge do mockup: no escuro, `#868c98` → `#8b919c`, de 4,30:1 para 4,59:1 sobre `#28292d`; no claro, `#6f7684` → `#686f7c`, de 4,12:1 para 4,56:1 sobre `#f3f3f4`. A mudança se limita a `t3`; os demais tokens de cinza mantêm seus valores.
+
+Na mesma decisão, item 23(b), `on-agent-forced` usa `#0f1014` sobre o roxo `agent` escuro `#8b93ff` (6,99:1), em vez de branco. No claro, permanece branco sobre `#5b63e0` (4,88:1). A classe opt-in `text-bq-on-agent-forced` resolve o token conforme `data-mode`; o fundo não muda.
 
 ## 3. Typography Rules
 Interface 13px/1.45 na pilha nativa SF Pro Text/Geist. Títulos de página em Geist/SF Pro Display com peso 500; breadcrumb na fonte de UI com peso 600. Números e atalhos usam Geist Mono/SF Mono. Não baixar fontes como requisito de execução; fallback nativo declarado no mockup.
@@ -838,7 +842,7 @@ Interface 13px/1.45 na pilha nativa SF Pro Text/Geist. Títulos de página em Ge
 Botão 30px com variantes padrão, sólido e agente. Pill 20px, segmentos de 26px dentro de trilho com padding 2px. Menu de vidro com raio 12px. Sheet e janela usam Dialog do Headless UI, com foco e Escape. Janela usa controles macOS com nomes acessíveis; minimizar/maximizar são opcionais e só aparecem quando há handler. Switch usa role switch. Linha de ajustes associa texto e controle.
 
 ## 5. Layout Principles
-Papel de parede com margens 16px horizontais e 14px verticais; janela com raio 18px. Trilho 60px recolhido e 204px expandido, itens 40px. Topo 52px. A coluna secundária externa fica só em Conversas (Caixas); pastas, pipelines e agentes têm navegação dentro das próprias páginas. Conteúdo interno pertence à W1.
+Papel de parede com margens 16px horizontais e 14px verticais; janela com raio 18px. Trilho 60px recolhido e 204px expandido, itens 40px. Topo 52px, com padding lateral de 16px também a ≤560px (mockup 82; Emenda 1, 22(d)). A coluna secundária externa fica só em Conversas (Caixas); pastas, pipelines e agentes têm navegação dentro das próprias páginas. Conteúdo interno pertence à W1.
 
 ## 6. Depth & Elevation
 Janela blur 30px saturate 160%; topo blur 24px saturate 160%; popover blur 28px saturate 180%. Bordas finas hair/hair-strong e sombras literais. Sem suporte a backdrop-filter usar win-solid.
@@ -1161,7 +1165,7 @@ Os tokens anteriores permanecem intactos. Coeficientes e cores abaixo estão no 
 | --bq-owner-l | 0.5 | 1135 |
 | --bq-owner-c | 0.08 | 1135 |
 | --bq-on-channel | #ffffff | 132 |
-| --bq-on-agent-forced | #ffffff | 1133 |
+| --bq-on-agent-forced | escuro #0f1014; claro #ffffff | 1133; Emenda 1, 23(b) |
 | --bq-on-avatar-owner | #ffffff | 1135 |
 | --bq-blur-contact | 28px | 731 |
 | --bq-saturate-contact | 170% | 731 |
@@ -1175,7 +1179,7 @@ Os tokens anteriores permanecem intactos. Coeficientes e cores abaixo estão no 
 - .chb (132–133): bq-channel-badge como irmão de Avatar dentro de wrapper relative; --bq-channel-color recebe var(--bq-wa/ig/mail/tg), nunca hex local.16×16, right/bottom -space-micro, halo border-focus2px win-solid, glifo9/traço2.6. O irmão evita recortar o selo no overflow-hidden de Avatar.
 - .own-btn .av-mini (1135): Avatar com bq-avatar-mockup bq-avatar-owner,26px/10.5px, branco/oklch(.5 .08 hue). Sem responsável, aplicar raised-2/t3/hair-strong e conteúdo honesto da raia.
 - Status (1618): Novo→info; Em atendimento→warn; Aguardando cliente→agent; Resolvido→ok. A raia usa apenas estados reais suportados. Não inferir semântica dos enums não mapeados.
-- IA (1130–1133): padrão agent-soft/agent-text; pausada warn-soft/warn; forçada agent/on-agent-forced (branco em ambos). on-accent muda no escuro e NÃO equivale a esse branco.
+- IA (1130–1133): padrão agent-soft/agent-text; pausada warn-soft/warn; forçada agent/on-agent-forced (escuro #0f1014; claro #ffffff), conforme decisão do Doc de 28/10/2026. Usar text-bq-on-agent-forced, sem substituir por on-accent.
 - Canal (1611–1616): WhatsApp wa#25d366, Instagram ig#e1306c, E-mail mail#5b8def, Telegram tg#2aabee; tokens já existentes, constantes entre temas.
 - Contrato de métricas: blur-bq-contact e backdrop-blur-bq-contact=28px; backdrop-bq-contact compõe blur28px + saturate170%; z-bq-contact=20 (731). opacity-bq-dragging=.45 (875). Para aplicações CSS diretas, usar var(--bq-*) acima.
 - Espaço -2px do selo = calc(-1 * var(--bq-space-micro)); anel4px do compositor = --bq-space-xs; 40% da lista de Projetos = --bq-size-40percent; colunas mínimas340px = --bq-size-email-list (mesmo valor literal), gap14px = --bq-space-section.
