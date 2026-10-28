@@ -1,17 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { X } from 'lucide-react';
+import { Sheet, Button } from '@/components/ui/foundation';
 import { toast } from 'sonner';
 import {
   aiAgentsService,
   CURATED_MODELS,
   DEPARTMENTS,
   type AgentKind,
-} from '../services/ai-agents.service';
+} from '@/features/ai-agents/services/ai-agents.service';
 import { useOrgId } from '@/hooks/use-org-query-key';
-import { AgentKnowledgeField } from './agent-knowledge-field';
+import { AgentKnowledgeField } from '@/features/ai-agents/components/agent-knowledge-field';
 
 interface CreateAgentDialogProps {
   open: boolean;
@@ -32,6 +32,7 @@ export function CreateAgentDialog({
   onCreated,
 }: CreateAgentDialogProps) {
   const orgId = useOrgId();
+  const [step, setStep] = useState(0);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [kind, setKind] = useState<AgentKind>('WORKER');
@@ -53,15 +54,6 @@ export function CreateAgentDialog({
     enabled: open,
   });
 
-  useEffect(() => {
-    // When user picks ORCHESTRATOR, default parent to none and department
-    // to leave the org root unconstrained — orchestrators usually report
-    // straight to the human owner, not another agent.
-    if (kind === 'ORCHESTRATOR' && parentAgentId) {
-      setParentAgentId('');
-    }
-  }, [kind, parentAgentId]);
-
   if (!open) return null;
 
   const handleSave = async () => {
@@ -72,6 +64,7 @@ export function CreateAgentDialog({
     setSaving(true);
     try {
       const created = await aiAgentsService.create({
+        isActive: false,
         name: name.trim(),
         description: description.trim() || undefined,
         kind,
@@ -99,16 +92,15 @@ export function CreateAgentDialog({
       reset();
       onCreated();
       onClose();
-    } catch (err: any) {
-      toast.error(
-        err?.response?.data?.message || err?.message || 'Erro ao criar',
-      );
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao criar');
     } finally {
       setSaving(false);
     }
   };
 
   const reset = () => {
+    setStep(0);
     setName('');
     setDescription('');
     setKind('WORKER');
@@ -127,27 +119,36 @@ export function CreateAgentDialog({
   const eligibleParents = agents ?? [];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-xl bg-card text-card-foreground shadow-xl">
-        <div className="flex items-center justify-between border-b border-border px-6 py-4">
-          <h3 className="text-lg font-semibold text-card-foreground">
-            Novo agente
-          </h3>
-          <button
-            onClick={onClose}
-            className="rounded p-1 text-muted-foreground hover:bg-muted"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        <div className="space-y-4 px-6 py-5">
+    <Sheet open={open} onClose={onClose} title="Novo agente">
+      <ol
+        className="my-5 grid grid-cols-2 gap-2 text-xs"
+        aria-label="Etapas da criação"
+      >
+        {['O que ele faz', 'Como ele fala', 'Onde atua', 'Testar e criar'].map(
+          (label, index) => (
+            <li
+              key={label}
+              aria-current={step === index ? 'step' : undefined}
+              className={
+                step === index
+                  ? 'font-semibold text-[var(--bq-agent-text)]'
+                  : 'text-[var(--bq-t3)]'
+              }
+            >
+              {index + 1}. {label}
+            </li>
+          ),
+        )}
+      </ol>
+      <div className="space-y-4">
+        <div hidden={step !== 0} className="space-y-4">
           <div>
             <label className="block text-xs font-medium text-card-foreground/80">
               Nome *
             </label>
             <input
               type="text"
+              aria-label="Nome do agente"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Ex: Vendas Bravy"
@@ -161,6 +162,7 @@ export function CreateAgentDialog({
             </label>
             <input
               type="text"
+              aria-label="Descrição"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Ex: Responde dúvidas sobre planos e fecha matrícula"
@@ -174,8 +176,13 @@ export function CreateAgentDialog({
                 Tipo
               </label>
               <select
+                aria-label="Tipo de agente"
                 value={kind}
-                onChange={(e) => setKind(e.target.value as AgentKind)}
+                onChange={(e) => {
+                  const next = e.target.value as AgentKind;
+                  setKind(next);
+                  if (next === 'ORCHESTRATOR') setParentAgentId('');
+                }}
                 className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
               >
                 <option value="WORKER">Worker (atende o cliente)</option>
@@ -190,6 +197,7 @@ export function CreateAgentDialog({
               </label>
               <input
                 type="text"
+                aria-label="Categoria"
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
                 placeholder="vendas / suporte / billing"
@@ -197,7 +205,73 @@ export function CreateAgentDialog({
               />
             </div>
           </div>
+        </div>
+        <div hidden={step !== 1} className="space-y-4">
+          <div>
+            <label className="block text-xs font-medium text-card-foreground/80">
+              Modelo *
+            </label>
+            <select
+              aria-label="Modelo"
+              value={modelId}
+              onChange={(e) => setModelId(e.target.value)}
+              className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
+            >
+              {CURATED_MODELS.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.label} — {m.badge}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Escolha um modelo disponível no seu provedor.
+            </p>
+          </div>
 
+          <div>
+            <label className="block text-xs font-medium text-card-foreground/80">
+              System prompt *
+            </label>
+            <textarea
+              aria-label="System prompt"
+              value={systemPrompt}
+              onChange={(e) => setSystemPrompt(e.target.value)}
+              rows={10}
+              className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 font-mono text-xs text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Você não precisa repetir contexto da empresa — o sistema injeta
+              nome, canal, hora, dados do contato e memória automaticamente.
+            </p>
+          </div>
+
+          <AgentKnowledgeField
+            pendingFiles={pendingFiles}
+            onPendingFilesChange={setPendingFiles}
+          />
+
+          <div>
+            <label className="block text-xs font-medium text-card-foreground/80">
+              Criatividade ({temperature.toFixed(2)})
+            </label>
+            <input
+              type="range"
+              min="0"
+              max="1.5"
+              step="0.05"
+              aria-label="Criatividade"
+              value={temperature}
+              onChange={(e) => setTemperature(parseFloat(e.target.value))}
+              className="mt-2 w-full"
+            />
+            <div className="mt-1 flex justify-between text-[10px] text-muted-foreground/70">
+              <span>Determinístico</span>
+              <span>Criativo</span>
+            </div>
+          </div>
+        </div>
+
+        <div hidden={step !== 2} className="space-y-4">
           {/* Organograma matricial ágil */}
           <div className="rounded-lg border border-border bg-muted/50 p-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -213,6 +287,7 @@ export function CreateAgentDialog({
                   Reporta a (chefe direto)
                 </label>
                 <select
+                  aria-label="Reporta a"
                   value={parentAgentId}
                   onChange={(e) => setParentAgentId(e.target.value)}
                   className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
@@ -220,7 +295,8 @@ export function CreateAgentDialog({
                   <option value="">— Raiz / sem chefe (CEO virtual) —</option>
                   {eligibleParents.map((a) => (
                     <option key={a.id} value={a.id}>
-                      {a.name} {a.kind === 'ORCHESTRATOR' ? '(Orquestrador)' : ''}
+                      {a.name}{' '}
+                      {a.kind === 'ORCHESTRATOR' ? '(Orquestrador)' : ''}
                     </option>
                   ))}
                 </select>
@@ -232,6 +308,7 @@ export function CreateAgentDialog({
                     Departamento
                   </label>
                   <select
+                    aria-label="Departamento"
                     value={department}
                     onChange={(e) => setDepartment(e.target.value)}
                     className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
@@ -250,6 +327,7 @@ export function CreateAgentDialog({
                   </label>
                   <input
                     type="text"
+                    aria-label="Squad"
                     value={squad}
                     onChange={(e) => setSquad(e.target.value)}
                     placeholder="Ex: Inbound B2C"
@@ -260,82 +338,56 @@ export function CreateAgentDialog({
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-medium text-card-foreground/80">
-              Modelo *
-            </label>
-            <select
-              value={modelId}
-              onChange={(e) => setModelId(e.target.value)}
-              className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
-            >
-              {CURATED_MODELS.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.label} — {m.badge}
-                </option>
-              ))}
-            </select>
-            <p className="mt-1 text-[11px] text-muted-foreground">
-              Sugestão: Sonnet 4.6 para workers, Haiku 4.5 ou Gemini Flash para orquestrador.
-            </p>
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-card-foreground/80">
-              System prompt *
-            </label>
-            <textarea
-              value={systemPrompt}
-              onChange={(e) => setSystemPrompt(e.target.value)}
-              rows={10}
-              className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 font-mono text-xs text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-            />
-            <p className="mt-1 text-[11px] text-muted-foreground">
-              Você não precisa repetir contexto da empresa — o sistema injeta nome, canal, hora, dados do contato e memória automaticamente.
-            </p>
-          </div>
-
-          <AgentKnowledgeField
-            pendingFiles={pendingFiles}
-            onPendingFilesChange={setPendingFiles}
-          />
-
-          <div>
-            <label className="block text-xs font-medium text-card-foreground/80">
-              Criatividade ({temperature.toFixed(2)})
-            </label>
-            <input
-              type="range"
-              min="0"
-              max="1.5"
-              step="0.05"
-              value={temperature}
-              onChange={(e) => setTemperature(parseFloat(e.target.value))}
-              className="mt-2 w-full"
-            />
-            <div className="mt-1 flex justify-between text-[10px] text-muted-foreground/70">
-              <span>Determinístico</span>
-              <span>Criativo</span>
-            </div>
-          </div>
+          <p className="text-xs text-muted-foreground">
+            Os canais, pipelines, skills e limites podem ser vinculados na
+            página do agente depois de criar.
+          </p>
         </div>
-
-        <div className="flex items-center justify-end gap-2 border-t border-border bg-muted px-6 py-3">
-          <button
-            onClick={onClose}
-            className="rounded-md px-3 py-1.5 text-sm text-card-foreground hover:bg-muted-foreground/10"
-          >
+        {step === 3 && (
+          <div className="my-4 space-y-3 rounded-xl border border-border p-4">
+            <h3 className="font-semibold">Testar antes de ligar</h3>
+            <p className="text-sm text-muted-foreground">
+              Simulação ainda não disponível na API. Crie pausado, revise o
+              prompt e configure os canais na página do agente antes de ativar.
+            </p>
+            <p className="text-sm">
+              {name} · {modelId} · {pendingFiles.length} documento(s)
+            </p>
+          </div>
+        )}
+        <div className="mt-5 flex flex-wrap justify-end gap-2 border-t border-border pt-4">
+          <Button onClick={onClose} disabled={saving}>
             Cancelar
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-          >
-            {saving ? 'Criando…' : 'Criar agente'}
-          </button>
+          </Button>
+          {step > 0 && (
+            <Button disabled={saving} onClick={() => setStep(step - 1)}>
+              Voltar
+            </Button>
+          )}
+          {step < 3 ? (
+            <Button
+              variant="solid"
+              onClick={() => {
+                if (step === 0 && !name.trim()) {
+                  toast.error('Informe o nome do agente');
+                  return;
+                }
+                if (step === 1 && !systemPrompt.trim()) {
+                  toast.error('Informe o prompt');
+                  return;
+                }
+                setStep(step + 1);
+              }}
+            >
+              Continuar
+            </Button>
+          ) : (
+            <Button variant="solid" onClick={handleSave} disabled={saving}>
+              {saving ? 'Criando…' : 'Criar pausado'}
+            </Button>
+          )}
         </div>
       </div>
-    </div>
+    </Sheet>
   );
 }
