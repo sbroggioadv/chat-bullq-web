@@ -346,7 +346,7 @@ export function ProjectDetail({ projectId, onBack, embedded = false }: { project
       </section>
       <section className={cardCls}>
         <div className="flex flex-wrap items-center gap-2 text-[var(--bq-t2)] [&>h2]:text-[var(--bq-t1)]"><Sparkles size={14} /><h2 className="flex-1 text-bq-text-body font-semibold">Fluxograma</h2><Button variant="agent" disabled>Refazer com o Jarvis</Button></div>
-        <div className="flex h-bq-size-search-max shrink-0 items-center justify-center rounded-xl border border-[var(--bq-hair)] bg-[radial-gradient(circle_at_var(--bq-space-hairline)_var(--bq-space-hairline),var(--bq-hair-strong)_var(--bq-space-hairline),transparent_var(--bq-border-checkbox))] bg-[length:var(--bq-size-icon)_var(--bq-size-icon)] p-5 text-center text-xs text-[var(--bq-t3)]">O fluxo deste projeto ainda não está disponível.</div>
+        <div className="flex min-h-[calc(var(--bq-size-project-list)+var(--bq-size-status-dot))] items-center justify-center rounded-xl border border-[var(--bq-hair)] bg-[radial-gradient(circle_at_var(--bq-space-hairline)_var(--bq-space-hairline),var(--bq-hair-strong)_var(--bq-space-hairline),transparent_var(--bq-border-checkbox))] bg-[length:var(--bq-size-icon)_var(--bq-size-icon)] p-5 text-center text-xs text-[var(--bq-t3)]">O fluxo deste projeto ainda não está disponível.</div>
       </section>
       <div data-project-blocks className="min-w-0 [columns:3_var(--bq-size-email-list)] gap-bq-space-section -mb-bq-space-section [&>section]:break-inside-avoid [&>section]:mb-bq-space-section">
         <section className={cardCls}>
