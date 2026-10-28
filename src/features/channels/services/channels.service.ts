@@ -9,8 +9,8 @@ export interface Channel {
   organizationId: string;
   type: ChannelType;
   name: string;
-  config: Record<string, any>;
-  webhookSecret: string | null;
+  configFields?: Record<string, boolean>;
+  googlePermissions?: { hasRead: boolean; hasSend: boolean; hasCalendar: boolean } | null;
   isActive: boolean;
   /** null = segue org.aiEnabled, true = força ON, false = força OFF nesse canal. */
   aiEnabled: boolean | null;
@@ -26,15 +26,15 @@ export interface Channel {
 export interface CreateChannelPayload {
   type: ChannelType;
   name: string;
-  config: Record<string, any>;
+  config: Record<string, unknown>;
   webhookSecret?: string;
   visibility?: ChannelVisibility;
 }
 
 export interface UpdateChannelPayload {
   name?: string;
-  config?: Record<string, any>;
-  webhookSecret?: string;
+  config?: Record<string, unknown>;
+  webhookSecret?: string | null;
   isActive?: boolean;
   aiEnabled?: boolean | null;
   visibility?: ChannelVisibility;
@@ -44,7 +44,7 @@ export interface TestConnectionResult {
   success: boolean;
   status?: string;
   error?: string;
-  data?: any;
+  data?: unknown;
 }
 
 export type SyncStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';

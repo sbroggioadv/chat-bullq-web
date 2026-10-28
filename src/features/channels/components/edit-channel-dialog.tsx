@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
-import { Loader2, X } from 'lucide-react';
-import { channelsService, type Channel } from '../services/channels.service';
+import { Button, MacWindow } from '@/components/ui/foundation';
+import { channelsService, type Channel, type UpdateChannelPayload } from '@/features/channels/services/channels.service';
 
 interface EditChannelDialogProps {
   channel: Channel | null;
@@ -11,162 +11,59 @@ interface EditChannelDialogProps {
   onSaved: () => void;
 }
 
-const inputCls =
-  'flex h-10 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-mono ring-offset-background placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100';
-const labelCls = 'text-sm font-medium text-zinc-700 dark:text-zinc-300';
+export function EditChannelDialog({ channel, onClose, onSaved }: EditChannelDialogProps) {
+  return channel ? <ChannelEditor key={channel.id} channel={channel} onClose={onClose} onSaved={onSaved} /> : null;
+}
 
-/**
- * Pre-fills with the channel's current credentials so the operator can
- * audit/correct without needing to recreate. All credential inputs use
- * type="text" — JP needs the values visible to compare against the
- * provider's dashboard. This trades shoulder-surfing risk for ergonomics.
- */
-export function EditChannelDialog({
-  channel,
-  onClose,
-  onSaved,
-}: EditChannelDialogProps) {
-  const [name, setName] = useState('');
-  const [config, setConfig] = useState<Record<string, string>>({});
-  const [webhookSecret, setWebhookSecret] = useState('');
+function ChannelEditor({ channel, onClose, onSaved }: EditChannelDialogProps & { channel: Channel }) {
+  const [name, setName] = useState(channel.name);
+  // Apenas a intenção de edição, nunca os valores salvos no servidor.
+  const [config, setConfig] = useState<Record<string, string | null>>({});
+  const [secretAction, setSecretAction] = useState<'keep' | 'replace' | 'clear'>('keep');
+  const [secret, setSecret] = useState('');
   const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    if (!channel) return;
-    setName(channel.name);
-    // Coerce nested values to string for the form. Booleans/numbers are
-    // re-typed on save when needed (none of the WhatsApp configs use them).
-    const flat: Record<string, string> = {};
-    for (const [k, v] of Object.entries(channel.config ?? {})) {
-      flat[k] = v == null ? '' : String(v);
-    }
-    setConfig(flat);
-    setWebhookSecret(channel.webhookSecret ?? '');
-  }, [channel]);
-
-  if (!channel) return null;
-
   const fields = fieldsFor(channel.type);
-
-  const setField = (k: string, v: string) =>
-    setConfig((prev) => ({ ...prev, [k]: v }));
-
-  const handleSave = async () => {
-    if (!name.trim()) {
-      toast.error('Nome é obrigatório');
-      return;
-    }
+  const dirty = name.trim() !== channel.name || Object.keys(config).length > 0 || secretAction !== 'keep';
+  const invalid = !name.trim() || (secretAction === 'replace' && !secret.trim()) || fields.some(f => f.key in config && config[f.key] !== null && !config[f.key]?.trim());
+  const discardField = (key: string) => setConfig(previous => {
+    const next = { ...previous }; delete next[key]; return next;
+  });
+  const save = async () => {
+    if (!dirty || invalid || saving) return;
+    const patch: UpdateChannelPayload = {};
+    if (name.trim() !== channel.name) patch.name = name.trim();
+    if (Object.keys(config).length) patch.config = config;
+    if (secretAction === 'replace') patch.webhookSecret = secret.trim();
+    if (secretAction === 'clear') patch.webhookSecret = null;
     setSaving(true);
     try {
-      // Keep keys present in the original config but allow updating only
-      // the fields the form exposes — preserves anything bespoke.
-      const merged = { ...channel.config, ...config };
-      // Remove empty optional keys to avoid storing literal "".
-      for (const f of fields) {
-        if (f.optional && !merged[f.key]?.trim()) {
-          delete merged[f.key];
-        }
-      }
-      await channelsService.update(channel.id, {
-        name: name.trim(),
-        config: merged,
-        webhookSecret: webhookSecret.trim() || undefined,
-      });
-      toast.success('Credenciais atualizadas');
-      onSaved();
-      onClose();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erro ao atualizar');
-    } finally {
-      setSaving(false);
-    }
+      await channelsService.update(channel.id, patch);
+      toast.success('Canal atualizado'); onSaved(); onClose();
+    } catch (error) { toast.error(error instanceof Error ? error.message : 'Erro ao atualizar canal'); }
+    finally { setSaving(false); }
   };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative z-50 w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl dark:bg-zinc-900">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-              Editar credenciais
-            </h2>
-            <p className="mt-0.5 text-xs text-zinc-500">
-              {channel.type.replace('_', ' ').toLowerCase()}
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="rounded-md p-1 text-zinc-400 hover:text-zinc-600"
-          >
-            <X className="h-5 w-5" />
-          </button>
+  const inputClass = 'w-full rounded-lg border border-[var(--bq-hair-strong)] bg-[var(--bq-raised)] px-3 py-2 text-sm text-[var(--bq-t1)]';
+  return <MacWindow open onClose={() => { if (!saving) onClose(); }} title="Editar credenciais">
+    <form className="space-y-5 text-[var(--bq-t1)]" onSubmit={event => { event.preventDefault(); void save(); }}>
+      <p className="text-xs text-[var(--bq-t3)]">As credenciais salvas não são exibidas. Preencha somente o que deseja trocar.</p>
+      <label className="block text-sm">Nome do canal<input className={inputClass} value={name} onChange={event => setName(event.target.value)} /></label>
+      {fields.map(field => <div key={field.key} className="space-y-2">
+        <label className="block text-sm" htmlFor={`channel-${field.key}`}>{field.label} {field.optional ? '(opcional)' : ''} · {channel.configFields?.[field.key] === true ? 'Preenchido' : 'Vazio'}</label>
+        <input id={`channel-${field.key}`} className={inputClass} type="password" autoComplete="new-password" disabled={config[field.key] === null} placeholder="Cole um novo valor para trocar" value={config[field.key] ?? ''} onChange={event => { const value = event.target.value; if (!value) discardField(field.key); else setConfig(previous => ({ ...previous, [field.key]: value })); }} />
+        <div className="flex gap-2">
+          {field.optional && <Button onClick={() => setConfig(previous => ({ ...previous, [field.key]: null }))}>Limpar {field.label}</Button>}
+          {field.key in config && <Button onClick={() => discardField(field.key)}>Manter valor salvo</Button>}
         </div>
-
-        <div className="mt-6 space-y-4">
-          <div className="space-y-1.5">
-            <label className={labelCls}>Nome do canal</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className={inputCls.replace(' font-mono', '')}
-            />
-          </div>
-
-          {fields.map((f) => (
-            <div key={f.key} className="space-y-1.5">
-              <label className={labelCls}>
-                {f.label}{' '}
-                {f.optional && <span className="text-zinc-400">(opcional)</span>}
-              </label>
-              <input
-                type="text"
-                value={config[f.key] ?? ''}
-                onChange={(e) => setField(f.key, e.target.value)}
-                placeholder={f.placeholder}
-                className={inputCls}
-              />
-              {f.hint && (
-                <p className="text-[11px] text-zinc-500">{f.hint}</p>
-              )}
-            </div>
-          ))}
-
-          <div className="space-y-1.5">
-            <label className={labelCls}>
-              Webhook Secret <span className="text-zinc-400">(opcional)</span>
-            </label>
-            <input
-              type="text"
-              value={webhookSecret}
-              onChange={(e) => setWebhookSecret(e.target.value)}
-              className={inputCls}
-            />
-          </div>
-        </div>
-
-        <div className="mt-6 flex items-center justify-end gap-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md px-4 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
-          >
-            Cancelar
-          </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={saving}
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
-          >
-            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Salvar
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+        {config[field.key] === null && <p className="text-xs text-[var(--bq-warn)]">Este campo será removido ao salvar.</p>}
+      </div>)}
+      <label className="block text-sm">Webhook Secret<select aria-label="Ação do Webhook Secret" className={inputClass} value={secretAction} onChange={event => { setSecretAction(event.target.value as typeof secretAction); setSecret(''); }}>
+        <option value="keep">Manter sem alteração</option><option value="replace">Trocar segredo</option><option value="clear">Limpar segredo</option>
+      </select></label>
+      {secretAction === 'replace' && <label className="block text-sm">Novo Webhook Secret<input className={inputClass} type="password" autoComplete="new-password" value={secret} onChange={event => setSecret(event.target.value)} /></label>}
+      {secretAction === 'clear' && <p className="text-xs text-[var(--bq-warn)]">O segredo será removido ao salvar.</p>}
+      <div className="flex items-center justify-end gap-2"><Button disabled={saving} onClick={onClose}>Cancelar</Button><Button variant="solid" type="submit" disabled={!dirty || invalid || saving}>{saving ? 'Salvando…' : 'Salvar'}</Button></div>
+    </form>
+  </MacWindow>;
 }
 
 interface FieldDef {

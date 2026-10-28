@@ -17,7 +17,6 @@ import {
   Lock,
   Globe,
   Mail,
-  ExternalLink,
   Inbox,
   CalendarDays,
 } from 'lucide-react';
@@ -189,17 +188,7 @@ export function ChannelCard({ channel, onUpdate }: ChannelCardProps) {
         </div>
         <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">{meta.label}</p>
         {channel.type === 'GMAIL' && (() => {
-          const cfg = (channel.config as any) || {};
-          const granted = String(cfg.scopeGranted || cfg.scope || '');
-          const hasRead =
-            /gmail\.(readonly|modify|send)|mail\.google\.com/i.test(granted) ||
-            !!cfg.refreshToken;
-          const hasSend =
-            cfg.hasGmailModify === true ||
-            /gmail\.(modify|send)/i.test(granted);
-          const hasCal =
-            cfg.hasCalendar === true ||
-            /calendar(\.events|\.readonly)?/i.test(granted);
+          const { hasRead = false, hasSend = false, hasCalendar: hasCal = false } = channel.googlePermissions ?? {};
           const badge = (ok: boolean, okCls: string) =>
             ok
               ? okCls
@@ -372,13 +361,7 @@ export function ChannelCard({ channel, onUpdate }: ChannelCardProps) {
                 title="Autoriza calendar.events no mesmo Google do e-mail"
               >
                 <CalendarDays className="h-3 w-3" />
-                {/calendar(\.events)?/i.test(
-                  String(
-                    (channel.config as any)?.scopeGranted ||
-                      (channel.config as any)?.scope ||
-                      '',
-                  ),
-                ) || (channel.config as any)?.hasCalendar
+                {channel.googlePermissions?.hasCalendar
                   ? 'Reautorizar Agenda'
                   : 'Autorizar Agenda'}
               </button>
