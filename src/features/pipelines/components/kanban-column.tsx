@@ -29,14 +29,14 @@ export function KanbanColumn({ stage, cards, onAddCard, onCardClick }: Props) {
 
   const background = stage.type === 'WON' ? 'var(--bq-ok-soft)' : stage.type === 'LOST' ? 'var(--bq-err-soft)' : 'var(--bq-surface)';
   return (
-    <div ref={setNodeRef} data-stage={stage.id} style={{ borderColor: `color-mix(in srgb, ${color} 22%, var(--bq-hair))`, backgroundColor: background }} className={`flex h-full min-h-0 min-w-0 flex-col rounded-2xl border ${isOver ? 'ring-2 ring-[var(--bq-accent)]' : ''}`}>
+    <div ref={setNodeRef} data-stage={stage.id} style={{ borderColor: stage.color ? `color-mix(in srgb, ${color} 10%, var(--bq-hair))` : stage.type === 'NORMAL' ? 'var(--bq-hair)' : 'transparent', backgroundColor: background }} className={`group/column flex h-full min-h-0 min-w-0 flex-col rounded-2xl border ${isOver ? 'ring-2 ring-[var(--bq-accent)]' : ''}`}>
       <div className="flex flex-col gap-0.5 px-[13px] pb-[9px] pt-[11px]">
         <div className="flex min-w-0 items-center gap-[7px] text-[13px] font-semibold">
           {stage.type !== 'NORMAL' && <span aria-hidden="true" className={`size-1.5 shrink-0 rounded-full ${stage.type === 'WON' ? 'bg-[var(--bq-ok)]' : 'bg-[var(--bq-err)]'}`} />}
           <span className="truncate">{stage.name}</span>
           <span style={{ color }} className="font-mono text-[11px] font-medium">{cards.length}</span>
           {stage.type !== 'NORMAL' && (
-            <div className="relative ml-auto shrink-0 [&>button]:h-5 [&>button]:w-5 [&>button]:border-0 [&>button]:px-0 [&>button]:!text-[0px]">
+            <div className="relative ml-auto flex shrink-0 items-center [&>button]:!h-4 [&>button]:!min-h-0 [&>button]:!w-4 [&>button]:!border-0 [&>button]:!bg-transparent [&>button]:!p-0 [&>button]:!shadow-none [&>button]:!text-[0px] md:opacity-0 md:group-hover/column:opacity-100 md:focus-within:opacity-100">
               <FoundationMenu label={`Mais opções da etapa ${stage.name}`} items={[{ label: 'Adicionar conversa', onClick: onAddCard }]} />
               <span aria-hidden="true" className="pointer-events-none absolute inset-0 grid place-items-center text-base text-[var(--bq-t3)]">⋯</span>
             </div>

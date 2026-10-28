@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { Plus, SlidersHorizontal } from 'lucide-react';
-import { Button, FoundationMenu, MacWindow, SegmentedControl } from '@/components/ui/foundation';
+import { Button, MacWindow, SegmentedControl } from '@/components/ui/foundation';
 import { pipelinesService } from '@/features/pipelines/services/pipelines.service';
 import { KanbanBoard } from '@/features/pipelines/components/kanban-board';
 import { StagesDialog } from '@/features/pipelines/components/stages-dialog';
@@ -32,12 +32,12 @@ export function PipelinesWorkspace({ pipelineId }: { pipelineId?: string }) {
         <div className="min-w-0 max-w-full overflow-x-auto max-sm:w-full [&>div]:w-max [&>div]:flex-nowrap [&_button]:shrink-0 [&_button]:whitespace-nowrap"><SegmentedControl label="Pipeline" value={activeId ?? ''} options={options} onChange={id => router.push(`/pipelines/${id}`)} /></div>
         <Button className="shrink-0" onClick={() => setStagesOpen(true)} disabled={!board}><SlidersHorizontal size={13} />Etapas</Button>
         <Button className="shrink-0" variant="solid" onClick={() => setManager('create')}><Plus size={13} />Novo pipeline</Button>
-        <div className="relative shrink-0 [&>button]:w-[30px] [&>button]:px-0 [&>button]:!text-[0px]"><FoundationMenu label="Mais opções de pipelines" items={[{ label: 'Todos / Gerenciar pipelines', onClick: () => setManager('list') }]} /><span aria-hidden="true" className="pointer-events-none absolute inset-0 grid place-items-center text-base text-[var(--bq-t2)]">⋯</span></div>
+
       </div>
     </header>
     {isError && <div role="alert">Não foi possível carregar os pipelines. <Button onClick={() => void refetch()}>Tentar novamente</Button></div>}
     {activeId ? <div className="min-h-[300px] flex-1 overflow-hidden"><KanbanBoard key={activeId} pipelineId={activeId} /></div> : <p className="text-sm text-[var(--bq-t3)]">{isLoading ? 'Carregando pipelines…' : 'Nenhum pipeline criado ainda. Use Novo pipeline para começar.'}</p>}
-    {board && stagesOpen && <StagesDialog open pipelineId={activeId!} initialStages={board.stages} onClose={() => setStagesOpen(false)} onSaved={() => setStagesOpen(false)} />}
+    {board && stagesOpen && <StagesDialog open pipelineId={activeId!} initialStages={board.stages} onClose={() => setStagesOpen(false)} onSaved={() => setStagesOpen(false)} onManagePipelines={() => { setStagesOpen(false); setManager('list'); }} />}
     <MacWindow open={manager !== null} onClose={() => setManager(null)} title={manager === 'create' ? 'Novo pipeline' : 'Gerenciar pipelines'}>{manager && <PipelinesManager key={manager} initialCreating={manager === 'create'} onNavigate={() => setManager(null)} />}</MacWindow>
   </div>;
 }

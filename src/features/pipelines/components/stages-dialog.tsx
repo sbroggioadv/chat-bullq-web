@@ -48,6 +48,7 @@ interface Props {
   initialStages: PipelineStage[];
   onClose: () => void;
   onSaved: () => void;
+  onManagePipelines?: () => void;
 }
 
 const COLORS: Array<{ name: string; cls: string }> = [
@@ -185,6 +186,7 @@ export function StagesDialog({
   initialStages,
   onClose,
   onSaved,
+  onManagePipelines,
 }: Props) {
   const qc = useQueryClient();
   const [stages, setStages] = useState<DraftStage[]>(() => initialStages.map(s => ({ key: s.id, serverId: s.id, name: s.name, color: s.color ?? 'zinc', type: s.type })));
@@ -248,6 +250,7 @@ export function StagesDialog({
   return (
     <MacWindow open={open} onClose={onClose} title="Configurar etapas">
       <div className="flex max-h-[70dvh] min-h-0 flex-col text-[var(--bq-t1)]">
+        {onManagePipelines && <Button className="mx-6 mb-3 self-start" onClick={onManagePipelines}>Todos / Gerenciar pipelines</Button>}
         <p className="px-6 text-xs text-[var(--bq-t3)]">Adicione, renomeie, reordene ou troque o tipo. Etapa com cards não pode ser excluída.</p>
         <div className="flex-1 overflow-y-auto px-6 py-4">
           <DndContext
