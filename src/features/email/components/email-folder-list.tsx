@@ -1,9 +1,13 @@
-'use client';
+"use client";
 
-import { AlertOctagon, Inbox, Mail, RefreshCw, Send, Tag } from 'lucide-react';
-import type { EmailChannel, EmailFolder } from '../services/email.service';
+import { AlertOctagon, Inbox, Mail, RefreshCw, Send, Tag } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import type {
+  EmailChannel,
+  EmailFolder,
+} from "@/features/email/services/email.service";
 
-const SYSTEM_ICON: Record<string, any> = {
+const SYSTEM_ICON: Record<string, LucideIcon> = {
   INBOX: Inbox,
   SENT: Send,
   SPAM: AlertOctagon,
@@ -34,27 +38,28 @@ export function EmailFolderList({
   onRetry,
 }: EmailFolderListProps) {
   const activeChannel = channels.find((c) => c.id === activeChannelId);
-  const systemFolders = folders.filter((f) => f.kind === 'system');
-  const userLabels = folders.filter((f) => f.kind === 'user');
+  const systemFolders = folders.filter((f) => f.kind === "system");
+  const userLabels = folders.filter((f) => f.kind === "user");
 
   const renderFolder = (f: EmailFolder) => {
-    const Icon = f.kind === 'system' ? (SYSTEM_ICON[f.id] ?? Inbox) : Tag;
+    const Icon = f.kind === "system" ? (SYSTEM_ICON[f.id] ?? Inbox) : Tag;
     const isActive = activeFolderId === f.id;
     return (
       <button
         key={f.id}
         type="button"
         onClick={() => onSelectFolder(f.id)}
+        aria-current={isActive ? "page" : undefined}
         title={f.name}
         className={`flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-[13px] transition-colors ${
           isActive
-            ? 'bg-primary/10 font-medium text-primary'
-            : 'text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-900'
+            ? "bg-primary/10 font-medium text-primary"
+            : "text-[var(--bq-t2)] hover:bg-[var(--bq-raised)]  "
         }`}
       >
         <Icon
           className={`h-4 w-4 shrink-0 ${
-            isActive ? 'text-primary' : 'text-zinc-500 dark:text-zinc-400'
+            isActive ? "text-primary" : "text-[var(--bq-t3)] "
           }`}
         />
         <span className="flex-1 truncate">{f.name}</span>
@@ -63,11 +68,11 @@ export function EmailFolderList({
   };
 
   return (
-    <div className="flex h-full w-full flex-col border-r border-zinc-200/80 bg-white dark:border-zinc-800 dark:bg-zinc-950">
-      <div className="border-b border-zinc-200/80 px-3 py-3 dark:border-zinc-800">
+    <div className="flex h-full w-full flex-col border-r border-[var(--bq-hair)] bg-[var(--bq-surface)]  ">
+      <div className="border-b border-[var(--bq-hair)] px-3 py-3 ">
         <div className="flex items-center gap-2">
-          <Mail className="h-4.5 w-4.5 shrink-0 text-red-600 dark:text-red-400" />
-          <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+          <Mail className="h-4.5 w-4.5 shrink-0 text-[var(--bq-err)] " />
+          <span className="text-sm font-semibold text-[var(--bq-t1)] ">
             E-mail
           </span>
         </div>
@@ -75,7 +80,7 @@ export function EmailFolderList({
           <select
             value={activeChannelId}
             onChange={(e) => onChannelChange(e.target.value)}
-            className="mt-2 w-full truncate rounded-md border border-zinc-200/80 bg-white px-2 py-1 text-xs text-zinc-600 outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400"
+            className="mt-2 w-full truncate rounded-md border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-2 py-1 text-xs text-[var(--bq-t2)] outline-none   "
           >
             {channels.map((c) => (
               <option key={c.id} value={c.id}>
@@ -85,7 +90,7 @@ export function EmailFolderList({
           </select>
         ) : (
           activeChannel && (
-            <p className="mt-1 truncate text-xs text-zinc-500 dark:text-zinc-400">
+            <p className="mt-1 truncate text-xs text-[var(--bq-t3)] ">
               {activeChannel.email ?? activeChannel.name}
             </p>
           )
@@ -94,12 +99,12 @@ export function EmailFolderList({
 
       <div className="flex-1 space-y-0.5 overflow-y-auto p-2">
         {error ? (
-          <div className="px-2 py-3 text-xs text-zinc-500 dark:text-zinc-400">
+          <div className="px-2 py-3 text-xs text-[var(--bq-t3)] ">
             <p>Não foi possível carregar as pastas.</p>
             <button
               type="button"
               onClick={onRetry}
-              className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-zinc-200/80 px-2 py-1 text-xs text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-900"
+              className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-[var(--bq-hair)] px-2 py-1 text-xs text-[var(--bq-t2)] hover:bg-[var(--bq-surface)]   "
             >
               <RefreshCw className="h-3 w-3" /> Tentar de novo
             </button>
@@ -109,7 +114,7 @@ export function EmailFolderList({
             {[...Array(4)].map((_, i) => (
               <div
                 key={i}
-                className="h-6 animate-pulse rounded-md bg-zinc-100 dark:bg-zinc-900"
+                className="h-6 animate-pulse rounded-md bg-[var(--bq-raised)] "
               />
             ))}
           </div>
@@ -118,14 +123,14 @@ export function EmailFolderList({
             {systemFolders.map(renderFolder)}
             {userLabels.length > 0 && (
               <>
-                <div className="px-2.5 pb-1 pt-3 text-[10px] font-medium uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
+                <div className="px-2.5 pb-1 pt-3 text-[10px] font-medium uppercase tracking-wide text-[var(--bq-t3)] ">
                   Marcadores
                 </div>
                 {userLabels.map(renderFolder)}
               </>
             )}
             {userLabels.length === 0 && (
-              <p className="px-2.5 pt-3 text-[11px] text-zinc-400 dark:text-zinc-500">
+              <p className="px-2.5 pt-3 text-[11px] text-[var(--bq-t3)] ">
                 Sem marcadores nesta conta.
               </p>
             )}

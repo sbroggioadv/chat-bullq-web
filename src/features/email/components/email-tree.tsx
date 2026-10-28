@@ -1,8 +1,10 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
+import type { LucideIcon } from "lucide-react";
+import { Button } from "@/components/ui/foundation";
+import { useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import {
   AlertOctagon,
   ChevronDown,
@@ -11,21 +13,21 @@ import {
   Mail,
   Send,
   Tag,
-} from 'lucide-react';
+} from "lucide-react";
 import {
   emailService,
   folderIdToParam,
   paramToFolderId,
   type EmailFolder,
-} from '../services/email.service';
+} from "@/features/email/services/email.service";
 
-const SYSTEM_ICON: Record<string, any> = {
+const SYSTEM_ICON: Record<string, LucideIcon> = {
   INBOX: Inbox,
   SENT: Send,
   SPAM: AlertOctagon,
 };
 
-const STORAGE_KEY = 'email-tree-expanded';
+const STORAGE_KEY = "email-tree-expanded";
 
 /**
  * Item "E-mail" da sidebar (SPEC-004 W1). Só aparece quando a org tem canal
@@ -38,25 +40,33 @@ export function EmailTree() {
   const router = useRouter();
 
   const [expanded, setExpanded] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return true;
-    return window.localStorage.getItem(STORAGE_KEY) !== '0';
+    if (typeof window === "undefined") return true;
+    return window.localStorage.getItem(STORAGE_KEY) !== "0";
   });
   // Marcadores recolhidos por padrão — não inflar a sidebar
   const [labelsExpanded, setLabelsExpanded] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false;
-    return window.localStorage.getItem('email-tree-labels-expanded') === '1';
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem("email-tree-labels-expanded") !== "0";
   });
 
   const { data: status } = useQuery({
-    queryKey: ['email-status'],
+    queryKey: ["email-status"],
     queryFn: () => emailService.status(),
     staleTime: 60000,
   });
 
-  const channelId = status?.channels[0]?.id;
+  const selectedChannel = searchParams.get("channel");
+  const channelId =
+    status?.channels.find((channel) => channel.id === selectedChannel)?.id ||
+    status?.channels[0]?.id;
 
-  const { data: foldersData } = useQuery({
-    queryKey: ['email-folders', channelId],
+  const {
+    data: foldersData,
+    isPending: foldersLoading,
+    isError: foldersError,
+    refetch,
+  } = useQuery({
+    queryKey: ["email-folders", channelId],
     queryFn: () => emailService.folders(channelId!),
     enabled: !!channelId,
     staleTime: 60000,
@@ -67,25 +77,27 @@ export function EmailTree() {
   const toggleExpanded = () => {
     const next = !expanded;
     setExpanded(next);
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(STORAGE_KEY, next ? '1' : '0');
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(STORAGE_KEY, next ? "1" : "0");
     }
   };
 
-  const isEmail = pathname === '/email' || pathname?.startsWith('/email');
+  const isEmail = pathname === "/email" || pathname?.startsWith("/email");
   const activeFolderId = isEmail
-    ? paramToFolderId(searchParams.get('folder'))
+    ? paramToFolderId(searchParams.get("folder"))
     : null;
 
   const goFolder = (folderId: string) =>
-    router.push(`/email?folder=${encodeURIComponent(folderIdToParam(folderId))}`);
+    router.push(
+      `/email?folder=${encodeURIComponent(folderIdToParam(folderId))}${channelId ? `&channel=${encodeURIComponent(channelId)}` : ""}`,
+    );
 
   const folders = foldersData?.folders ?? [];
-  const systemFolders = folders.filter((f) => f.kind === 'system');
-  const userLabels = folders.filter((f) => f.kind === 'user');
+  const systemFolders = folders.filter((f) => f.kind === "system");
+  const userLabels = folders.filter((f) => f.kind === "user");
 
   const renderFolder = (f: EmailFolder) => {
-    const Icon = f.kind === 'system' ? (SYSTEM_ICON[f.id] ?? Inbox) : Tag;
+    const Icon = f.kind === "system" ? (SYSTEM_ICON[f.id] ?? Inbox) : Tag;
     const isActive = activeFolderId === f.id;
     return (
       <button
@@ -95,11 +107,11 @@ export function EmailTree() {
         title={f.name}
         className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs ${
           isActive
-            ? 'bg-sidebar-accent font-medium text-sidebar-accent-foreground'
-            : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground'
+            ? "bg-[var(--bq-raised-2)] font-medium text-[var(--bq-t1)]"
+            : "text-[var(--bq-t2)] hover:bg-[var(--bq-raised)] hover:text-[var(--bq-t1)]"
         }`}
       >
-        <Icon className="size-3.5 text-sidebar-foreground/50" />
+        <Icon className="size-3.5 text-[var(--bq-t2)]" />
         <span className="flex-1 truncate">{f.name}</span>
       </button>
     );
@@ -111,8 +123,8 @@ export function EmailTree() {
         <button
           type="button"
           onClick={toggleExpanded}
-          aria-label={expanded ? 'Recolher' : 'Expandir'}
-          className="flex h-7 w-5 items-center justify-center rounded text-sidebar-foreground/50 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+          aria-label={expanded ? "Recolher" : "Expandir"}
+          className="flex h-7 w-5 items-center justify-center rounded text-[var(--bq-t2)] hover:bg-[var(--bq-raised)] hover:text-[var(--bq-t1)]"
         >
           {expanded ? (
             <ChevronDown className="size-3.5" />
@@ -122,20 +134,28 @@ export function EmailTree() {
         </button>
         <button
           type="button"
-          onClick={() => goFolder('INBOX')}
+          onClick={() => goFolder("INBOX")}
           className={`flex flex-1 items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm font-medium ${
             isEmail
-              ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-              : 'text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground'
+              ? "bg-[var(--bq-raised-2)] text-[var(--bq-t1)]"
+              : "text-[var(--bq-t2)] hover:bg-[var(--bq-raised)] hover:text-[var(--bq-t1)]"
           }`}
         >
-          <Mail className="size-5 text-red-600 dark:text-red-400" />
+          <Mail className="size-5 text-[var(--bq-info-text)]" />
           <span className="flex-1">E-mail</span>
         </button>
       </div>
 
       {expanded && (
-        <div className="ml-5 space-y-0.5 border-l border-sidebar-border pl-2">
+        <div className="ml-5 space-y-0.5 border-l border-[var(--bq-hair)] pl-2">
+          {foldersLoading && (
+            <p role="status" className="p-2 text-xs text-[var(--bq-t3)]">
+              Carregando pastas…
+            </p>
+          )}
+          {foldersError && (
+            <Button onClick={() => refetch()}>Tentar carregar pastas</Button>
+          )}
           {systemFolders.map(renderFolder)}
 
           {userLabels.length > 0 && (
@@ -145,16 +165,16 @@ export function EmailTree() {
                 onClick={() => {
                   setLabelsExpanded((v) => {
                     const next = !v;
-                    if (typeof window !== 'undefined') {
+                    if (typeof window !== "undefined") {
                       window.localStorage.setItem(
-                        'email-tree-labels-expanded',
-                        next ? '1' : '0',
+                        "email-tree-labels-expanded",
+                        next ? "1" : "0",
                       );
                     }
                     return next;
                   });
                 }}
-                className="flex w-full items-center gap-1 rounded-md px-2 py-1 text-left text-[10px] font-medium uppercase tracking-wide text-sidebar-foreground/40 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground/70"
+                className="flex w-full items-center gap-1 rounded-md px-2 py-1 text-left text-[10px] font-medium uppercase tracking-wide text-[var(--bq-t2)] hover:bg-[var(--bq-raised)] hover:text-[var(--bq-t2)]"
               >
                 {labelsExpanded ? (
                   <ChevronDown className="size-3" />
@@ -162,7 +182,7 @@ export function EmailTree() {
                   <ChevronRight className="size-3" />
                 )}
                 <span className="flex-1">Marcadores</span>
-                <span className="normal-case tracking-normal text-sidebar-foreground/30">
+                <span className="normal-case tracking-normal text-[var(--bq-t2)]">
                   {userLabels.length}
                 </span>
               </button>

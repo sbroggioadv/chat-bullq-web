@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useCallback, useEffect, useRef, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, type ReactNode } from "react";
 import {
   Bold,
   Italic,
@@ -8,8 +8,11 @@ import {
   List,
   ListOrdered,
   Underline,
-} from 'lucide-react';
-import { sanitizeEmailHtml, htmlToPlainText } from '../lib/email-sanitize';
+} from "lucide-react";
+import {
+  sanitizeEmailHtml,
+  htmlToPlainText,
+} from "@/features/email/lib/email-sanitize";
 
 interface EmailRichEditorProps {
   valueHtml: string;
@@ -26,21 +29,21 @@ interface EmailRichEditorProps {
 export function EmailRichEditor({
   valueHtml,
   onChange,
-  placeholder = 'Escreva…',
+  placeholder = "Escreva…",
   rows = 5,
   disabled = false,
 }: EmailRichEditorProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const lastEmitted = useRef<string>('');
+  const lastEmitted = useRef<string>("");
 
   // Sync externo → DOM só quando valor mudou de fora
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const safe = sanitizeEmailHtml(valueHtml) || '';
+    const safe = sanitizeEmailHtml(valueHtml) || "";
     if (safe === lastEmitted.current) return;
     if (el.innerHTML !== safe) {
-      el.innerHTML = safe || '';
+      el.innerHTML = safe || "";
     }
   }, [valueHtml]);
 
@@ -72,52 +75,52 @@ export function EmailRichEditor({
 
   const onLink = () => {
     if (disabled) return;
-    const url = window.prompt('URL do link (https://…)', 'https://');
+    const url = window.prompt("URL do link (https://…)", "https://");
     if (!url) return;
     const trimmed = url.trim();
     if (!/^https?:\/\//i.test(trimmed) && !/^mailto:/i.test(trimmed)) {
       return;
     }
-    cmd('createLink', trimmed);
+    cmd("createLink", trimmed);
   };
 
   const minH = Math.max(3, rows) * 1.5;
 
   return (
-    <div className="overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900">
-      <div className="flex flex-wrap items-center gap-0.5 border-b border-zinc-200 bg-white px-1.5 py-1 dark:border-zinc-800 dark:bg-zinc-950">
+    <div className="overflow-hidden rounded-lg border border-[var(--bq-hair)] bg-[var(--bq-surface)]  ">
+      <div className="flex flex-wrap items-center gap-0.5 border-b border-[var(--bq-hair)] bg-[var(--bq-surface)] px-1.5 py-1  ">
         <ToolbarBtn
           label="Negrito"
-          onClick={() => cmd('bold')}
+          onClick={() => cmd("bold")}
           disabled={disabled}
         >
           <Bold className="h-3.5 w-3.5" />
         </ToolbarBtn>
         <ToolbarBtn
           label="Itálico"
-          onClick={() => cmd('italic')}
+          onClick={() => cmd("italic")}
           disabled={disabled}
         >
           <Italic className="h-3.5 w-3.5" />
         </ToolbarBtn>
         <ToolbarBtn
           label="Sublinhado"
-          onClick={() => cmd('underline')}
+          onClick={() => cmd("underline")}
           disabled={disabled}
         >
           <Underline className="h-3.5 w-3.5" />
         </ToolbarBtn>
-        <span className="mx-1 h-4 w-px bg-zinc-200 dark:bg-zinc-700" />
+        <span className="mx-1 h-4 w-px bg-[var(--bq-raised)] " />
         <ToolbarBtn
           label="Lista"
-          onClick={() => cmd('insertUnorderedList')}
+          onClick={() => cmd("insertUnorderedList")}
           disabled={disabled}
         >
           <List className="h-3.5 w-3.5" />
         </ToolbarBtn>
         <ToolbarBtn
           label="Lista numerada"
-          onClick={() => cmd('insertOrderedList')}
+          onClick={() => cmd("insertOrderedList")}
           disabled={disabled}
         >
           <ListOrdered className="h-3.5 w-3.5" />
@@ -136,7 +139,7 @@ export function EmailRichEditor({
         data-placeholder={placeholder}
         onInput={emit}
         onBlur={emit}
-        className="email-rich-editor max-h-64 overflow-y-auto px-3 py-2 text-sm text-zinc-900 outline-none empty:before:pointer-events-none empty:before:text-zinc-400 empty:before:content-[attr(data-placeholder)] dark:text-zinc-100 dark:empty:before:text-zinc-500 [&_a]:text-primary [&_a]:underline"
+        className="email-rich-editor max-h-64 overflow-y-auto px-3 py-2 text-sm text-[var(--bq-t1)] outline-none empty:before:pointer-events-none empty:before:text-[var(--bq-t3)] empty:before:content-[attr(data-placeholder)]  dark:empty:before:text-[var(--bq-t3)] [&_a]:text-primary [&_a]:underline"
         style={{ minHeight: `${minH}rem` }}
       />
     </div>
@@ -165,7 +168,7 @@ function ToolbarBtn({
         e.preventDefault();
         onClick();
       }}
-      className="inline-flex size-7 items-center justify-center rounded text-zinc-600 hover:bg-zinc-100 disabled:opacity-40 dark:text-zinc-300 dark:hover:bg-zinc-800"
+      className="inline-flex size-7 items-center justify-center rounded text-[var(--bq-t2)] hover:bg-[var(--bq-raised)] disabled:opacity-40  "
     >
       {children}
     </button>

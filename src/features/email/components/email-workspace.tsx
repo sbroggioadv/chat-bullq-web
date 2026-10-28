@@ -1,29 +1,33 @@
-'use client';
+"use client";
 
-import { useCallback, useEffect } from 'react';
-import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
+  type InfiniteData,
   useInfiniteQuery,
   useQuery,
   useQueryClient,
-} from '@tanstack/react-query';
-import { Mail } from 'lucide-react';
+} from "@tanstack/react-query";
+import { Mail } from "lucide-react";
 import {
+  type EmailThreadsPage,
   emailService,
   folderIdToParam,
   paramToFolderId,
-} from '../services/email.service';
-import { EmailFolderList } from './email-folder-list';
-import { EmailThreadList } from './email-thread-list';
-import { EmailThreadView } from './email-thread-view';
-import { channelsService } from '@/features/channels/services/channels.service';
-import { toast } from 'sonner';
+} from "@/features/email/services/email.service";
+import { EmailFolderList } from "@/features/email/components/email-folder-list";
+import { EmailThreadList } from "@/features/email/components/email-thread-list";
+import { EmailThreadView } from "@/features/email/components/email-thread-view";
+import { channelsService } from "@/features/channels/services/channels.service";
+import { Button, Sheet } from "@/components/ui/foundation";
+import { EmailCompose } from "@/features/email/components/email-compose";
+import { toast } from "sonner";
 
 const SYSTEM_NAMES: Record<string, string> = {
-  INBOX: 'Caixa de entrada',
-  SENT: 'Enviados',
-  SPAM: 'Spam',
+  INBOX: "Caixa de entrada",
+  SENT: "Enviados",
+  SPAM: "Spam",
 };
 
 /**
@@ -32,16 +36,18 @@ const SYSTEM_NAMES: Record<string, string> = {
  * refresh/share/deep-link preservarem a visão.
  */
 export function EmailWorkspace() {
+  const [foldersOpen, setFoldersOpen] = useState(false);
+  const [composing, setComposing] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
 
-  const folderId = paramToFolderId(searchParams.get('folder'));
-  const threadId = searchParams.get('threadId') || searchParams.get('thread');
-  const channelParam = searchParams.get('channel');
+  const folderId = paramToFolderId(searchParams.get("folder"));
+  const threadId = searchParams.get("threadId") || searchParams.get("thread");
+  const channelParam = searchParams.get("channel");
 
   const statusQuery = useQuery({
-    queryKey: ['email-status'],
+    queryKey: ["email-status"],
     queryFn: () => emailService.status(),
     staleTime: 60000,
   });
@@ -52,14 +58,14 @@ export function EmailWorkspace() {
       : channels[0]?.id;
 
   const foldersQuery = useQuery({
-    queryKey: ['email-folders', channelId],
+    queryKey: ["email-folders", channelId],
     queryFn: () => emailService.folders(channelId!),
     enabled: !!channelId,
     staleTime: 60000,
   });
 
   const threadsQuery = useInfiniteQuery({
-    queryKey: ['email-threads', channelId, folderId],
+    queryKey: ["email-threads", channelId, folderId],
     queryFn: ({ pageParam }) =>
       emailService.threads(channelId!, folderId, pageParam),
     initialPageParam: undefined as string | undefined,
@@ -69,7 +75,7 @@ export function EmailWorkspace() {
   });
 
   const threadQuery = useQuery({
-    queryKey: ['email-thread', channelId, threadId],
+    queryKey: ["email-thread", channelId, threadId],
     queryFn: () => emailService.thread(channelId!, threadId!),
     enabled: !!channelId && !!threadId,
     staleTime: 30000,
@@ -78,10 +84,10 @@ export function EmailWorkspace() {
   const navigate = useCallback(
     (nextFolderId: string, nextThreadId?: string, nextChannelId?: string) => {
       const p = new URLSearchParams();
-      p.set('folder', folderIdToParam(nextFolderId));
+      p.set("folder", folderIdToParam(nextFolderId));
       const ch = nextChannelId ?? channelParam;
-      if (ch) p.set('channel', ch);
-      if (nextThreadId) p.set('threadId', nextThreadId);
+      if (ch) p.set("channel", ch);
+      if (nextThreadId) p.set("threadId", nextThreadId);
       router.push(`/email?${p.toString()}`);
     },
     [router, channelParam],
@@ -91,14 +97,14 @@ export function EmailWorkspace() {
     (id: string) => {
       if (!channelId) return;
       queryClient.setQueriesData(
-        { queryKey: ['email-threads', channelId] },
-        (old: any) => {
+        { queryKey: ["email-threads", channelId] },
+        (old: InfiniteData<EmailThreadsPage> | undefined) => {
           if (!old?.pages) return old;
           return {
             ...old,
-            pages: old.pages.map((page: any) => ({
+            pages: old.pages.map((page) => ({
               ...page,
-              threads: (page.threads || []).map((t: any) =>
+              threads: (page.threads || []).map((t) =>
                 t.id === id ? { ...t, unread: false } : t,
               ),
             })),
@@ -138,17 +144,17 @@ export function EmailWorkspace() {
   if (statusQuery.isError || !statusQuery.data?.connected || !channelId) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
-        <Mail className="h-12 w-12 text-zinc-300 dark:text-zinc-700" />
+        <Mail className="h-12 w-12 text-[var(--bq-t3)] " />
         <div>
-          <p className="text-base font-medium text-zinc-800 dark:text-zinc-200">
+          <p className="text-base font-medium text-[var(--bq-t1)] ">
             {statusQuery.isError
-              ? 'Não foi possível verificar a conexão de e-mail'
-              : 'Nenhuma conta Gmail conectada'}
+              ? "Não foi possível verificar a conexão de e-mail"
+              : "Nenhuma conta Gmail conectada"}
           </p>
-          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+          <p className="mt-1 text-sm text-[var(--bq-t3)] ">
             {statusQuery.isError
-              ? 'Tente recarregar a página. Se o problema continuar, fale com o administrador.'
-              : 'Conecte um canal Gmail para ver seus e-mails aqui.'}
+              ? "Tente recarregar a página. Se o problema continuar, fale com o administrador."
+              : "Conecte um canal Gmail para ver seus e-mails aqui."}
           </p>
         </div>
         {!statusQuery.isError && (
@@ -167,78 +173,114 @@ export function EmailWorkspace() {
   const folderName =
     folders.find((f) => f.id === folderId)?.name ??
     SYSTEM_NAMES[folderId] ??
-    'Pasta';
+    "Pasta";
   const threads =
     threadsQuery.data?.pages.flatMap((page) => page.threads) ?? [];
 
   return (
-    <div className="flex h-full min-h-0">
-      {/* Pastas — some no mobile (navegação pela sidebar) */}
-      <div className="hidden w-56 shrink-0 md:flex lg:w-60">
+    <div className="flex h-full min-h-0 flex-col gap-[14px] px-5 py-[18px] text-[13px] text-[var(--bq-t1)]">
+      <header className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-medium tracking-tight">E-mail</h1>
+          <p className="mt-1 text-xs text-[var(--bq-t3)]">
+            Gmail ·{" "}
+            {channels.find((channel) => channel.id === channelId)?.email ||
+              channels.find((channel) => channel.id === channelId)?.name}
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button onClick={() => setFoldersOpen(true)}>Pastas e contas</Button>
+          <Button variant="solid" onClick={() => setComposing(true)}>
+            Escrever
+          </Button>
+        </div>
+      </header>
+      <Sheet
+        title="Pastas e contas"
+        open={foldersOpen}
+        onClose={() => setFoldersOpen(false)}
+      >
         <EmailFolderList
           channels={channels}
           activeChannelId={channelId}
-          onChannelChange={(id) => navigate('INBOX', undefined, id)}
+          onChannelChange={(id) => {
+            navigate("INBOX", undefined, id);
+            setFoldersOpen(false);
+          }}
           folders={folders}
           activeFolderId={folderId}
-          onSelectFolder={(id) => navigate(id)}
+          onSelectFolder={(id) => {
+            navigate(id);
+            setFoldersOpen(false);
+          }}
           loading={foldersQuery.isPending}
           error={foldersQuery.isError}
           onRetry={() => foldersQuery.refetch()}
         />
-      </div>
-
-      {/* Lista — no mobile ocupa a tela até abrir um thread */}
-      <div
-        className={`w-full min-w-0 shrink-0 md:flex md:w-[340px] lg:w-[380px] ${
-          threadId ? 'hidden' : 'flex'
-        }`}
-      >
-        <EmailThreadList
-          folderName={folderName}
-          threads={threads}
-          activeThreadId={threadId}
-          onSelect={selectThread}
-          loading={threadsQuery.isPending}
-          error={threadsQuery.isError}
-          onRetry={() => threadsQuery.refetch()}
-          hasMore={!!threadsQuery.hasNextPage}
-          loadingMore={threadsQuery.isFetchingNextPage}
-          onLoadMore={() => threadsQuery.fetchNextPage()}
-        />
-      </div>
-
-      {/* Leitura */}
-      <div className={`min-w-0 flex-1 md:flex ${threadId ? 'flex' : 'hidden'}`}>
-        <EmailThreadView
-          detail={threadQuery.data}
+      </Sheet>
+      {composing && (
+        <EmailCompose
           channelId={channelId}
-          threadSelected={!!threadId}
-          loading={threadQuery.isPending && !!threadId}
-          error={threadQuery.isError}
-          onRetry={() => threadQuery.refetch()}
-          onBack={() => navigate(folderId)}
-          onSent={() => {
-            threadQuery.refetch();
-            threadsQuery.refetch();
-          }}
-          onReauth={async () => {
-            try {
-              const ch = statusQuery.data?.channels[0];
-              const { url } = await channelsService.gmailOAuthStart({
-                name: ch?.name,
-                channelId: ch?.id || channelId,
-              });
-              window.location.href = url;
-            } catch (err) {
-              toast.error(
-                err instanceof Error
-                  ? err.message
-                  : 'Falha ao iniciar reconexão Google',
-              );
-            }
-          }}
+          onClose={() => setComposing(false)}
+          onSent={() => threadsQuery.refetch()}
         />
+      )}
+      <div className="flex min-h-0 flex-1 overflow-hidden rounded-2xl border border-[var(--bq-hair)] bg-[var(--bq-surface)]">
+        {/* Lista — no mobile ocupa a tela até abrir um thread */}
+        <div
+          className={`w-full min-w-0 shrink-0 md:flex md:w-[280px] lg:w-[320px] ${
+            threadId ? "hidden" : "flex"
+          }`}
+        >
+          <EmailThreadList
+            folderName={folderName}
+            threads={threads}
+            activeThreadId={threadId}
+            onSelect={selectThread}
+            loading={threadsQuery.isPending}
+            error={threadsQuery.isError}
+            onRetry={() => threadsQuery.refetch()}
+            hasMore={!!threadsQuery.hasNextPage}
+            loadingMore={threadsQuery.isFetchingNextPage}
+            onLoadMore={() => threadsQuery.fetchNextPage()}
+          />
+        </div>
+
+        {/* Leitura */}
+        <div
+          className={`min-w-0 flex-1 md:flex ${threadId ? "flex" : "hidden"}`}
+        >
+          <EmailThreadView
+            key={threadId}
+            detail={threadQuery.data}
+            channelId={channelId}
+            threadSelected={!!threadId}
+            loading={threadQuery.isPending && !!threadId}
+            error={threadQuery.isError}
+            onRetry={() => threadQuery.refetch()}
+            onBack={() => navigate(folderId)}
+            onSent={() => {
+              threadQuery.refetch();
+              threadsQuery.refetch();
+            }}
+            onReauth={async () => {
+              try {
+                const ch = statusQuery.data?.channels[0];
+                const { url } = await channelsService.gmailOAuthStart({
+                  name: ch?.name,
+                  channelId: ch?.id || channelId,
+                });
+                window.location.href = url;
+              } catch (err) {
+                toast.error(
+                  err instanceof Error
+                    ? err.message
+                    : "Falha ao iniciar reconexão Google",
+                );
+              }
+            }}
+          />
+        </div>
       </div>
     </div>
   );

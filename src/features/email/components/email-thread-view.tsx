@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertOctagon,
   Archive,
@@ -17,28 +17,28 @@ import {
   Star,
   Tag,
   X,
-} from 'lucide-react';
-import { toast } from 'sonner';
-import { useQuery } from '@tanstack/react-query';
-import Link from 'next/link';
-import type { EmailThreadDetail } from '../services/email.service';
+} from "lucide-react";
+import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
+import Link from "next/link";
+import type { EmailThreadDetail } from "@/features/email/services/email.service";
 import {
   emailService,
   fileToOutboundAttachment,
   MAX_OUTBOUND_ATTACHMENTS,
   MAX_OUTBOUND_ATTACHMENT_BYTES,
-} from '../services/email.service';
-import { formatLongDate } from '../lib/format';
-import { EmailSafeBody } from './email-safe-body';
-import { EmailRichEditor } from './email-rich-editor';
+} from "@/features/email/services/email.service";
+import { formatLongDate } from "@/features/email/lib/format";
+import { EmailSafeBody } from "@/features/email/components/email-safe-body";
+import { EmailRichEditor } from "@/features/email/components/email-rich-editor";
 import {
   loadRecentRecipients,
   rememberRecipients,
   suggestRecipients,
-} from '../lib/recent-recipients';
-import { inboxService } from '@/features/inbox/services/inbox.service';
+} from "@/features/email/lib/recent-recipients";
+import { inboxService } from "@/features/inbox/services/inbox.service";
 
-type ComposeMode = 'reply' | 'replyAll' | 'forward' | null;
+type ComposeMode = "reply" | "replyAll" | "forward" | null;
 
 interface EmailThreadViewProps {
   detail: EmailThreadDetail | undefined;
@@ -64,9 +64,9 @@ export function EmailThreadView({
   onReauth,
 }: EmailThreadViewProps) {
   const [mode, setMode] = useState<ComposeMode>(null);
-  const [body, setBody] = useState('');
-  const [bodyHtml, setBodyHtml] = useState('');
-  const [forwardTo, setForwardTo] = useState('');
+  const [body, setBody] = useState("");
+  const [bodyHtml, setBodyHtml] = useState("");
+  const [forwardTo, setForwardTo] = useState("");
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [sending, setSending] = useState(false);
@@ -78,7 +78,7 @@ export function EmailThreadView({
   const [spam, setSpam] = useState(!!detail?.spam);
 
   const inboxLinkQ = useQuery({
-    queryKey: ['conversation-by-external', channelId, detail?.id],
+    queryKey: ["conversation-by-external", channelId, detail?.id],
     queryFn: () => inboxService.lookupByExternal(channelId!, detail!.id),
     enabled: !!channelId && !!detail?.id,
     staleTime: 60_000,
@@ -100,36 +100,38 @@ export function EmailThreadView({
   }, [detail?.id, detail?.starred, detail?.spam, detail?.labelIds]);
 
   const foldersQ = useQuery({
-    queryKey: ['email-folders', channelId],
+    queryKey: ["email-folders", channelId],
     queryFn: () => emailService.folders(channelId!),
     enabled: !!channelId,
     staleTime: 60_000,
   });
-  const userLabels = (foldersQ.data?.folders || []).filter((f) => f.kind === 'user');
+  const userLabels = (foldersQ.data?.folders || []).filter(
+    (f) => f.kind === "user",
+  );
 
   useEffect(() => {
     setRecent(loadRecentRecipients());
   }, []);
 
   const defaultTo = useMemo(() => {
-    if (!detail?.messages?.length) return '';
+    if (!detail?.messages?.length) return "";
     const inbound = [...detail.messages].reverse().find((m) => !m.outbound);
-    return inbound?.from.email || '';
+    return inbound?.from.email || "";
   }, [detail]);
 
   const replyAllPreview = useMemo(() => {
-    if (!detail?.messages?.length) return { to: '', cc: '' };
+    if (!detail?.messages?.length) return { to: "", cc: "" };
     const inbound = [...detail.messages].reverse().find((m) => !m.outbound);
-    if (!inbound) return { to: defaultTo, cc: '' };
-    const my = (detail.myEmail || '').toLowerCase();
+    if (!inbound) return { to: defaultTo, cc: "" };
+    const my = (detail.myEmail || "").toLowerCase();
     const to = inbound.from.email || defaultTo;
-    const pool = `${inbound.to || ''}, ${inbound.cc || ''}`
+    const pool = `${inbound.to || ""}, ${inbound.cc || ""}`
       .split(/[,;]+/)
       .map((s) => s.trim())
       .filter(Boolean)
       .map((s) => {
         const m = s.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
-        return m ? m[0].toLowerCase() : '';
+        return m ? m[0].toLowerCase() : "";
       })
       .filter(Boolean);
     const exclude = new Set([my, to.toLowerCase()].filter(Boolean));
@@ -140,20 +142,17 @@ export function EmailThreadView({
         seen.add(e);
         return true;
       })
-      .join(', ');
+      .join(", ");
     return { to, cc };
   }, [detail, defaultTo]);
 
-  const suggestions = useMemo(
-    () => suggestRecipients(forwardTo),
-    [forwardTo, recent],
-  );
+  const suggestions = suggestRecipients(forwardTo);
 
   if (!threadSelected) {
     return (
-      <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-zinc-50 px-6 text-center dark:bg-zinc-950">
-        <MailOpen className="h-10 w-10 text-zinc-300 dark:text-zinc-700" />
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+      <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-[var(--bq-surface)] px-6 text-center ">
+        <MailOpen className="h-10 w-10 text-[var(--bq-t3)] " />
+        <p className="text-sm text-[var(--bq-t3)] ">
           Selecione um e-mail para ler
         </p>
       </div>
@@ -162,23 +161,23 @@ export function EmailThreadView({
 
   if (loading) {
     return (
-      <div className="h-full w-full space-y-3 bg-zinc-50 p-6 dark:bg-zinc-950">
-        <div className="h-6 w-2/3 animate-pulse rounded-md bg-zinc-200 dark:bg-zinc-900" />
-        <div className="h-28 animate-pulse rounded-lg bg-zinc-200 dark:bg-zinc-900" />
+      <div className="h-full w-full space-y-3 bg-[var(--bq-surface)] p-6 ">
+        <div className="h-6 w-2/3 animate-pulse rounded-md bg-[var(--bq-raised)] " />
+        <div className="h-28 animate-pulse rounded-lg bg-[var(--bq-raised)] " />
       </div>
     );
   }
 
   if (error || !detail) {
     return (
-      <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-zinc-50 px-6 text-center dark:bg-zinc-950">
-        <p className="text-sm text-zinc-600 dark:text-zinc-300">
+      <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-[var(--bq-surface)] px-6 text-center ">
+        <p className="text-sm text-[var(--bq-t2)] ">
           Não foi possível carregar este e-mail.
         </p>
         <button
           type="button"
           onClick={onRetry}
-          className="mt-1 inline-flex items-center gap-1.5 rounded-md border border-zinc-200/80 px-2.5 py-1.5 text-xs text-zinc-700 hover:bg-zinc-100 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-900"
+          className="mt-1 inline-flex items-center gap-1.5 rounded-md border border-[var(--bq-hair)] px-2.5 py-1.5 text-xs text-[var(--bq-t2)] hover:bg-[var(--bq-raised)]   "
         >
           <RefreshCw className="h-3 w-3" /> Tentar de novo
         </button>
@@ -188,9 +187,9 @@ export function EmailThreadView({
 
   const openCompose = (m: ComposeMode) => {
     setMode(m);
-    setBody('');
-    setBodyHtml('');
-    setForwardTo('');
+    setBody("");
+    setBodyHtml("");
+    setForwardTo("");
     setPendingFiles([]);
     setReauthHint(false);
   };
@@ -199,7 +198,7 @@ export function EmailThreadView({
     setForwardTo(value);
     // Salva automaticamente e-mails completos já digitados (antes da vírgula)
     const chunks = value.split(/[,;]/);
-    const completed = chunks.slice(0, -1).join(',');
+    const completed = chunks.slice(0, -1).join(",");
     if (completed.trim()) {
       setRecent(rememberRecipients(completed));
     }
@@ -211,7 +210,7 @@ export function EmailThreadView({
     const next = parts
       .map((p) => p.trim())
       .filter(Boolean)
-      .join(', ');
+      .join(", ");
     const withComma = next.endsWith(email) ? `${next}, ` : next;
     setForwardTo(withComma);
     setRecent(rememberRecipients(email));
@@ -222,38 +221,57 @@ export function EmailThreadView({
     setArchiving(true);
     try {
       await emailService.archive({ channelId, threadId: detail.id });
-      toast.success('Arquivado');
+      toast.success("Arquivado", {
+        action: {
+          label: "Desfazer",
+          onClick: async () => {
+            try {
+              await emailService.modify({
+                channelId,
+                threadId: detail.id,
+                addLabelIds: ["INBOX"],
+              });
+              onSent();
+              toast.success("E-mail voltou à Caixa de entrada");
+            } catch (error) {
+              toast.error(
+                error instanceof Error ? error.message : "Falha ao desfazer",
+              );
+            }
+          },
+        },
+      });
       onSent();
       onBack();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Falha ao arquivar');
+      toast.error(err instanceof Error ? err.message : "Falha ao arquivar");
     } finally {
       setArchiving(false);
     }
   };
 
   const runModify = async (
-    action: 'star' | 'unstar' | 'spam' | 'unspam',
+    action: "star" | "unstar" | "spam" | "unspam",
     okMsg: string,
   ) => {
     if (!channelId || !detail?.id) return;
     setModifying(true);
     try {
       await emailService.modify({ channelId, threadId: detail.id, action });
-      if (action === 'star') setStarred(true);
-      if (action === 'unstar') setStarred(false);
-      if (action === 'spam') {
+      if (action === "star") setStarred(true);
+      if (action === "unstar") setStarred(false);
+      if (action === "spam") {
         setSpam(true);
         toast.success(okMsg);
         onSent();
         onBack();
         return;
       }
-      if (action === 'unspam') setSpam(false);
+      if (action === "unspam") setSpam(false);
       toast.success(okMsg);
       onSent();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Falha ao atualizar');
+      toast.error(err instanceof Error ? err.message : "Falha ao atualizar");
     } finally {
       setModifying(false);
     }
@@ -278,36 +296,40 @@ export function EmailThreadView({
       }
       return next;
     });
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleSend = async () => {
     if (!channelId || !detail.id || !mode) return;
-    if ((mode === 'reply' || mode === 'replyAll') && !body.trim()) {
-      toast.error('Escreva a resposta antes de enviar');
+    if ((mode === "reply" || mode === "replyAll") && !body.trim()) {
+      toast.error("Escreva a resposta antes de enviar");
       return;
     }
-    if (mode === 'forward' && !forwardTo.trim()) {
-      toast.error('Informe o destinatário para encaminhar');
+    if (mode === "forward" && !forwardTo.trim()) {
+      toast.error("Informe o destinatário para encaminhar");
       return;
     }
     setSending(true);
     try {
       const attachments =
         pendingFiles.length > 0
-          ? await Promise.all(pendingFiles.map((f) => fileToOutboundAttachment(f)))
+          ? await Promise.all(
+              pendingFiles.map((f) => fileToOutboundAttachment(f)),
+            )
           : undefined;
-      if (mode === 'reply' || mode === 'replyAll') {
+      if (mode === "reply" || mode === "replyAll") {
         await emailService.reply({
           channelId,
           threadId: detail.id,
           body: body.trim(),
           bodyHtml: bodyHtml.trim() || undefined,
-          to: mode === 'reply' ? defaultTo || undefined : undefined,
-          replyAll: mode === 'replyAll',
+          to: mode === "reply" ? defaultTo || undefined : undefined,
+          replyAll: mode === "replyAll",
           attachments,
         });
-        toast.success(mode === 'replyAll' ? 'Resposta a todos enviada' : 'Resposta enviada');
+        toast.success(
+          mode === "replyAll" ? "Resposta a todos enviada" : "Resposta enviada",
+        );
       } else {
         const saved = rememberRecipients(forwardTo);
         setRecent(saved);
@@ -319,18 +341,22 @@ export function EmailThreadView({
           bodyHtml: bodyHtml.trim() || undefined,
           attachments,
         });
-        toast.success('E-mail encaminhado');
+        toast.success("E-mail encaminhado");
       }
-      setBody('');
-      setBodyHtml('');
-      setForwardTo('');
+      setBody("");
+      setBodyHtml("");
+      setForwardTo("");
       setPendingFiles([]);
       setMode(null);
       setReauthHint(false);
       onSent();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Falha ao enviar';
-      if (/leitura|reconect|gmail\.send|gmail\.modify|permiss|scope|403|autoriz/i.test(msg)) {
+      const msg = err instanceof Error ? err.message : "Falha ao enviar";
+      if (
+        /leitura|reconect|gmail\.send|gmail\.modify|permiss|scope|403|autoriz/i.test(
+          msg,
+        )
+      ) {
         setReauthHint(true);
       }
       toast.error(msg);
@@ -340,32 +366,32 @@ export function EmailThreadView({
   };
 
   const composeTitle =
-    mode === 'reply'
-      ? `Responder${defaultTo ? ` para ${defaultTo}` : ''}`
-      : mode === 'replyAll'
-        ? `Responder a todos${replyAllPreview.to ? ` · To ${replyAllPreview.to}` : ''}${
-            replyAllPreview.cc ? ` · Cc ${replyAllPreview.cc}` : ''
+    mode === "reply"
+      ? `Responder${defaultTo ? ` para ${defaultTo}` : ""}`
+      : mode === "replyAll"
+        ? `Responder a todos${replyAllPreview.to ? ` · To ${replyAllPreview.to}` : ""}${
+            replyAllPreview.cc ? ` · Cc ${replyAllPreview.cc}` : ""
           }`
-        : 'Encaminhar e-mail';
+        : "Encaminhar e-mail";
 
   return (
-    <div className="flex h-full w-full min-w-0 flex-col bg-zinc-50 dark:bg-zinc-950">
-      <div className="flex items-center gap-2 border-b border-zinc-200/80 bg-white px-5 py-3.5 dark:border-zinc-800 dark:bg-zinc-950">
+    <div className="flex h-full w-full min-w-0 flex-col bg-[var(--bq-surface)] ">
+      <div className="flex flex-wrap items-center gap-2 border-b border-[var(--bq-hair)] bg-[var(--bq-surface)] px-5 py-3.5  ">
         <button
           type="button"
           onClick={onBack}
           aria-label="Voltar para a lista"
-          className="-ml-2 flex size-7 shrink-0 items-center justify-center rounded-md text-zinc-500 hover:bg-zinc-100 md:hidden dark:text-zinc-400 dark:hover:bg-zinc-900"
+          className="-ml-2 flex size-7 shrink-0 items-center justify-center rounded-md text-[var(--bq-t3)] hover:bg-[var(--bq-raised)] md:hidden  "
         >
           <ArrowLeft className="h-4 w-4" />
         </button>
-        <h1 className="min-w-0 flex-1 truncate text-base font-semibold text-zinc-900 dark:text-zinc-100">
+        <h1 className="min-w-0 basis-full truncate text-base font-semibold text-[var(--bq-t1)] ">
           {detail.subject}
         </h1>
         {inboxHref && (
           <Link
             href={inboxHref}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-zinc-200 bg-white px-2.5 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-2.5 py-1.5 text-xs font-medium text-[var(--bq-t2)] hover:bg-[var(--bq-surface)]    "
             title="Abrir a conversa correspondente no atendimento"
           >
             <MessageSquare className="h-3.5 w-3.5" />
@@ -374,7 +400,7 @@ export function EmailThreadView({
         )}
         <button
           type="button"
-          onClick={() => openCompose(mode === 'reply' ? null : 'reply')}
+          onClick={() => openCompose(mode === "reply" ? null : "reply")}
           className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-primary px-2.5 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
         >
           <Reply className="h-3.5 w-3.5" />
@@ -382,8 +408,8 @@ export function EmailThreadView({
         </button>
         <button
           type="button"
-          onClick={() => openCompose(mode === 'replyAll' ? null : 'replyAll')}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-zinc-200 bg-white px-2.5 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+          onClick={() => openCompose(mode === "replyAll" ? null : "replyAll")}
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-2.5 py-1.5 text-xs font-medium text-[var(--bq-t2)] hover:bg-[var(--bq-surface)]    "
           title="Inclui todos do To/Cc originais"
         >
           <ReplyAll className="h-3.5 w-3.5" />
@@ -392,8 +418,8 @@ export function EmailThreadView({
         </button>
         <button
           type="button"
-          onClick={() => openCompose(mode === 'forward' ? null : 'forward')}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-zinc-200 bg-white px-2.5 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+          onClick={() => openCompose(mode === "forward" ? null : "forward")}
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-2.5 py-1.5 text-xs font-medium text-[var(--bq-t2)] hover:bg-[var(--bq-surface)]    "
         >
           <Forward className="h-3.5 w-3.5" />
           Encaminhar
@@ -401,32 +427,35 @@ export function EmailThreadView({
         <button
           type="button"
           onClick={() =>
-            runModify(starred ? 'unstar' : 'star', starred ? 'Estrela removida' : 'Com estrela')
+            runModify(
+              starred ? "unstar" : "star",
+              starred ? "Estrela removida" : "Com estrela",
+            )
           }
           disabled={modifying}
-          title={starred ? 'Remover estrela' : 'Marcar com estrela'}
+          title={starred ? "Remover estrela" : "Marcar com estrela"}
           className={`inline-flex shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium disabled:opacity-50 ${
             starred
-              ? 'border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200'
-              : 'border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800'
+              ? "border-[var(--bq-warn-soft)] bg-[var(--bq-warn-soft)] text-[var(--bq-warn)]   "
+              : "border-[var(--bq-hair)] bg-[var(--bq-surface)] text-[var(--bq-t2)] hover:bg-[var(--bq-surface)]    "
           }`}
         >
-          <Star className={`h-3.5 w-3.5 ${starred ? 'fill-current' : ''}`} />
+          <Star className={`h-3.5 w-3.5 ${starred ? "fill-current" : ""}`} />
         </button>
         <button
           type="button"
           onClick={() =>
             runModify(
-              spam ? 'unspam' : 'spam',
-              spam ? 'Removido do spam' : 'Movido para spam',
+              spam ? "unspam" : "spam",
+              spam ? "Removido do spam" : "Movido para spam",
             )
           }
           disabled={modifying}
-          title={spam ? 'Tirar do spam' : 'Marcar como spam'}
+          title={spam ? "Tirar do spam" : "Marcar como spam"}
           className={`inline-flex shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium disabled:opacity-50 ${
             spam
-              ? 'border-red-300 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300'
-              : 'border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800'
+              ? "border-[var(--bq-err-soft)] bg-[var(--bq-err-soft)] text-[var(--bq-err)]   "
+              : "border-[var(--bq-hair)] bg-[var(--bq-surface)] text-[var(--bq-t2)] hover:bg-[var(--bq-surface)]    "
           }`}
         >
           <AlertOctagon className="h-3.5 w-3.5" />
@@ -437,7 +466,7 @@ export function EmailThreadView({
             onClick={() => setLabelMenuOpen((v) => !v)}
             disabled={modifying || !userLabels.length}
             title="Aplicar marcador"
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-zinc-200 bg-white px-2.5 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-2.5 py-1.5 text-xs font-medium text-[var(--bq-t2)] hover:bg-[var(--bq-surface)] disabled:opacity-50    "
           >
             <Tag className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Marcador</span>
@@ -448,14 +477,14 @@ export function EmailThreadView({
                 className="fixed inset-0 z-20"
                 onClick={() => setLabelMenuOpen(false)}
               />
-              <div className="absolute right-0 top-full z-30 mt-1 max-h-56 w-52 overflow-y-auto rounded-lg border border-zinc-200 bg-white py-1 shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
+              <div className="absolute right-0 top-full z-30 mt-1 max-h-56 w-52 overflow-y-auto rounded-lg border border-[var(--bq-hair)] bg-[var(--bq-surface)] py-1 shadow-lg  ">
                 {userLabels.map((l) => {
                   const on = activeLabels.includes(l.id);
                   return (
                     <button
                       key={l.id}
                       type="button"
-                      className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs text-zinc-700 hover:bg-zinc-50 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                      className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs text-[var(--bq-t2)] hover:bg-[var(--bq-surface)]  "
                       onClick={async () => {
                         if (!channelId || !detail?.id) return;
                         setModifying(true);
@@ -471,11 +500,15 @@ export function EmailThreadView({
                               ? prev.filter((x) => x !== l.id)
                               : [...prev, l.id],
                           );
-                          toast.success(on ? `Removido: ${l.name}` : `Marcador: ${l.name}`);
+                          toast.success(
+                            on ? `Removido: ${l.name}` : `Marcador: ${l.name}`,
+                          );
                           onSent();
                         } catch (err) {
                           toast.error(
-                            err instanceof Error ? err.message : 'Falha no marcador',
+                            err instanceof Error
+                              ? err.message
+                              : "Falha no marcador",
                           );
                         } finally {
                           setModifying(false);
@@ -485,7 +518,7 @@ export function EmailThreadView({
                     >
                       <span
                         className={`h-2 w-2 rounded-full ${
-                          on ? 'bg-primary' : 'bg-zinc-300 dark:bg-zinc-600'
+                          on ? "bg-primary" : "bg-[var(--bq-raised)] "
                         }`}
                       />
                       <span className="truncate">{l.name}</span>
@@ -501,7 +534,7 @@ export function EmailThreadView({
           onClick={handleArchive}
           disabled={archiving}
           title="Arquivar (remove da Caixa de entrada)"
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-zinc-200 bg-white px-2.5 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-2.5 py-1.5 text-xs font-medium text-[var(--bq-t2)] hover:bg-[var(--bq-surface)] disabled:opacity-50    "
         >
           {archiving ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -512,72 +545,75 @@ export function EmailThreadView({
         </button>
       </div>
 
-      {!!userLabels.length && activeLabels.some((id) => userLabels.some((u) => u.id === id)) && (
-        <div className="flex flex-wrap gap-1 border-b border-zinc-100 px-5 py-1.5 dark:border-zinc-900">
-          {userLabels
-            .filter((l) => activeLabels.includes(l.id))
-            .map((l) => (
-              <span
-                key={l.id}
-                className="rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
-              >
-                {l.name}
-              </span>
-            ))}
-        </div>
-      )}
+      {!!userLabels.length &&
+        activeLabels.some((id) => userLabels.some((u) => u.id === id)) && (
+          <div className="flex flex-wrap gap-1 border-b border-[var(--bq-hair)] px-5 py-1.5 ">
+            {userLabels
+              .filter((l) => activeLabels.includes(l.id))
+              .map((l) => (
+                <span
+                  key={l.id}
+                  className="rounded-full bg-[var(--bq-raised)] px-2 py-0.5 text-[10px] font-medium text-[var(--bq-t2)]  "
+                >
+                  {l.name}
+                </span>
+              ))}
+          </div>
+        )}
 
       {reauthHint && (
-        <div className="border-b border-amber-200/80 bg-amber-50 px-5 py-2.5 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100">
-          O Google ainda não autorizou envio nesta conexão.{' '}
+        <div className="border-b border-[var(--bq-warn-soft)] bg-[var(--bq-warn-soft)] px-5 py-2.5 text-xs text-[var(--bq-warn)]   ">
+          O Google ainda não autorizou envio nesta conexão.{" "}
           <button
             type="button"
             onClick={onReauth}
             className="font-semibold underline underline-offset-2"
           >
             Reconectar Google uma vez
-          </button>{' '}
+          </button>{" "}
           (no canal existente — não cria caixa nova) e marque o acesso ao Gmail.
         </div>
       )}
 
       <div className="flex-1 space-y-3 overflow-y-auto p-4">
         {detail.messages.map((m) => {
-          const fromLabel = m.from.name || m.from.email || 'Desconhecido';
+          const fromLabel = m.from.name || m.from.email || "Desconhecido";
           return (
             <article
               key={m.id}
-              className={`rounded-lg border bg-white p-4 dark:bg-zinc-900 ${
-                m.outbound
-                  ? 'border-primary/30'
-                  : 'border-zinc-200/80 dark:border-zinc-800'
+              className={`rounded-lg border bg-[var(--bq-surface)] p-4  ${
+                m.outbound ? "border-primary/30" : "border-[var(--bq-hair)] "
               }`}
             >
               <header className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                <span className="text-[13px] font-semibold text-zinc-900 dark:text-zinc-100">
+                <span className="text-[13px] font-semibold text-[var(--bq-t1)] ">
                   {fromLabel}
                 </span>
                 {m.from.name && m.from.email && (
-                  <span className="truncate text-xs text-zinc-400 dark:text-zinc-500">
+                  <span className="truncate text-xs text-[var(--bq-t3)] ">
                     &lt;{m.from.email}&gt;
                   </span>
                 )}
-                <span className="ml-auto shrink-0 text-[11px] text-zinc-400 dark:text-zinc-500">
+                <span className="ml-auto shrink-0 text-[11px] text-[var(--bq-t3)] ">
                   {formatLongDate(m.date)}
                 </span>
               </header>
               {m.to && (
-                <p className="mt-0.5 truncate text-[11px] text-zinc-400 dark:text-zinc-500">
+                <p className="mt-0.5 truncate text-[11px] text-[var(--bq-t3)] ">
                   para {m.to}
                 </p>
               )}
               {m.cc ? (
-                <p className="truncate text-[11px] text-zinc-400 dark:text-zinc-500">
+                <p className="truncate text-[11px] text-[var(--bq-t3)] ">
                   cc {m.cc}
                 </p>
               ) : null}
               <div className="mt-3">
-                <EmailSafeBody body={m.body} bodyHtml={m.bodyHtml} snippet={m.snippet} />
+                <EmailSafeBody
+                  body={m.body}
+                  bodyHtml={m.bodyHtml}
+                  snippet={m.snippet}
+                />
               </div>
               {!!m.attachments?.length && (
                 <div className="mt-2 flex flex-wrap gap-1.5">
@@ -585,7 +621,7 @@ export function EmailThreadView({
                     <button
                       key={a.attachmentId}
                       type="button"
-                      className="inline-flex max-w-full items-center gap-1 rounded-md border border-zinc-200 bg-zinc-50 px-2 py-1 text-[11px] text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+                      className="inline-flex max-w-full items-center gap-1 rounded-md border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-2 py-1 text-[11px] text-[var(--bq-t2)] hover:bg-[var(--bq-raised)]    "
                       title={`Baixar ${a.filename}`}
                       onClick={async () => {
                         if (!channelId) return;
@@ -598,16 +634,16 @@ export function EmailThreadView({
                             mimeType: a.mimeType,
                           });
                           const url = URL.createObjectURL(blob);
-                          const link = document.createElement('a');
+                          const link = document.createElement("a");
                           link.href = url;
-                          link.download = a.filename || 'anexo';
+                          link.download = a.filename || "anexo";
                           link.click();
                           URL.revokeObjectURL(url);
                         } catch (err) {
                           toast.error(
                             err instanceof Error
                               ? err.message
-                              : 'Falha ao baixar anexo',
+                              : "Falha ao baixar anexo",
                           );
                         }
                       }}
@@ -615,7 +651,7 @@ export function EmailThreadView({
                       <Paperclip className="h-3 w-3 shrink-0" />
                       <span className="truncate">{a.filename}</span>
                       {a.size > 0 && (
-                        <span className="shrink-0 text-zinc-400">
+                        <span className="shrink-0 text-[var(--bq-t3)]">
                           {a.size > 1024 * 1024
                             ? `${(a.size / (1024 * 1024)).toFixed(1)} MB`
                             : `${Math.max(1, Math.round(a.size / 1024))} KB`}
@@ -631,9 +667,9 @@ export function EmailThreadView({
       </div>
 
       {mode && (
-        <div className="border-t border-zinc-200/80 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
+        <div className="border-t border-[var(--bq-hair)] bg-[var(--bq-surface)] p-4  ">
           <div className="mb-2 flex items-center justify-between gap-2">
-            <p className="min-w-0 flex-1 truncate text-xs font-medium text-zinc-600 dark:text-zinc-300">
+            <p className="min-w-0 flex-1 truncate text-xs font-medium text-[var(--bq-t2)] ">
               {composeTitle}
             </p>
             <button
@@ -642,13 +678,13 @@ export function EmailThreadView({
                 setMode(null);
                 setPendingFiles([]);
               }}
-              className="shrink-0 text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+              className="shrink-0 text-xs text-[var(--bq-t3)] hover:text-[var(--bq-t2)] "
             >
               Cancelar
             </button>
           </div>
 
-          {mode === 'forward' && (
+          {mode === "forward" && (
             <div className="relative mb-2">
               <input
                 type="text"
@@ -658,7 +694,7 @@ export function EmailThreadView({
                 list="email-recent-recipients"
                 autoComplete="off"
                 placeholder="Para: email@cliente.com (vírgula para vários)"
-                className="w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-900 outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100"
+                className="w-full rounded-lg border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-3 py-2 text-sm text-[var(--bq-t1)] outline-none focus:border-primary focus:ring-2 focus:ring-primary/30   "
               />
               <datalist id="email-recent-recipients">
                 {recent.map((e) => (
@@ -666,7 +702,7 @@ export function EmailThreadView({
                 ))}
               </datalist>
               {suggestions.length > 0 && forwardTo.trim() && (
-                <div className="absolute left-0 right-0 top-full z-20 mt-1 overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
+                <div className="absolute left-0 right-0 top-full z-20 mt-1 overflow-hidden rounded-lg border border-[var(--bq-hair)] bg-[var(--bq-surface)] shadow-lg  ">
                   {suggestions.map((e) => (
                     <button
                       key={e}
@@ -675,7 +711,7 @@ export function EmailThreadView({
                         ev.preventDefault();
                         pickSuggestion(e);
                       }}
-                      className="block w-full truncate px-3 py-1.5 text-left text-xs text-zinc-700 hover:bg-zinc-50 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                      className="block w-full truncate px-3 py-1.5 text-left text-xs text-[var(--bq-t2)] hover:bg-[var(--bq-surface)]  "
                     >
                       {e}
                     </button>
@@ -683,7 +719,7 @@ export function EmailThreadView({
                 </div>
               )}
               {recent.length > 0 && !forwardTo.trim() && (
-                <p className="mt-1 text-[11px] text-zinc-400">
+                <p className="mt-1 text-[11px] text-[var(--bq-t3)]">
                   Destinatários recentes salvos neste navegador
                 </p>
               )}
@@ -696,12 +732,12 @@ export function EmailThreadView({
               setBodyHtml(html);
               setBody(plain);
             }}
-            rows={mode === 'forward' ? 3 : 5}
+            rows={mode === "forward" ? 3 : 5}
             disabled={sending}
             placeholder={
-              mode === 'forward'
-                ? 'Nota opcional acima da mensagem encaminhada…'
-                : 'Escreva sua resposta…'
+              mode === "forward"
+                ? "Nota opcional acima da mensagem encaminhada…"
+                : "Escreva sua resposta…"
             }
           />
           {pendingFiles.length > 0 && (
@@ -709,7 +745,7 @@ export function EmailThreadView({
               {pendingFiles.map((f, i) => (
                 <span
                   key={`${f.name}-${f.size}-${i}`}
-                  className="inline-flex max-w-full items-center gap-1 rounded-md border border-zinc-200 bg-zinc-50 px-2 py-1 text-[11px] text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+                  className="inline-flex max-w-full items-center gap-1 rounded-md border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-2 py-1 text-[11px] text-[var(--bq-t2)]   "
                 >
                   <Paperclip className="h-3 w-3 shrink-0" />
                   <span className="truncate">{f.name}</span>
@@ -717,9 +753,11 @@ export function EmailThreadView({
                     type="button"
                     aria-label={`Remover ${f.name}`}
                     onClick={() =>
-                      setPendingFiles((prev) => prev.filter((_, idx) => idx !== i))
+                      setPendingFiles((prev) =>
+                        prev.filter((_, idx) => idx !== i),
+                      )
                     }
-                    className="ml-0.5 rounded p-0.5 text-zinc-400 hover:bg-zinc-200 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+                    className="ml-0.5 rounded p-0.5 text-[var(--bq-t3)] hover:bg-[var(--bq-raised)] hover:text-[var(--bq-t2)]  "
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -739,15 +777,17 @@ export function EmailThreadView({
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                disabled={sending || pendingFiles.length >= MAX_OUTBOUND_ATTACHMENTS}
-                className="inline-flex items-center gap-1.5 rounded-md border border-zinc-200 bg-white px-2.5 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                disabled={
+                  sending || pendingFiles.length >= MAX_OUTBOUND_ATTACHMENTS
+                }
+                className="inline-flex items-center gap-1.5 rounded-md border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-2.5 py-1.5 text-xs font-medium text-[var(--bq-t2)] hover:bg-[var(--bq-surface)] disabled:opacity-50    "
                 title="Anexar arquivos (máx. 5 × 8 MB)"
               >
                 <Paperclip className="h-3.5 w-3.5" />
                 Anexar
               </button>
               {pendingFiles.length > 0 && (
-                <span className="text-[11px] text-zinc-400">
+                <span className="text-[11px] text-[var(--bq-t3)]">
                   {pendingFiles.length}/{MAX_OUTBOUND_ATTACHMENTS}
                 </span>
               )}
@@ -757,7 +797,7 @@ export function EmailThreadView({
               onClick={handleSend}
               disabled={
                 sending ||
-                (mode === 'forward' ? !forwardTo.trim() : !body.trim())
+                (mode === "forward" ? !forwardTo.trim() : !body.trim())
               }
               className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
             >
@@ -766,11 +806,11 @@ export function EmailThreadView({
               ) : (
                 <Send className="h-3.5 w-3.5" />
               )}
-              {mode === 'forward'
-                ? 'Encaminhar'
-                : mode === 'replyAll'
-                  ? 'Enviar a todos'
-                  : 'Enviar resposta'}
+              {mode === "forward"
+                ? "Encaminhar"
+                : mode === "replyAll"
+                  ? "Enviar a todos"
+                  : "Enviar resposta"}
             </button>
           </div>
         </div>
