@@ -1,19 +1,22 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, Pencil, Trash2, Activity, Pause, Play, Zap } from 'lucide-react';
-import { toast } from 'sonner';
+import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Plus, Pencil, Trash2, Activity, Zap, ArrowRight } from "lucide-react";
+import { Button, Pill, Switch } from "@/components/ui/foundation";
+import { toast } from "sonner";
 import {
   Automation,
   automationsService,
-} from '@/features/automations/services/automations.service';
+} from "@/features/automations/services/automations.service";
 import {
   ACTION_LABELS,
+  FIELD_LABELS,
+  OPERATOR_LABELS,
   TRIGGER_LABELS,
-} from '@/features/automations/utils/labels';
-import { AutomationBuilder } from '@/features/automations/components/automation-builder';
-import { AutomationRunsPanel } from '@/features/automations/components/automation-runs-panel';
+} from "@/features/automations/utils/labels";
+import { AutomationBuilder } from "@/features/automations/components/automation-builder";
+import { AutomationRunsPanel } from "@/features/automations/components/automation-runs-panel";
 
 export default function AutomationsPage() {
   const qc = useQueryClient();
@@ -22,27 +25,32 @@ export default function AutomationsPage() {
   const [viewingRuns, setViewingRuns] = useState<Automation | null>(null);
 
   const { data: meta } = useQuery({
-    queryKey: ['automations-meta'],
+    queryKey: ["automations-meta"],
     queryFn: automationsService.meta,
   });
 
-  const { data: automations = [], isLoading } = useQuery({
-    queryKey: ['automations'],
+  const {
+    data: automations = [],
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
+    queryKey: ["automations"],
     queryFn: automationsService.list,
   });
 
   const toggleMutation = useMutation({
     mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) =>
       automationsService.toggle(id, enabled),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['automations'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["automations"] }),
     onError: (err: Error) => toast.error(err.message),
   });
 
   const removeMutation = useMutation({
     mutationFn: automationsService.remove,
     onSuccess: () => {
-      toast.success('Automação removida');
-      qc.invalidateQueries({ queryKey: ['automations'] });
+      toast.success("Automação removida");
+      qc.invalidateQueries({ queryKey: ["automations"] });
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -50,38 +58,48 @@ export default function AutomationsPage() {
   const handleSaved = () => {
     setEditing(null);
     setCreating(false);
-    qc.invalidateQueries({ queryKey: ['automations'] });
+    qc.invalidateQueries({ queryKey: ["automations"] });
   };
 
   return (
-    <div className="flex h-full flex-col">
-      <header className="border-b border-zinc-200 px-6 py-4 dark:border-zinc-800">
-        <div className="flex items-center justify-between">
+    <div className="flex h-full min-h-0 flex-col gap-[14px] px-5 py-[18px] text-[13px] text-[var(--bq-t1)]">
+      <header className="">
+        <div className="flex flex-wrap items-end justify-between gap-3">
           <div className="flex items-center gap-2">
-            <Zap className="h-5 w-5 text-amber-500" />
             <div>
-              <h1 className="text-lg font-semibold">Automações</h1>
-              <p className="text-xs text-zinc-500">
+              <h1 className="text-2xl font-medium tracking-tight">
+                Automações
+              </h1>
+              <p className="text-xs text-[var(--bq-t3)]">
                 Quando algo acontece → execute uma sequência de ações
               </p>
             </div>
           </div>
-          <button
+          <Button
+            variant="solid"
             onClick={() => setCreating(true)}
             disabled={!meta}
-            className="flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
           >
-            <Plus className="h-4 w-4" /> Nova automação
-          </button>
+            <Plus size={14} /> Nova automação
+          </Button>
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto px-6 py-5">
+      <div className="min-h-0 flex-1 overflow-y-auto">
         {isLoading && (
-          <div className="text-sm text-zinc-500">Carregando…</div>
+          <div className="text-sm text-[var(--bq-t3)]">Carregando…</div>
         )}
-        {!isLoading && automations.length === 0 && (
-          <EmptyState onCreate={() => setCreating(true)} />
+        {isError && (
+          <div
+            role="alert"
+            className="rounded-xl border border-[var(--bq-hair)] p-4"
+          >
+            Não foi possível carregar as automações.{" "}
+            <Button onClick={() => refetch()}>Tentar novamente</Button>
+          </div>
+        )}
+        {!isLoading && !isError && automations.length === 0 && (
+          <EmptyState disabled={!meta} onCreate={() => setCreating(true)} />
         )}
         {!isLoading && automations.length > 0 && (
           <ul className="space-y-2">
@@ -90,6 +108,7 @@ export default function AutomationsPage() {
                 key={a.id}
                 automation={a}
                 onEdit={() => setEditing(a)}
+                togglePending={toggleMutation.isPending}
                 onToggle={(enabled) =>
                   toggleMutation.mutate({ id: a.id, enabled })
                 }
@@ -133,8 +152,10 @@ function AutomationRow({
   onToggle,
   onRemove,
   onViewRuns,
+  togglePending,
 }: {
   automation: Automation;
+  togglePending: boolean;
   onEdit: () => void;
   onToggle: (enabled: boolean) => void;
   onRemove: () => void;
@@ -150,106 +171,137 @@ function AutomationRow({
     ? automation.actions.length
     : 0;
 
-  return (
-    <li className="flex items-center gap-4 rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
-      <button
-        onClick={() => onToggle(!automation.enabled)}
-        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition ${
-          automation.enabled
-            ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-950 dark:text-emerald-400'
-            : 'bg-zinc-100 text-zinc-500 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400'
-        }`}
-        aria-label={automation.enabled ? 'Desativar' : 'Ativar'}
-      >
-        {automation.enabled ? (
-          <Play className="h-4 w-4" />
-        ) : (
-          <Pause className="h-4 w-4" />
-        )}
-      </button>
+  const conditions =
+    "groups" in automation.conditions ? automation.conditions : null;
 
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <h3 className="truncate font-medium">{automation.name}</h3>
-          {isAutoPaused && (
-            <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-medium text-red-700 dark:bg-red-950 dark:text-red-400">
-              auto-pausada
-            </span>
+  return (
+    <li className="space-y-3 rounded-2xl border border-[var(--bq-hair)] bg-[var(--bq-surface)] p-[14px]">
+      <div className="flex items-start gap-3">
+        <div className="min-w-0 flex-1">
+          <h2 className="text-[13.5px] font-semibold">{automation.name}</h2>
+          {automation.description && (
+            <p className="mt-0.5 text-xs text-[var(--bq-t3)]">
+              {automation.description}
+            </p>
           )}
         </div>
-        <p className="mt-0.5 truncate text-xs text-zinc-500">
-          <span className="font-medium text-zinc-700 dark:text-zinc-300">
-            Quando:
-          </span>{' '}
-          {TRIGGER_LABELS[automation.trigger]}
-          {' · '}
-          <span className="font-medium text-zinc-700 dark:text-zinc-300">
-            Faz:
-          </span>{' '}
-          {actionsCount === 0
-            ? 'nenhuma ação'
-            : (Array.isArray(automation.actions) ? automation.actions : [])
-                .map((a) => ACTION_LABELS[a.type])
-                .join(' → ')}
-        </p>
-        {automation.runCount > 0 && (
-          <p className="mt-1 text-[11px] text-zinc-500">
-            {automation.runCount} {automation.runCount === 1 ? 'run' : 'runs'} ·{' '}
-            {automation.successCount} OK · {automation.failureCount} falhas
-            {failureRate > 0 && ` (${failureRate}%)`}
-            {automation.lastRunAt &&
-              ` · último: ${new Date(automation.lastRunAt).toLocaleString('pt-BR')}`}
-          </p>
-        )}
+        <Switch
+          label={`${automation.enabled ? "Pausar" : "Ativar"} ${automation.name}`}
+          checked={automation.enabled}
+          onChange={onToggle}
+          disabled={togglePending}
+        />
       </div>
-
-      <div className="flex items-center gap-1">
-        <IconButton onClick={onViewRuns} title="Ver logs">
-          <Activity className="h-4 w-4" />
-        </IconButton>
-        <IconButton onClick={onEdit} title="Editar">
-          <Pencil className="h-4 w-4" />
-        </IconButton>
-        <IconButton onClick={onRemove} title="Remover" className="hover:text-red-500">
-          <Trash2 className="h-4 w-4" />
-        </IconButton>
+      {isAutoPaused && (
+        <div className="rounded-lg bg-[var(--bq-warn-soft)] p-2 text-xs text-[var(--bq-warn)]">
+          Pausada automaticamente:{" "}
+          {automation.autoPausedReason || "limite de falhas atingido"}. Reative
+          para zerar o contador de falhas.
+        </div>
+      )}
+      <div className="flex flex-wrap items-center gap-2 text-xs">
+        <span className="text-[10px] font-semibold uppercase text-[var(--bq-t3)]">
+          Quando
+        </span>
+        <Pill tone="info">{TRIGGER_LABELS[automation.trigger]}</Pill>
+        <ArrowRight size={12} aria-hidden="true" />
+        <span className="text-[10px] font-semibold uppercase text-[var(--bq-t3)]">
+          Se
+        </span>
+        {conditions?.groups?.length ? (
+          <div className="flex flex-wrap items-center gap-1">
+            <span className="text-[var(--bq-t3)]">
+              {conditions.match === "AND"
+                ? "Todos os grupos"
+                : "Qualquer grupo"}
+              :
+            </span>
+            {conditions.groups.map((group, gi) => (
+              <span
+                key={gi}
+                className="rounded-lg border border-dashed border-[var(--bq-hair-strong)] px-2 py-1"
+              >
+                {group.rules
+                  .map(
+                    (rule) =>
+                      `${FIELD_LABELS[rule.field] || rule.field} ${OPERATOR_LABELS[rule.op]} ${Array.isArray(rule.value) ? rule.value.join(", ") : (rule.value ?? "")}`,
+                  )
+                  .join(group.match === "AND" ? " E " : " OU ")}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <span className="rounded-lg border border-dashed border-[var(--bq-hair-strong)] px-2 py-1 text-[var(--bq-t2)]">
+            Sem condições
+          </span>
+        )}
+        <ArrowRight size={12} aria-hidden="true" />
+        <span className="text-[10px] font-semibold uppercase text-[var(--bq-t3)]">
+          Faz
+        </span>
+        {actionsCount === 0
+          ? "Nenhuma ação"
+          : automation.actions.map((action, i) => (
+              <Pill key={i}>
+                {i + 1}. {ACTION_LABELS[action.type]}
+              </Pill>
+            ))}
+      </div>
+      <div className="flex flex-wrap items-center gap-2 text-[11px] text-[var(--bq-t3)]">
+        <span>
+          {automation.runCount} execuções · {automation.successCount} OK ·{" "}
+          {automation.failureCount} falhas
+          {failureRate > 0 && ` (${failureRate}%)`}
+        </span>
+        <span>
+          ·{" "}
+          {automation.lastRunAt
+            ? `última: ${new Date(automation.lastRunAt).toLocaleString("pt-BR")}`
+            : "Ainda sem execução"}
+        </span>
+        <div className="ml-auto flex flex-wrap gap-2">
+          <Button onClick={onViewRuns}>
+            <Activity size={14} /> Ver logs
+          </Button>
+          <Button onClick={onEdit}>
+            <Pencil size={14} /> Editar
+          </Button>
+          <Button onClick={onRemove} aria-label={`Remover ${automation.name}`}>
+            <Trash2 size={14} />
+          </Button>
+        </div>
       </div>
     </li>
   );
 }
 
-function IconButton({
-  children,
-  className = '',
-  ...props
-}: React.ButtonHTMLAttributes<HTMLButtonElement>) {
+function EmptyState({
+  onCreate,
+  disabled,
+}: {
+  onCreate: () => void;
+  disabled: boolean;
+}) {
   return (
-    <button
-      className={`rounded-lg p-2 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 ${className}`}
-      {...props}
-    >
-      {children}
-    </button>
-  );
-}
-
-function EmptyState({ onCreate }: { onCreate: () => void }) {
-  return (
-    <div className="rounded-2xl border-2 border-dashed border-zinc-200 px-8 py-16 text-center dark:border-zinc-800">
-      <Zap className="mx-auto h-10 w-10 text-zinc-400" />
-      <h3 className="mt-4 text-lg font-semibold">
-        Nenhuma automação ainda
-      </h3>
-      <p className="mx-auto mt-2 max-w-md text-sm text-zinc-500">
-        Crie regras pra reagir automaticamente a eventos. Ex: <em>quando
-        tag VIP for adicionada → atribuir ao João + responder boas-vindas</em>.
+    <div className="rounded-2xl border-2 border-dashed border-[var(--bq-hair)] px-8 py-16 text-center ">
+      <Zap className="mx-auto h-10 w-10 text-[var(--bq-t3)]" />
+      <h3 className="mt-4 text-lg font-semibold">Nenhuma automação ainda</h3>
+      <p className="mx-auto mt-2 max-w-md text-sm text-[var(--bq-t3)]">
+        Crie regras pra reagir automaticamente a eventos. Ex:{" "}
+        <em>
+          quando tag VIP for adicionada → atribuir ao João + responder
+          boas-vindas
+        </em>
+        .
       </p>
-      <button
+      <Button
+        variant="solid"
+        disabled={disabled}
         onClick={onCreate}
-        className="mx-auto mt-6 flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+        className="mx-auto mt-6"
       >
-        <Plus className="h-4 w-4" /> Criar primeira automação
-      </button>
+        <Plus size={14} /> Criar primeira automação
+      </Button>
     </div>
   );
 }

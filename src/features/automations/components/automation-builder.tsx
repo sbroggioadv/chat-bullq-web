@@ -1,8 +1,9 @@
-'use client';
+"use client";
 
-import { useEffect, useMemo, useState } from 'react';
-import { Plus, Trash2, X } from 'lucide-react';
-import { toast } from 'sonner';
+import { useEffect, useMemo, useState } from "react";
+import { Plus, Trash2, X } from "lucide-react";
+import { Sheet } from "@/components/ui/foundation";
+import { toast } from "sonner";
 import {
   ActionDefinition,
   ActionType,
@@ -14,7 +15,7 @@ import {
   ConditionRule,
   CreateAutomationPayload,
   automationsService,
-} from '../services/automations.service';
+} from "@/features/automations/services/automations.service";
 import {
   ACTION_LABELS,
   FIELD_LABELS,
@@ -22,11 +23,11 @@ import {
   TRIGGER_DESCRIPTIONS,
   TRIGGER_LABELS,
   operatorsForField,
-} from '../utils/labels';
+} from "@/features/automations/utils/labels";
 import {
   AutomationLookups,
   useAutomationLookups,
-} from '../hooks/use-lookups';
+} from "@/features/automations/hooks/use-lookups";
 
 interface BuilderProps {
   meta: AutomationMeta;
@@ -37,21 +38,21 @@ interface BuilderProps {
 
 // Conversation status enum mirrors the backend ConversationStatus.
 const STATUS_OPTIONS: Array<{ value: string; label: string }> = [
-  { value: 'PENDING', label: 'Pendente' },
-  { value: 'BOT', label: 'No bot' },
-  { value: 'OPEN', label: 'Aberta' },
-  { value: 'WAITING', label: 'Aguardando' },
-  { value: 'CLOSED', label: 'Fechada' },
+  { value: "PENDING", label: "Pendente" },
+  { value: "BOT", label: "No bot" },
+  { value: "OPEN", label: "Aberta" },
+  { value: "WAITING", label: "Aguardando" },
+  { value: "CLOSED", label: "Fechada" },
 ];
 
 const MESSAGE_TYPE_OPTIONS: Array<{ value: string; label: string }> = [
-  { value: 'TEXT', label: 'Texto' },
-  { value: 'IMAGE', label: 'Imagem' },
-  { value: 'AUDIO', label: 'Áudio' },
-  { value: 'VIDEO', label: 'Vídeo' },
-  { value: 'DOCUMENT', label: 'Documento' },
-  { value: 'STICKER', label: 'Figurinha' },
-  { value: 'LOCATION', label: 'Localização' },
+  { value: "TEXT", label: "Texto" },
+  { value: "IMAGE", label: "Imagem" },
+  { value: "AUDIO", label: "Áudio" },
+  { value: "VIDEO", label: "Vídeo" },
+  { value: "DOCUMENT", label: "Documento" },
+  { value: "STICKER", label: "Figurinha" },
+  { value: "LOCATION", label: "Localização" },
 ];
 
 export function AutomationBuilder({
@@ -62,15 +63,15 @@ export function AutomationBuilder({
 }: BuilderProps) {
   const lookups = useAutomationLookups();
 
-  const [name, setName] = useState(initial?.name ?? '');
-  const [description, setDescription] = useState(initial?.description ?? '');
+  const [name, setName] = useState(initial?.name ?? "");
+  const [description, setDescription] = useState(initial?.description ?? "");
   const [trigger, setTrigger] = useState<AutomationTrigger>(
-    initial?.trigger ?? 'MESSAGE_RECEIVED',
+    initial?.trigger ?? "MESSAGE_RECEIVED",
   );
   const [conditions, setConditions] = useState<ConditionRoot>(() => {
     const c = initial?.conditions as ConditionRoot | undefined;
-    if (!c || !('groups' in c)) {
-      return { match: 'OR', groups: [] };
+    if (!c || !("groups" in c)) {
+      return { match: "OR", groups: [] };
     }
     return c;
   });
@@ -91,7 +92,7 @@ export function AutomationBuilder({
   useEffect(() => {
     if (!initial) return;
     if (trigger !== initial.trigger) {
-      setConditions({ match: 'OR', groups: [] });
+      setConditions({ match: "OR", groups: [] });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trigger]);
@@ -105,8 +106,8 @@ export function AutomationBuilder({
       groups: [
         ...prev.groups,
         {
-          match: 'AND',
-          rules: [{ field: triggerFields[0] ?? '', op: 'equals', value: '' }],
+          match: "AND",
+          rules: [{ field: triggerFields[0] ?? "", op: "equals", value: "" }],
         },
       ],
     }));
@@ -119,7 +120,11 @@ export function AutomationBuilder({
     }));
   };
 
-  const updateRule = (gi: number, ri: number, patch: Partial<ConditionRule>) => {
+  const updateRule = (
+    gi: number,
+    ri: number,
+    patch: Partial<ConditionRule>,
+  ) => {
     setConditions((prev) => ({
       ...prev,
       groups: prev.groups.map((g, i) =>
@@ -146,9 +151,9 @@ export function AutomationBuilder({
               rules: [
                 ...g.rules,
                 {
-                  field: triggerFields[0] ?? '',
-                  op: 'equals' as ConditionOperator,
-                  value: '',
+                  field: triggerFields[0] ?? "",
+                  op: "equals" as ConditionOperator,
+                  value: "",
                 },
               ],
             },
@@ -204,11 +209,11 @@ export function AutomationBuilder({
 
   const handleSave = async () => {
     if (!name.trim()) {
-      toast.error('Dê um nome pra automação');
+      toast.error("Dê um nome pra automação");
       return;
     }
     if (actions.length === 0) {
-      toast.error('Pelo menos uma ação é obrigatória');
+      toast.error("Pelo menos uma ação é obrigatória");
       return;
     }
     // Block save if any action is missing required refs. The backend
@@ -233,39 +238,38 @@ export function AutomationBuilder({
     try {
       if (initial) {
         await automationsService.update(initial.id, payload);
-        toast.success('Automação atualizada');
+        toast.success("Automação atualizada");
       } else {
         await automationsService.create(payload);
-        toast.success('Automação criada');
+        toast.success("Automação criada");
       }
       onSaved();
     } catch (err) {
-      toast.error((err as Error)?.message ?? 'Erro ao salvar automação');
+      toast.error((err as Error)?.message ?? "Erro ao salvar automação");
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex">
-      <div
-        className="flex-1 bg-black/40 backdrop-blur-sm"
-        onClick={onClose}
-        aria-label="Fechar"
-      />
-      <div className="flex h-full w-full max-w-2xl flex-col bg-white shadow-xl dark:bg-zinc-900">
-        <header className="flex items-center justify-between border-b border-zinc-200 px-6 py-4 dark:border-zinc-800">
+    <Sheet
+      open
+      onClose={onClose}
+      title={initial ? "Editar automação" : "Nova automação"}
+    >
+      <div className="flex min-h-0 flex-col text-[var(--bq-t1)]">
+        <header className="flex items-center justify-between border-b border-[var(--bq-hair)] px-6 py-4 ">
           <div>
             <h2 className="text-lg font-semibold">
-              {initial ? 'Editar automação' : 'Nova automação'}
+              {initial ? "Editar automação" : "Nova automação"}
             </h2>
-            <p className="text-xs text-zinc-500">
+            <p className="text-xs text-[var(--bq-t3)]">
               Quando algo acontece → executa uma sequência de ações
             </p>
           </div>
           <button
             onClick={onClose}
-            className="rounded-lg p-1.5 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            className="rounded-lg p-1.5 text-[var(--bq-t3)] hover:bg-[var(--bq-raised)] "
             aria-label="Fechar"
           >
             <X className="h-5 w-5" />
@@ -277,7 +281,7 @@ export function AutomationBuilder({
           <section className="space-y-3">
             <Label>Nome</Label>
             <input
-              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950"
+              className="w-full rounded-lg border border-[var(--bq-hair-strong)] px-3 py-2 text-sm  "
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Ex: Notificar João quando tag VIP for adicionada"
@@ -285,7 +289,7 @@ export function AutomationBuilder({
             />
             <Label>Descrição (opcional)</Label>
             <textarea
-              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950"
+              className="w-full rounded-lg border border-[var(--bq-hair-strong)] px-3 py-2 text-sm  "
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={2}
@@ -302,8 +306,8 @@ export function AutomationBuilder({
                   key={t.value}
                   className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 text-sm transition ${
                     trigger === t.value
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/40'
-                      : 'border-zinc-200 hover:border-zinc-300 dark:border-zinc-800 dark:hover:border-zinc-700'
+                      ? "border-[var(--bq-info)] bg-[var(--bq-info-soft)] "
+                      : "border-[var(--bq-hair)] hover:border-[var(--bq-hair-strong)]  "
                   }`}
                 >
                   <input
@@ -316,7 +320,7 @@ export function AutomationBuilder({
                   />
                   <div>
                     <div className="font-medium">{TRIGGER_LABELS[t.value]}</div>
-                    <div className="text-xs text-zinc-500">
+                    <div className="text-xs text-[var(--bq-t3)]">
                       {TRIGGER_DESCRIPTIONS[t.value]}
                     </div>
                   </div>
@@ -329,21 +333,21 @@ export function AutomationBuilder({
           <section className="space-y-3">
             <SectionTitle
               index={2}
-              title="Condições"
+              title="Se"
               hint="Sem condições = roda em todos os eventos do gatilho"
             />
             {conditions.groups.length > 0 && (
-              <div className="flex items-center gap-2 text-xs text-zinc-500">
+              <div className="flex items-center gap-2 text-xs text-[var(--bq-t3)]">
                 <span>Combinar grupos com:</span>
                 <select
                   value={conditions.match}
                   onChange={(e) =>
                     setConditions({
                       ...conditions,
-                      match: e.target.value as 'AND' | 'OR',
+                      match: e.target.value as "AND" | "OR",
                     })
                   }
-                  className="rounded border border-zinc-300 px-2 py-1 text-xs dark:border-zinc-700 dark:bg-zinc-950"
+                  className="rounded border border-[var(--bq-hair-strong)] px-2 py-1 text-xs  "
                 >
                   <option value="OR">QUALQUER (OR)</option>
                   <option value="AND">TODOS (AND)</option>
@@ -353,22 +357,22 @@ export function AutomationBuilder({
             {conditions.groups.map((group, gi) => (
               <div
                 key={gi}
-                className="space-y-2 rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-950/40"
+                className="space-y-2 rounded-lg border border-[var(--bq-hair)] bg-[var(--bq-surface)] p-3  "
               >
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-medium text-zinc-600 dark:text-zinc-400">
+                  <span className="font-medium text-[var(--bq-t2)] ">
                     Grupo {gi + 1} (
                     <select
                       value={group.match}
                       onChange={(e) => {
                         const groups = conditions.groups.map((g, i) =>
                           i === gi
-                            ? { ...g, match: e.target.value as 'AND' | 'OR' }
+                            ? { ...g, match: e.target.value as "AND" | "OR" }
                             : g,
                         );
                         setConditions({ ...conditions, groups });
                       }}
-                      className="rounded border border-zinc-300 px-1 text-xs dark:border-zinc-700 dark:bg-zinc-950"
+                      className="rounded border border-[var(--bq-hair-strong)] px-1 text-xs  "
                     >
                       <option value="AND">TODAS</option>
                       <option value="OR">QUALQUER</option>
@@ -377,7 +381,7 @@ export function AutomationBuilder({
                   </span>
                   <button
                     onClick={() => removeGroup(gi)}
-                    className="text-red-500 hover:text-red-600"
+                    className="text-[var(--bq-err)] hover:text-[var(--bq-err)]"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -394,7 +398,7 @@ export function AutomationBuilder({
                 ))}
                 <button
                   onClick={() => addRule(gi)}
-                  className="text-xs text-blue-600 hover:underline"
+                  className="text-xs text-[var(--bq-info-text)] hover:underline"
                 >
                   + adicionar regra ao grupo
                 </button>
@@ -402,7 +406,7 @@ export function AutomationBuilder({
             ))}
             <button
               onClick={addGroup}
-              className="flex items-center gap-1 rounded-lg border border-dashed border-zinc-300 px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
+              className="flex items-center gap-1 rounded-lg border border-dashed border-[var(--bq-hair-strong)] px-3 py-2 text-sm text-[var(--bq-t2)] hover:bg-[var(--bq-surface)]   "
             >
               <Plus className="h-4 w-4" /> Adicionar grupo de condições
             </button>
@@ -410,7 +414,7 @@ export function AutomationBuilder({
 
           {/* Actions */}
           <section className="space-y-3">
-            <SectionTitle index={3} title="Ações" hint="Executadas em ordem" />
+            <SectionTitle index={3} title="Faz" hint="Executadas em ordem" />
             {actions.map((action, i) => (
               <ActionRow
                 key={i}
@@ -418,9 +422,7 @@ export function AutomationBuilder({
                 action={action}
                 lookups={lookups}
                 onChange={(patch) => updateAction(i, patch)}
-                onParamChange={(key, value) =>
-                  updateActionParam(i, key, value)
-                }
+                onParamChange={(key, value) => updateActionParam(i, key, value)}
                 onParamsChange={(patch) => updateActionParams(i, patch)}
                 onRemove={() => removeAction(i)}
               />
@@ -430,7 +432,7 @@ export function AutomationBuilder({
                 <button
                   key={a.type}
                   onClick={() => addAction(a.type)}
-                  className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-xs hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:hover:bg-zinc-900"
+                  className="rounded-lg border border-[var(--bq-hair-strong)] bg-[var(--bq-surface)] px-3 py-1.5 text-xs hover:bg-[var(--bq-surface)]   "
                 >
                   + {ACTION_LABELS[a.type]}
                 </button>
@@ -439,7 +441,7 @@ export function AutomationBuilder({
           </section>
 
           {/* Settings */}
-          <section className="space-y-3 border-t border-zinc-200 pt-4 dark:border-zinc-800">
+          <section className="space-y-3 border-t border-[var(--bq-hair)] pt-4 ">
             <Label>Limite por minuto (por conversa)</Label>
             <input
               type="number"
@@ -447,9 +449,9 @@ export function AutomationBuilder({
               max={120}
               value={rateLimitPerMinute}
               onChange={(e) => setRateLimitPerMinute(Number(e.target.value))}
-              className="w-32 rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950"
+              className="w-32 rounded-lg border border-[var(--bq-hair-strong)] px-3 py-2 text-sm  "
             />
-            <p className="text-xs text-zinc-500">
+            <p className="text-xs text-[var(--bq-t3)]">
               Máximo de execuções por minuto na mesma conversa. Acima desse
               limite, runs são marcados como SKIPPED.
             </p>
@@ -466,23 +468,23 @@ export function AutomationBuilder({
           </section>
         </div>
 
-        <footer className="flex items-center justify-end gap-2 border-t border-zinc-200 px-6 py-4 dark:border-zinc-800">
+        <footer className="flex items-center justify-end gap-2 border-t border-[var(--bq-hair)] px-6 py-4 ">
           <button
             onClick={onClose}
-            className="rounded-lg px-4 py-2 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            className="rounded-lg px-4 py-2 text-sm hover:bg-[var(--bq-raised)] "
           >
             Cancelar
           </button>
           <button
             onClick={handleSave}
             disabled={saving}
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            className="rounded-lg bg-[var(--bq-info-soft)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--bq-info-soft)] disabled:opacity-50"
           >
-            {saving ? 'Salvando…' : initial ? 'Salvar' : 'Criar'}
+            {saving ? "Salvando…" : initial ? "Salvar" : "Criar"}
           </button>
         </footer>
       </div>
-    </div>
+    </Sheet>
   );
 }
 
@@ -497,25 +499,25 @@ function SectionTitle({
 }) {
   return (
     <div className="flex items-baseline gap-2">
-      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-900 text-xs font-medium text-white dark:bg-zinc-100 dark:text-zinc-900">
+      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--bq-raised)] text-xs font-medium text-white  ">
         {index}
       </span>
       <h3 className="text-sm font-semibold">{title}</h3>
-      {hint && <span className="text-xs text-zinc-500">{hint}</span>}
+      {hint && <span className="text-xs text-[var(--bq-t3)]">{hint}</span>}
     </div>
   );
 }
 
 function Label({ children }: { children: React.ReactNode }) {
   return (
-    <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300">
+    <label className="block text-xs font-medium text-[var(--bq-t2)] ">
       {children}
     </label>
   );
 }
 
 const inputCls =
-  'w-full rounded border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-950';
+  "w-full rounded border border-[var(--bq-hair-strong)] px-2 py-1 text-sm  ";
 
 // Renders the value side of a condition rule based on which field is
 // selected. Maps every ID-bearing field to a real-data dropdown so a
@@ -527,16 +529,16 @@ function ConditionValueInput({
   lookups,
 }: {
   field: string;
-  value: ConditionRule['value'];
-  onChange: (v: ConditionRule['value']) => void;
+  value: ConditionRule["value"];
+  onChange: (v: ConditionRule["value"]) => void;
   lookups: AutomationLookups;
 }) {
   switch (field) {
-    case 'tagId':
+    case "tagId":
       return (
         <select
           className={inputCls}
-          value={(value as string) ?? ''}
+          value={(value as string) ?? ""}
           onChange={(e) => onChange(e.target.value)}
         >
           <option value="">Selecione uma tag…</option>
@@ -547,11 +549,11 @@ function ConditionValueInput({
           ))}
         </select>
       );
-    case 'channelId':
+    case "channelId":
       return (
         <select
           className={inputCls}
-          value={(value as string) ?? ''}
+          value={(value as string) ?? ""}
           onChange={(e) => onChange(e.target.value)}
         >
           <option value="">Selecione um canal…</option>
@@ -562,12 +564,12 @@ function ConditionValueInput({
           ))}
         </select>
       );
-    case 'fromAssigneeId':
-    case 'toAssigneeId':
+    case "fromAssigneeId":
+    case "toAssigneeId":
       return (
         <select
           className={inputCls}
-          value={(value as string) ?? ''}
+          value={(value as string) ?? ""}
           onChange={(e) => onChange(e.target.value)}
         >
           <option value="">Selecione um agente…</option>
@@ -578,12 +580,12 @@ function ConditionValueInput({
           ))}
         </select>
       );
-    case 'fromStatus':
-    case 'toStatus':
+    case "fromStatus":
+    case "toStatus":
       return (
         <select
           className={inputCls}
-          value={(value as string) ?? ''}
+          value={(value as string) ?? ""}
           onChange={(e) => onChange(e.target.value)}
         >
           <option value="">Selecione um status…</option>
@@ -594,22 +596,22 @@ function ConditionValueInput({
           ))}
         </select>
       );
-    case 'target':
+    case "target":
       return (
         <select
           className={inputCls}
-          value={(value as string) ?? 'conversation'}
+          value={(value as string) ?? "conversation"}
           onChange={(e) => onChange(e.target.value)}
         >
           <option value="conversation">Conversa</option>
           <option value="contact">Contato</option>
         </select>
       );
-    case 'type':
+    case "type":
       return (
         <select
           className={inputCls}
-          value={(value as string) ?? ''}
+          value={(value as string) ?? ""}
           onChange={(e) => onChange(e.target.value)}
         >
           <option value="">Selecione um tipo…</option>
@@ -620,12 +622,12 @@ function ConditionValueInput({
           ))}
         </select>
       );
-    case 'hasAttachment':
+    case "hasAttachment":
       return (
         <select
           className={inputCls}
           value={String(value ?? false)}
-          onChange={(e) => onChange(e.target.value === 'true')}
+          onChange={(e) => onChange(e.target.value === "true")}
         >
           <option value="true">Sim</option>
           <option value="false">Não</option>
@@ -635,7 +637,7 @@ function ConditionValueInput({
       return (
         <input
           className={inputCls}
-          value={(value as string | number | undefined)?.toString() ?? ''}
+          value={(value as string | number | undefined)?.toString() ?? ""}
           onChange={(e) => onChange(e.target.value)}
           placeholder="valor"
         />
@@ -657,18 +659,18 @@ function RuleRow({
   onRemove: () => void;
 }) {
   const ops = operatorsForField(rule.field);
-  const needsValue = rule.op !== 'is_set' && rule.op !== 'is_not_set';
+  const needsValue = rule.op !== "is_set" && rule.op !== "is_not_set";
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       <select
         value={rule.field}
         onChange={(e) =>
           // Field change: clear the value because the previous one was
           // probably for a different lookup type (e.g. a tag id is
           // meaningless if user just switched to channelId).
-          onChange({ field: e.target.value, value: '' })
+          onChange({ field: e.target.value, value: "" })
         }
-        className="rounded border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-950"
+        className="rounded border border-[var(--bq-hair-strong)] px-2 py-1 text-sm  "
       >
         {fields.map((f) => (
           <option key={f} value={f}>
@@ -679,7 +681,7 @@ function RuleRow({
       <select
         value={rule.op}
         onChange={(e) => onChange({ op: e.target.value as ConditionOperator })}
-        className="rounded border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-950"
+        className="rounded border border-[var(--bq-hair-strong)] px-2 py-1 text-sm  "
       >
         {ops.map((op) => (
           <option key={op} value={op}>
@@ -699,7 +701,7 @@ function RuleRow({
       )}
       <button
         onClick={onRemove}
-        className="text-zinc-400 hover:text-red-500"
+        className="text-[var(--bq-t3)] hover:text-[var(--bq-err)]"
         aria-label="Remover regra"
       >
         <X className="h-4 w-4" />
@@ -726,14 +728,14 @@ function ActionRow({
   onRemove: () => void;
 }) {
   return (
-    <div className="rounded-lg border border-zinc-200 p-3 dark:border-zinc-800">
+    <div className="rounded-lg border border-[var(--bq-hair)] p-3 ">
       <div className="mb-2 flex items-center justify-between">
         <span className="text-sm font-medium">
           {index + 1}. {ACTION_LABELS[action.type]}
         </span>
         <button
           onClick={onRemove}
-          className="text-zinc-400 hover:text-red-500"
+          className="text-[var(--bq-t3)] hover:text-[var(--bq-err)]"
         >
           <Trash2 className="h-4 w-4" />
         </button>
@@ -744,7 +746,7 @@ function ActionRow({
         onParamChange={onParamChange}
         onParamsChange={onParamsChange}
       />
-      <label className="mt-2 flex items-center gap-2 text-xs text-zinc-500">
+      <label className="mt-2 flex items-center gap-2 text-xs text-[var(--bq-t3)]">
         <input
           type="checkbox"
           checked={action.continueOnError ?? false}
@@ -771,14 +773,14 @@ function ActionParams({
   onParamsChange: (patch: Record<string, unknown>) => void;
 }) {
   switch (action.type) {
-    case 'add_tag':
-    case 'remove_tag':
+    case "add_tag":
+    case "remove_tag":
       return (
         <div className="space-y-2">
           <select
             className={inputCls}
-            value={(action.params.tagId as string) ?? ''}
-            onChange={(e) => onParamChange('tagId', e.target.value)}
+            value={(action.params.tagId as string) ?? ""}
+            onChange={(e) => onParamChange("tagId", e.target.value)}
           >
             <option value="">Selecione uma tag…</option>
             {lookups.tags.map((t) => (
@@ -789,16 +791,16 @@ function ActionParams({
           </select>
           <select
             className={inputCls}
-            value={(action.params.target as string) ?? 'conversation'}
-            onChange={(e) => onParamChange('target', e.target.value)}
+            value={(action.params.target as string) ?? "conversation"}
+            onChange={(e) => onParamChange("target", e.target.value)}
           >
             <option value="conversation">Aplicar à conversa</option>
             <option value="contact">Aplicar ao contato</option>
           </select>
         </div>
       );
-    case 'add_to_pipeline': {
-      const pipelineId = (action.params.pipelineId as string) ?? '';
+    case "add_to_pipeline": {
+      const pipelineId = (action.params.pipelineId as string) ?? "";
       const stages = lookups.stagesOf(pipelineId);
       return (
         <div className="space-y-2">
@@ -808,7 +810,7 @@ function ActionParams({
             onChange={(e) =>
               // Atomic: clearing stage in a separate setState would race
               // the pipelineId update and revert it.
-              onParamsChange({ pipelineId: e.target.value, stageId: '' })
+              onParamsChange({ pipelineId: e.target.value, stageId: "" })
             }
           >
             <option value="">Selecione um pipeline…</option>
@@ -821,14 +823,14 @@ function ActionParams({
           {pipelineId && stages.length > 0 && (
             <select
               className={inputCls}
-              value={(action.params.stageId as string) ?? ''}
-              onChange={(e) => onParamChange('stageId', e.target.value)}
+              value={(action.params.stageId as string) ?? ""}
+              onChange={(e) => onParamChange("stageId", e.target.value)}
             >
               <option value="">Primeiro estágio (padrão)</option>
               {stages.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}
-                  {s.type !== 'NORMAL' ? ` (${s.type})` : ''}
+                  {s.type !== "NORMAL" ? ` (${s.type})` : ""}
                 </option>
               ))}
             </select>
@@ -836,8 +838,8 @@ function ActionParams({
         </div>
       );
     }
-    case 'move_pipeline_stage': {
-      const pipelineId = (action.params.pipelineId as string) ?? '';
+    case "move_pipeline_stage": {
+      const pipelineId = (action.params.pipelineId as string) ?? "";
       const stages = lookups.stagesOf(pipelineId);
       return (
         <div className="space-y-2">
@@ -847,7 +849,7 @@ function ActionParams({
             onChange={(e) =>
               onParamsChange({
                 pipelineId: e.target.value,
-                toStageId: '',
+                toStageId: "",
               })
             }
           >
@@ -861,14 +863,14 @@ function ActionParams({
           {pipelineId && (
             <select
               className={inputCls}
-              value={(action.params.toStageId as string) ?? ''}
-              onChange={(e) => onParamChange('toStageId', e.target.value)}
+              value={(action.params.toStageId as string) ?? ""}
+              onChange={(e) => onParamChange("toStageId", e.target.value)}
             >
               <option value="">Selecione o estágio destino…</option>
               {stages.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}
-                  {s.type !== 'NORMAL' ? ` (${s.type})` : ''}
+                  {s.type !== "NORMAL" ? ` (${s.type})` : ""}
                 </option>
               ))}
             </select>
@@ -876,31 +878,31 @@ function ActionParams({
         </div>
       );
     }
-    case 'assign_user':
+    case "assign_user":
       return (
         <select
           className={inputCls}
-          value={(action.params.userId as string) ?? ''}
-          onChange={(e) => onParamChange('userId', e.target.value)}
+          value={(action.params.userId as string) ?? ""}
+          onChange={(e) => onParamChange("userId", e.target.value)}
         >
           <option value="">Selecione um agente…</option>
           {lookups.members.map((m) => (
             <option key={m.userId} value={m.userId}>
               {m.user?.name ?? m.user?.email ?? m.userId}
-              {m.role !== 'AGENT' ? ` · ${m.role.toLowerCase()}` : ''}
+              {m.role !== "AGENT" ? ` · ${m.role.toLowerCase()}` : ""}
             </option>
           ))}
         </select>
       );
-    case 'send_message':
+    case "send_message":
       return (
         <textarea
           placeholder="Texto da mensagem (responde no mesmo canal da conversa)"
           className={inputCls}
           rows={3}
           maxLength={4096}
-          value={(action.params.body as string) ?? ''}
-          onChange={(e) => onParamChange('body', e.target.value)}
+          value={(action.params.body as string) ?? ""}
+          onChange={(e) => onParamChange("body", e.target.value)}
         />
       );
   }
@@ -908,17 +910,17 @@ function ActionParams({
 
 function defaultActionParams(type: ActionType): Record<string, unknown> {
   switch (type) {
-    case 'add_tag':
-    case 'remove_tag':
-      return { tagId: '', target: 'conversation' };
-    case 'add_to_pipeline':
-      return { pipelineId: '', stageId: '' };
-    case 'move_pipeline_stage':
-      return { pipelineId: '', toStageId: '' };
-    case 'assign_user':
-      return { userId: '' };
-    case 'send_message':
-      return { body: '' };
+    case "add_tag":
+    case "remove_tag":
+      return { tagId: "", target: "conversation" };
+    case "add_to_pipeline":
+      return { pipelineId: "", stageId: "" };
+    case "move_pipeline_stage":
+      return { pipelineId: "", toStageId: "" };
+    case "assign_user":
+      return { userId: "" };
+    case "send_message":
+      return { body: "" };
   }
 }
 
@@ -927,18 +929,18 @@ function defaultActionParams(type: ActionType): Record<string, unknown> {
 // the user gets a friendly toast instead of an HTTP 400.
 function isActionConfigured(action: ActionDefinition): boolean {
   switch (action.type) {
-    case 'add_tag':
-    case 'remove_tag':
+    case "add_tag":
+    case "remove_tag":
       return !!action.params.tagId;
-    case 'add_to_pipeline':
+    case "add_to_pipeline":
       return !!action.params.pipelineId;
-    case 'move_pipeline_stage':
+    case "move_pipeline_stage":
       return !!action.params.pipelineId && !!action.params.toStageId;
-    case 'assign_user':
+    case "assign_user":
       return !!action.params.userId;
-    case 'send_message':
+    case "send_message":
       return (
-        typeof action.params.body === 'string' &&
+        typeof action.params.body === "string" &&
         (action.params.body as string).trim().length > 0
       );
   }
