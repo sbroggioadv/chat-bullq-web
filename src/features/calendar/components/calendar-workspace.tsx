@@ -2,7 +2,7 @@
 
 import { Button, SegmentedControl } from "@/components/ui/foundation";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -29,6 +29,8 @@ import {
   ExternalLink,
   X,
   GripVertical,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -198,7 +200,7 @@ function EventCard({
     <div
       ref={setNodeRef}
       style={style}
-      className="group relative block w-full overflow-hidden rounded-md border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-2 py-1.5 pl-2.5 text-left text-[11px]  transition hover:ring-1 hover:ring-[var(--bq-hair-strong)]  "
+      className={`group relative block w-full ${compact ? "h-full" : ""} overflow-hidden rounded-md border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-2 py-1.5 pl-2.5 text-left text-[11px]  transition hover:ring-1 hover:ring-[var(--bq-hair-strong)]  `}
     >
       <span
         className="absolute bottom-0 left-0 top-0 w-1 rounded-l-md"
@@ -312,33 +314,37 @@ function DayCell({
   return (
     <div
       ref={setNodeRef}
-      className={`min-w-0 p-2 transition-colors ${
-        isOutsideMonth ? "bg-[var(--bq-win-solid)] opacity-60" : "bg-[var(--bq-win-solid)]"
+      className={`min-w-0 transition-colors ${compact ? "p-2 bg-[var(--bq-surface)]" : "border-l border-[var(--bq-hair)]"} ${isToday ? "bg-[var(--bq-surface)]" : ""} ${
+        isOutsideMonth ? "opacity-60" : ""
       } ${isOver ? "bg-[var(--bq-accent-soft)] ring-2 ring-inset ring-[var(--bq-hair-strong)]" : ""}`}
       style={{ minHeight: compact ? 110 : 220 }}
     >
-      <div
-        data-calendar-day-heading
-        className={`sticky top-0 z-10 mb-2 bg-[var(--bq-win-solid)] py-1 text-[11px] font-semibold uppercase tracking-wide ${
-          isToday
-            ? "text-[var(--bq-t1)]"
-            : isOutsideMonth
-              ? "text-[var(--bq-t3)] "
-              : "text-[var(--bq-t3)]"
-        }`}
-      >
-        {compact ? (
-          <span
-            className={`inline-flex h-6 w-6 items-center justify-center rounded-full ${
-              isToday ? "bg-[var(--bq-solid-bg)] text-[var(--bq-solid-fg)]" : ""
-            }`}
-          >
-            {day.getDate()}
-          </span>
-        ) : (
-          fmtDayShort(day)
-        )}
-      </div>
+      {compact && (
+        <div
+          data-calendar-day-heading
+          className={`sticky top-0 z-10 mb-2 bg-[var(--bq-win-solid)] py-1 text-[11px] font-semibold uppercase tracking-wide ${
+            isToday
+              ? "text-[var(--bq-t1)]"
+              : isOutsideMonth
+                ? "text-[var(--bq-t3)] "
+                : "text-[var(--bq-t3)]"
+          }`}
+        >
+          {compact ? (
+            <span
+              className={`inline-flex h-6 w-6 items-center justify-center rounded-full ${
+                isToday
+                  ? "bg-[var(--bq-solid-bg)] text-[var(--bq-solid-fg)]"
+                  : ""
+              }`}
+            >
+              {day.getDate()}
+            </span>
+          ) : (
+            fmtDayShort(day)
+          )}
+        </div>
+      )}
       {compact ? (
         <div className="space-y-1.5">
           {events.map((ev) => (
@@ -347,13 +353,6 @@ function DayCell({
         </div>
       ) : (
         <>
-          <div className="min-h-10 space-y-1 border-b border-[var(--bq-hair)] pb-2">
-            {events
-              .filter((ev) => ev.allDay)
-              .map((ev) => (
-                <EventCard key={ev.id} ev={ev} onEdit={onEdit} />
-              ))}
-          </div>
           <div className="relative h-[1152px]">
             {Array.from({ length: 24 }, (_, hour) => (
               <button
@@ -368,11 +367,7 @@ function DayCell({
                 aria-label={`Criar evento em ${fmtDayShort(day)} às ${hour} horas`}
                 className="absolute left-0 right-0 h-12 border-t border-[var(--bq-hair)] text-left text-[9px] text-[var(--bq-t3)] hover:bg-[var(--bq-raised)]"
                 style={{ top: hour * 48 }}
-              >
-                <span className="absolute left-0 top-0">
-                  {String(hour).padStart(2, "0")}:00
-                </span>
-              </button>
+              ></button>
             ))}
             {events
               .filter((ev) => !ev.allDay && ev.start)
@@ -381,10 +376,10 @@ function DayCell({
                 return (
                   <div
                     key={ev.id}
-                    className="absolute left-7 right-0"
+                    className="absolute left-[3px] right-[3px] z-[2]"
                     style={{
                       top: (start.getHours() + start.getMinutes() / 60) * 48,
-                      minHeight: Math.max(
+                      height: Math.max(
                         28,
                         (eventDurationMs(ev) / 3600000) * 48 - 2,
                       ),
@@ -407,12 +402,19 @@ export function CalendarWorkspace() {
   const searchParams = useSearchParams();
   const [view, setView] = useState<CalView>("week");
   const [anchor, setAnchor] = useState(() => startOfWeek(new Date()));
+  const editorRef = useRef<HTMLElement>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [conversationSearch, setConversationSearch] = useState("");
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [moving, setMoving] = useState(false);
   const [activeEvent, setActiveEvent] = useState<CalendarEvent | null>(null);
+
+  const editorMode = draft?.mode;
+  const editorEventId = draft?.eventId;
+  useEffect(() => {
+    if (editorMode) editorRef.current?.scrollIntoView?.({ block: "nearest" });
+  }, [editorMode, editorEventId]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -481,22 +483,32 @@ export function CalendarWorkspace() {
     enabled: !!statusQ.data?.connected && !statusQ.data?.needsReauthForCalendar,
   });
 
-  const initializeGrid = useCallback((grid: HTMLDivElement | null) => {
-    if (!grid) return;
-    if (view === "month") {
-      grid.style.removeProperty("height");
-      grid.scrollTop = 0;
-      return;
-    }
-    if (eventsQ.isPending) return;
-    const heading = grid.querySelector<HTMLElement>("[data-calendar-day-heading]");
-    const firstHour = grid.querySelector<HTMLElement>('[data-calendar-hour="8"]');
-    if (!heading || !firstHour) return;
-    // Show 08:00–20:00 below the sticky heading, retaining all 24 hours for scrolling.
-    grid.style.height = `${12 * 48 + heading.offsetHeight + 2}px`;
-    grid.scrollTop += firstHour.getBoundingClientRect().top
-      - grid.getBoundingClientRect().top - heading.offsetHeight - grid.clientTop;
-  }, [view, eventsQ.isPending]);
+  const initializeGrid = useCallback(
+    (grid: HTMLDivElement | null) => {
+      if (!grid) return;
+      if (view === "month") {
+        grid.style.height = "100%";
+        grid.scrollTop = 0;
+        return;
+      }
+      if (eventsQ.isPending) return;
+      const heading = grid.querySelector<HTMLElement>(
+        "[data-calendar-day-heading]",
+      );
+      const firstHour = grid.querySelector<HTMLElement>(
+        '[data-calendar-hour="8"]',
+      );
+      if (!heading || !firstHour) return;
+      // Show 08:00–20:00 below the sticky heading, retaining all 24 hours for scrolling.
+      grid.style.height = `${12 * 48 + heading.offsetHeight + 2}px`;
+      grid.scrollTop +=
+        firstHour.getBoundingClientRect().top -
+        grid.getBoundingClientRect().top -
+        heading.offsetHeight -
+        grid.clientTop;
+    },
+    [view, eventsQ.isPending],
+  );
 
   const eventsByDay = useMemo(() => {
     const map = new Map<string, CalendarEvent[]>();
@@ -811,26 +823,39 @@ export function CalendarWorkspace() {
   const weekdayLabels = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-[14px] overflow-y-auto px-5 py-[18px] text-[13px] text-[var(--bq-t1)]">
+    <div className="flex h-full min-h-0 flex-col gap-[14px] overflow-y-auto px-5 py-[18px] text-[13px] text-[var(--bq-t1)] antialiased">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-medium tracking-tight">Agenda</h1>
-          <p className="mt-1 text-xs text-[var(--bq-t3)]">
+          <h1 className="text-2xl leading-[1.1] font-[family-name:var(--bq-f-display)] font-medium tracking-[-0.02em]">
+            Agenda
+          </h1>
+          <p className="mt-[5px] text-[11.5px] text-[var(--bq-t3)]">
+            <span className="mr-1.5 inline-block size-[7px] rounded-full bg-[var(--bq-ok)]" />
             Google Agenda · {statusQ.data.email} · reuniões com link do Meet
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button onClick={goToday}>Hoje</Button>
-          <Button aria-label="Período anterior" onClick={goPrev}>
-            ←
-          </Button>
-          <Button aria-label="Próximo período" onClick={goNext}>
-            →
-          </Button>
+          <button
+            type="button"
+            className="bq-icon"
+            aria-label="Período anterior"
+            onClick={goPrev}
+          >
+            <ChevronLeft size={14} />
+          </button>
+          <button
+            type="button"
+            className="bq-icon"
+            aria-label="Próximo período"
+            onClick={goNext}
+          >
+            <ChevronRight size={14} />
+          </button>
           <span className="text-sm font-medium">
             {view === "month"
               ? fmtMonthTitle(monthCursor)
-              : `${fmtDayShort(visibleDays[0])} a ${fmtDayShort(visibleDays[6])}`}
+              : `${visibleDays[0].toLocaleDateString("pt-BR", { day: "numeric", month: "long" })} a ${visibleDays[6].toLocaleDateString("pt-BR", { day: "numeric", month: "long" })}`}
           </span>
           <SegmentedControl
             label="Visualização"
@@ -841,15 +866,7 @@ export function CalendarWorkspace() {
             ]}
             onChange={switchView}
           />
-          <Button
-            aria-label="Atualizar agenda"
-            onClick={() => eventsQ.refetch()}
-          >
-            <RefreshCw
-              size={14}
-              className={eventsQ.isFetching ? "animate-spin" : ""}
-            />
-          </Button>
+
           <Button variant="solid" onClick={openCreate}>
             <Plus size={14} /> Evento
           </Button>
@@ -860,75 +877,143 @@ export function CalendarWorkspace() {
           Salvando no Google…
         </p>
       )}
-      <div className="grid auto-rows-max min-h-0 flex-1 gap-[14px] xl:auto-rows-auto xl:grid-cols-[minmax(0,1fr)_300px]">
-        <div
-          ref={initializeGrid}
-          role="region"
-          aria-label="Grade da agenda"
-          tabIndex={0}
-          className="order-2 min-h-[400px] min-w-0 overflow-auto rounded-2xl border border-[var(--bq-hair)] bg-[var(--bq-surface)] xl:order-1"
-        >
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
+      <div className="grid auto-rows-max min-h-0 flex-1 gap-[14px] min-[1121px]:basis-0 min-[1121px]:grid-rows-[minmax(0,1fr)] min-[1121px]:grid-cols-[minmax(0,1fr)_300px]">
+        <div className="min-h-0 min-w-0 overflow-hidden rounded-2xl border border-[var(--bq-hair)] bg-[var(--bq-surface)]">
+          <div
+            ref={initializeGrid}
+            role="region"
+            aria-label="Grade da agenda"
+            tabIndex={0}
+            className="min-h-0 min-w-0 overflow-auto max-[560px]:max-h-[328px]"
           >
-            {view === "month" && (
-              <div className="grid min-w-[770px] grid-cols-7 gap-px border-b border-[var(--bq-hair)] bg-[var(--bq-raised)] text-center text-[10px] font-semibold uppercase tracking-wide text-[var(--bq-t3)]   ">
-                {weekdayLabels.map((l) => (
-                  <div key={l} className="bg-[var(--bq-surface)] py-1.5 ">
-                    {l}
-                  </div>
-                ))}
-              </div>
-            )}
-            <div
-              className={`grid grid-cols-7 gap-px bg-[var(--bq-hair)] ${view === "month" ? "min-w-[770px]" : "min-w-[980px]"}`}
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
             >
-              {visibleDays.map((day) => {
-                const key = dayKey(day);
-                const list = eventsByDay.get(key) || [];
-                const isToday = key === todayKey;
-                const isOutsideMonth =
-                  view === "month" && day.getMonth() !== monthCursor.getMonth();
-                return (
-                  <DayCell
-                    key={key}
-                    day={day}
-                    events={list}
-                    isToday={isToday}
-                    isOutsideMonth={isOutsideMonth}
-                    compact={view === "month"}
-                    onCreate={(start) => {
-                      const next = defaultDraft(primaryCalId);
-                      setDraft({
-                        ...next,
-                        startLocal: toLocalInputValue(start),
-                        endLocal: toLocalInputValue(
-                          new Date(start.getTime() + 3600000),
-                        ),
-                      });
-                    }}
-                    onEdit={openEdit}
-                  />
-                );
-              })}
-            </div>
-            <DragOverlay>
-              {activeEvent ? (
-                <div className="w-48 opacity-95 shadow-lg">
-                  <EventCard
-                    ev={activeEvent}
-                    onEdit={() => undefined}
-                    dragging
-                  />
+              {view === "month" && (
+                <div className="grid min-w-[770px] grid-cols-7 gap-px border-b border-[var(--bq-hair)] bg-[var(--bq-raised)] text-center text-[10px] font-semibold uppercase tracking-wide text-[var(--bq-t3)]   ">
+                  {weekdayLabels.map((l) => (
+                    <div key={l} className="bg-[var(--bq-surface)] py-1.5 ">
+                      {l}
+                    </div>
+                  ))}
                 </div>
-              ) : null}
-            </DragOverlay>
-          </DndContext>
+              )}
+              <div
+                className={
+                  view === "month"
+                    ? "grid grid-cols-7 gap-px bg-[var(--bq-hair)] min-w-[770px]"
+                    : "grid min-w-[720px] grid-cols-[52px_repeat(7,minmax(0,1fr))]"
+                }
+              >
+                {view === "week" && (
+                  <>
+                    <div
+                      data-calendar-day-heading
+                      className="sticky top-0 z-10 min-h-[60px] border-b border-[var(--bq-hair)] bg-[var(--bq-glass-strong)] backdrop-blur-[18px]"
+                    />
+                    {visibleDays.map((day) => (
+                      <div
+                        key={`heading-${dayKey(day)}`}
+                        className="sticky top-0 z-10 min-h-[60px] border-b border-l border-[var(--bq-hair)] bg-[var(--bq-glass-strong)] px-2 pb-2 pt-[9px] text-[11.5px] text-[var(--bq-t3)] backdrop-blur-[18px]"
+                      >
+                        {day
+                          .toLocaleDateString("pt-BR", { weekday: "short" })
+                          .replace(".", "")}
+                        <b
+                          className={`block w-max min-w-7 text-[17px] font-medium font-[family-name:var(--bq-f-display)] ${dayKey(day) === todayKey ? "mt-px grid h-[26px] place-items-center rounded-lg bg-[var(--bq-solid-bg)] px-[5px] text-[var(--bq-solid-fg)]" : "text-[var(--bq-t1)]"}`}
+                        >
+                          {day.getDate()}
+                        </b>
+                      </div>
+                    ))}
+                    {eventsQ.data?.events.some((event) => event.allDay) && (
+                      <>
+                        <span className="p-1 text-[10px] text-[var(--bq-t3)]">
+                          Dia inteiro
+                        </span>
+                        {visibleDays.map((day) => (
+                          <div
+                            key={`all-day-${dayKey(day)}`}
+                            className="space-y-1 border-l border-[var(--bq-hair)] p-1"
+                          >
+                            {(eventsByDay.get(dayKey(day)) || [])
+                              .filter((event) => event.allDay)
+                              .map((event) => (
+                                <EventCard
+                                  key={event.id}
+                                  ev={event}
+                                  onEdit={openEdit}
+                                />
+                              ))}
+                          </div>
+                        ))}
+                      </>
+                    )}
+                    <div aria-label="Horários" className="relative h-[1152px]">
+                      {Array.from({ length: 24 }, (_, hour) => (
+                        <div
+                          key={hour}
+                          className="absolute right-2 top-0 pt-[3px] font-mono text-[10px] text-[var(--bq-t3)]"
+                          style={{ top: hour * 48 }}
+                        >
+                          {String(hour).padStart(2, "0")}:00
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+                {visibleDays.map((day) => {
+                  const key = dayKey(day);
+                  const list = eventsByDay.get(key) || [];
+                  const isToday = key === todayKey;
+                  const isOutsideMonth =
+                    view === "month" &&
+                    day.getMonth() !== monthCursor.getMonth();
+                  return (
+                    <DayCell
+                      key={key}
+                      day={day}
+                      events={list}
+                      isToday={isToday}
+                      isOutsideMonth={isOutsideMonth}
+                      compact={view === "month"}
+                      onCreate={(start) => {
+                        const next = defaultDraft(primaryCalId);
+                        setDraft({
+                          ...next,
+                          startLocal: toLocalInputValue(start),
+                          endLocal: toLocalInputValue(
+                            new Date(start.getTime() + 3600000),
+                          ),
+                        });
+                      }}
+                      onEdit={openEdit}
+                    />
+                  );
+                })}
+              </div>
+              <DragOverlay>
+                {activeEvent ? (
+                  <div className="w-48 opacity-95 shadow-lg">
+                    <EventCard
+                      ev={activeEvent}
+                      onEdit={() => undefined}
+                      dragging
+                    />
+                  </div>
+                ) : null}
+              </DragOverlay>
+            </DndContext>
+          </div>
         </div>
-        <aside className="order-1 min-w-0 overflow-y-auto rounded-2xl border border-[var(--bq-hair)] bg-[var(--bq-surface)] p-3 xl:order-2">
+        <aside
+          ref={editorRef}
+          aria-label="Eventos e edição"
+          className="min-w-0 self-start overflow-y-auto rounded-2xl border border-[var(--bq-hair)] bg-[var(--bq-surface)] p-[14px]"
+        >
           {draft && (
             <div className="border-b border-[var(--bq-hair)] bg-[var(--bq-surface)] p-4  ">
               <div className="mb-2 flex items-center justify-between">
@@ -1100,7 +1185,24 @@ export function CalendarWorkspace() {
 
           {!draft && (
             <>
-              <h2 className="mb-3 text-sm font-semibold">Neste período</h2>
+              <div className="mb-3 flex items-center gap-2">
+                <CalendarDays size={14} />
+                <h2 className="text-[13px] font-semibold">Próximos</h2>
+                <span className="rounded bg-[var(--bq-raised-2)] px-1 text-[11px] text-[var(--bq-t3)]">
+                  {eventsQ.data?.events.length ?? 0}
+                </span>
+                <span className="flex-1" />{" "}
+                <Button
+                  className="border-0! px-1!"
+                  aria-label="Atualizar agenda"
+                  onClick={() => eventsQ.refetch()}
+                >
+                  <RefreshCw
+                    size={14}
+                    className={eventsQ.isFetching ? "animate-spin" : ""}
+                  />
+                </Button>
+              </div>
               {eventsQ.isPending ? (
                 <p role="status">Carregando eventos…</p>
               ) : !eventsQ.data?.events.length ? (
@@ -1116,15 +1218,28 @@ export function CalendarWorkspace() {
                     .map((ev) => (
                       <Button
                         key={ev.id}
-                        className="h-auto! w-full! justify-start! whitespace-normal! py-2! text-left"
+                        className="h-auto! w-full! justify-start! whitespace-normal! border-0! px-1.5! py-[7px]! text-left"
                         onClick={() => openEdit(ev)}
                       >
-                        <CalendarDays size={14} />
-                        <span>
-                          {ev.summary}
+                        <span className="w-[38px] shrink-0 rounded-[9px] bg-[var(--bq-raised-2)] py-1 text-center font-mono text-[10px] text-[var(--bq-t3)]">
+                          {ev.start &&
+                            new Date(ev.start)
+                              .toLocaleDateString("pt-BR", { weekday: "short" })
+                              .replace(".", "")}
+                          <b className="block text-[15px] font-medium text-[var(--bq-t1)]">
+                            {ev.start ? new Date(ev.start).getDate() : "—"}
+                          </b>
+                        </span>
+                        <span className="min-w-0">
+                          <b className="block truncate text-[12.5px] font-semibold">
+                            {ev.summary}
+                          </b>
                           <small className="block text-[var(--bq-t3)]">
                             {ev.start
-                              ? new Date(ev.start).toLocaleString("pt-BR")
+                              ? new Date(ev.start).toLocaleTimeString("pt-BR", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })
                               : "Sem horário"}
                             {ev.meetLink ? " · Meet" : ""}
                           </small>
