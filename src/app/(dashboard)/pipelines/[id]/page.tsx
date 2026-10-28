@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, KanbanSquare, Settings } from 'lucide-react';
+import { ArrowLeft, Settings } from 'lucide-react';
+import { Button } from '@/components/ui/foundation';
 import { pipelinesService } from '@/features/pipelines/services/pipelines.service';
 import { KanbanBoard } from '@/features/pipelines/components/kanban-board';
 import { StagesDialog } from '@/features/pipelines/components/stages-dialog';
@@ -13,58 +14,27 @@ export default function PipelineBoardPage() {
   const router = useRouter();
   const pipelineId = params?.id;
   const [stagesOpen, setStagesOpen] = useState(false);
-
+  const { data: pipelines = [] } = useQuery({ queryKey: ['pipelines'], queryFn: () => pipelinesService.list() });
   const { data: board } = useQuery({
-    queryKey: ['pipeline-board', pipelineId],
-    queryFn: () => pipelinesService.getBoard(pipelineId!),
-    enabled: !!pipelineId,
+    queryKey: ['pipeline-board', pipelineId], queryFn: () => pipelinesService.getBoard(pipelineId!), enabled: !!pipelineId,
   });
-
   if (!pipelineId) return null;
-
-  return (
-    <div className="flex h-full flex-col">
-      <div className="flex items-center gap-3 border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
-        <button
-          onClick={() => router.push('/pipelines')}
-          className="rounded-md p-1.5 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
-          aria-label="Voltar"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </button>
-        <KanbanSquare className="h-5 w-5 text-primary" />
-        <div className="flex-1">
-          <h1 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
-            {board?.pipeline?.name ?? 'Pipeline'}
-          </h1>
-          {board?.pipeline?.description && (
-            <p className="text-xs text-zinc-500">
-              {board.pipeline.description}
-            </p>
-          )}
-        </div>
-        <button
-          onClick={() => setStagesOpen(true)}
-          disabled={!board}
-          className="inline-flex items-center gap-1.5 rounded-md border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
-        >
-          <Settings className="h-3.5 w-3.5" />
-          Configurar stages
-        </button>
+  const cards = Object.values(board?.cards ?? {}).flat();
+  const sum = (status: string) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(cards.filter(c => c.status === status && c.currency === 'BRL').reduce((total, c) => total + (Number(c.value) || 0), 0));
+  return <div className="flex h-full min-w-0 flex-col text-[var(--bq-t1)]">
+    <header className="flex flex-wrap items-center justify-between gap-3 px-4 py-5 sm:px-6">
+      <div className="flex min-w-0 items-start gap-3"><Button aria-label="Voltar aos pipelines" onClick={() => router.push('/pipelines')}><ArrowLeft size={14} /></Button><div><h1 className="text-[22px] font-semibold tracking-tight">Pipelines</h1><p className="mt-1 text-xs text-[var(--bq-t3)]">Cada card é uma conversa. Arraste entre as etapas.</p>{board && <p className="mt-1 text-xs text-[var(--bq-t2)]">Em aberto <b>{sum('OPEN')}</b> · Ganho <b className="text-[var(--bq-ok)]">{sum('WON')}</b> <span className="text-[var(--bq-t3)]">(BRL)</span></p>}</div></div>
+      <div className="flex max-w-full flex-wrap items-center gap-2">
+        <select aria-label="Trocar pipeline" value={pipelineId} onChange={e => router.push(`/pipelines/${e.target.value}`)} className="h-[30px] max-w-full rounded-[9px] border border-[var(--bq-hair-strong)] bg-[var(--bq-win-solid)] px-2 text-xs">
+          {!pipelines.some(p => p.id === pipelineId) && <option value={pipelineId}>{board?.pipeline.name || 'Pipeline'}</option>}
+          {pipelines.map(p => <option key={p.id} value={p.id}>{p.name}{p.isDefault ? ' · padrão' : ''}</option>)}
+        </select>
+        <Button onClick={() => setStagesOpen(true)} disabled={!board}><Settings size={13} />Etapas</Button>
+        <Button variant="solid" onClick={() => router.push('/pipelines')}>Gerenciar pipelines</Button>
       </div>
-      <div className="flex-1 overflow-hidden pt-3">
-        <KanbanBoard pipelineId={pipelineId} />
-      </div>
-
-      {board && (
-        <StagesDialog
-          open={stagesOpen}
-          pipelineId={pipelineId}
-          initialStages={board.stages}
-          onClose={() => setStagesOpen(false)}
-          onSaved={() => setStagesOpen(false)}
-        />
-      )}
-    </div>
-  );
+    </header>
+    {board?.pipeline.description && <p className="px-6 pb-3 text-xs text-[var(--bq-t2)]">{board.pipeline.description}</p>}
+    <div className="min-h-0 flex-1 overflow-hidden"><KanbanBoard pipelineId={pipelineId} /></div>
+    {board && <StagesDialog open={stagesOpen} pipelineId={pipelineId} initialStages={board.stages} onClose={() => setStagesOpen(false)} onSaved={() => setStagesOpen(false)} />}
+  </div>;
 }

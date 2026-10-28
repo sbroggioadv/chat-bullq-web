@@ -13,12 +13,12 @@ import {
 } from '@dnd-kit/core';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { pipelinesService, type CardSummary } from '../services/pipelines.service';
-import { KanbanColumn } from './kanban-column';
-import { KanbanCard } from './kanban-card';
-import { CardDialog } from './card-dialog';
-import { AddConversationDialog } from './add-conversation-dialog';
-import { ConversationDialog } from '@/features/inbox/components/conversation-dialog';
+import { pipelinesService, type CardSummary } from '@/features/pipelines/services/pipelines.service';
+import { KanbanColumn } from '@/features/pipelines/components/kanban-column';
+import { KanbanCard } from '@/features/pipelines/components/kanban-card';
+import { CardDialog } from '@/features/pipelines/components/card-dialog';
+import { AddConversationDialog } from '@/features/pipelines/components/add-conversation-dialog';
+import { NegotiationWindow } from '@/features/pipelines/components/negotiation-window';
 
 interface Props {
   pipelineId: string;
@@ -32,9 +32,9 @@ export function KanbanBoard({ pipelineId }: Props) {
   // Add-conversation dialog (new card from existing conversation)
   const [addStageId, setAddStageId] = useState<string | null>(null);
   // Conversation popup (when card has a linked conversation, click opens chat).
-  const [viewingConvId, setViewingConvId] = useState<string | null>(null);
+  const [viewingCardId, setViewingCardId] = useState<string | null>(null);
 
-  const { data: board, isLoading } = useQuery({
+  const { data: board, isLoading, isError, refetch } = useQuery({
     queryKey: ['pipeline-board', pipelineId],
     queryFn: () => pipelinesService.getBoard(pipelineId),
   });
@@ -58,7 +58,7 @@ export function KanbanBoard({ pipelineId }: Props) {
 
   const handleDragStart = (event: DragStartEvent) => {
     const cardId = event.active.id as string;
-    const data = event.active.data.current as any;
+    const data = event.active.data.current;
     if (data?.type === 'card') setActiveCard(data.card as CardSummary);
     else {
       // fallback: search the board
@@ -110,16 +110,17 @@ export function KanbanBoard({ pipelineId }: Props) {
       await pipelinesService.moveCard(cardId, targetStageId, toIndex);
       // Server emits card:moved via socket; refetch to sync orders precisely.
       qc.invalidateQueries({ queryKey: ['pipeline-board', pipelineId] });
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Erro ao mover');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao mover');
       qc.invalidateQueries({ queryKey: ['pipeline-board', pipelineId] });
     }
   };
 
+  if (isError) return <div role="alert" className="p-6 text-[var(--bq-t2)]">Não foi possível carregar o pipeline. <button className="bq-button" onClick={() => void refetch()}>Tentar novamente</button></div>;
   if (isLoading || !board) {
     return (
       <div className="flex h-full items-center justify-center text-sm text-zinc-400">
-        Carregando board…
+        Carregando quadro…
       </div>
     );
   }
@@ -142,7 +143,7 @@ export function KanbanBoard({ pipelineId }: Props) {
               onCardClick={(c) => {
                 // Click primário: abre a conversa em popup. Sem conversa
                 // vinculada, cai pra edição do card como fallback.
-                if (c.conversationId) setViewingConvId(c.conversationId);
+                if (c.conversationId) setViewingCardId(c.id);
                 else setEditingCard(c);
               }}
             />
@@ -176,11 +177,13 @@ export function KanbanBoard({ pipelineId }: Props) {
         }}
       />
 
-      <ConversationDialog
-        open={!!viewingConvId}
-        conversationId={viewingConvId}
-        onClose={() => setViewingConvId(null)}
-      />
+      {viewingCardId && (() => {
+        const card = Object.values(board.cards).flat().find(c => c.id === viewingCardId);
+        return card ? <NegotiationWindow card={card} stages={board.stages}
+          onClose={() => { setViewingCardId(null); qc.invalidateQueries({ queryKey: ['pipeline-board', pipelineId] }); }}
+          onEdit={() => { setViewingCardId(null); setEditingCard(card); }} /> : null;
+      })()}
+
     </>
   );
 }

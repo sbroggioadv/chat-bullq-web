@@ -4,7 +4,7 @@ import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, MessageSquare, User } from 'lucide-react';
 import { ZappfyIcon, MetaIcon, InstagramIcon } from '@/components/ui/icons';
-import type { CardSummary } from '../services/pipelines.service';
+import type { CardSummary } from '@/features/pipelines/services/pipelines.service';
 
 const channelIconByType: Record<string, React.ElementType> = {
   WHATSAPP_ZAPPFY: ZappfyIcon,
@@ -50,53 +50,53 @@ export function KanbanCard({ card, onClick }: Props) {
       ref={setNodeRef}
       style={style}
       onClick={onClick}
-      className={`group relative cursor-pointer rounded-lg border bg-white p-3 shadow-sm transition-shadow hover:shadow-md dark:bg-zinc-900 ${
-        isClosed
-          ? 'border-zinc-200 opacity-70 dark:border-zinc-800'
-          : 'border-zinc-200 dark:border-zinc-800'
-      }`}
+      role="button"
+      tabIndex={0}
+      aria-label={`Abrir ${card.title}`}
+      onKeyDown={e => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onClick?.(); } }}
+      className={`group relative cursor-pointer rounded-[10px] border border-[var(--bq-hair)] bg-[var(--bq-raised)] p-3 transition-colors hover:border-[var(--bq-hair-strong)] focus-visible:outline-2 focus-visible:outline-[var(--bq-accent)] ${isClosed ? 'opacity-70' : ''}`}
     >
       <div className="flex items-start gap-2">
         <button
           {...attributes}
           {...listeners}
           onClick={(e) => e.stopPropagation()}
-          className="mt-0.5 cursor-grab text-zinc-300 opacity-0 transition-opacity group-hover:opacity-100 active:cursor-grabbing dark:text-zinc-600"
+          className="mt-0.5 cursor-grab text-[var(--bq-t3)] transition-opacity active:cursor-grabbing touch-none"
           aria-label="Arrastar"
         >
           <GripVertical className="h-3.5 w-3.5" />
         </button>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+          <p className="truncate text-sm font-semibold text-[var(--bq-t1)]">
             {card.title}
           </p>
           {card.description && (
-            <p className="mt-0.5 line-clamp-2 text-xs text-zinc-500 dark:text-zinc-400">
+            <p className="mt-0.5 line-clamp-2 text-xs text-[var(--bq-t3)]">
               {card.description}
             </p>
           )}
         </div>
       </div>
 
-      <div className="mt-2 flex items-center gap-2 text-[11px] text-zinc-500">
+      <div className="mt-2 flex items-center gap-2 text-[11px] text-[var(--bq-t3)]">
         {value && (
-          <span className="rounded-full bg-emerald-50 px-2 py-0.5 font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+          <span className="rounded-full bg-[var(--bq-ok-soft)] px-2 py-0.5 font-medium text-[var(--bq-ok)]">
             {value}
           </span>
         )}
         {card.status === 'WON' && (
-          <span className="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-bold uppercase text-green-700 dark:bg-green-900/40 dark:text-green-400">
+          <span className="rounded-full bg-[var(--bq-ok-soft)] px-2 py-0.5 text-[10px] font-bold uppercase text-[var(--bq-ok)]">
             ganho
           </span>
         )}
         {card.status === 'LOST' && (
-          <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold uppercase text-red-700 dark:bg-red-900/40 dark:text-red-400">
+          <span className="rounded-full bg-[var(--bq-err-soft)] px-2 py-0.5 text-[10px] font-bold uppercase text-[var(--bq-err)]">
             perdido
           </span>
         )}
       </div>
 
-      <div className="mt-2 flex items-center justify-between gap-2 text-[11px] text-zinc-500">
+      <div className="mt-2 flex items-center justify-between gap-2 text-[11px] text-[var(--bq-t3)]">
         {contact ? (
           <span className="inline-flex min-w-0 items-center gap-1 truncate">
             <User className="h-3 w-3 shrink-0" />
@@ -112,22 +112,22 @@ export function KanbanCard({ card, onClick }: Props) {
             return (
               <span
                 title={`${card.conversation.channel.name} · clique pra abrir a conversa`}
-                className="flex h-5 w-5 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800"
+                className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--bq-raised-2)]"
               >
-                <ChannelIcon className="h-3 w-3 text-zinc-600 dark:text-zinc-300" />
+                <ChannelIcon className="h-3 w-3 text-[var(--bq-t2)]" />
               </span>
             );
           })()}
           {!card.conversation && card.conversationId && (
             <MessageSquare
-              className="h-3 w-3 text-blue-500"
+              className="h-3 w-3 text-[var(--bq-info)]"
               aria-label="Tem conversa vinculada"
             />
           )}
           {assignedTo && (
             <span
               title={assignedTo.name}
-              className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-[9px] font-bold text-primary"
+              className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--bq-agent-soft)] text-[9px] font-bold text-[var(--bq-agent-text)]"
             >
               {assignedTo.name.slice(0, 2).toUpperCase()}
             </span>
