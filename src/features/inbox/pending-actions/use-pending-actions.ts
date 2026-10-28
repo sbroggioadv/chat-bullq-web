@@ -1,5 +1,6 @@
 'use client';
 
+import { useSocket } from '@/features/inbox/hooks/use-socket';
 import {
   useMutation,
   useQuery,
@@ -18,17 +19,18 @@ export const pendingActionsQueryKey = (conversationId: string) =>
   [PENDING_ACTIONS_KEY, conversationId] as const;
 
 /**
- * Lists pending actions for a conversation. Auto-refetches every 10s so
+ * Lists pending actions for a conversation. Polls every 10s while disconnected so
  * an approver sees newly-created actions without manual refresh, and
  * also re-runs on focus/reconnect (matches the inbox's pattern of
  * recovering from missed socket events).
  */
 export function usePendingActions(conversationId: string | undefined) {
+  const { connected } = useSocket();
   return useQuery<PendingAction[]>({
     queryKey: pendingActionsQueryKey(conversationId ?? ''),
     queryFn: () => listPendingActions(conversationId as string),
     enabled: Boolean(conversationId),
-    refetchInterval: 10_000,
+    refetchInterval: connected ? false : 10_000,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
     staleTime: 5_000,

@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useSocket } from '@/features/inbox/hooks/use-socket';
+import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { X, Loader2, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import { ChatPanel } from './chat-panel';
 import {
   inboxService,
-  type Conversation,
 } from '../services/inbox.service';
 
 interface Props {
@@ -26,24 +26,18 @@ interface Props {
  * conversation work, the inbox page is still the right place.
  */
 export function ConversationDialog({ conversationId, open, onClose }: Props) {
+  const { connected } = useSocket();
   const queryClient = useQueryClient();
-  const [active, setActive] = useState<Conversation | null>(null);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['conversation', conversationId],
     queryFn: () => inboxService.getConversation(conversationId!),
     enabled: open && !!conversationId,
-    refetchInterval: open ? 5000 : false,
+    refetchInterval: connected ? false : 5000,
   });
 
-  useEffect(() => {
-    if (data?.id === conversationId) setActive(data);
-  }, [data, conversationId]);
-
-  // Reset on close so reopening with a different id doesn't flash stale state.
-  useEffect(() => {
-    if (!open) setActive(null);
-  }, [open]);
+  // Derive from the keyed query so another conversation never flashes on open.
+  const active = open && data?.id === conversationId ? data : null;
 
   // ESC closes; lock body scroll while open.
   useEffect(() => {
