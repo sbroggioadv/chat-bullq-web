@@ -8,7 +8,14 @@ import Link from 'next/link';
 import {
   ArrowLeft,
   ExternalLink,
-  FolderKanban,
+  FileText,
+  ListChecks,
+  Sparkles,
+  ChevronRight,
+  Upload,
+  Users,
+  Calendar,
+  PenLine,
   Loader2,
   Mail,
   MessageSquare,
@@ -16,12 +23,12 @@ import {
   Trash2,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Button, Pill } from '@/components/ui/foundation';
+import { Button, FoundationMenu, MacWindow } from '@/components/ui/foundation';
+import { contactsService } from '@/features/contacts/services/contacts.service';
 import { membersService } from '@/features/settings/services/members.service';
 import { projectsService } from '@/features/projects/services/projects.service';
 import {
   PHASE_LABELS,
-  phaseLabel,
   PROJECT_STATUSES,
   hoppeTaskUrl,
 } from '@/features/projects/project-fields';
@@ -31,9 +38,9 @@ const inputCls =
 const labelCls =
   'text-[11px] font-medium uppercase tracking-wide text-[var(--bq-t3)] ';
 const cardCls =
-  'rounded-xl border border-[var(--bq-hair)] bg-[var(--bq-win-solid)] p-4  ';
+  'rounded-2xl border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-4 py-[14px]';
 
-export function ProjectDetail({ projectId, onBack }: { projectId: string; onBack?: () => void }) {
+export function ProjectDetail({ projectId, onBack, embedded = false }: { projectId: string; onBack?: () => void; embedded?: boolean }) {
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -56,6 +63,13 @@ export function ProjectDetail({ projectId, onBack }: { projectId: string; onBack
   const [responsibleUserId, setResponsibleUserId] = useState(project?.responsibleUserId ?? '');
   const [taskTitle, setTaskTitle] = useState('');
   const [contactId, setContactId] = useState('');
+  const [contactSearch, setContactSearch] = useState('');
+  const [panel, setPanel] = useState<'tasks' | 'email' | 'contacts' | null>(null);
+  const { data: contactResults, isLoading: contactsLoading, isError: contactsError, refetch: retryContacts } = useQuery({
+    queryKey: ['project-contact-search', contactSearch],
+    queryFn: () => contactsService.list({ search: contactSearch, limit: '20' }),
+    enabled: panel === 'contacts',
+  });
   const [emailSubject, setEmailSubject] = useState('');
   const [emailBody, setEmailBody] = useState('');
   const [emailTo, setEmailTo] = useState('');
@@ -134,6 +148,7 @@ export function ProjectDetail({ projectId, onBack }: { projectId: string; onBack
     mutationFn: () => projectsService.addContact(projectId!, contactId.trim()),
     onSuccess: () => {
       setContactId('');
+      setPanel(null);
       invalidate();
       toast.success('Contato ligado ao dossiê');
     },
@@ -208,42 +223,25 @@ export function ProjectDetail({ projectId, onBack }: { projectId: string; onBack
   const attachments = project.attachments ?? [];
   const firstConversationId = (project.conversationIds ?? [])[0];
 
+  const phaseIndex = PROJECT_STATUSES.findIndex(status => status === project.status);
+  const done = tasks.filter(task => task.done).length;
   return (
-    <div className="mx-auto h-full w-full min-w-0 overflow-y-auto p-4 sm:p-6">
-      <div className="mb-5 flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          onClick={onBack ?? (() => router.push('/projects'))}
-          className="rounded-md p-1.5 text-[var(--bq-t3)] hover:bg-[var(--bq-raised)] hover:text-[var(--bq-t1)]"
-          aria-label="Voltar"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </button>
-        <FolderKanban className="h-5 w-5 text-[var(--bq-accent-text)]" />
-        <div className="min-w-0 flex-1">
-          <h1 className="truncate text-lg font-semibold text-[var(--bq-t1)]">
-            {project.name || 'Dossiê'}
-          </h1>
-          <p className="text-xs text-[var(--bq-t3)]">
-            Escopo, fase e informações do projeto
-          </p>
+    <div className="flex h-full min-w-0 flex-col gap-[14px] overflow-y-auto px-[22px] pb-6 pt-[18px]">
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0"><h1 className="font-[family-name:var(--bq-f-display)] text-[22px] font-medium leading-[1.15] tracking-[-0.02em] [text-wrap:balance]">{project.name || 'Dossiê'}</h1>
+          <p className="mt-1.5 text-xs text-[var(--bq-t3)]">Responsável: {project.responsible?.name || 'Sem responsável'}</p>
+          <span className="mt-2 inline-block rounded-md border border-dashed border-[var(--bq-hair-strong)] px-2 text-[11px] text-[var(--bq-t3)]">Tags ainda não disponíveis</span>
         </div>
-        {firstConversationId && (
-          <Link
-            href={`/inbox?conversationId=${firstConversationId}`}
-            className="inline-flex items-center gap-1.5 rounded-md border border-[var(--bq-hair)] bg-[var(--bq-win-solid)] px-3 py-1.5 text-xs font-medium text-[var(--bq-t2)] hover:bg-[var(--bq-surface)]"
-          >
-            <MessageSquare className="h-3.5 w-3.5" />
-            Abrir conversa
-          </Link>
-        )}
-      </div>
-
-      <div className="mb-4 flex flex-wrap items-center gap-2"><Pill tone="info">{phaseLabel(project.status) || 'Fase não informada'}</Pill><span className="text-xs text-[var(--bq-t3)]">{project.responsible?.name || 'Sem responsável'}</span></div>
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <section className={`${cardCls} xl:col-span-2`}>
-          <div className="mb-3 flex items-center justify-between gap-3"><h2 className="text-sm font-semibold">Escopo do projeto</h2><Button onClick={() => { setName(project.name ?? ''); setDescription(project.description ?? ''); setHoppeId(project.hoppeId ?? ''); setResponsibleUserId(project.responsibleUserId ?? ''); setEditingScope(v => !v); }}>{editingScope ? 'Cancelar edição' : 'Editar escopo e dados'}</Button></div>
-          {!editingScope && <><p className="whitespace-pre-wrap text-[13px] text-[var(--bq-t2)]">{project.description || 'Escopo ainda não informado.'}</p><p className="mt-3 text-xs text-[var(--bq-t3)]">Responsável: {project.responsible?.name || 'Sem responsável'}</p>{project.hoppeId && <a className="bq-button mt-3" href={hoppeTaskUrl(project.hoppeId)} target="_blank" rel="noopener noreferrer">Abrir no Hoppe</a>}</>}
+        <div className="flex flex-wrap items-center gap-2">
+          {firstConversationId ? <Link className="bq-button" href={`/inbox?conversationId=${firstConversationId}`}><MessageSquare size={13} />Abrir conversa</Link> : <Button disabled title="Nenhuma conversa vinculada">Abrir conversa</Button>}
+          <Button variant="solid" disabled={phaseMutation.isPending || phaseIndex < 0 || phaseIndex >= PROJECT_STATUSES.length - 1} onClick={() => phaseMutation.mutate(PROJECT_STATUSES[phaseIndex + 1])}>Avançar fase<ChevronRight size={12} /></Button>
+          <div className="relative [&>button]:w-[30px] [&>button]:px-0 [&>button]:!text-[0px]"><FoundationMenu label="Mais ações do projeto" items={[{ label: 'Tarefas', onClick: () => setPanel('tasks') }, { label: 'E-mail', onClick: () => setPanel('email') }, { label: 'Abrir página do projeto', onClick: () => router.push(`/projects/${projectId}`) }, { label: 'Voltar aos projetos', onClick: onBack ?? (() => router.push('/projects')) }]} /><span aria-hidden="true" className="pointer-events-none absolute inset-0 grid place-items-center text-base text-[var(--bq-t2)]">⋯</span></div>
+          {!embedded && <Button aria-label="Voltar" onClick={onBack ?? (() => router.push('/projects'))}><ArrowLeft size={13} /></Button>}
+        </div>
+      </header>
+        <section className={cardCls}>
+          <div className="mb-[11px] flex flex-wrap items-center gap-2"><FileText size={14} className="text-[var(--bq-t2)]" /><h2 className="flex-1 text-[13px] font-semibold">Escopo do projeto</h2><button type="button" aria-label={editingScope ? 'Cancelar edição' : 'Editar escopo e dados'} className="flex items-center gap-1 text-xs text-[var(--bq-t2)]" onClick={() => { setName(project.name ?? ''); setDescription(project.description ?? ''); setHoppeId(project.hoppeId ?? ''); setResponsibleUserId(project.responsibleUserId ?? ''); setEditingScope(v => !v); }}><PenLine size={12} />{editingScope ? 'Cancelar' : 'Editar'}</button></div>
+          {!editingScope && <><p className="max-w-[75ch] whitespace-pre-wrap text-[13px] leading-[1.6] text-[var(--bq-t2)]">{project.description || 'Escopo ainda não informado.'}</p>{project.hoppeId && <a className="bq-button mt-3" href={hoppeTaskUrl(project.hoppeId)} target="_blank" rel="noopener noreferrer">Abrir no Hoppe</a>}</>}
           <div hidden={!editingScope}>
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="space-y-1 sm:col-span-2">
@@ -333,10 +331,116 @@ export function ProjectDetail({ projectId, onBack }: { projectId: string; onBack
           </button>
           </div>
         </section>
-        {!editingScope && <section className={`${cardCls} xl:col-span-2`}><label className="flex flex-wrap items-center justify-between gap-3 text-sm font-semibold">Fase em que está<select aria-label="Fase atual do projeto" value={project.status || ''} disabled={phaseMutation.isPending} onChange={e => phaseMutation.mutate(e.target.value)} className="rounded-lg border border-[var(--bq-hair)] bg-[var(--bq-win-solid)] p-2 text-xs font-normal"><option value="" disabled>Selecione a fase</option>{PROJECT_STATUSES.map(status => <option value={status} key={status}>{PHASE_LABELS[status]}</option>)}</select></label></section>}
-
-        <section className={`${cardCls} xl:col-span-2`}><h2 className="text-sm font-semibold">Fluxograma</h2><p className="mt-2 text-xs text-[var(--bq-t3)]">O fluxo deste projeto ainda não está disponível.</p></section>
+      <section className={cardCls}>
+        <div className="mb-[11px] flex flex-wrap items-center gap-2"><ListChecks size={14} /><h2 className="text-[13px] font-semibold">Fase em que está</h2><span className="font-mono text-[11.5px] text-[var(--bq-t3)]">{phaseIndex >= 0 ? `${phaseIndex + 1}/${PROJECT_STATUSES.length}` : 'Fase não informada'}</span></div>
+        <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Fase atual do projeto">
+          {PROJECT_STATUSES.map((status, index) => <button key={status} type="button" aria-pressed={project.status === status} disabled={phaseMutation.isPending} onClick={() => phaseMutation.mutate(status)} className={`flex h-[30px] items-center gap-[7px] rounded-[9px] border pl-1.5 pr-[11px] text-xs ${project.status === status ? 'border-[var(--bq-accent)] bg-[var(--bq-accent-soft)] text-[var(--bq-t1)]' : 'border-[var(--bq-hair)] text-[var(--bq-t2)] hover:border-[var(--bq-hair-strong)]'}`}><span aria-hidden="true" className={`grid size-[19px] place-items-center rounded-full font-mono text-[10px] ${project.status === status ? 'bg-[var(--bq-accent)] text-[var(--bq-on-accent)]' : 'bg-[var(--bq-raised-2)]'}`}>{index + 1}</span>{PHASE_LABELS[status]}</button>)}
+        </div>
+        <div className="mt-3 flex items-center gap-2 text-[11px] text-[var(--bq-t3)]">{tasks.length ? <><progress aria-label="Progresso das tarefas" className="h-1 min-w-0 flex-1 overflow-hidden rounded [&::-webkit-progress-bar]:bg-[var(--bq-raised-2)] [&::-webkit-progress-value]:bg-[var(--bq-ok)] [&::-moz-progress-bar]:bg-[var(--bq-ok)]" value={done} max={tasks.length} /><span>{done}/{tasks.length} tarefas concluídas</span></> : <span>Progresso indisponível · sem tarefas</span>}<button className="ml-auto underline" onClick={() => setPanel('tasks')}>Ver tarefas</button></div>
+      </section>
+      <section className={cardCls}>
+        <div className="mb-[11px] flex flex-wrap items-center gap-2"><Sparkles size={14} /><h2 className="flex-1 text-[13px] font-semibold">Fluxograma</h2><Button variant="agent" disabled>Refazer com o Jarvis</Button></div>
+        <div className="flex min-h-[306px] items-center justify-center rounded-xl border border-[var(--bq-hair)] bg-[radial-gradient(circle_at_1px_1px,var(--bq-hair-strong)_1px,transparent_1.5px)] bg-[length:18px_18px] p-5 text-center text-xs text-[var(--bq-t3)]">O fluxo deste projeto ainda não está disponível.</div>
+      </section>
+      <div className="grid items-start gap-[14px] min-[1180px]:grid-cols-2">
+        <div className="flex flex-col gap-[14px]">
         <section className={cardCls}>
+          <h2 className="mb-3 flex items-center gap-2 text-[13px] font-semibold text-[var(--bq-t1)]">
+            <FileText size={14} /> Documentos
+          </h2>
+          {attachments.length === 0 ? (
+            <p className="text-sm text-[var(--bq-t3)]">
+              Nenhum anexo. Use o clipe na conversa para anexar uma mensagem.
+            </p>
+          ) : (
+            <ul className="space-y-2">
+              {attachments.map((a) => (
+                <li
+                  key={a.id}
+                  className="flex items-center justify-between gap-2 rounded-md border border-[var(--bq-hair)] px-3 py-2"
+                >
+                  <div className="min-w-0">
+                    {a.url ? (
+                      <a
+                        href={a.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="truncate text-sm font-medium text-[var(--bq-accent-text)] hover:underline"
+                      >
+                        {a.label || a.fileName || 'Anexo'}
+                      </a>
+                    ) : (
+                      <p className="truncate text-sm text-[var(--bq-t1)]">
+                        {a.label || a.fileName || 'Anexo'}
+                      </p>
+                    )}
+                    {a.fileName && a.label && a.fileName !== a.label && (
+                      <p className="truncate text-xs text-[var(--bq-t3)]">
+                        {a.fileName}
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeAttachmentMutation.mutate(a.id)}
+                    className="rounded p-1 text-[var(--bq-t3)] hover:bg-[var(--bq-raised)] hover:text-[var(--bq-err)]"
+                    aria-label="Remover anexo"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className="mt-3 flex flex-col items-center gap-[5px] rounded-xl border border-dashed border-[var(--bq-hair-strong)] p-3 text-center text-xs text-[var(--bq-t3)]"><Upload size={18} /><Button disabled>Enviar arquivo</Button><span>Upload direto ainda não disponível.</span>{firstConversationId && <Link className="underline" href={`/inbox?conversationId=${firstConversationId}`}>Anexar mensagem pela conversa</Link>}</div>
+        </section>
+
+        <section className={cardCls}>
+          <h2 className="mb-3 flex items-center gap-2 text-[13px] font-semibold text-[var(--bq-t1)]">
+            <Users size={14} /> Contatos e grupos
+          </h2>
+          <div className="mb-3 flex flex-wrap gap-2"><Button onClick={() => setPanel('contacts')}><Plus size={12} />Incluir contato</Button><Button disabled title="Vínculo de grupo ainda não disponível">Incluir grupo</Button></div>
+          {project.groupJid && <p className="mb-2 text-xs text-[var(--bq-t2)]">Grupo vinculado: {project.groupJid}</p>}
+          <p className="mb-2 text-[11px] text-[var(--bq-t3)]">Incluir grupo ainda não disponível.</p>
+
+          {contacts.length === 0 ? (
+            <p className="text-sm text-[var(--bq-t3)]">Nenhum envolvido.</p>
+          ) : (
+            <ul className="space-y-2">
+              {contacts.map((c) => (
+                <li
+                  key={c.id}
+                  className="flex items-start justify-between gap-2 rounded-md border border-[var(--bq-hair)] px-3 py-2"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-[var(--bq-t1)]">
+                      {c.name || c.phone || c.email || c.contactId}
+                    </p>
+                    <p className="truncate text-xs text-[var(--bq-t3)]">
+                      {[c.phone, c.email].filter(Boolean).join(' · ') ||
+                        c.contactId}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeContactMutation.mutate(c.id)}
+                    className="rounded p-1 text-[var(--bq-t3)] hover:bg-[var(--bq-raised)] hover:text-[var(--bq-err)]"
+                    aria-label="Remover envolvido"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section className={cardCls}><h2 className="text-[13px] font-semibold">Contrato e honorários</h2><div className="mt-3 flex items-baseline gap-2"><span className="text-[22px]">—</span><span className="text-xs text-[var(--bq-t3)]">Valor contratado ainda não disponível</span></div><p className="mt-3 text-xs text-[var(--bq-t3)]">Contratos e assinaturas ainda não disponíveis.</p><Button className="mt-3" disabled>Enviar contrato</Button></section>
+        </div><div className="flex flex-col gap-[14px]">
+        <section className={cardCls}><div className="flex flex-wrap items-center gap-2"><Calendar size={14} /><h2 className="flex-1 text-[13px] font-semibold">Reuniões</h2><Button disabled>Agendar</Button></div><p className="mt-3 text-xs text-[var(--bq-t3)]">Histórico e agendamento pelo projeto ainda não disponíveis.</p></section>        <section className={cardCls}><h2 className="text-[13px] font-semibold">ClickUp</h2><div className="mt-3 rounded-xl border border-[var(--bq-hair)] p-3"><p className="text-xs text-[var(--bq-t3)]">O caso vinculado a este projeto ainda não está disponível.</p><Button className="mt-3" disabled>Ver o caso</Button></div>{firstConversationId && <Link className="bq-button mt-3" href={`/inbox?conversationId=${firstConversationId}`}>Abrir conversa do projeto</Link>}</section>
+        </div>
+      </div>
+      <MacWindow open={panel === 'tasks'} onClose={() => setPanel(null)} title="Tarefas do projeto">        <section className={cardCls}>
           <h2 className="mb-3 text-sm font-semibold text-[var(--bq-t1)]">
             Tarefas
           </h2>
@@ -406,116 +510,8 @@ export function ProjectDetail({ projectId, onBack }: { projectId: string; onBack
           )}
         </section>
 
-        <section className={cardCls}>
-          <h2 className="mb-3 text-sm font-semibold text-[var(--bq-t1)]">
-            Contatos e grupos
-          </h2>
-          <form
-            className="mb-3 flex gap-2"
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (!contactId.trim()) return;
-              addContactMutation.mutate();
-            }}
-          >
-            <input
-              className={inputCls}
-              placeholder="ID do contato"
-              value={contactId}
-              onChange={(e) => setContactId(e.target.value)}
-            />
-            <button
-              type="submit"
-              disabled={!contactId.trim() || addContactMutation.isPending}
-              className="inline-flex shrink-0 items-center gap-1 rounded-md bg-[var(--bq-solid-bg)] px-3 text-sm font-medium text-[var(--bq-solid-fg)] hover:bg-[var(--bq-solid-bg)] disabled:opacity-50"
-            >
-              <Plus className="h-4 w-4" />
-              Ligar
-            </button>
-          </form>
-          {contacts.length === 0 ? (
-            <p className="text-sm text-[var(--bq-t3)]">Nenhum envolvido.</p>
-          ) : (
-            <ul className="space-y-2">
-              {contacts.map((c) => (
-                <li
-                  key={c.id}
-                  className="flex items-start justify-between gap-2 rounded-md border border-[var(--bq-hair)] px-3 py-2"
-                >
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-[var(--bq-t1)]">
-                      {c.name || c.phone || c.email || c.contactId}
-                    </p>
-                    <p className="truncate text-xs text-[var(--bq-t3)]">
-                      {[c.phone, c.email].filter(Boolean).join(' · ') ||
-                        c.contactId}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => removeContactMutation.mutate(c.id)}
-                    className="rounded p-1 text-[var(--bq-t3)] hover:bg-[var(--bq-raised)] hover:text-[var(--bq-err)]"
-                    aria-label="Remover envolvido"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-
-        <section className={cardCls}>
-          <h2 className="mb-3 text-sm font-semibold text-[var(--bq-t1)]">
-            Documentos
-          </h2>
-          {attachments.length === 0 ? (
-            <p className="text-sm text-[var(--bq-t3)]">
-              Nenhum anexo. Use o clipe na conversa para anexar uma mensagem.
-            </p>
-          ) : (
-            <ul className="space-y-2">
-              {attachments.map((a) => (
-                <li
-                  key={a.id}
-                  className="flex items-center justify-between gap-2 rounded-md border border-[var(--bq-hair)] px-3 py-2"
-                >
-                  <div className="min-w-0">
-                    {a.url ? (
-                      <a
-                        href={a.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="truncate text-sm font-medium text-[var(--bq-accent-text)] hover:underline"
-                      >
-                        {a.label || a.fileName || 'Anexo'}
-                      </a>
-                    ) : (
-                      <p className="truncate text-sm text-[var(--bq-t1)]">
-                        {a.label || a.fileName || 'Anexo'}
-                      </p>
-                    )}
-                    {a.fileName && a.label && a.fileName !== a.label && (
-                      <p className="truncate text-xs text-[var(--bq-t3)]">
-                        {a.fileName}
-                      </p>
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => removeAttachmentMutation.mutate(a.id)}
-                    className="rounded p-1 text-[var(--bq-t3)] hover:bg-[var(--bq-raised)] hover:text-[var(--bq-err)]"
-                    aria-label="Remover anexo"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-
-        <section className={cardCls}>
+</MacWindow>
+      <MacWindow open={panel === 'email'} onClose={() => setPanel(null)} title="E-mail do projeto">        <section className={cardCls}>
           <h2 className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-[var(--bq-t1)]">
             <Mail className="h-4 w-4 text-[var(--bq-accent-text)]" />
             E-mail
@@ -563,10 +559,14 @@ export function ProjectDetail({ projectId, onBack }: { projectId: string; onBack
             </button>
           </form>
         </section>
-        <section className={cardCls}><h2 className="text-sm font-semibold">Contrato e honorários</h2><p className="mt-2 text-xs text-[var(--bq-t3)]">Valor contratado e assinaturas ainda não disponíveis.</p></section>
-        <section className={cardCls}><h2 className="text-sm font-semibold">Reuniões</h2><p className="mt-2 text-xs text-[var(--bq-t3)]">Histórico e agendamento pelo projeto ainda não disponíveis.</p></section>
-        <section className={cardCls}><h2 className="text-sm font-semibold">ClickUp</h2><p className="mt-2 text-xs text-[var(--bq-t3)]">O caso vinculado a este projeto ainda não está disponível.</p>{firstConversationId && <Link className="bq-button mt-3" href={`/inbox?conversationId=${firstConversationId}`}>Abrir conversa do projeto</Link>}</section>
-      </div>
+</MacWindow>
+      <MacWindow open={panel === 'contacts'} onClose={() => setPanel(null)} title="Incluir contato">
+        <form className="space-y-3" onSubmit={e => { e.preventDefault(); if (contactId) addContactMutation.mutate(); }}>
+          <label className="block text-xs">Buscar contato<input className={`${inputCls} mt-1`} placeholder="Nome, telefone ou e-mail" value={contactSearch} onChange={e => setContactSearch(e.target.value)} /></label>
+          {contactsLoading ? <p role="status">Buscando contatos…</p> : contactsError ? <p role="alert">Não foi possível buscar contatos. <Button onClick={() => void retryContacts()}>Tentar novamente</Button></p> : <div className="max-h-64 space-y-1 overflow-y-auto">{contactResults?.contacts.length ? contactResults.contacts.map(contact => <label key={contact.id} className="flex items-center gap-2 rounded-lg border border-[var(--bq-hair)] p-2 text-sm"><input type="radio" name="project-contact" value={contact.id} checked={contactId === contact.id} onChange={() => setContactId(contact.id)} />{contact.displayName || contact.name || contact.phone || contact.email || contact.id}</label>) : <p className="text-xs text-[var(--bq-t3)]">Nenhum contato encontrado.</p>}</div>}
+          <div className="flex justify-end gap-2"><Button onClick={() => setPanel(null)}>Cancelar</Button><Button variant="solid" type="submit" disabled={!contactId || addContactMutation.isPending}>Ligar contato</Button></div>
+        </form>
+      </MacWindow>
     </div>
   );
 }

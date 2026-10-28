@@ -2,10 +2,9 @@
 
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import Link from 'next/link';
 import { ProjectDetail } from '@/features/projects/components/project-detail';
-import { Button, Pill } from '@/components/ui/foundation';
-import { Search, FolderKanban, Plus, Loader2, X } from 'lucide-react';
+import { Button, MacWindow, FoundationPopover } from '@/components/ui/foundation';
+import { Search, Plus, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useOrgId } from '@/hooks/use-org-query-key';
 import { membersService } from '@/features/settings/services/members.service';
@@ -22,7 +21,6 @@ const controlCls =
 export function ProjectsTable() {
   const orgId = useOrgId();
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [mobileDetail, setMobileDetail] = useState(false);
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
@@ -63,7 +61,6 @@ export function ProjectsTable() {
         setStatus('');
         setResponsibleUserId('');
         setSelectedId(created.id);
-        setMobileDetail(true);
         setCreating(false);
       } else {
         toast.error('Projeto criado sem identificador');
@@ -93,33 +90,35 @@ export function ProjectsTable() {
     setNewStatus('TODO');
   };
 
+  const activeId = filtered.some(project => project.id === selectedId) ? selectedId : filtered[0]?.id;
   return (
-    <div className="flex h-full min-w-0 text-[var(--bq-t1)]">
-    <aside aria-label="Lista de projetos" className={`${mobileDetail ? 'hidden md:block' : 'block'} h-full w-full shrink-0 overflow-y-auto border-r border-[var(--bq-hair)] p-4 md:w-[310px]`}>
-    <div>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <FolderKanban className="h-4 w-4 text-[var(--bq-accent-text)]" />
-            <h1 className="text-lg font-semibold text-[var(--bq-t1)]">
-              Projetos
-            </h1>
-          </div>
-          <p className="mt-1 text-sm text-[var(--bq-t3)]">
-            Escopo e acompanhamento dos seus projetos.
-          </p>
+    <div className="flex h-full min-w-0 flex-col text-[var(--bq-t1)] md:flex-row">
+      <aside aria-label="Lista de projetos" className="flex max-h-[40%] w-full shrink-0 flex-col border-b border-[var(--bq-hair)] md:max-h-none md:w-[300px] md:border-b-0 md:border-r">
+        <div className="flex items-center gap-2 p-[14px]"><h1 className="flex-1 font-[family-name:var(--bq-f-display)] text-[17px] font-semibold tracking-tight">Projetos</h1><Button variant="solid" onClick={() => setCreating(true)}><Plus size={13} />Novo projeto</Button></div>
+        <div className="flex flex-wrap gap-[5px] px-[14px] pb-2.5" role="group" aria-label="Filtrar projetos por fase">
+          {[{ value: '', label: 'Todas' }, ...PROJECT_STATUSES.map(value => ({ value, label: PHASE_LABELS[value] }))].map(option => <button type="button" key={option.value} aria-pressed={status === option.value} onClick={() => setStatus(option.value)} className={`h-6 rounded-full border px-[9px] text-[11.5px] ${status === option.value ? 'border-transparent bg-[var(--bq-solid-bg)] text-[var(--bq-solid-fg)]' : 'border-[var(--bq-hair-strong)] text-[var(--bq-t2)]'}`}>{option.label}</button>)}
+          <FoundationPopover label="Buscar e filtrar"><div className="flex max-w-[250px] flex-col gap-3 p-2">
+            <label className="text-xs">Buscar projetos<div className="relative mt-1"><Search className="pointer-events-none absolute left-2 top-2.5 h-4 w-4 text-[var(--bq-t3)]" /><input className={`${controlCls} w-full pl-8`} value={search} onChange={e => setSearch(e.target.value)} placeholder="Nome ou descrição" /></div></label>
+            <label className="text-xs">Filtrar por responsável<select className={`${controlCls} mt-1 w-full`} value={responsibleUserId} onChange={e => setResponsibleUserId(e.target.value)}><option value="">Todos os responsáveis</option>{members.filter(m => m.user.isActive).map(m => <option key={m.user.id} value={m.user.id}>{m.user.name}</option>)}</select></label>
+            <p className="text-xs text-[var(--bq-t3)]">Tags: ainda não disponíveis.</p>
+          </div></FoundationPopover>
         </div>
-        <button
-          type="button"
-          onClick={() => setCreating((v) => !v)}
-          className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[var(--bq-solid-bg)] px-3 text-sm font-medium text-[var(--bq-solid-fg)] hover:bg-[var(--bq-solid-bg)]"
-        >
-          {creating ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-          Novo projeto
-        </button>
-      </div>
-
-      {creating && (
+        <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto px-2 pb-3">
+          {isLoading ? <p role="status" className="p-3 text-sm text-[var(--bq-t3)]">Carregando projetos…</p> : isError ? <div role="alert" className="p-3 text-sm">Não foi possível carregar os projetos. <Button onClick={() => void refetch()}>Tentar novamente</Button></div> : filtered.length === 0 ? <p className="p-3 text-sm text-[var(--bq-t3)]">Nenhum projeto encontrado.</p> : filtered.map(project => {
+            const total = project.tasks?.length ?? 0;
+            const done = (project.tasks ?? []).filter(task => task.done).length;
+            return <button type="button" key={project.id!} aria-pressed={activeId === project.id} onClick={() => setSelectedId(project.id!)} className={`flex w-full shrink-0 flex-col gap-[7px] rounded-xl p-[11px] text-left hover:bg-[var(--bq-raised)] ${activeId === project.id ? 'bg-[var(--bq-raised-2)] shadow-[inset_0_0_0_1px_var(--bq-hair)]' : ''}`}>
+              <span className="text-[13px] font-semibold">{project.name}</span>
+              {total > 0 ? <><progress aria-label={`Progresso de ${project.name}`} className="h-1 w-full overflow-hidden rounded [&::-webkit-progress-bar]:bg-[var(--bq-raised-2)] [&::-webkit-progress-value]:bg-[var(--bq-ok)] [&::-moz-progress-bar]:bg-[var(--bq-ok)]" value={done} max={total} /><span className="text-[11px] text-[var(--bq-t3)]">{done}/{total} tarefas concluídas</span></> : <span className="text-[11px] text-[var(--bq-t3)]">Progresso indisponível · sem tarefas</span>}
+              <span className="flex justify-between gap-2 text-[11.5px] text-[var(--bq-t3)]"><span>{phaseLabel(project.status) || 'Sem fase'}</span><span>{project.responsible?.name || 'Sem responsável'}</span></span>
+            </button>;
+          })}
+        </div>
+      </aside>
+      <main className="min-h-0 min-w-0 flex-1">
+        {activeId ? <ProjectDetail key={activeId} projectId={activeId} embedded /> : <div className="flex h-full items-center justify-center p-6 text-sm text-[var(--bq-t3)]">Selecione ou crie um projeto para acompanhar o escopo e a fase.</div>}
+      </main>
+      <MacWindow open={creating} onClose={resetCreate} title="Novo projeto">
         <form
           className="mt-5 space-y-3 rounded-xl border border-[var(--bq-hair)] bg-[var(--bq-surface)] p-4"
           onSubmit={(e) => {
@@ -194,69 +193,7 @@ export function ProjectsTable() {
             </button>
           </div>
         </form>
-      )}
-
-      <div className="mt-5 flex flex-wrap items-center gap-2">
-        <div className="relative w-full">
-          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--bq-t3)]" />
-          <input
-            aria-label="Buscar projetos" className={`${controlCls} w-full pl-8`}
-            placeholder="Buscar por nome ou descrição..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-        <select
-          className={`${controlCls} w-full`}
-          aria-label="Filtrar por fase"
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
-        >
-          <option value="">Todas as fases</option>
-          {PROJECT_STATUSES.map((s) => (
-            <option key={s} value={s}>
-              {PHASE_LABELS[s]}
-            </option>
-          ))}
-        </select>
-        <select
-          className={`${controlCls} w-full`}
-          aria-label="Filtrar por responsável"
-          value={responsibleUserId}
-          onChange={(e) => setResponsibleUserId(e.target.value)}
-        >
-          <option value="">Todos os responsáveis</option>
-          {members
-            .filter((m) => m.user.isActive)
-            .map((m) => (
-              <option key={m.user.id} value={m.user.id}>
-                {m.user.name}
-              </option>
-            ))}
-        </select>
-      </div>
-
-      <div className="mt-4 border-b border-[var(--bq-hair)] pb-3 text-xs text-[var(--bq-t3)]">Tags: ainda não disponíveis.</div>
-      <div className="mt-3 space-y-2">
-        {isLoading ? <p role="status" className="p-3 text-sm text-[var(--bq-t3)]">Carregando projetos…</p> : isError ? <div role="alert" className="p-3 text-sm">Não foi possível carregar os projetos. <Button onClick={() => void refetch()}>Tentar novamente</Button></div> : filtered.length === 0 ? <p className="p-3 text-sm text-[var(--bq-t3)]">Nenhum projeto encontrado.</p> : filtered.map(project => <button type="button" key={project.id!}
-          aria-pressed={(selectedId || filtered[0]?.id) === project.id}
-          onClick={() => { setSelectedId(project.id!); setMobileDetail(true); }}
-          className={`w-full space-y-2 rounded-xl border p-3 text-left transition-colors hover:bg-[var(--bq-raised)] ${(selectedId || filtered[0]?.id) === project.id ? 'border-[var(--bq-hair-strong)] bg-[var(--bq-accent-soft)]' : 'border-[var(--bq-hair)] bg-[var(--bq-surface)]'}`}>
-          <span className="block text-[13px] font-semibold">{project.name}</span>
-          {project.description && <span className="line-clamp-2 text-xs text-[var(--bq-t3)]">{project.description}</span>}
-          <span className="flex flex-wrap items-center gap-2"><Pill tone="info">{phaseLabel(project.status) || 'Sem fase'}</Pill><span className="text-[11px] text-[var(--bq-t3)]">{project.responsible?.name || 'Sem responsável'}</span></span>
-          <span className="block text-[11px] text-[var(--bq-t3)]">{(project.tasks || []).filter(task => !task.done).length}/{(project.tasks || []).length} tarefas pendentes</span>
-        </button>)}
-      </div>
-    </div>
-    </aside>
-    <main className={`${mobileDetail ? 'flex' : 'hidden md:flex'} h-full min-w-0 flex-1 flex-col`}>
-      {mobileDetail && <Button className="m-3 md:hidden" onClick={() => setMobileDetail(false)}>← Lista de projetos</Button>}
-      {(() => {
-        const id = filtered.some(project => project.id === selectedId) ? selectedId : filtered[0]?.id;
-        return id ? <div className="flex min-h-0 flex-1 flex-col"><Link className="bq-button m-3 self-end" href={`/projects/${id}`}>Abrir página do projeto</Link><div className="min-h-0 flex-1"><ProjectDetail key={id} projectId={id} onBack={() => setMobileDetail(false)} /></div></div> : <div className="flex h-full items-center justify-center p-6 text-sm text-[var(--bq-t3)]">Selecione ou crie um projeto para acompanhar o escopo e a fase.</div>;
-      })()}
-    </main>
+      </MacWindow>
     </div>
   );
 }
