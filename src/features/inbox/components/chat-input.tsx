@@ -613,7 +613,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
         </button>
         <input ref={imageInputRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp" className="hidden" onChange={handlePickerChange} aria-hidden="true" />
         <button type="button" aria-label="Imagem" disabled={!canSendImage || !!pendingAttachment} onClick={() => imageInputRef.current?.click()}><ImageIcon size={15} /></button>
-        <button type="button" aria-label="Resposta rápida" onClick={() => { setText(previous => previous + '/'); textareaRef.current?.focus(); }}><Zap size={15} /></button>
+        <button type="button" aria-label="Resposta rápida" onClick={() => { setText(previous => previous + (previous && !/\s$/.test(previous) ? ' /' : '/')); textareaRef.current?.focus(); }}><Zap size={15} /></button>
         <Popover><PopoverButton className="bq-button" aria-label="Emoji"><Smile size={15} /></PopoverButton><PopoverPanel anchor="top start" className="bq-popover">
           <div className="flex gap-1 p-2" aria-label="Inserir emoji">{['😊', '👍', '✅', '🙏', '❤️'].map(emoji => <button type="button" key={emoji} aria-label={`Inserir ${emoji}`} onClick={() => { setText(previous => previous + emoji); textareaRef.current?.focus(); }}>{emoji}</button>)}</div>
         </PopoverPanel></Popover>
