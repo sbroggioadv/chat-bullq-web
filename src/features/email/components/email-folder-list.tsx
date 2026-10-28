@@ -53,13 +53,13 @@ export function EmailFolderList({
         title={f.name}
         className={`flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-[13px] transition-colors ${
           isActive
-            ? "bg-primary/10 font-medium text-primary"
+            ? "bg-[var(--bq-accent-soft)] font-medium text-[var(--bq-t1)]"
             : "text-[var(--bq-t2)] hover:bg-[var(--bq-raised)]  "
         }`}
       >
         <Icon
           className={`h-4 w-4 shrink-0 ${
-            isActive ? "text-primary" : "text-[var(--bq-t3)] "
+            isActive ? "text-[var(--bq-t1)]" : "text-[var(--bq-t3)] "
           }`}
         />
         <span className="flex-1 truncate">{f.name}</span>

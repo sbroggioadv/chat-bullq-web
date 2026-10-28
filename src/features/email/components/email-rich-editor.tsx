@@ -139,7 +139,7 @@ export function EmailRichEditor({
         data-placeholder={placeholder}
         onInput={emit}
         onBlur={emit}
-        className="email-rich-editor max-h-64 overflow-y-auto px-3 py-2 text-sm text-[var(--bq-t1)] outline-none empty:before:pointer-events-none empty:before:text-[var(--bq-t3)] empty:before:content-[attr(data-placeholder)]  dark:empty:before:text-[var(--bq-t3)] [&_a]:text-primary [&_a]:underline"
+        className="email-rich-editor max-h-64 overflow-y-auto px-3 py-2 text-sm text-[var(--bq-t1)] outline-none empty:before:pointer-events-none empty:before:text-[var(--bq-t3)] empty:before:content-[attr(data-placeholder)]  dark:empty:before:text-[var(--bq-t3)] [&_a]:text-[var(--bq-t1)] [&_a]:underline"
         style={{ minHeight: `${minH}rem` }}
       />
     </div>

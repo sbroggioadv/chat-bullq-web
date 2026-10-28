@@ -401,7 +401,7 @@ export function EmailThreadView({
         <button
           type="button"
           onClick={() => openCompose(mode === "reply" ? null : "reply")}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-primary px-2.5 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-[var(--bq-solid-bg)] px-2.5 py-1.5 text-xs font-medium text-[var(--bq-solid-fg)] hover:bg-[var(--bq-accent-soft)]"
         >
           <Reply className="h-3.5 w-3.5" />
           Responder
@@ -518,7 +518,7 @@ export function EmailThreadView({
                     >
                       <span
                         className={`h-2 w-2 rounded-full ${
-                          on ? "bg-primary" : "bg-[var(--bq-raised)] "
+                          on ? "bg-[var(--bq-solid-bg)]" : "bg-[var(--bq-raised)] "
                         }`}
                       />
                       <span className="truncate">{l.name}</span>
@@ -582,7 +582,7 @@ export function EmailThreadView({
             <article
               key={m.id}
               className={`rounded-lg border bg-[var(--bq-surface)] p-4  ${
-                m.outbound ? "border-primary/30" : "border-[var(--bq-hair)] "
+                m.outbound ? "border-[var(--bq-hair-strong)]" : "border-[var(--bq-hair)] "
               }`}
             >
               <header className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
@@ -694,7 +694,7 @@ export function EmailThreadView({
                 list="email-recent-recipients"
                 autoComplete="off"
                 placeholder="Para: email@cliente.com (vírgula para vários)"
-                className="w-full rounded-lg border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-3 py-2 text-sm text-[var(--bq-t1)] outline-none focus:border-primary focus:ring-2 focus:ring-primary/30   "
+                className="w-full rounded-lg border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-3 py-2 text-sm text-[var(--bq-t1)] outline-none focus:border-[var(--bq-hair-strong)] focus:ring-2 focus:ring-[var(--bq-hair-strong)]   "
               />
               <datalist id="email-recent-recipients">
                 {recent.map((e) => (
@@ -799,7 +799,7 @@ export function EmailThreadView({
                 sending ||
                 (mode === "forward" ? !forwardTo.trim() : !body.trim())
               }
-              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-md bg-[var(--bq-solid-bg)] px-3 py-1.5 text-xs font-medium text-[var(--bq-solid-fg)] hover:bg-[var(--bq-accent-soft)] disabled:opacity-50"
             >
               {sending ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />

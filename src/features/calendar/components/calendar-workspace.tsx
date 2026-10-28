@@ -198,7 +198,7 @@ function EventCard({
     <div
       ref={setNodeRef}
       style={style}
-      className="group relative block w-full overflow-hidden rounded-md border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-2 py-1.5 pl-2.5 text-left text-[11px]  transition hover:ring-1 hover:ring-primary/30  "
+      className="group relative block w-full overflow-hidden rounded-md border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-2 py-1.5 pl-2.5 text-left text-[11px]  transition hover:ring-1 hover:ring-[var(--bq-hair-strong)]  "
     >
       <span
         className="absolute bottom-0 left-0 top-0 w-1 rounded-l-md"
@@ -314,13 +314,13 @@ function DayCell({
       ref={setNodeRef}
       className={`min-w-0 p-2 transition-colors ${
         isOutsideMonth ? "bg-[var(--bq-surface)] " : "bg-[var(--bq-surface)] "
-      } ${isOver ? "bg-primary/5 ring-2 ring-inset ring-primary/40" : ""}`}
+      } ${isOver ? "bg-[var(--bq-accent-soft)] ring-2 ring-inset ring-[var(--bq-hair-strong)]" : ""}`}
       style={{ minHeight: compact ? 110 : 220 }}
     >
       <div
         className={`mb-2 text-[11px] font-semibold uppercase tracking-wide ${
           isToday
-            ? "text-primary"
+            ? "text-[var(--bq-t1)]"
             : isOutsideMonth
               ? "text-[var(--bq-t3)] "
               : "text-[var(--bq-t3)]"
@@ -329,7 +329,7 @@ function DayCell({
         {compact ? (
           <span
             className={`inline-flex h-6 w-6 items-center justify-center rounded-full ${
-              isToday ? "bg-primary text-primary-foreground" : ""
+              isToday ? "bg-[var(--bq-solid-bg)] text-[var(--bq-solid-fg)]" : ""
             }`}
           >
             {day.getDate()}
@@ -768,7 +768,7 @@ export function CalendarWorkspace() {
         <button
           type="button"
           onClick={reauth}
-          className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground"
+          className="rounded-md bg-[var(--bq-solid-bg)] px-3 py-1.5 text-xs font-medium text-[var(--bq-solid-fg)]"
         >
           Autorizar Agenda
         </button>
@@ -1069,7 +1069,7 @@ export function CalendarWorkspace() {
                   type="button"
                   disabled={saving}
                   onClick={save}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 rounded-md bg-[var(--bq-solid-bg)] px-3 py-1.5 text-xs font-medium text-[var(--bq-solid-fg)] disabled:opacity-50"
                 >
                   {saving ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />

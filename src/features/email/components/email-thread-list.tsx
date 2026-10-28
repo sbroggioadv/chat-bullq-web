@@ -105,13 +105,13 @@ export function EmailThreadList({
                     onClick={() => onSelect(t.id)}
                     className={`flex w-full flex-col gap-0.5 border-b border-[var(--bq-hair)] px-3 py-2.5 text-left transition-colors  ${
                       isActive
-                        ? "bg-primary/10"
+                        ? "bg-[var(--bq-accent-soft)]"
                         : "hover:bg-[var(--bq-surface)] "
                     }`}
                   >
                     <div className="flex items-center gap-2">
                       {t.unread && (
-                        <span className="h-2 w-2 shrink-0 rounded-full bg-primary" />
+                        <span className="h-2 w-2 shrink-0 rounded-full bg-[var(--bq-solid-bg)]" />
                       )}
                       <span
                         className={`min-w-0 flex-1 truncate text-[13px] ${

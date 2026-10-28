@@ -136,7 +136,7 @@ export function EmailWorkspace() {
   if (statusQuery.isPending) {
     return (
       <div className="flex h-full items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[var(--bq-hair-strong)] border-t-transparent" />
       </div>
     );
   }
@@ -160,7 +160,7 @@ export function EmailWorkspace() {
         {!statusQuery.isError && (
           <Link
             href="/settings/channels"
-            className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            className="rounded-md bg-[var(--bq-solid-bg)] px-3 py-1.5 text-sm font-medium text-[var(--bq-solid-fg)] hover:bg-[var(--bq-accent-soft)]"
           >
             Conectar com Google
           </Link>
