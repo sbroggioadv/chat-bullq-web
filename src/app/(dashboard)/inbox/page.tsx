@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'next/navigation';
 import { useSocket } from '@/features/inbox/hooks/use-socket';
@@ -33,6 +33,20 @@ export default function InboxPage() {
     }
   }, []);
   const [projectPanelOpen, setProjectPanelOpen] = useState(false);
+  const [detailSection, setDetailSection] = useState<'tasks' | undefined>();
+  const workspaceRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!projectPanelOpen) return;
+    const chat = workspaceRef.current?.querySelector<HTMLElement>('.bq-chat-column');
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !event.defaultPrevented) { setProjectPanelOpen(false); localStorage.setItem(PROJECT_PANEL_PREF_KEY, '0'); }
+    };
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('keydown', closeOnEscape);
+      if (chat) { chat.inert = false; requestAnimationFrame(() => chat.querySelector<HTMLButtonElement>('button[aria-label="Abrir painel do contato"]')?.focus()); }
+    };
+  }, [projectPanelOpen, activeConversation?.id]);
   useEffect(() => {
     try {
       setProjectPanelOpen(localStorage.getItem(PROJECT_PANEL_PREF_KEY) === '1');
@@ -61,6 +75,7 @@ export default function InboxPage() {
     });
   }, []);
   const toggleProjectPanel = useCallback(() => {
+    setDetailSection(undefined);
     setProjectPanelOpen((prev) => {
       const next = !prev;
       try {
@@ -149,7 +164,7 @@ export default function InboxPage() {
       }
       panel={
         activeConversation ? (
-          <div className="bq-conversation-workspace relative flex min-h-0 min-w-0 flex-1">
+          <div ref={workspaceRef} className="bq-conversation-workspace relative flex min-h-0 min-w-0 flex-1">
             <ChatPanel
               key={activeConversation.id}
               onBack={() => setActiveConversation(null)}
@@ -159,6 +174,7 @@ export default function InboxPage() {
               agentLogsOpen={agentLogsOpen}
               onToggleProject={toggleProjectPanel}
               projectOpen={projectPanelOpen}
+              onOpenTasks={() => { setDetailSection('tasks'); setProjectPanelOpen(true); setAgentLogsOpen(false); try { localStorage.setItem(PROJECT_PANEL_PREF_KEY, '1'); localStorage.setItem(AGENT_LOGS_PREF_KEY, '0'); } catch { /* per-device preference is optional */ } }}
             />
             {agentLogsOpen && (
               <AgentRunsSidebar
@@ -169,7 +185,8 @@ export default function InboxPage() {
             )}
             {projectPanelOpen && (
               <ContactWorkspacePanel
-                key={`contact-ws-${activeConversation.id}`}
+                key={`contact-ws-${activeConversation.id}-${detailSection || 'summary'}`}
+                initialSection={detailSection}
                 conversation={activeConversation}
                 onClose={toggleProjectPanel}
               />

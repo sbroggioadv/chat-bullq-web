@@ -1,6 +1,9 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
+import { mockupAvatarHue } from '@/components/ui/avatar-hue';
+import type { CSSProperties } from 'react';
+
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   CalendarDays,
@@ -39,11 +42,12 @@ import { calendarService } from '@/features/calendar/services/calendar.service';
 import { rememberRecipients } from '@/features/email/lib/recent-recipients';
 import { EmailRichEditor } from '@/features/email/components/email-rich-editor';
 
-type Tab = 'summary' | 'files' | 'notes' | 'negotiation' | 'contact' | 'email' | 'agenda' | 'project' | 'clickup';
+type Tab = 'tasks' | 'summary' | 'files' | 'notes' | 'negotiation' | 'contact' | 'email' | 'agenda' | 'project' | 'clickup';
 
 interface ContactWorkspacePanelProps {
   conversation: Conversation;
   onClose: () => void;
+  initialSection?: 'tasks';
 }
 
 /**
@@ -53,9 +57,10 @@ interface ContactWorkspacePanelProps {
 export function ContactWorkspacePanel({
   conversation,
   onClose,
+  initialSection,
 }: ContactWorkspacePanelProps) {
   const isGroup = conversation.isGroup;
-  const [openSections, setOpenSections] = useState<Set<Tab>>(() => new Set(['summary', 'negotiation']));
+  const [openSections, setOpenSections] = useState<Set<Tab>>(() => new Set<Tab>(initialSection ? ['summary', 'negotiation', initialSection] : ['summary', 'negotiation']));
   const sectionRefs = useRef<Partial<Record<Tab, HTMLElement | null>>>({});
   const openSection = (id: Tab) => {
     setOpenSections(previous => new Set([...previous, id]));
@@ -63,6 +68,9 @@ export function ContactWorkspacePanel({
   };
   const deals = useQuery({ queryKey: ['conversation-pipelines', conversation.id], queryFn: () => pipelinesService.listByConversation(conversation.id), staleTime: 30_000 });
 
+  useEffect(() => {
+    if (initialSection) sectionRefs.current[initialSection]?.scrollIntoView({ block: 'nearest' });
+  }, [initialSection]);
   const contact = conversation.contact;
   const contactEmail =
     contact.email ||
@@ -72,48 +80,49 @@ export function ContactWorkspacePanel({
   const tabs: Array<{ id: Tab; label: string; icon: LucideIcon }> = [
     { id: 'summary', label: 'Resumo da conversa', icon: Sparkles },
     { id: 'negotiation', label: 'Negociação', icon: KanbanSquare },
+    { id: 'tasks', label: 'Tasks', icon: ClipboardList },
     { id: 'files', label: 'Anexos', icon: Paperclip },
     { id: 'notes', label: 'Notas', icon: ClipboardList },
     { id: 'agenda', label: 'Reuniões', icon: CalendarDays },
     { id: 'email', label: 'E-mail', icon: Mail },
     { id: 'clickup', label: 'ClickUp', icon: ClipboardList },
-    { id: 'project', label: 'Projeto · tarefas', icon: FolderKanban },
+    { id: 'project', label: 'Projeto', icon: FolderKanban },
     { id: 'contact', label: 'Contato', icon: User },
   ];
 
   return (
-    <aside className="bq-contact-panel" aria-label="Detalhes da conversa">
+    <aside className="bq-contact-panel" aria-label="Detalhes da conversa" onKeyDown={event => { if (event.key === "Escape" && !event.defaultPrevented) { event.preventDefault(); event.stopPropagation(); onClose(); } }}>
       <div className="bq-contact-heading">
         <span>Detalhes</span>
         <Button autoFocus aria-label="Fechar detalhes" onClick={onClose}><X size={14} /></Button>
       </div>
       <div className="bq-contact-profile text-center">
-        <ProfileAvatar key={contact.avatarUrl} name={contact.name} url={contact.avatarUrl} />
+        <ProfileAvatar key={contact.avatarUrl} name={contact.name} url={contact.avatarUrl} isGroup={isGroup} />
         <h2>{contact.name || contact.phone || 'Contato'}</h2>
         <p>{contact.phone || 'Telefone não informado'}</p>
         <p className="break-all">{contactEmail || 'E-mail não informado'}</p>
         <div className="bq-contact-quick-actions">
           {contact.phone && !contact.phone.includes('@') ? <a href={`tel:${contact.phone}`}><span><Phone size={15} /></span>Ligar</a> : <button type="button" disabled title="Telefone não informado"><span><Phone size={15} /></span>Ligar</button>}
-          <button type="button" disabled={!contact.phone} onClick={() => navigator.clipboard.writeText(contact.phone || '').then(() => toast.success('Contato copiado')).catch(() => toast.error('Não foi possível copiar'))}><span><Copy size={15} /></span>Copiar</button>
+          <button type="button" disabled={!contact.phone && !contactEmail} onClick={() => navigator.clipboard.writeText(contact.phone || contactEmail).then(() => toast.success('Contato copiado')).catch(() => toast.error('Não foi possível copiar'))}><span><Copy size={15} /></span>Copiar</button>
           <button type="button" disabled title="Silenciar ainda não disponível"><span><BellOff size={15} /></span>Silenciar</button>
           <button type="button" onClick={() => openSection('contact')}><span><ExternalLink size={15} /></span>Ficha</button>
         </div>
-        {!!contact.tags?.length && <div className="mt-3 flex flex-wrap justify-center gap-1">{contact.tags.map(({tag}) => <Pill key={tag.id}>{tag.name}</Pill>)}</div>}
+
       </div>
-      <button type="button" className="bq-contact-deal" onClick={() => openSection('negotiation')}>
-        <KanbanSquare size={13} /><span>{deals.data?.[0] ? `${deals.data[0].pipeline.name} · ${deals.data[0].stage.name}` : deals.isLoading ? 'Carregando negociação…' : deals.isError ? 'Negociação indisponível' : 'Sem negociação vinculada'}</span>
-      </button>
+      {deals.data?.[0] ? <DealStrip card={deals.data[0]} onClick={() => openSection('negotiation')} /> : <button type="button" className="bq-contact-deal" onClick={() => openSection('negotiation')}><KanbanSquare size={13} /><span>{deals.isLoading ? 'Carregando negociação…' : deals.isError ? 'Negociação indisponível' : 'Sem negociação vinculada'}</span></button>}
       <div className="bq-contact-incoming"><div><b>Entra no Incoming</b><p>Disponível após o piloto Incoming.</p></div><Switch label="Incoming ainda não disponível" checked={false} disabled onChange={() => {}} /></div>
       <label className="bq-contact-find"><Search size={14} /><input disabled placeholder="Busca na conversa indisponível" aria-label="Busca completa na conversa ainda não disponível" /></label>
       {tabs.map(({id: tab, label, icon: Icon}) => <section key={tab} ref={element => { sectionRefs.current[tab] = element; }} className="bq-contact-section">
-        <button type="button" aria-label={tab === 'agenda' ? 'Reuniões · Agenda' : undefined} aria-expanded={openSections.has(tab)} aria-controls={`contact-section-${tab}`} onClick={() => setOpenSections(previous => { const next = new Set(previous); if (next.has(tab)) next.delete(tab); else next.add(tab); return next; })}><Icon size={14} />{label}<ChevronDown size={14} className={openSections.has(tab) ? 'rotate-180' : ''} /></button>
+        <button type="button" aria-label={tab === 'agenda' ? 'Reuniões · Agenda' : undefined} aria-expanded={openSections.has(tab)} aria-controls={`contact-section-${tab}`} onClick={() => setOpenSections(previous => { const next = new Set(previous); if (next.has(tab)) next.delete(tab); else next.add(tab); return next; })}><Icon size={14} />{label}{tab === "negotiation" && deals.data && <span className="bq-section-count">{deals.data.length}</span>}<ChevronDown size={14} className={openSections.has(tab) ? 'rotate-180' : ''} /></button>
         {openSections.has(tab) && <div id={`contact-section-${tab}`}>
         {tab === 'summary' && <div className="bq-contact-summary">Resumo de contexto ainda não disponível para esta conversa.</div>}
+        {tab === 'tasks' && <ProjectPanel conversationId={conversation.id} onClose={onClose} mode="tasks" />}
         {tab === 'notes' && <p className="px-4 pb-4 text-xs text-[var(--bq-t3)]">Notas internas ainda não disponíveis.</p>}
         {tab === 'files' && <p className="px-4 pb-4 text-xs text-[var(--bq-t3)]">Índice completo de anexos ainda não disponível. Os arquivos recebidos continuam acessíveis nas mensagens e no projeto vinculado.</p>}
         {tab === 'negotiation' && <NegotiationTab conversation={conversation} />}
         {tab === 'contact' && (
           <div className="space-y-3 p-4">
+        {!!contact.tags?.length && <div className="mt-3 flex flex-wrap justify-center gap-1">{contact.tags.map(({tag}) => <Pill key={tag.id}>{tag.name}</Pill>)}</div>}
             <div>
               <p className="text-[11px] font-medium uppercase tracking-wide text-[var(--bq-t3)]">
                 Nome
@@ -174,7 +183,7 @@ export function ContactWorkspacePanel({
 
         {tab === 'project' && (
           <div className="h-full [&_aside]:w-full [&_aside]:border-0">
-            <ProjectPanel conversationId={conversation.id} onClose={onClose} />
+            <ProjectPanel conversationId={conversation.id} onClose={onClose} mode="profile" />
           </div>
         )}
 
@@ -191,10 +200,10 @@ export function ContactWorkspacePanel({
   );
 }
 
-function ProfileAvatar({ name, url }: { name: string | null; url: string | null }) {
+function ProfileAvatar({ name, url, isGroup }: { name: string | null; url: string | null; isGroup: boolean }) {
   const [failed, setFailed] = useState(false);
-  if (url && !failed) return <img className="bq-contact-avatar" src={url} alt={name || 'Contato'} referrerPolicy="no-referrer" onError={() => setFailed(true)} />;
-  return <div className="bq-contact-avatar">{(name || '?').split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase()}</div>;
+  if (url && !failed) return <img className={`bq-contact-avatar bq-avatar-mockup bq-avatar-profile ${isGroup ? "bq-avatar-group" : ""}`} src={url} alt={name || 'Contato'} referrerPolicy="no-referrer" onError={() => setFailed(true)} />;
+  return <div style={{"--bq-avatar-hue": mockupAvatarHue(name || "?")} as CSSProperties} className={`bq-contact-avatar bq-avatar-mockup bq-avatar-profile ${isGroup ? "bq-avatar-group" : ""}`}>{(name || '?').split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase()}</div>;
 }
 
 function EmailComposeTab({
@@ -555,6 +564,16 @@ function AgendaTab({
       </a>
     </div>
   );
+}
+
+function DealStrip({ card, onClick }: { card: ConversationCard; onClick: () => void }) {
+  const board = useQuery({ queryKey: ['pipeline-board', card.pipelineId], queryFn: () => pipelinesService.getBoard(card.pipelineId), staleTime: 30_000 });
+  const detail = Object.values(board.data?.cards ?? {}).flat().find(item => item.id === card.id);
+  return <button type="button" className="bq-contact-deal" onClick={onClick}>
+    <span>{card.status === 'WON' ? 'Fechado' : card.status === 'LOST' ? 'Perdido' : 'Em negociação'}</span>
+    <b>{detail?.value == null ? 'Valor não informado' : `${detail.currency || 'BRL'} ${Number(detail.value).toLocaleString('pt-BR', {minimumFractionDigits: 2})}`}</b>
+    <span title={`${card.pipeline.name} · ${card.stage.name}`}>{card.stage.name}</span>
+  </button>;
 }
 
 function NegotiationTab({ conversation }: { conversation: Conversation }) {

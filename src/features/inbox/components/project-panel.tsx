@@ -28,6 +28,7 @@ import {
 interface ProjectPanelProps {
   conversationId: string;
   onClose: () => void;
+  mode?: "all" | "tasks" | "profile";
 }
 
 const inputCls =
@@ -40,16 +41,18 @@ const labelCls =
  * para a página cheia. Se não, cria via PUT by-conversation ou liga a um
  * dossiê existente.
  */
-export function ProjectPanel({ conversationId, onClose }: ProjectPanelProps) {
+export function ProjectPanel({ conversationId, onClose, mode = "all" }: ProjectPanelProps) {
   const queryClient = useQueryClient();
 
   const { data: project, isLoading } = useQuery({
     queryKey: ['project', conversationId],
     queryFn: () => projectsService.getByConversation(conversationId),
+    staleTime: 30_000,
   });
 
   const { data: members = [] } = useQuery({
     queryKey: ['org-members'],
+    enabled: mode !== 'tasks',
     queryFn: () => membersService.list(),
     staleTime: 60_000,
   });
@@ -57,7 +60,7 @@ export function ProjectPanel({ conversationId, onClose }: ProjectPanelProps) {
   const { data: existingProjects = [] } = useQuery({
     queryKey: ['projects'],
     queryFn: () => projectsService.list(),
-    enabled: !project?.exists,
+    enabled: mode !== 'tasks' && !project?.exists,
   });
 
   const [createName, setCreateName] = useState('');
@@ -114,6 +117,39 @@ export function ProjectPanel({ conversationId, onClose }: ProjectPanelProps) {
   const tasks = project?.tasks ?? [];
   const pending = tasks.filter((t) => !t.done).length;
 
+  const taskContent = <>            <div className="space-y-1.5">
+              <p className={labelCls}>Tarefas</p>
+              {tasks.length === 0 ? (
+                <p className="text-[13px] text-[var(--bq-t3)]">Nenhuma tarefa.</p>
+              ) : (
+                <>
+                  <p className="text-[12px] text-[var(--bq-t2)]">
+                    {pending} de {tasks.length} em aberto
+                  </p>
+                  <ul className="space-y-1">
+                    {tasks.map((t) => (
+                      <li
+                        key={t.id}
+                        className={`text-[13px] ${
+                          t.done
+                            ? 'text-[var(--bq-t3)] line-through'
+                            : 'text-[var(--bq-t2)] '
+                        }`}
+                      >
+                        <label className="flex items-start gap-2"><input type="checkbox" checked={t.done} disabled={taskMutation.isPending} onChange={() => taskMutation.mutate(t)} />{t.title}</label>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </div>
+            <form className="flex gap-2" onSubmit={e => { e.preventDefault(); if (taskTitle.trim()) taskMutation.mutate(undefined); }}>
+              <input aria-label="Nova tarefa do projeto" placeholder="Adicionar tarefa…" className={inputCls} value={taskTitle} onChange={e => setTaskTitle(e.target.value)} />
+              <Button type="submit" disabled={!taskTitle.trim() || taskMutation.isPending}>Adicionar</Button>
+            </form>
+</>;
+  if (mode === 'tasks') return <div className="bq-project-tasks"><p className="mb-2 text-xs text-[var(--bq-t3)]">Tarefas do projeto vinculado</p>{isLoading ? <p>Carregando tarefas…</p> : exists ? taskContent : <p>Vincule um projeto na seção Projeto para criar tarefas.</p>}</div>;
+
   return (
     <aside className="flex w-80 shrink-0 flex-col border-l border-[var(--bq-hair)] bg-[var(--bq-win-solid)]  ">
       <div className="flex items-center justify-between border-b border-[var(--bq-hair)] px-4 py-3 ">
@@ -166,36 +202,7 @@ export function ProjectPanel({ conversationId, onClose }: ProjectPanelProps) {
               Abrir dossiê completo
               <ExternalLink className="h-3.5 w-3.5" />
             </Link>
-            <div className="space-y-1.5">
-              <p className={labelCls}>Tarefas</p>
-              {tasks.length === 0 ? (
-                <p className="text-[13px] text-[var(--bq-t3)]">Nenhuma tarefa.</p>
-              ) : (
-                <>
-                  <p className="text-[12px] text-[var(--bq-t2)]">
-                    {pending} de {tasks.length} em aberto
-                  </p>
-                  <ul className="space-y-1">
-                    {tasks.map((t) => (
-                      <li
-                        key={t.id}
-                        className={`text-[13px] ${
-                          t.done
-                            ? 'text-[var(--bq-t3)] line-through'
-                            : 'text-[var(--bq-t2)] '
-                        }`}
-                      >
-                        <label className="flex items-start gap-2"><input type="checkbox" checked={t.done} disabled={taskMutation.isPending} onChange={() => taskMutation.mutate(t)} />{t.title}</label>
-                      </li>
-                    ))}
-                  </ul>
-                </>
-              )}
-            </div>
-            <form className="flex gap-2" onSubmit={e => { e.preventDefault(); if (taskTitle.trim()) taskMutation.mutate(undefined); }}>
-              <input aria-label="Nova tarefa do projeto" placeholder="Adicionar tarefa…" className={inputCls} value={taskTitle} onChange={e => setTaskTitle(e.target.value)} />
-              <Button type="submit" disabled={!taskTitle.trim() || taskMutation.isPending}>Adicionar</Button>
-            </form>
+            {mode === 'all' && taskContent}
             <section className="space-y-2"><h3 className={labelCls}>Anexos do projeto</h3>
               {project.attachments?.length ? project.attachments.map(file => <div key={file.id} className="text-xs">{file.url ? <a href={file.url} target="_blank" rel="noreferrer" className="underline">{file.label || file.fileName}</a> : <span>{file.label || file.fileName} · arquivo indisponível</span>}</div>) : <p className="text-xs text-[var(--bq-t3)]">Nenhum anexo. Use “Anexar ao projeto” em uma mensagem.</p>}
             </section>

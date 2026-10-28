@@ -86,3 +86,22 @@ describe('AC-01 Contact Workspace + ClickUp', () => {
     expect(screen.getByTestId('project-panel')).toHaveTextContent('projeto:conv-1');
   });
 });
+
+it('mantém Copiar disponível com e-mail quando o contato não tem telefone', async () => {
+  const user = userEvent.setup();
+  const write = vi.spyOn(navigator.clipboard, 'writeText');
+  renderPanel(conv({ contact: { id: 'ct-1', name: 'Maria', phone: null, email: 'maria@example.invalid', avatarUrl: null } }));
+  await user.click(screen.getByRole('button', { name: 'Copiar', exact: true }));
+  expect(write).toHaveBeenCalledWith('maria@example.invalid');
+  expect(screen.getByRole('button', { name: 'Ligar', exact: true })).toBeDisabled();
+});
+
+it('fecha o detalhe por Escape a partir do próprio painel', async () => {
+  const user = userEvent.setup();
+  const close = vi.fn();
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  render(<QueryClientProvider client={client}><ContactWorkspacePanel conversation={conv()} onClose={close} /></QueryClientProvider>);
+  screen.getByRole('button', { name: 'Fechar detalhes' }).focus();
+  await user.keyboard('{Escape}');
+  expect(close).toHaveBeenCalledTimes(1);
+});
