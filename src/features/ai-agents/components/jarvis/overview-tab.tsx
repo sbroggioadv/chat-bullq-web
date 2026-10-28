@@ -2,316 +2,261 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import {
-  Activity,
-  Clock,
-  Coins,
-  Cpu,
-  AlertTriangle,
-  CheckCircle2,
-  ArrowRightLeft,
-} from 'lucide-react';
+import Link from 'next/link';
+import { Pill } from '@/components/ui/foundation';
+import { useOrgId } from '@/hooks/use-org-query-key';
 import {
   aiAgentsService,
   type Period,
-} from '../../services/ai-agents.service';
-import { useOrgId } from '@/hooks/use-org-query-key';
-import { KpiCard } from './kpi-card';
-import { PeriodSelector } from './period-selector';
-import { BreakdownList } from './breakdown-list';
-import { RunsTable } from './runs-table';
-import { fmtMs, fmtNum, fmtUsdShort } from './format';
+} from '@/features/ai-agents/services/ai-agents.service';
+import { PeriodSelector } from '@/features/ai-agents/components/jarvis/period-selector';
+import { RunsTable } from '@/features/ai-agents/components/jarvis/runs-table';
+import {
+  fmtMs,
+  fmtNum,
+  fmtUsdShort,
+} from '@/features/ai-agents/components/jarvis/format';
+
+const ACTIONS: Record<string, string> = {
+  REPLIED: 'Respondeu',
+  DELEGATED: 'Passou para outro agente',
+  TRANSFERRED_TO_HUMAN: 'Passou para humano',
+  HANDED_BACK: 'Devolveu',
+  CLOSED_CONVERSATION: 'Encerrou a conversa',
+  NO_ACTION: 'Sem ação',
+};
+const panel =
+  'rounded-xl border border-[var(--bq-hair)] bg-[var(--bq-surface)] p-4';
+
+function Bars({
+  title,
+  rows,
+  money = false,
+}: {
+  title: string;
+  rows: { label: string; value: number }[];
+  money?: boolean;
+}) {
+  const max = Math.max(...rows.map((row) => row.value), 1);
+  return (
+    <section className={panel}>
+      <h2 className="mb-4 text-sm font-semibold">{title}</h2>
+      {rows.length ? (
+        rows.map((row, i) => (
+          <div
+            key={`${row.label}-${i}`}
+            className="my-3 grid grid-cols-[minmax(0,1fr)_minmax(30px,1fr)_auto] items-center gap-3 text-xs"
+          >
+            <span className="truncate text-[var(--bq-t2)]" title={row.label}>
+              {row.label}
+            </span>
+            <span className="h-1.5 rounded-full bg-[var(--bq-raised)]">
+              <span
+                className="block h-full rounded-full bg-[var(--bq-agent)]"
+                style={{ width: `${(row.value / max) * 100}%` }}
+              />
+            </span>
+            <span className="tabular-nums">
+              {money ? fmtUsdShort(row.value) : fmtNum(row.value)}
+            </span>
+          </div>
+        ))
+      ) : (
+        <p className="text-xs text-[var(--bq-t3)]">Sem dados no período.</p>
+      )}
+    </section>
+  );
+}
 
 export function JarvisOverviewTab() {
   const orgId = useOrgId();
-  const [period, setPeriod] = useState<Period>('7d');
-
-  const { data: stats, isLoading: statsLoading } = useQuery({
-    queryKey: ['ai-stats', orgId, period],
+  const [period, setPeriod] = useState<Period>('30d');
+  const statsQuery = useQuery({
+    queryKey: ['jarvis-overview', orgId, period],
     queryFn: () => aiAgentsService.orgStats(period),
-    refetchInterval: 5000,
+    refetchInterval: 10_000,
   });
-
-  const { data: runs, isLoading: runsLoading } = useQuery({
-    queryKey: ['ai-feed', orgId],
+  const feed = useQuery({
+    queryKey: ['jarvis-feed', orgId],
     queryFn: () => aiAgentsService.feed({ limit: 50 }),
-    refetchInterval: 5000,
+    refetchInterval: 10_000,
   });
-
-  const { data: agents } = useQuery({
+  const agents = useQuery({
     queryKey: ['ai-agents', orgId],
     queryFn: () => aiAgentsService.list(),
   });
-
-  const agentsById = new Map((agents ?? []).map((a) => [a.id, a]));
-
-  const successRate = stats?.runs.successRate ?? null;
-  const failedRate =
-    stats && stats.runs.total > 0
-      ? (stats.runs.failed / stats.runs.total) * 100
-      : 0;
-
+  const stats = statsQuery.data;
+  const name = (id: string) =>
+    agents.data?.find((agent) => agent.id === id)?.name ?? id;
+  if (statsQuery.isPending)
+    return (
+      <p className="p-6" role="status">
+        Carregando indicadores…
+      </p>
+    );
+  if (statsQuery.isError || !stats)
+    return (
+      <div className="p-6" role="alert">
+        <p>Não foi possível carregar os indicadores dos agentes.</p>
+        <button className="bq-button mt-3" onClick={() => statsQuery.refetch()}>
+          Tentar novamente
+        </button>
+      </div>
+    );
+  const failedRate = stats.runs.total
+    ? (stats.runs.failed / stats.runs.total) * 100
+    : 0;
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-            Visão geral
-          </h2>
-          <p className="mt-0.5 text-sm text-zinc-500">
-            Custo, tokens, runs e qualidade — atualiza a cada 5s
-          </p>
-        </div>
+    <div className="space-y-4 px-6 pb-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <span className="text-xs text-[var(--bq-t3)]">
+          Dados da organização · atualiza a cada 10 s
+        </span>
         <PeriodSelector value={period} onChange={setPeriod} />
       </div>
-
-      {/* Alerts */}
-      {stats?.monthlyCap.percentUsed != null &&
-        stats.monthlyCap.percentUsed >= 80 && (
-          <div className="flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm dark:border-amber-700 dark:bg-amber-900/20">
-            <AlertTriangle className="mt-0.5 h-4 w-4 text-amber-600" />
-            <div>
-              <p className="font-medium text-amber-900 dark:text-amber-200">
-                Cap mensal: {stats.monthlyCap.percentUsed}% usado
-              </p>
-              <p className="text-xs text-amber-700 dark:text-amber-300">
-                {fmtNum(stats.monthlyCap.used)} de{' '}
-                {fmtNum(stats.monthlyCap.cap ?? 0)} tokens. A IA vai parar
-                automaticamente quando o limite for atingido.
-              </p>
-            </div>
-          </div>
-        )}
-
-      {failedRate > 30 && stats && stats.runs.total >= 5 && (
-        <div className="flex items-start gap-3 rounded-lg border border-red-300 bg-red-50 p-3 text-sm dark:border-red-700 dark:bg-red-900/20">
-          <AlertTriangle className="mt-0.5 h-4 w-4 text-red-600" />
-          <div>
-            <p className="font-medium text-red-900 dark:text-red-200">
-              Taxa de falha alta: {failedRate.toFixed(0)}%
-            </p>
-            <p className="text-xs text-red-700 dark:text-red-300">
-              {stats.runs.failed} de {stats.runs.total} execuções falharam no
-              período. Veja a tabela abaixo pra investigar.
-            </p>
-          </div>
+      {failedRate > 30 && stats.runs.total >= 5 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--bq-hair)] bg-[var(--bq-err-soft)] p-3">
+          <p>
+            <strong>Taxa de falha alta:</strong> {stats.runs.failed} de{' '}
+            {stats.runs.total} execuções no período.
+          </p>
+          <Link className="bq-button" href="/ai-agents?tab=runs">
+            Ver execuções
+          </Link>
         </div>
       )}
-
-      {/* KPI cards */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard
-          label="Custo (USD)"
-          value={statsLoading ? '…' : fmtUsdShort(stats?.cost.usd ?? 0)}
-          hint={
-            stats
-              ? `${fmtUsdShort(stats.cost.avgPerRun)} por execução em média`
-              : undefined
-          }
-          icon={Coins}
-          accent="#16a34a"
-        />
-        <KpiCard
-          label="Tokens"
-          value={statsLoading ? '…' : fmtNum(stats?.tokens.total ?? 0)}
-          hint={
-            stats
-              ? `${fmtNum(stats.tokens.cacheRead)} cache hits`
-              : undefined
-          }
-          icon={Cpu}
-          accent="#2563eb"
-        />
-        <KpiCard
-          label="Runs"
-          value={statsLoading ? '…' : fmtNum(stats?.runs.total ?? 0)}
-          hint={
-            stats
-              ? `${stats.runs.completed} OK · ${stats.runs.failed} falhas`
-              : undefined
-          }
-          icon={Activity}
-          accent="#9333ea"
-        />
-        <KpiCard
-          label="Taxa de sucesso"
-          value={
-            statsLoading
-              ? '…'
-              : successRate != null
-                ? `${successRate}%`
-                : '—'
-          }
-          hint={
-            stats
-              ? `latência p50 ${fmtMs(stats.latency.p50)} · p95 ${fmtMs(stats.latency.p95)}`
-              : undefined
-          }
-          icon={CheckCircle2}
-          accent={
-            successRate == null
-              ? undefined
-              : successRate > 90
-                ? '#16a34a'
-                : successRate > 70
-                  ? '#eab308'
-                  : '#dc2626'
-          }
-        />
+      {stats.monthlyCap.percentUsed != null &&
+        stats.monthlyCap.percentUsed >= 80 && (
+          <p role="status" className="rounded-xl bg-[var(--bq-warn-soft)] p-3">
+            Limite mensal: {stats.monthlyCap.percentUsed.toFixed(1)}% dos tokens
+            utilizados.
+          </p>
+        )}
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(158px,1fr))] gap-3">
+        {[
+          [
+            'Custo no período',
+            fmtUsdShort(stats.cost.usd),
+            `${fmtUsdShort(stats.cost.avgPerRun)} por execução`,
+          ],
+          [
+            'Execuções',
+            fmtNum(stats.runs.total),
+            `${stats.runs.completed} concluídas · ${stats.runs.failed} falhas`,
+          ],
+          [
+            'Taxa de sucesso',
+            stats.runs.successRate == null ? '—' : `${stats.runs.successRate}%`,
+            '',
+          ],
+          [
+            'Passaram para humano',
+            fmtNum(stats.byFinalAction.TRANSFERRED_TO_HUMAN ?? 0),
+            'No período selecionado',
+          ],
+        ].map(([label, value, hint]) => (
+          <section key={label} className={panel}>
+            <p className="text-xs text-[var(--bq-t3)]">{label}</p>
+            <p className="my-2 text-2xl font-semibold tracking-tight tabular-nums">
+              {value}
+            </p>
+            <p className="text-[11px] text-[var(--bq-t3)]">{hint}</p>
+          </section>
+        ))}
       </div>
-
-      {/* Cap progress (if cap defined) */}
-      {stats?.monthlyCap.cap && (
-        <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
-          <div className="flex items-baseline justify-between">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
-              Limite mensal
-            </p>
-            <p className="text-xs tabular-nums text-zinc-500">
-              {fmtNum(stats.monthlyCap.used)} / {fmtNum(stats.monthlyCap.cap)} tokens
-              ·{' '}
-              <span className="font-medium">
-                {stats.monthlyCap.percentUsed?.toFixed(1)}%
-              </span>
-            </p>
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,320px),1fr))] gap-3">
+        <Bars
+          title="Custo por modelo"
+          rows={stats.byModel.map((model) => ({
+            label: model.modelId,
+            value: model.cost,
+          }))}
+          money
+        />
+        <Bars
+          title="Como as execuções terminaram"
+          rows={Object.entries(stats.byFinalAction).map(([action, value]) => ({
+            label: ACTIONS[action] ?? action,
+            value,
+          }))}
+        />
+        <section className={panel}>
+          <h2 className="mb-3 text-sm font-semibold">Por agente</h2>
+          <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] gap-3 border-b border-[var(--bq-hair)] pb-2 text-xs text-[var(--bq-t3)]">
+            <span>Agente</span>
+            <span>Execuções</span>
+            <span>Custo</span>
           </div>
-          <div className="mt-2 h-2 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
-            <div
-              className={`h-full ${
-                (stats.monthlyCap.percentUsed ?? 0) < 80
-                  ? 'bg-emerald-500'
-                  : (stats.monthlyCap.percentUsed ?? 0) < 95
-                    ? 'bg-amber-500'
-                    : 'bg-red-500'
-              }`}
-              style={{
-                width: `${Math.min(stats.monthlyCap.percentUsed ?? 0, 100)}%`,
-              }}
+          {stats.byAgent.length ? (
+            stats.byAgent.map((agent) => (
+              <Link
+                key={agent.agentId}
+                href={`/ai-agents?agentId=${encodeURIComponent(agent.agentId)}`}
+                className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-4 border-b border-[var(--bq-hair)] py-3 text-xs"
+              >
+                <span className="truncate">{name(agent.agentId)}</span>
+                <span>{fmtNum(agent.runs)}</span>
+                <span>{fmtUsdShort(agent.cost)}</span>
+              </Link>
+            ))
+          ) : (
+            <p className="py-3 text-xs text-[var(--bq-t3)]">
+              Sem execuções no período.
+            </p>
+          )}
+        </section>
+        <div className="space-y-4">
+          <Bars
+            title="Tools mais chamadas"
+            rows={stats.tools.map((tool) => ({
+              label: tool.name,
+              value: tool.calls,
+            }))}
+          />
+          <Bars
+            title="Passagens entre agentes"
+            rows={stats.handoffs.map((handoff) => ({
+              label: `${name(handoff.fromAgentId)} → ${name(handoff.toAgentId)}`,
+              value: handoff.count,
+            }))}
+          />
+        </div>
+      </div>
+      <details className={panel}>
+        <summary className="cursor-pointer text-sm font-semibold">
+          Tokens, limites e latência
+        </summary>
+        <p className="mt-3 text-xs text-[var(--bq-t2)]">
+          {fmtNum(stats.tokens.total)} tokens · {fmtNum(stats.tokens.cacheRead)}{' '}
+          em cache · p50 {fmtMs(stats.latency.p50)} · p95{' '}
+          {fmtMs(stats.latency.p95)}
+        </p>
+        <p className="mt-2 text-xs text-[var(--bq-t3)]">
+          Limite mensal de tokens:{' '}
+          {stats.monthlyCap.cap == null
+            ? 'sem limite definido'
+            : `${fmtNum(stats.monthlyCap.used)} / ${fmtNum(stats.monthlyCap.cap)}`}
+          . Limite financeiro ainda não disponível.
+        </p>
+      </details>
+      <section className={panel}>
+        <div className="mb-4 flex items-center gap-3">
+          <h2 className="text-sm font-semibold">Últimas execuções</h2>
+          <Pill tone="agent">A cada 10 s</Pill>
+        </div>
+        {feed.isPending ? (
+          <p role="status">Carregando execuções…</p>
+        ) : feed.isError ? (
+          <p role="alert">Não foi possível carregar as execuções.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <RunsTable
+              runs={feed.data ?? []}
+              emptyHint="Nenhuma execução recente."
             />
           </div>
-        </div>
-      )}
-
-      {/* Breakdowns */}
-      <div className="grid gap-3 lg:grid-cols-3">
-        <BreakdownList
-          title="Custo por modelo"
-          items={(stats?.byModel ?? [])
-            .sort((a, b) => b.cost - a.cost)
-            .map((m) => ({
-              label: m.modelId
-                .replace('zai/', '')
-                .replace('zhipu/', '')
-                .replace('anthropic/', '')
-                .replace('openai/', '')
-                .replace('google/', '')
-                .replace('google/', ''),
-              value: Number(m.cost.toFixed(4)),
-              secondaryLabel: `${fmtNum(m.tokens)} tk`,
-            }))}
-          unit="USD"
-          empty="Sem execuções no período."
-        />
-        <BreakdownList
-          title="Por agente"
-          items={(stats?.byAgent ?? [])
-            .sort((a, b) => b.runs - a.runs)
-            .map((a) => ({
-              label: agentsById.get(a.agentId)?.name ?? a.agentId.slice(0, 12),
-              value: a.runs,
-              secondaryLabel: fmtUsdShort(a.cost),
-            }))}
-          unit="runs"
-          empty="Sem execuções no período."
-        />
-        <BreakdownList
-          title="Tools chamadas"
-          items={(stats?.tools ?? [])
-            .sort((a, b) => b.calls - a.calls)
-            .map((t) => ({ label: t.name, value: t.calls }))}
-          unit="calls"
-          empty="Sem chamadas no período."
-        />
-      </div>
-
-      {/* Final actions + handoffs */}
-      <div className="grid gap-3 lg:grid-cols-2">
-        <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
-            Como as runs terminaram
-          </p>
-          <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {Object.entries(stats?.byFinalAction ?? {}).map(([action, count]) => (
-              <div
-                key={action}
-                className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800/50"
-              >
-                <p className="text-[10px] uppercase text-zinc-500">{action}</p>
-                <p className="text-base font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">
-                  {count}
-                </p>
-              </div>
-            ))}
-            {Object.keys(stats?.byFinalAction ?? {}).length === 0 && (
-              <p className="col-span-full text-xs text-zinc-400">
-                Sem dados.
-              </p>
-            )}
-          </div>
-        </div>
-        <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
-          <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
-            <ArrowRightLeft className="h-3 w-3" /> Delegações entre agentes
-          </p>
-          <div className="mt-3 space-y-2">
-            {(stats?.handoffs ?? []).length === 0 ? (
-              <p className="text-xs text-zinc-400">Sem delegações.</p>
-            ) : (
-              stats?.handoffs.map((h, i) => {
-                const fromName =
-                  agentsById.get(h.fromAgentId)?.name ??
-                  (h.fromAgentId === 'system' ? 'sistema' : h.fromAgentId.slice(0, 12));
-                const toName =
-                  agentsById.get(h.toAgentId)?.name ?? h.toAgentId.slice(0, 12);
-                return (
-                  <div
-                    key={i}
-                    className="flex items-center justify-between rounded-md bg-zinc-50 px-3 py-1.5 text-xs dark:bg-zinc-800/50"
-                  >
-                    <span className="text-zinc-700 dark:text-zinc-300">
-                      <span className="font-medium">{fromName}</span>
-                      <span className="mx-2 text-zinc-400">→</span>
-                      <span className="font-medium">{toName}</span>
-                    </span>
-                    <span className="tabular-nums text-zinc-500">
-                      {h.count} {h.count === 1 ? 'vez' : 'vezes'}
-                    </span>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Live feed */}
-      <div>
-        <div className="mb-2 flex items-center gap-2">
-          <Clock className="h-3.5 w-3.5 text-zinc-400" />
-          <h3 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-            Últimas execuções
-          </h3>
-          <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
-            <span className="h-1 w-1 animate-pulse rounded-full bg-emerald-500" />
-            ao vivo
-          </span>
-        </div>
-        {runsLoading ? (
-          <div className="h-40 animate-pulse rounded-xl bg-zinc-100 dark:bg-zinc-800" />
-        ) : (
-          <RunsTable runs={runs ?? []} emptyHint="Ainda não rolou execução." />
         )}
-      </div>
+      </section>
     </div>
   );
 }
