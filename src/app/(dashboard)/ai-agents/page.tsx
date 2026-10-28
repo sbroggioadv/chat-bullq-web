@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { jarvisDeskService } from '@/features/ai-agents/services/jarvis-desk.service';
 import { AgentDetail } from '@/features/ai-agents/components/agent-detail';
-import { Plus } from 'lucide-react';
+import { MessageSquare, Plus } from 'lucide-react';
 import { Button, SegmentedControl } from '@/components/ui/foundation';
 import { CreateAgentDialog } from '@/features/ai-agents/components/create-agent-dialog';
 import { useQueryClient } from '@tanstack/react-query';
@@ -90,6 +90,7 @@ export default function AiAgentsPage() {
               }
             }}
           >
+            <MessageSquare size={14} />
             Conversar com o Jarvis
           </Button>
           <Button variant="solid" onClick={() => setCreating(true)}>
@@ -101,7 +102,7 @@ export default function AiAgentsPage() {
       <nav className={styles.tabs} aria-label="Área de agentes">
         <SegmentedControl
           label="Agentes"
-          value={tab}
+          value={tab === 'agent' || tab === 'scope' ? 'agents' : tab}
           options={VALID_TABS.filter(
             (value) => value !== 'agent' && value !== 'scope',
           ).map((value) => ({ value, label: TAB_META[value].label }))}
@@ -109,6 +110,20 @@ export default function AiAgentsPage() {
         />
       </nav>
       <div className={styles.body}>
+        {['agents', 'agent', 'scope'].includes(tab) && (
+          <nav className={styles.agentNavigation} aria-label="Explorar agentes">
+            <SegmentedControl
+              label="Explorar agentes"
+              value={tab}
+              options={[
+                { value: 'agents', label: 'Organograma' },
+                { value: 'agent', label: 'Por agente' },
+                { value: 'scope', label: 'Scope & Cadência' },
+              ]}
+              onChange={(value) => router.push(`/ai-agents?tab=${value}`)}
+            />
+          </nav>
+        )}
         {tab === 'overview' && <JarvisOverviewTab />}
         {tab === 'agents' && <AgentsList />}
         {tab === 'skills' && <JarvisSkillsTab />}
