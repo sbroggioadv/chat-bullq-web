@@ -1,12 +1,11 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 /** Resolve media only near the viewport, keeping the placeholder dimensions. */
 export function useVisible() {
-  const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    const element = ref.current;
+  // A callback ref also observes nodes mounted after the initial render.
+  const ref = useCallback((element: HTMLDivElement | null) => {
     if (!element) return;
     if (typeof IntersectionObserver === 'undefined') {
       const frame = requestAnimationFrame(() => setVisible(true));

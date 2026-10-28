@@ -2,9 +2,10 @@
 
 import { useVisible } from '@/features/inbox/hooks/use-visible';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { isAxiosError } from 'axios';
 import { Play, Pause, Loader2, Sparkles, ChevronDown, Check } from 'lucide-react';
 import { Popover, PopoverButton, PopoverPanel } from '@headlessui/react';
-import { inboxService, type Message, type TranscriptionResult } from '../services/inbox.service';
+import { inboxService, type Message, type TranscriptionResult } from '@/features/inbox/services/inbox.service';
 
 const SPEEDS = [1, 1.25, 1.5, 1.75, 2] as const;
 
@@ -55,8 +56,8 @@ export function AudioMessagePlayer({
       const { url } = await inboxService.resolveMediaUrl(message.id);
       setResolvedUrl(url);
       return url;
-    } catch (err: any) {
-      setError(err?.message || 'Não foi possível carregar o áudio');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Não foi possível carregar o áudio');
       return null;
     } finally {
       setResolving(false);
@@ -117,8 +118,8 @@ export function AudioMessagePlayer({
         audio.pause();
         setPlaying(false);
       }
-    } catch (err: any) {
-      setError(err?.message || 'Erro ao reproduzir áudio');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Erro ao reproduzir áudio');
     } finally {
       setLoading(false);
     }
@@ -144,9 +145,10 @@ export function AudioMessagePlayer({
       const result = await inboxService.transcribeAudio(message.id);
       setTranscript(result);
       onTranscribed?.(result);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setTranscribeError(
-        err?.response?.data?.message || err?.message || 'Erro ao transcrever',
+        (isAxiosError<{ message?: string }>(err) && err.response?.data?.message) ||
+          (err instanceof Error ? err.message : 'Erro ao transcrever'),
       );
     } finally {
       setTranscribing(false);
@@ -156,9 +158,9 @@ export function AudioMessagePlayer({
   // Only bail out if there's no way at all to resolve the media — i.e., the
   // message has neither a cached URL nor an external id the backend could use.
   // Otherwise we render the player and lazy-resolve on first play.
-  if (!mediaUrl && !message.externalId) {
+  if (!resolvedUrl && !message.externalId) {
     return (
-      <div className={`rounded-2xl px-4 py-2.5 ${colorBubble}`}>
+      <div ref={viewportRef} className={`rounded-2xl px-4 py-2.5 ${colorBubble}`}>
         <p className="text-sm italic opacity-70">🎵 Áudio indisponível</p>
       </div>
     );
@@ -234,8 +236,8 @@ export function AudioMessagePlayer({
             transition
             className="z-50 mt-1 min-w-[80px] rounded-lg border border-zinc-200/80 bg-white p-1 shadow-lg outline-none transition duration-100 ease-out data-[closed]:scale-95 data-[closed]:opacity-0 dark:border-zinc-800 dark:bg-zinc-900"
           >
-            {({ close }) =>
-              SPEEDS.map((s) => (
+            {({ close }) => (<>
+              {SPEEDS.map((s) => (
                 <button
                   key={s}
                   onClick={() => { setRate(s); close(); }}
@@ -248,8 +250,8 @@ export function AudioMessagePlayer({
                   <span className="tabular-nums">{s}×</span>
                   {rate === s && <Check className="h-3 w-3" />}
                 </button>
-              )) as any
-            }
+              ))}
+            </>)}
           </PopoverPanel>
         </Popover>
       </div>
