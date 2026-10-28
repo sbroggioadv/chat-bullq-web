@@ -97,10 +97,9 @@ describe('Carregamento e retorno do dossiê', () => {
 describe('Hierarquia do dossiê', () => {
   it('avança usando a sequência existente, sem criar status, e calcula progresso pelas tarefas', async () => {
     mount(undefined, { ...project, tasks: [{ id: 't1', done: true }, { id: 't2', done: false }] });
-    await userEvent.click(await screen.findByRole('button', { name: 'Ver tarefas' }));
     expect(await screen.findByRole('progressbar', { name: 'Progresso das tarefas' })).toHaveAttribute('value', '1');
     expect(screen.getByRole('progressbar')).toHaveAttribute('max', '2');
-    await userEvent.click(screen.getByRole('button', { name: 'Fechar janela' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Avançar fase' }));
     await waitFor(() => expect(mocks.update).toHaveBeenCalledWith('project', { status: 'WAITING_DOCS' }));
   });
@@ -110,7 +109,6 @@ describe('Hierarquia do dossiê', () => {
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Anexar', exact: true })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Incluir grupo' })).toBeDisabled();
-    await userEvent.click(screen.getByRole('button', { name: 'Ver tarefas' }));
     expect(screen.getByText('Progresso indisponível · sem tarefas')).toBeVisible();
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
   });

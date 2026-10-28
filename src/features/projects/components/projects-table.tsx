@@ -92,13 +92,14 @@ export function ProjectsTable() {
 
   const activeId = filtered.some(project => project.id === selectedId) ? selectedId : filtered[0]?.id;
   return (
-    <div className="flex h-full min-w-0 flex-col text-[var(--bq-t1)] md:flex-row">
-      <aside aria-label="Lista de projetos" className="flex max-h-[40%] w-full shrink-0 flex-col border-b border-[var(--bq-hair)] md:max-h-none md:w-[300px] md:border-b-0 md:border-r">
-        <div className="flex items-center gap-2 p-[14px]"><h1 className="flex-1 font-[family-name:var(--bq-f-display)] text-[17px] font-semibold tracking-tight">Projetos</h1><Button variant="solid" onClick={() => setCreating(true)}><Plus size={13} />Novo projeto</Button></div>
-        <div className="flex flex-wrap items-center gap-[5px] px-[14px] pb-2.5" role="group" aria-label="Filtros de projetos">
-          <button type="button" aria-pressed={!status && !responsibleUserId && !search} onClick={() => { setStatus(''); setResponsibleUserId(''); setSearch(''); }} className={`h-6 rounded-full border px-[9px] text-[11.5px] ${!status && !responsibleUserId && !search ? 'border-transparent bg-[var(--bq-solid-bg)] text-[var(--bq-solid-fg)]' : 'border-[var(--bq-hair-strong)] text-[var(--bq-t2)]'}`}>Todas</button>
-          <span className="text-[11.5px] text-[var(--bq-t3)]">Tags ainda não disponíveis</span>
-          <FoundationPopover label="Buscar e filtrar"><div className="flex max-w-[250px] flex-col gap-3 p-2">
+    <div className="flex h-full min-w-0 flex-row text-[var(--bq-t1)] bq-through-project:flex-col">
+      <aside aria-label="Lista de projetos" className="flex min-h-0 w-bq-size-project-list shrink-0 flex-col border-r border-[var(--bq-hair)] bq-through-project:max-h-[var(--bq-size-40percent)] bq-through-project:w-full bq-through-project:border-r-0 bq-through-project:border-b">
+        <div className="flex items-center gap-2 p-bq-space-section"><h1 className="flex-1 font-[family-name:var(--bq-f-display)] text-bq-text-list-title font-semibold tracking-tight">Projetos</h1><Button variant="solid" onClick={() => setCreating(true)}><Plus size={13} />Novo projeto</Button></div>
+        <div className="flex flex-wrap items-center gap-bq-space-label px-bq-space-section pb-2.5" role="group" aria-label="Filtros de projetos">
+          <button type="button" aria-pressed={!status && !responsibleUserId && !search} onClick={() => { setStatus(''); setResponsibleUserId(''); setSearch(''); }} className={`inline-flex items-center gap-bq-space-compact h-6 rounded-bq-radius-pill border px-bq-space-row text-bq-text-auxiliary ${!status && !responsibleUserId && !search ? 'border-[var(--bq-t1)] bg-[var(--bq-t1)] text-[var(--bq-win-solid)]' : 'border-[var(--bq-hair-strong)] text-[var(--bq-t2)]'}`}>Todas</button>
+          {PROJECT_STATUSES.map(value => <button key={value} type="button" aria-pressed={status === value} onClick={() => setStatus(status === value ? '' : value)} className={`inline-flex items-center gap-bq-space-compact h-bq-size-compact-control rounded-bq-radius-pill border px-bq-space-row text-bq-text-auxiliary ${status === value ? 'border-[var(--bq-t1)] bg-[var(--bq-t1)] text-[var(--bq-win-solid)]' : 'border-[var(--bq-hair-strong)] text-[var(--bq-t2)]'}`}>{PHASE_LABELS[value]}</button>)}
+          <span className="text-bq-text-auxiliary text-[var(--bq-t3)]">Tags ainda não disponíveis</span>
+          <FoundationPopover label="Buscar e filtrar"><div className="flex max-w-bq-size-attachment-min flex-col gap-3 p-2">
             <label className="text-xs">Buscar projetos<div className="relative mt-1"><Search className="pointer-events-none absolute left-2 top-2.5 h-4 w-4 text-[var(--bq-t3)]" /><input className={`${controlCls} w-full pl-8`} value={search} onChange={e => setSearch(e.target.value)} placeholder="Nome ou descrição" /></div></label>
             <label className="text-xs">Filtrar por fase<select className={`${controlCls} mt-1 w-full`} value={status} onChange={e => setStatus(e.target.value)}><option value="">Todas as fases</option>{PROJECT_STATUSES.map(value => <option key={value} value={value}>{PHASE_LABELS[value]}</option>)}</select></label>
             <label className="text-xs">Filtrar por responsável<select className={`${controlCls} mt-1 w-full`} value={responsibleUserId} onChange={e => setResponsibleUserId(e.target.value)}><option value="">Todos os responsáveis</option>{members.filter(m => m.user.isActive).map(m => <option key={m.user.id} value={m.user.id}>{m.user.name}</option>)}</select></label>
@@ -108,10 +109,10 @@ export function ProjectsTable() {
         <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto px-2 pb-3">
           {isLoading ? <p role="status" className="p-3 text-sm text-[var(--bq-t3)]">Carregando projetos…</p> : isError ? <div role="alert" className="p-3 text-sm">Não foi possível carregar os projetos. <Button onClick={() => void refetch()}>Tentar novamente</Button></div> : filtered.length === 0 ? <p className="p-3 text-sm text-[var(--bq-t3)]">Nenhum projeto encontrado.</p> : filtered.map(project => {
             const phaseIndex = PROJECT_STATUSES.findIndex(status => status === project.status);
-            return <button type="button" key={project.id!} aria-pressed={activeId === project.id} onClick={() => setSelectedId(project.id!)} className={`flex w-full shrink-0 flex-col gap-[7px] rounded-xl p-[11px] text-left hover:bg-[var(--bq-raised)] ${activeId === project.id ? 'bg-[var(--bq-raised-2)] shadow-[inset_0_0_0_1px_var(--bq-hair)]' : ''}`}>
-              <span className="text-[13px] font-semibold">{project.name}</span>
-              <span role="img" aria-label={`Fase de ${project.name}: ${phaseLabel(project.status) || 'não informada'}`} className="flex w-full gap-[3px]">{PROJECT_STATUSES.map((status, index) => <span key={status} className={`h-1 min-w-0 flex-1 rounded-[1px] ${index === phaseIndex ? 'bg-[var(--bq-accent)]' : 'bg-[var(--bq-raised-2)]'}`} />)}</span>
-              <span className="flex justify-between gap-2 text-[11.5px] text-[var(--bq-t3)]"><span>{phaseLabel(project.status) || 'Sem fase'}</span><span>{project.responsible?.name || 'Sem responsável'}</span></span>
+            return <button type="button" key={project.id!} aria-pressed={activeId === project.id} onClick={() => setSelectedId(project.id!)} className={`flex w-full shrink-0 flex-col gap-bq-space-control rounded-xl p-bq-space-panel text-left hover:bg-[var(--bq-raised)] ${activeId === project.id ? 'bg-[var(--bq-raised-2)] shadow-[inset_0_0_0_var(--bq-border-hairline)_var(--bq-hair)]' : ''}`}>
+              <span className="text-bq-text-body font-semibold">{project.name}</span>
+              <span role="img" aria-label={`Fase de ${project.name}: ${phaseLabel(project.status) || 'não informada'}`} className="flex w-full gap-bq-space-step">{PROJECT_STATUSES.map((status, index) => <span key={status} className={`h-1 min-w-0 flex-1 rounded-bq-radius-step ${index === phaseIndex ? 'bg-[var(--bq-accent)]' : 'bg-[var(--bq-raised-2)]'}`} />)}</span>
+              <span className="flex justify-between gap-2 text-bq-text-auxiliary text-[var(--bq-t3)]"><span>{phaseLabel(project.status) || 'Sem fase'}</span><span>{project.responsible?.name || 'Sem responsável'}</span></span>
             </button>;
           })}
         </div>
@@ -133,7 +134,7 @@ export function ProjectsTable() {
         >
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="space-y-1">
-              <span className="text-[11px] font-medium uppercase tracking-wide text-[var(--bq-t3)]">
+              <span className="text-bq-text-metadata font-medium uppercase tracking-wide text-[var(--bq-t3)]">
                 Nome
               </span>
               <input
@@ -145,7 +146,7 @@ export function ProjectsTable() {
               />
             </label>
             <label className="space-y-1">
-              <span className="text-[11px] font-medium uppercase tracking-wide text-[var(--bq-t3)]">
+              <span className="text-bq-text-metadata font-medium uppercase tracking-wide text-[var(--bq-t3)]">
                 Fase
               </span>
               <select
@@ -164,11 +165,11 @@ export function ProjectsTable() {
             </label>
           </div>
           <label className="block space-y-1">
-            <span className="text-[11px] font-medium uppercase tracking-wide text-[var(--bq-t3)]">
+            <span className="text-bq-text-metadata font-medium uppercase tracking-wide text-[var(--bq-t3)]">
               Descrição
             </span>
             <textarea
-              className={`${controlCls} min-h-[72px] w-full py-2`}
+              className={`${controlCls} min-h-bq-size-textarea w-full py-2`}
               placeholder="Resumo do holding, caso ou grupo específico…"
               value={newDescription}
               onChange={(e) => setNewDescription(e.target.value)}

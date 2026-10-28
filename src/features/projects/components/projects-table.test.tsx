@@ -30,8 +30,9 @@ describe('Lista de projetos compacta', () => {
   });
   it('Todas e painel secundário preservam filtros de fase, responsável e busca por descrição', async () => {
     mount();
+    await userEvent.click(within(screen.getByRole('group', { name: 'Filtros de projetos' })).getByRole('button', { name: 'Em execução' }));
+    expect(within(screen.getByRole('group', { name: 'Filtros de projetos' })).getByRole('button', { name: 'Em execução' })).toHaveAttribute('aria-pressed', 'true');
     await userEvent.click(screen.getByRole('button', { name: 'Buscar e filtrar' }));
-    await userEvent.selectOptions(screen.getByLabelText('Filtrar por fase'), 'IN_PROGRESS');
     await waitFor(() => expect(mocks.list).toHaveBeenCalledWith({ status: 'IN_PROGRESS', responsibleUserId: undefined }));
     await userEvent.selectOptions(screen.getByLabelText('Filtrar por responsável'), 'u1');
     await waitFor(() => expect(mocks.list).toHaveBeenCalledWith({ status: 'IN_PROGRESS', responsibleUserId: 'u1' }));
