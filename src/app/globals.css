@@ -113,7 +113,7 @@
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-fg);
   --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-fg);
+  --color-muted-foreground: var(--bq-t3);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-fg);
   --color-destructive: var(--danger);
@@ -1254,6 +1254,8 @@ html[data-mode="light"] { --bq-scrim: rgb(20 24 34 / 0.22); }
   --bq-ptag-bg-c-light: 0.1;
   --bq-ptag-bg-alpha-light: 0.14;
   --bq-opacity-ptag-button: 0.55;
+  /* Doc 2026-10-28, amendment 25(b): mockup .72 -> .77 for contrast. */
+  --bq-opacity-automation-paused: 0.77;
   --bq-settings-tile-profile: oklch(0.6 0.13 255);
   --color-bq-settings-tile-profile: oklch(0.6 0.13 255);
   --bq-settings-tile-notifications: oklch(0.6 0.13 25);
@@ -1319,3 +1321,5 @@ html[data-mode="light"] {
 .bq-ptag button { display: inline-flex; color: inherit; opacity: var(--bq-opacity-ptag-button); }
 @utility backdrop-bq-settings-save { -webkit-backdrop-filter: blur(var(--bq-blur-settings-save)) saturate(var(--bq-saturate-settings-save)); backdrop-filter: blur(var(--bq-blur-settings-save)) saturate(var(--bq-saturate-settings-save)); }
 @utility z-bq-settings-save { z-index: var(--bq-layer-settings-save); }
+
+@utility opacity-bq-automation-paused { opacity: var(--bq-opacity-automation-paused); }

@@ -70,7 +70,7 @@ colors:
   secondary: "#ffffff"
   secondary-foreground: "#474d59"
   muted: rgb(15 18 25 / 0.018)
-  muted-foreground: "#6f7684"
+  muted-foreground: "#686f7c"
   accent-foreground: "#ffffff"
   destructive: "#cf3a3a"
   border: rgb(15 18 25 / 0.08)
@@ -78,7 +78,7 @@ colors:
   ring: "#c4623f"
   scrim: rgb(20 24 34 / 0.22)
   tertiary: "#5b63e0"
-  neutral: "#6f7684"
+  neutral: "#686f7c"
   switch-thumb-on: "#ffffff"
   on-channel: "#ffffff"
   on-agent-forced: "#ffffff"
@@ -137,7 +137,7 @@ dark:
   secondary: rgb(255 255 255 / 0.05)
   secondary-foreground: "#b8bdc7"
   muted: rgb(255 255 255 / 0.025)
-  muted-foreground: "#868c98"
+  muted-foreground: "#8b919c"
   accent-foreground: "#0e0f12"
   destructive: "#ff7b7b"
   border: rgb(255 255 255 / 0.07)
@@ -145,7 +145,7 @@ dark:
   ring: "#e6e7eb"
   scrim: rgb(0 0 0 / 0.5)
   tertiary: "#8b93ff"
-  neutral: "#868c98"
+  neutral: "#8b919c"
   switch-thumb-on: "#ffffff"
   on-channel: "#ffffff"
   on-agent-forced: "#0f1014"
@@ -452,7 +452,7 @@ source_tokens:
     secondary: "#ffffff"
     secondary-foreground: "#474d59"
     muted: rgb(15 18 25 / 0.018)
-    muted-foreground: "#6f7684"
+    muted-foreground: "#686f7c"
     accent-foreground: "#ffffff"
     destructive: "#cf3a3a"
     border: rgb(15 18 25 / 0.08)
@@ -520,7 +520,7 @@ source_tokens:
     secondary: rgb(255 255 255 / 0.05)
     secondary-foreground: "#b8bdc7"
     muted: rgb(255 255 255 / 0.025)
-    muted-foreground: "#868c98"
+    muted-foreground: "#8b919c"
     accent-foreground: "#0e0f12"
     destructive: "#ff7b7b"
     border: rgb(255 255 255 / 0.07)
@@ -800,6 +800,7 @@ mockup_support:
   bq-ptag-bg-c-light: "0.1"
   bq-ptag-bg-alpha-light: "0.14"
   bq-opacity-ptag-button: "0.55"
+  bq-opacity-automation-paused: "0.77"
   bq-settings-tile-profile: "oklch(0.6 0.13 255)"
   bq-settings-tile-notifications: "oklch(0.6 0.13 25)"
   bq-settings-tile-appearance: "oklch(0.6 0.13 250)"
@@ -831,7 +832,7 @@ Janela macOS de vidro sobre gradiente grafite. Fonte canônica: `docs/design/202
 ## 2. Color Palette & Roles
 Os valores dos dois primeiros blocos :root do mockup estão no front matter, com as exceções deliberadas de contraste abaixo. Transparências preservadas. `t1`, `t2`, `t3` formam a hierarquia; `agent` identifica IA, `info` informação e `ok/warn/err` estados. No CSS, todos recebem prefixo `--bq-` para coexistir com os temas legados e o editor de marca.
 
-Por decisão do Doc em 28/10/2026 (SPEC-010, Emenda 1, item 23(a)), `t3` diverge do mockup: no escuro, `#868c98` → `#8b919c`, de 4,30:1 para 4,59:1 sobre `#28292d`; no claro, `#6f7684` → `#686f7c`, de 4,12:1 para 4,56:1 sobre `#f3f3f4`. A mudança se limita a `t3`; os demais tokens de cinza mantêm seus valores.
+Por decisão do Doc em 28/10/2026 (SPEC-010, Emenda 1, item 23(a)), `t3` diverge do mockup: no escuro, `#868c98` → `#8b919c`, de 4,30:1 para 4,59:1 sobre `#28292d`; no claro, `#6f7684` → `#686f7c`, de 4,12:1 para 4,56:1 sobre `#f3f3f4`. O item 26(d) estende esses mesmos valores a `muted-foreground` e `neutral`; os demais tokens de cinza mantêm seus valores.
 
 Na mesma decisão, item 23(b), `on-agent-forced` usa `#0f1014` sobre o roxo `agent` escuro `#8b93ff` (6,99:1), em vez de branco. No claro, permanece branco sobre `#5b63e0` (4,88:1). A classe opt-in `text-bq-on-agent-forced` resolve o token conforme `data-mode`; o fundo não muda.
 
@@ -1251,3 +1252,23 @@ sobrescreve raio12, enquanto summary1161 tem padding10/11 e corpo1168 0/11/11.
 | --bq-blur-settings-save | 18px | 1108 | var(--bq-blur-settings-save) |
 | --bq-saturate-settings-save | 1.4 | 1108 | var(--bq-saturate-settings-save) |
 | --bq-layer-settings-save | 5 | 1108 | var(--bq-layer-settings-save) |
+
+
+### Emenda 1, itens 25(b) e 26(d) — decisão do Doc em 28/10/2026
+
+- Automação pausada: `--bq-opacity-automation-paused: 0.77`, utility
+  `opacity-bq-automation-paused`. Divergência deliberada do mockup, linha 928:
+  `.72` → `.77`, porque o texto da condição no app claro passa de **4,03:1
+  para 4,53:1**, conforme a medição da sessão principal registrada no item 25(b).
+  Token literal publicado em `@theme static`; utility explícita. Sem consumidor
+  nesta passada: a L8 aplica a utility ao cartão pausado.
+- `muted-foreground` e `neutral` acompanham exatamente o t3 publicado: escuro
+  `#8b919c`, claro `#686f7c`. As folhas anteriores do contrato eram `#868c98`
+  e `#6f7684`. `--color-muted-foreground` aponta diretamente para `--bq-t3`
+  em `@theme inline`, sem cadeia intermediária de aliases no bloco. O CSS
+  anterior apontava para `--muted-fg` da marca; a referência direta passa a
+  garantir a igualdade com t3 também no navegador. `neutral` é uma folha
+  documental, sem consumidor `text-neutral` nesta base.
+- A varredura global do item 26(c), inclusive a eventual revisão de t3 do
+  item 25(a), fica para a integração. Estes dois itens não atestam contraste
+  de todos os textos ou de todos os fundos do app.
