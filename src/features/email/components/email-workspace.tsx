@@ -9,7 +9,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { Mail } from "lucide-react";
+import { Mail, Pencil, PanelLeft } from "lucide-react";
 import {
   type EmailThreadsPage,
   emailService,
@@ -178,19 +178,23 @@ export function EmailWorkspace() {
     threadsQuery.data?.pages.flatMap((page) => page.threads) ?? [];
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-[14px] px-5 py-[18px] text-[13px] text-[var(--bq-t1)]">
+    <div className="flex h-full min-h-0 flex-col gap-[14px] px-5 py-[18px] text-[13px] text-[var(--bq-t1)] antialiased">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-medium tracking-tight">E-mail</h1>
-          <p className="mt-1 text-xs text-[var(--bq-t3)]">
+          <h1 className="text-2xl leading-[1.1] font-[family-name:var(--bq-f-display)] font-medium tracking-[-0.02em]">
+            E-mail
+          </h1>
+          <p className="mt-[5px] text-[11.5px] text-[var(--bq-t3)]">
+            <span className="mr-1.5 inline-block size-[7px] rounded-full bg-[var(--bq-ok)]" />
             Gmail ·{" "}
             {channels.find((channel) => channel.id === channelId)?.email ||
-              channels.find((channel) => channel.id === channelId)?.name}
+              channels.find((channel) => channel.id === channelId)?.name}{" "}
+            · e-mail de cliente abre a conversa no atendimento
           </p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={() => setFoldersOpen(true)}>Pastas e contas</Button>
           <Button variant="solid" onClick={() => setComposing(true)}>
+            <Pencil size={14} />
             Escrever
           </Button>
         </div>
@@ -225,61 +229,94 @@ export function EmailWorkspace() {
           onSent={() => threadsQuery.refetch()}
         />
       )}
-      <div className="flex min-h-0 flex-1 overflow-hidden rounded-2xl border border-[var(--bq-hair)] bg-[var(--bq-surface)]">
-        {/* Lista — no mobile ocupa a tela até abrir um thread */}
-        <div
-          className={`w-full min-w-0 shrink-0 md:flex md:w-[280px] lg:w-[320px] ${
-            threadId ? "hidden" : "flex"
-          }`}
-        >
-          <EmailThreadList
-            folderName={folderName}
-            threads={threads}
-            activeThreadId={threadId}
-            onSelect={selectThread}
-            loading={threadsQuery.isPending}
-            error={threadsQuery.isError}
-            onRetry={() => threadsQuery.refetch()}
-            hasMore={!!threadsQuery.hasNextPage}
-            loadingMore={threadsQuery.isFetchingNextPage}
-            onLoadMore={() => threadsQuery.fetchNextPage()}
-          />
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[var(--bq-hair)] bg-[var(--bq-surface)]">
+        <div className="flex items-center border-b border-[var(--bq-hair)] px-2 py-1 min-[1121px]:hidden">
+          <button
+            type="button"
+            className="bq-icon"
+            aria-label="Pastas e contas"
+            onClick={() => setFoldersOpen(true)}
+          >
+            <PanelLeft size={16} />
+          </button>
+          <span className="ml-1 text-xs text-[var(--bq-t3)]">{folderName}</span>
         </div>
+        <div className="flex min-h-0 flex-1">
+          <nav
+            aria-label="Pastas e contas"
+            className="hidden w-[210px] shrink-0 min-[1121px]:flex"
+          >
+            <EmailFolderList
+              channels={channels}
+              activeChannelId={channelId}
+              onChannelChange={(id) => {
+                navigate("INBOX", undefined, id);
+              }}
+              folders={folders}
+              activeFolderId={folderId}
+              onSelectFolder={(id) => {
+                navigate(id);
+              }}
+              loading={foldersQuery.isPending}
+              error={foldersQuery.isError}
+              onRetry={() => foldersQuery.refetch()}
+            />
+          </nav>
+          {/* Lista — no mobile ocupa a tela até abrir um thread */}
+          <div
+            className={`w-full min-w-0 shrink-0 md:flex md:w-[340px] ${
+              threadId ? "hidden" : "flex"
+            }`}
+          >
+            <EmailThreadList
+              folderName={folderName}
+              threads={threads}
+              activeThreadId={threadId}
+              onSelect={selectThread}
+              loading={threadsQuery.isPending}
+              error={threadsQuery.isError}
+              onRetry={() => threadsQuery.refetch()}
+              hasMore={!!threadsQuery.hasNextPage}
+              loadingMore={threadsQuery.isFetchingNextPage}
+              onLoadMore={() => threadsQuery.fetchNextPage()}
+            />
+          </div>
 
-        {/* Leitura */}
-        <div
-          className={`min-w-0 flex-1 md:flex ${threadId ? "flex" : "hidden"}`}
-        >
-          <EmailThreadView
-            key={threadId}
-            detail={threadQuery.data}
-            channelId={channelId}
-            threadSelected={!!threadId}
-            loading={threadQuery.isPending && !!threadId}
-            error={threadQuery.isError}
-            onRetry={() => threadQuery.refetch()}
-            onBack={() => navigate(folderId)}
-            onSent={() => {
-              threadQuery.refetch();
-              threadsQuery.refetch();
-            }}
-            onReauth={async () => {
-              try {
-                const ch = statusQuery.data?.channels[0];
-                const { url } = await channelsService.gmailOAuthStart({
-                  name: ch?.name,
-                  channelId: ch?.id || channelId,
-                });
-                window.location.href = url;
-              } catch (err) {
-                toast.error(
-                  err instanceof Error
-                    ? err.message
-                    : "Falha ao iniciar reconexão Google",
-                );
-              }
-            }}
-          />
+          {/* Leitura */}
+          <div
+            className={`min-w-0 flex-1 md:flex ${threadId ? "flex" : "hidden"}`}
+          >
+            <EmailThreadView
+              key={threadId}
+              detail={threadQuery.data}
+              channelId={channelId}
+              threadSelected={!!threadId}
+              loading={threadQuery.isPending && !!threadId}
+              error={threadQuery.isError}
+              onRetry={() => threadQuery.refetch()}
+              onBack={() => navigate(folderId)}
+              onSent={() => {
+                threadQuery.refetch();
+                threadsQuery.refetch();
+              }}
+              onReauth={async () => {
+                try {
+                  const ch = statusQuery.data?.channels[0];
+                  const { url } = await channelsService.gmailOAuthStart({
+                    name: ch?.name,
+                    channelId: ch?.id || channelId,
+                  });
+                  window.location.href = url;
+                } catch (err) {
+                  toast.error(
+                    err instanceof Error
+                      ? err.message
+                      : "Falha ao iniciar reconexão Google",
+                  );
+                }
+              }}
+            />
+          </div>
         </div>
       </div>
     </div>

@@ -38,17 +38,15 @@ export function EmailThreadList({
       .includes(search.toLocaleLowerCase("pt-BR")),
   );
   return (
-    <div className="flex h-full w-full min-w-0 flex-col border-r border-[var(--bq-hair)] bg-[var(--bq-surface)]  ">
-      <div className="border-b border-[var(--bq-hair)] px-3 py-3 ">
-        <h2 className="truncate text-sm font-semibold text-[var(--bq-t1)] ">
-          {folderName}
-        </h2>
+    <div className="flex h-full w-full min-w-0 flex-col border-r border-[var(--bq-hair)] bg-transparent  ">
+      <div className="px-2.5 pb-1.5 pt-2.5">
+        <h2 className="sr-only">{folderName}</h2>
         <input
           aria-label="Buscar nos e-mails carregados"
           placeholder="Buscar e-mail"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="mt-2 w-full rounded-lg border border-[var(--bq-hair)] bg-[var(--bq-raised)] px-3 py-2 text-xs outline-offset-2"
+          className="w-full rounded-lg border border-[var(--bq-hair)] bg-[var(--bq-raised)] px-3 py-2 text-xs outline-offset-2"
         />
         {search && (
           <p className="mt-1 text-[10px] text-[var(--bq-t3)]">
@@ -79,7 +77,7 @@ export function EmailThreadList({
             <button
               type="button"
               onClick={onRetry}
-              className="mt-1 inline-flex items-center gap-1.5 rounded-md border border-[var(--bq-hair)] px-2.5 py-1.5 text-xs text-[var(--bq-t2)] hover:bg-[var(--bq-surface)]   "
+              className="mt-1 inline-flex items-center gap-1.5 rounded-md border border-[var(--bq-hair)] px-2.5 py-1.5 text-xs text-[var(--bq-t2)] hover:bg-transparent   "
             >
               <RefreshCw className="h-3 w-3" /> Tentar de novo
             </button>
@@ -105,7 +103,7 @@ export function EmailThreadList({
                     onClick={() => onSelect(t.id)}
                     className={`flex w-full flex-col gap-0.5 border-b border-[var(--bq-hair)] px-3 py-2.5 text-left transition-colors  ${
                       isActive
-                        ? "bg-[var(--bq-accent-soft)]"
+                        ? "bg-[var(--bq-raised-2)]"
                         : "hover:bg-[var(--bq-surface)] "
                     }`}
                   >

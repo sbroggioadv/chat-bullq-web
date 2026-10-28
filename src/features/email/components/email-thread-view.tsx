@@ -150,7 +150,7 @@ export function EmailThreadView({
 
   if (!threadSelected) {
     return (
-      <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-[var(--bq-surface)] px-6 text-center ">
+      <div className="flex h-full w-full flex-col items-center justify-center gap-2 px-6 text-center ">
         <MailOpen className="h-10 w-10 text-[var(--bq-t3)] " />
         <p className="text-sm text-[var(--bq-t3)] ">
           Selecione um e-mail para ler
@@ -161,7 +161,7 @@ export function EmailThreadView({
 
   if (loading) {
     return (
-      <div className="h-full w-full space-y-3 bg-[var(--bq-surface)] p-6 ">
+      <div className="h-full w-full space-y-3 p-6 ">
         <div className="h-6 w-2/3 animate-pulse rounded-md bg-[var(--bq-raised)] " />
         <div className="h-28 animate-pulse rounded-lg bg-[var(--bq-raised)] " />
       </div>
@@ -170,7 +170,7 @@ export function EmailThreadView({
 
   if (error || !detail) {
     return (
-      <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-[var(--bq-surface)] px-6 text-center ">
+      <div className="flex h-full w-full flex-col items-center justify-center gap-2 px-6 text-center ">
         <p className="text-sm text-[var(--bq-t2)] ">
           Não foi possível carregar este e-mail.
         </p>
@@ -375,8 +375,8 @@ export function EmailThreadView({
         : "Encaminhar e-mail";
 
   return (
-    <div className="flex h-full w-full min-w-0 flex-col bg-[var(--bq-surface)] ">
-      <div className="flex flex-wrap items-center gap-2 border-b border-[var(--bq-hair)] bg-[var(--bq-surface)] px-5 py-3.5  ">
+    <div className="flex h-full w-full min-w-0 flex-col ">
+      <div className="flex flex-wrap items-center gap-2 border-b border-[var(--bq-hair)] px-[18px] pb-2.5 pt-[14px]  ">
         <button
           type="button"
           onClick={onBack}
@@ -385,164 +385,169 @@ export function EmailThreadView({
         >
           <ArrowLeft className="h-4 w-4" />
         </button>
-        <h1 className="min-w-0 basis-full truncate text-base font-semibold text-[var(--bq-t1)] ">
+        <h2 className="min-w-0 flex-1 text-[18px] leading-tight font-medium font-[family-name:var(--bq-f-display)] tracking-[-.015em] text-[var(--bq-t1)]">
           {detail.subject}
-        </h1>
-        {inboxHref && (
-          <Link
-            href={inboxHref}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-2.5 py-1.5 text-xs font-medium text-[var(--bq-t2)] hover:bg-[var(--bq-surface)]    "
-            title="Abrir a conversa correspondente no atendimento"
-          >
-            <MessageSquare className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Atendimento</span>
-          </Link>
-        )}
-        <button
-          type="button"
-          onClick={() => openCompose(mode === "reply" ? null : "reply")}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-[var(--bq-solid-bg)] px-2.5 py-1.5 text-xs font-medium text-[var(--bq-solid-fg)] hover:bg-[var(--bq-accent-soft)]"
-        >
-          <Reply className="h-3.5 w-3.5" />
-          Responder
-        </button>
-        <button
-          type="button"
-          onClick={() => openCompose(mode === "replyAll" ? null : "replyAll")}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-2.5 py-1.5 text-xs font-medium text-[var(--bq-t2)] hover:bg-[var(--bq-surface)]    "
-          title="Inclui todos do To/Cc originais"
-        >
-          <ReplyAll className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">Responder a todos</span>
-          <span className="sm:hidden">Todos</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => openCompose(mode === "forward" ? null : "forward")}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-2.5 py-1.5 text-xs font-medium text-[var(--bq-t2)] hover:bg-[var(--bq-surface)]    "
-        >
-          <Forward className="h-3.5 w-3.5" />
-          Encaminhar
-        </button>
-        <button
-          type="button"
-          onClick={() =>
-            runModify(
-              starred ? "unstar" : "star",
-              starred ? "Estrela removida" : "Com estrela",
-            )
-          }
-          disabled={modifying}
-          title={starred ? "Remover estrela" : "Marcar com estrela"}
-          className={`inline-flex shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium disabled:opacity-50 ${
-            starred
-              ? "border-[var(--bq-warn-soft)] bg-[var(--bq-warn-soft)] text-[var(--bq-warn)]   "
-              : "border-[var(--bq-hair)] bg-[var(--bq-surface)] text-[var(--bq-t2)] hover:bg-[var(--bq-surface)]    "
-          }`}
-        >
-          <Star className={`h-3.5 w-3.5 ${starred ? "fill-current" : ""}`} />
-        </button>
-        <button
-          type="button"
-          onClick={() =>
-            runModify(
-              spam ? "unspam" : "spam",
-              spam ? "Removido do spam" : "Movido para spam",
-            )
-          }
-          disabled={modifying}
-          title={spam ? "Tirar do spam" : "Marcar como spam"}
-          className={`inline-flex shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium disabled:opacity-50 ${
-            spam
-              ? "border-[var(--bq-err-soft)] bg-[var(--bq-err-soft)] text-[var(--bq-err)]   "
-              : "border-[var(--bq-hair)] bg-[var(--bq-surface)] text-[var(--bq-t2)] hover:bg-[var(--bq-surface)]    "
-          }`}
-        >
-          <AlertOctagon className="h-3.5 w-3.5" />
-        </button>
-        <div className="relative">
+        </h2>
+        <div className="flex w-full flex-wrap items-center gap-1.5">
           <button
             type="button"
-            onClick={() => setLabelMenuOpen((v) => !v)}
-            disabled={modifying || !userLabels.length}
-            title="Aplicar marcador"
+            onClick={() => openCompose(mode === "reply" ? null : "reply")}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-[9px] border border-[var(--bq-hair-strong)] px-3 py-1.5 text-[12.5px] font-medium text-[var(--bq-t1)] hover:bg-[var(--bq-raised)]"
+          >
+            <Reply className="h-3.5 w-3.5" />
+            Responder
+          </button>
+          <button
+            type="button"
+            onClick={() => openCompose(mode === "replyAll" ? null : "replyAll")}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-2.5 py-1.5 text-xs font-medium text-[var(--bq-t2)] hover:bg-[var(--bq-surface)]    "
+            title="Inclui todos do To/Cc originais"
+          >
+            <ReplyAll className="h-3.5 w-3.5" />
+            <span>Responder a todos</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => openCompose(mode === "forward" ? null : "forward")}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-2.5 py-1.5 text-xs font-medium text-[var(--bq-t2)] hover:bg-[var(--bq-surface)]    "
+          >
+            <Forward className="h-3.5 w-3.5" />
+            Encaminhar
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              runModify(
+                starred ? "unstar" : "star",
+                starred ? "Estrela removida" : "Com estrela",
+              )
+            }
+            disabled={modifying}
+            title={starred ? "Remover estrela" : "Marcar com estrela"}
+            className={`inline-flex shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium disabled:opacity-50 ${
+              starred
+                ? "border-[var(--bq-warn-soft)] bg-[var(--bq-warn-soft)] text-[var(--bq-warn)]   "
+                : "border-[var(--bq-hair)] bg-[var(--bq-surface)] text-[var(--bq-t2)] hover:bg-[var(--bq-surface)]    "
+            }`}
+          >
+            <Star className={`h-3.5 w-3.5 ${starred ? "fill-current" : ""}`} />
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              runModify(
+                spam ? "unspam" : "spam",
+                spam ? "Removido do spam" : "Movido para spam",
+              )
+            }
+            disabled={modifying}
+            title={spam ? "Tirar do spam" : "Marcar como spam"}
+            className={`inline-flex shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium disabled:opacity-50 ${
+              spam
+                ? "border-[var(--bq-err-soft)] bg-[var(--bq-err-soft)] text-[var(--bq-err)]   "
+                : "border-[var(--bq-hair)] bg-[var(--bq-surface)] text-[var(--bq-t2)] hover:bg-[var(--bq-surface)]    "
+            }`}
+          >
+            <AlertOctagon className="h-3.5 w-3.5" />
+          </button>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setLabelMenuOpen((v) => !v)}
+              disabled={modifying || !userLabels.length}
+              title="Aplicar marcador"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-2.5 py-1.5 text-xs font-medium text-[var(--bq-t2)] hover:bg-[var(--bq-surface)] disabled:opacity-50    "
+            >
+              <Tag className="h-3.5 w-3.5" />
+              <span>Marcador</span>
+            </button>
+            {labelMenuOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-20"
+                  onClick={() => setLabelMenuOpen(false)}
+                />
+                <div className="absolute right-0 top-full z-30 mt-1 max-h-56 w-52 overflow-y-auto rounded-lg border border-[var(--bq-hair)] bg-[var(--bq-surface)] py-1 shadow-lg  ">
+                  {userLabels.map((l) => {
+                    const on = activeLabels.includes(l.id);
+                    return (
+                      <button
+                        key={l.id}
+                        type="button"
+                        className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs text-[var(--bq-t2)] hover:bg-[var(--bq-surface)]  "
+                        onClick={async () => {
+                          if (!channelId || !detail?.id) return;
+                          setModifying(true);
+                          try {
+                            await emailService.modify({
+                              channelId,
+                              threadId: detail.id,
+                              addLabelIds: on ? undefined : [l.id],
+                              removeLabelIds: on ? [l.id] : undefined,
+                            });
+                            setActiveLabels((prev) =>
+                              on
+                                ? prev.filter((x) => x !== l.id)
+                                : [...prev, l.id],
+                            );
+                            toast.success(
+                              on
+                                ? `Removido: ${l.name}`
+                                : `Marcador: ${l.name}`,
+                            );
+                            onSent();
+                          } catch (err) {
+                            toast.error(
+                              err instanceof Error
+                                ? err.message
+                                : "Falha no marcador",
+                            );
+                          } finally {
+                            setModifying(false);
+                            setLabelMenuOpen(false);
+                          }
+                        }}
+                      >
+                        <span
+                          className={`h-2 w-2 rounded-full ${
+                            on
+                              ? "bg-[var(--bq-solid-bg)]"
+                              : "bg-[var(--bq-raised)] "
+                          }`}
+                        />
+                        <span className="truncate">{l.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={handleArchive}
+            disabled={archiving}
+            title="Arquivar (remove da Caixa de entrada)"
             className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-2.5 py-1.5 text-xs font-medium text-[var(--bq-t2)] hover:bg-[var(--bq-surface)] disabled:opacity-50    "
           >
-            <Tag className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Marcador</span>
+            {archiving ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Archive className="h-3.5 w-3.5" />
+            )}
+            <span>Arquivar</span>
           </button>
-          {labelMenuOpen && (
-            <>
-              <div
-                className="fixed inset-0 z-20"
-                onClick={() => setLabelMenuOpen(false)}
-              />
-              <div className="absolute right-0 top-full z-30 mt-1 max-h-56 w-52 overflow-y-auto rounded-lg border border-[var(--bq-hair)] bg-[var(--bq-surface)] py-1 shadow-lg  ">
-                {userLabels.map((l) => {
-                  const on = activeLabels.includes(l.id);
-                  return (
-                    <button
-                      key={l.id}
-                      type="button"
-                      className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs text-[var(--bq-t2)] hover:bg-[var(--bq-surface)]  "
-                      onClick={async () => {
-                        if (!channelId || !detail?.id) return;
-                        setModifying(true);
-                        try {
-                          await emailService.modify({
-                            channelId,
-                            threadId: detail.id,
-                            addLabelIds: on ? undefined : [l.id],
-                            removeLabelIds: on ? [l.id] : undefined,
-                          });
-                          setActiveLabels((prev) =>
-                            on
-                              ? prev.filter((x) => x !== l.id)
-                              : [...prev, l.id],
-                          );
-                          toast.success(
-                            on ? `Removido: ${l.name}` : `Marcador: ${l.name}`,
-                          );
-                          onSent();
-                        } catch (err) {
-                          toast.error(
-                            err instanceof Error
-                              ? err.message
-                              : "Falha no marcador",
-                          );
-                        } finally {
-                          setModifying(false);
-                          setLabelMenuOpen(false);
-                        }
-                      }}
-                    >
-                      <span
-                        className={`h-2 w-2 rounded-full ${
-                          on ? "bg-[var(--bq-solid-bg)]" : "bg-[var(--bq-raised)] "
-                        }`}
-                      />
-                      <span className="truncate">{l.name}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </>
+          {inboxHref && (
+            <Link
+              href={inboxHref}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-2.5 py-1.5 text-xs font-medium text-[var(--bq-t2)] hover:bg-[var(--bq-surface)]    "
+              title="Abrir a conversa correspondente no atendimento"
+            >
+              <MessageSquare className="h-3.5 w-3.5" />
+              <span>Abrir a conversa</span>
+            </Link>
           )}
         </div>
-        <button
-          type="button"
-          onClick={handleArchive}
-          disabled={archiving}
-          title="Arquivar (remove da Caixa de entrada)"
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-2.5 py-1.5 text-xs font-medium text-[var(--bq-t2)] hover:bg-[var(--bq-surface)] disabled:opacity-50    "
-        >
-          {archiving ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Archive className="h-3.5 w-3.5" />
-          )}
-          <span className="hidden sm:inline">Arquivar</span>
-        </button>
       </div>
 
       {!!userLabels.length &&
@@ -581,8 +586,10 @@ export function EmailThreadView({
           return (
             <article
               key={m.id}
-              className={`rounded-lg border bg-[var(--bq-surface)] p-4  ${
-                m.outbound ? "border-[var(--bq-hair-strong)]" : "border-[var(--bq-hair)] "
+              className={`rounded-xl border bg-[var(--bq-raised)] px-[14px] py-3  ${
+                m.outbound
+                  ? "border-[var(--bq-hair-strong)]"
+                  : "border-[var(--bq-hair)] "
               }`}
             >
               <header className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">

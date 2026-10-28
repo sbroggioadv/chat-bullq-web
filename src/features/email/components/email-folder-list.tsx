@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertOctagon, Inbox, Mail, RefreshCw, Send, Tag } from "lucide-react";
+import { AlertOctagon, Inbox, RefreshCw, Send, Tag } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type {
   EmailChannel,
@@ -37,7 +37,6 @@ export function EmailFolderList({
   error,
   onRetry,
 }: EmailFolderListProps) {
-  const activeChannel = channels.find((c) => c.id === activeChannelId);
   const systemFolders = folders.filter((f) => f.kind === "system");
   const userLabels = folders.filter((f) => f.kind === "user");
 
@@ -68,16 +67,11 @@ export function EmailFolderList({
   };
 
   return (
-    <div className="flex h-full w-full flex-col border-r border-[var(--bq-hair)] bg-[var(--bq-surface)]  ">
-      <div className="border-b border-[var(--bq-hair)] px-3 py-3 ">
-        <div className="flex items-center gap-2">
-          <Mail className="h-4.5 w-4.5 shrink-0 text-[var(--bq-err)] " />
-          <span className="text-sm font-semibold text-[var(--bq-t1)] ">
-            E-mail
-          </span>
-        </div>
+    <div className="flex h-full w-full flex-col border-r border-[var(--bq-hair)] bg-transparent  ">
+      <div className="px-4 pt-3">
         {channels.length > 1 ? (
           <select
+            aria-label="Conta de e-mail"
             value={activeChannelId}
             onChange={(e) => onChannelChange(e.target.value)}
             className="mt-2 w-full truncate rounded-md border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-2 py-1 text-xs text-[var(--bq-t2)] outline-none   "
@@ -88,23 +82,17 @@ export function EmailFolderList({
               </option>
             ))}
           </select>
-        ) : (
-          activeChannel && (
-            <p className="mt-1 truncate text-xs text-[var(--bq-t3)] ">
-              {activeChannel.email ?? activeChannel.name}
-            </p>
-          )
-        )}
+        ) : null}
       </div>
 
-      <div className="flex-1 space-y-0.5 overflow-y-auto p-2">
+      <div className="flex-1 space-y-0.5 overflow-y-auto px-2.5 pb-3">
         {error ? (
           <div className="px-2 py-3 text-xs text-[var(--bq-t3)] ">
             <p>Não foi possível carregar as pastas.</p>
             <button
               type="button"
               onClick={onRetry}
-              className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-[var(--bq-hair)] px-2 py-1 text-xs text-[var(--bq-t2)] hover:bg-[var(--bq-surface)]   "
+              className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-[var(--bq-hair)] px-2 py-1 text-xs text-[var(--bq-t2)] hover:bg-transparent   "
             >
               <RefreshCw className="h-3 w-3" /> Tentar de novo
             </button>
@@ -120,14 +108,17 @@ export function EmailFolderList({
           </div>
         ) : (
           <>
-            {systemFolders.map(renderFolder)}
+            <details open>
+              <summary className="sr-only">Pastas</summary>
+              {systemFolders.map(renderFolder)}
+            </details>
             {userLabels.length > 0 && (
-              <>
-                <div className="px-2.5 pb-1 pt-3 text-[10px] font-medium uppercase tracking-wide text-[var(--bq-t3)] ">
+              <details open>
+                <summary className="cursor-pointer list-none px-2.5 pb-1 pt-3 text-[10.5px] uppercase tracking-[.06em] text-[var(--bq-t3)]">
                   Marcadores
-                </div>
+                </summary>
                 {userLabels.map(renderFolder)}
-              </>
+              </details>
             )}
             {userLabels.length === 0 && (
               <p className="px-2.5 pt-3 text-[11px] text-[var(--bq-t3)] ">
