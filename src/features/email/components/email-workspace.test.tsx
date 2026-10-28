@@ -54,6 +54,9 @@ it("navega pastas e contas na coluna interna e no painel móvel preservando a co
   await userEvent.click(
     await within(nav).findByRole("button", { name: "Enviados" }),
   );
+  expect(
+    within(nav).getByText(/Marcadores/, { selector: "summary" }),
+  ).toHaveTextContent("Marcadores 1");
   expect(push).toHaveBeenLastCalledWith("/email?folder=sent&channel=account-2");
   await userEvent.click(within(nav).getByRole("button", { name: "Revisão" }));
   expect(push).toHaveBeenLastCalledWith(
@@ -70,6 +73,9 @@ it("navega pastas e contas na coluna interna e no painel móvel preservando a co
     screen.getByRole("button", { name: "Pastas e contas" }),
   );
   const dialog = await screen.findByRole("dialog");
+  expect(
+    within(dialog).getByText(/Marcadores/, { selector: "summary" }),
+  ).toHaveTextContent("Marcadores 1");
   await userEvent.click(
     within(dialog).getByRole("button", { name: "Enviados" }),
   );

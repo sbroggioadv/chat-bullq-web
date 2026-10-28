@@ -115,7 +115,8 @@ export function EmailFolderList({
             {userLabels.length > 0 && (
               <details open>
                 <summary className="cursor-pointer list-none px-2.5 pb-1 pt-3 text-[10.5px] uppercase tracking-[.06em] text-[var(--bq-t3)]">
-                  Marcadores
+                  Marcadores{" "}
+                  <span className="ml-1 tabular-nums">{userLabels.length}</span>
                 </summary>
                 {userLabels.map(renderFolder)}
               </details>
