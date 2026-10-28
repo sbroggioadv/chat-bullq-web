@@ -3,7 +3,6 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Sparkles,
   CheckCircle2,
   XCircle,
   Clock,
@@ -12,8 +11,8 @@ import {
   Trash2,
   Eye,
   EyeOff,
-  Save,
   Info,
+  Save,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -24,6 +23,7 @@ import {
   type CredentialTestStatus,
   type MaskedCredential,
 } from '@/features/settings/services/ai-credentials.service';
+import { SettingsSaveBar } from '@/features/settings/components/settings-save-bar';
 import { useOrgId } from '@/hooks/use-org-query-key';
 
 type Tab = 'credentials' | 'routing';
@@ -114,6 +114,14 @@ const STATUS_BADGES: Record<
   },
 };
 
+function credentialTestMessage(message: string | null): string {
+  if (!message) return 'O provedor não confirmou a conexão.';
+  if (/401|403|invalid.*key|unauthor|authentication/i.test(message)) return 'A chave foi recusada. Confira a chave e as permissões no provedor.';
+  if (/429|quota|rate.limit/i.test(message)) return 'O limite de uso do provedor foi atingido. Confira a cota e tente novamente.';
+  if (/timeout|timed.out|network|fetch/i.test(message)) return 'O provedor não respondeu a tempo. Verifique a conexão e tente novamente.';
+  return `Não foi possível validar a conexão. Detalhe do provedor: ${message}`;
+}
+
 function formatRelative(iso: string | null): string {
   if (!iso) return '—';
   const then = new Date(iso).getTime();
@@ -134,12 +142,12 @@ export default function SettingsAiCredentialsPage() {
   const orgId = useOrgId();
   const [tab, setTab] = useState<Tab>('credentials');
 
-  const { data: credentials, isLoading: loadingCreds } = useQuery({
+  const { data: credentials, isLoading: loadingCreds, isError: credentialsError } = useQuery({
     queryKey: ['ai-credentials', orgId],
     queryFn: () => aiCredentialsService.list(),
   });
 
-  const { data: routing, isLoading: loadingRouting } = useQuery({
+  const { data: routing, isLoading: loadingRouting, isError: routingError } = useQuery({
     queryKey: ['ai-routing', orgId],
     queryFn: () => aiCredentialsService.listRouting(),
   });
@@ -156,13 +164,12 @@ export default function SettingsAiCredentialsPage() {
     return map;
   }, [credentials]);
 
+  if (credentialsError || routingError) return <p role="alert">Não foi possível carregar as credenciais e o roteamento. Tente novamente mais tarde.</p>;
+  const missing = health && routing?.filter(item => !credByProvider.has(item.providerSelected) && !health.env[item.providerSelected.toLowerCase() as keyof typeof health.env]);
+
   return (
     <div>
       <div>
-        <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-primary" />
-          Credenciais de IA
-        </h2>
         <p className="mt-0.5 text-sm text-zinc-500">
           Atendimento: Fugu Ultra e Qwen 3.7 Max. OpenAI e Gemini ficam para
           transcrição e embeddings. Anthropic permanece disponível se já estava
@@ -170,6 +177,8 @@ export default function SettingsAiCredentialsPage() {
         </p>
       </div>
 
+      <p className="mt-4 text-xs text-[var(--bq-t3)]">Gasto do mês e quantidade de agentes por provedor ainda não disponíveis.</p>
+      {missing && missing.length > 0 && <p role="alert" className="mt-3 text-sm text-[var(--bq-warn)]">Há capacidade em uso sem chave nem fallback disponível: {missing.map(item => CAPABILITY_LABELS[item.capability].label).join(', ')}.</p>}
       {/* Tabs */}
       <div className="mt-6 flex gap-1 border-b border-zinc-200 dark:border-zinc-800">
         <TabButton active={tab === 'credentials'} onClick={() => setTab('credentials')}>
@@ -311,7 +320,7 @@ function ProviderCard({
       if (updated.lastTestStatus === 'SUCCESS') {
         toast.success(`${provider.name}: conexão ok`);
       } else {
-        toast.error(`${provider.name}: ${updated.lastTestError ?? 'falhou'}`);
+        toast.error(`${provider.name}: ${credentialTestMessage(updated.lastTestError)}`);
       }
       onChanged();
     } catch (err) {
@@ -358,13 +367,13 @@ function ProviderCard({
             </div>
           ) : (
             <p className="mt-2 text-xs italic text-zinc-400">
-              Não configurada — usa fallback do servidor
+              Não configurada nesta organização. O uso depende da disponibilidade do servidor.
             </p>
           )}
           {credential?.lastTestError && (
             <p className="mt-2 flex items-start gap-1 text-xs text-rose-600 dark:text-rose-400">
               <AlertCircle className="mt-0.5 h-3 w-3 shrink-0" />
-              <span>{credential.lastTestError}</span>
+              <span>{credentialTestMessage(credential.lastTestError)}</span>
             </p>
           )}
         </div>
@@ -614,24 +623,7 @@ function RoutingTab({
         );
       })}
 
-      <div className="flex items-center justify-end gap-2 pt-2">
-        {isDirty && (
-          <button
-            onClick={() => setDraft(null)}
-            className="rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
-          >
-            Cancelar
-          </button>
-        )}
-        <button
-          onClick={handleSave}
-          disabled={!isDirty || saving}
-          className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-        >
-          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-          Salvar roteamento
-        </button>
-      </div>
+      <SettingsSaveBar dirty={isDirty} saving={saving} onSave={() => void handleSave()} onDiscard={() => setDraft(null)} />
     </div>
   );
 }
