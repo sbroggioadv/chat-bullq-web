@@ -1,3 +1,4 @@
+import { bindLifecycle } from '@/lib/socket-lifecycle';
 import { io, Socket } from 'socket.io-client';
 import axios from 'axios';
 
@@ -67,6 +68,9 @@ export function getSocket(): Socket {
     // e o usuário fica sem realtime até recarregar a página.
     reconnectionAttempts: Infinity,
   });
+
+  // Bind before any consumer can miss the first backend acknowledgement.
+  bindLifecycle(socket);
 
   socket.on('disconnect', (reason) => {
     if (reason !== 'io server disconnect') return;

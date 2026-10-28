@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'next/navigation';
+import { useSocket } from '@/features/inbox/hooks/use-socket';
 import { MessageSquare } from 'lucide-react';
 import { ConversationList } from '@/features/inbox/components/conversation-list';
 import { ChatPanel } from '@/features/inbox/components/chat-panel';
@@ -112,11 +113,12 @@ export default function InboxPage() {
   }, [deepLinkConvId]);
 
   // Keep the active conversation object in sync with the backend (enrichment, last message, etc.)
+  const { connected } = useSocket();
   const { data: freshActive } = useQuery({
     queryKey: ['conversation', activeConversation?.id],
     queryFn: () => inboxService.getConversation(activeConversation!.id),
     enabled: !!activeConversation?.id,
-    refetchInterval: 5000,
+    refetchInterval: connected ? false : 5000,
   });
 
   useEffect(() => {
@@ -128,9 +130,6 @@ export default function InboxPage() {
   const handleConversationUpdate = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['conversations'] });
     if (activeConversation) {
-      queryClient.invalidateQueries({
-        queryKey: ['messages', activeConversation.id],
-      });
       queryClient.invalidateQueries({
         queryKey: ['conversation', activeConversation.id],
       });

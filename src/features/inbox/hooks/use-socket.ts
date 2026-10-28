@@ -1,78 +1,18 @@
 'use client';
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useSyncExternalStore } from 'react';
 import { getSocket } from '@/lib/socket';
 import type { Socket } from 'socket.io-client';
 
-/**
- * Singleton socket handle. We track:
- * - the currently-joined conversation room (module scope) so we can rejoin
- *   it across reconnects;
- * - whether the backend has acknowledged auth (`ready` event). join:conversation
- *   emitted before `ready` is wasted — backend has no role/channelIds yet
- *   and silently rejects. We queue the join until `ready` fires.
- * - whether we've ever been ready before — a second `ready` event means
- *   we just reconnected (network blip, laptop wake) and consumers may
- *   want to refetch any data that could have changed while we were
- *   offline (messages, conversation list, …).
- */
-let activeConversationId: string | null = null;
-let authReady = false;
-let everReady = false;
-
-// Module-scope reconnect listeners. We call these whenever `ready` fires
-// AFTER the first one — i.e. the user came back online. Each consumer
-// hook subscribes once via `onReconnect`.
-const reconnectListeners = new Set<() => void>();
-
-function setActiveConversation(id: string | null) {
-  activeConversationId = id;
-}
-
-function getActiveConversation(): string | null {
-  return activeConversationId;
-}
+import { bindLifecycle, getActiveConversation, setActiveConversation, isSocketReady, reconnectListeners, subscribeStatus } from '@/lib/socket-lifecycle';
 
 export function useSocket() {
   const socketRef = useRef<Socket | null>(null);
-
+  const connected = useSyncExternalStore(subscribeStatus, isSocketReady, () => false);
   useEffect(() => {
     const socket = getSocket();
     socketRef.current = socket;
-
-    // On each new connect cycle, auth has not been acknowledged yet.
-    const onConnect = () => {
-      authReady = false;
-    };
-
-    // Backend emits `ready` at the end of handleConnection — at that point
-    // role/channelIds are populated and join:conversation will pass.
-    const onReady = () => {
-      const isReconnect = everReady;
-      authReady = true;
-      everReady = true;
-      const convId = getActiveConversation();
-      if (convId) socket.emit('join:conversation', { conversationId: convId });
-      if (isReconnect) {
-        // Fire all reconnect listeners. A try/catch around each one prevents
-        // a buggy subscriber from breaking the others.
-        for (const fn of reconnectListeners) {
-          try { fn(); } catch { /* swallow */ }
-        }
-      }
-    };
-
-    socket.on('connect', onConnect);
-    socket.on('ready', onReady);
-    if (socket.connected && authReady) {
-      const convId = getActiveConversation();
-      if (convId) socket.emit('join:conversation', { conversationId: convId });
-    }
-
-    return () => {
-      socket.off('connect', onConnect);
-      socket.off('ready', onReady);
-    };
+    bindLifecycle(socket);
   }, []);
 
   const on = useCallback((event: string, handler: (...args: any[]) => void) => {
@@ -92,7 +32,7 @@ export function useSocket() {
       // a fresh tab opens the inbox, mounts ChatPanel, fires this emit
       // BEFORE handleConnection finishes the DB lookup, and the join is
       // silently dropped — leaving the user with stale chat panel.
-      if (!authReady) return;
+      if (!isSocketReady()) return;
     }
     if (event === 'leave:conversation') {
       if (getActiveConversation() === data?.conversationId) {
@@ -115,5 +55,5 @@ export function useSocket() {
     };
   }, []);
 
-  return { on, emit, onReconnect, socket: socketRef };
+  return { on, emit, onReconnect, connected, socket: socketRef };
 }
