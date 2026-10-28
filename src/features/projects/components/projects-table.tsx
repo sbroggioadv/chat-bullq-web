@@ -2,24 +2,27 @@
 
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { ProjectDetail } from '@/features/projects/components/project-detail';
+import { Button, Pill } from '@/components/ui/foundation';
 import { Search, FolderKanban, Plus, Loader2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useOrgId } from '@/hooks/use-org-query-key';
 import { membersService } from '@/features/settings/services/members.service';
-import { projectsService } from '../services/projects.service';
+import { projectsService } from '@/features/projects/services/projects.service';
 import {
   PROJECT_STATUSES,
   PHASE_LABELS,
   phaseLabel,
-} from '../project-fields';
+} from '@/features/projects/project-fields';
 
 const controlCls =
-  'h-9 rounded-md border border-zinc-300 bg-white px-2.5 text-sm text-zinc-900 outline-none focus:border-primary focus:ring-1 focus:ring-primary dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100';
+  'h-9 rounded-md border border-[var(--bq-hair-strong)] bg-[var(--bq-win-solid)] px-2.5 text-sm text-[var(--bq-t1)] outline-none focus:border-[var(--bq-accent)] focus:ring-1 focus:ring-[var(--bq-accent)]   ';
 
 export function ProjectsTable() {
   const orgId = useOrgId();
-  const router = useRouter();
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [mobileDetail, setMobileDetail] = useState(false);
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
@@ -37,7 +40,7 @@ export function ProjectsTable() {
     staleTime: 60_000,
   });
 
-  const { data: rows = [], isLoading } = useQuery({
+  const { data: rows = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['projects', orgId, { status, responsibleUserId }],
     queryFn: () =>
       projectsService.list({
@@ -56,7 +59,12 @@ export function ProjectsTable() {
     onSuccess: (created) => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
       if (created.id) {
-        router.push(`/projects/${created.id}`);
+        setSearch('');
+        setStatus('');
+        setResponsibleUserId('');
+        setSelectedId(created.id);
+        setMobileDetail(true);
+        setCreating(false);
       } else {
         toast.error('Projeto criado sem identificador');
       }
@@ -76,9 +84,7 @@ export function ProjectsTable() {
     });
   }, [rows, search]);
 
-  const openProject = (id: string) => {
-    router.push(`/projects/${id}`);
-  };
+
 
   const resetCreate = () => {
     setCreating(false);
@@ -88,24 +94,25 @@ export function ProjectsTable() {
   };
 
   return (
-    <div className="mx-auto h-full w-full max-w-6xl overflow-y-auto p-6">
+    <div className="flex h-full min-w-0 text-[var(--bq-t1)]">
+    <aside aria-label="Lista de projetos" className={`${mobileDetail ? 'hidden md:block' : 'block'} h-full w-full shrink-0 overflow-y-auto border-r border-[var(--bq-hair)] p-4 md:w-[310px]`}>
+    <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <FolderKanban className="h-6 w-6 text-primary" />
-            <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+            <FolderKanban className="h-4 w-4 text-[var(--bq-accent-text)]" />
+            <h1 className="text-lg font-semibold text-[var(--bq-t1)]">
               Projetos
             </h1>
           </div>
-          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-            Dossiês de holding, caso ou grupo específico. Um grupo de WhatsApp
-            não é um projeto.
+          <p className="mt-1 text-sm text-[var(--bq-t3)]">
+            Escopo e acompanhamento dos seus projetos.
           </p>
         </div>
         <button
           type="button"
           onClick={() => setCreating((v) => !v)}
-          className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+          className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[var(--bq-solid-bg)] px-3 text-sm font-medium text-[var(--bq-solid-fg)] hover:bg-[var(--bq-solid-bg)]"
         >
           {creating ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
           Novo projeto
@@ -114,7 +121,7 @@ export function ProjectsTable() {
 
       {creating && (
         <form
-          className="mt-5 space-y-3 rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-900/40"
+          className="mt-5 space-y-3 rounded-xl border border-[var(--bq-hair)] bg-[var(--bq-surface)] p-4"
           onSubmit={(e) => {
             e.preventDefault();
             if (!newName.trim()) {
@@ -126,7 +133,7 @@ export function ProjectsTable() {
         >
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="space-y-1">
-              <span className="text-[11px] font-medium uppercase tracking-wide text-zinc-400">
+              <span className="text-[11px] font-medium uppercase tracking-wide text-[var(--bq-t3)]">
                 Nome
               </span>
               <input
@@ -138,7 +145,7 @@ export function ProjectsTable() {
               />
             </label>
             <label className="space-y-1">
-              <span className="text-[11px] font-medium uppercase tracking-wide text-zinc-400">
+              <span className="text-[11px] font-medium uppercase tracking-wide text-[var(--bq-t3)]">
                 Fase
               </span>
               <select
@@ -157,7 +164,7 @@ export function ProjectsTable() {
             </label>
           </div>
           <label className="block space-y-1">
-            <span className="text-[11px] font-medium uppercase tracking-wide text-zinc-400">
+            <span className="text-[11px] font-medium uppercase tracking-wide text-[var(--bq-t3)]">
               Descrição
             </span>
             <textarea
@@ -171,7 +178,7 @@ export function ProjectsTable() {
             <button
               type="submit"
               disabled={createMutation.isPending}
-              className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[var(--bq-solid-bg)] px-3 text-sm font-medium text-[var(--bq-solid-fg)] hover:bg-[var(--bq-solid-bg)] disabled:opacity-50"
             >
               {createMutation.isPending && (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -181,7 +188,7 @@ export function ProjectsTable() {
             <button
               type="button"
               onClick={resetCreate}
-              className="h-9 rounded-lg px-3 text-sm text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              className="h-9 rounded-lg px-3 text-sm text-[var(--bq-t3)] hover:bg-[var(--bq-raised)]"
             >
               Cancelar
             </button>
@@ -190,17 +197,18 @@ export function ProjectsTable() {
       )}
 
       <div className="mt-5 flex flex-wrap items-center gap-2">
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+        <div className="relative w-full">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--bq-t3)]" />
           <input
-            className={`${controlCls} w-64 pl-8`}
+            aria-label="Buscar projetos" className={`${controlCls} w-full pl-8`}
             placeholder="Buscar por nome ou descrição..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
         <select
-          className={controlCls}
+          className={`${controlCls} w-full`}
+          aria-label="Filtrar por fase"
           value={status}
           onChange={(e) => setStatus(e.target.value)}
         >
@@ -212,7 +220,8 @@ export function ProjectsTable() {
           ))}
         </select>
         <select
-          className={controlCls}
+          className={`${controlCls} w-full`}
+          aria-label="Filtrar por responsável"
           value={responsibleUserId}
           onChange={(e) => setResponsibleUserId(e.target.value)}
         >
@@ -227,84 +236,27 @@ export function ProjectsTable() {
         </select>
       </div>
 
-      <div className="mt-5 overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800">
-        <table className="w-full text-sm">
-          <thead className="bg-zinc-50 text-left text-xs uppercase tracking-wide text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400">
-            <tr>
-              <th className="px-4 py-2.5 font-medium">Projeto</th>
-              <th className="px-4 py-2.5 font-medium">Fase</th>
-              <th className="px-4 py-2.5 font-medium">Responsável</th>
-              <th className="px-4 py-2.5 font-medium">Tarefas</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-            {isLoading ? (
-              Array.from({ length: 5 }).map((_, i) => (
-                <tr key={i}>
-                  <td colSpan={4} className="px-4 py-3">
-                    <div className="h-5 animate-pulse rounded bg-zinc-100 dark:bg-zinc-800" />
-                  </td>
-                </tr>
-              ))
-            ) : filtered.length > 0 ? (
-              filtered.map((r) => {
-                const tasks = r.tasks ?? [];
-                const openCount = tasks.filter((t) => !t.done).length;
-                return (
-                  <tr
-                    key={r.id!}
-                    onClick={() => openProject(r.id!)}
-                    className="cursor-pointer transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-900/60"
-                  >
-                    <td className="px-4 py-3">
-                      <div className="font-medium text-zinc-900 dark:text-zinc-100">
-                        {r.name}
-                      </div>
-                      {r.description && (
-                        <div className="mt-0.5 line-clamp-1 text-xs text-zinc-500">
-                          {r.description}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      {r.status ? (
-                        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
-                          {phaseLabel(r.status)}
-                        </span>
-                      ) : (
-                        <span className="text-zinc-400">—</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-zinc-700 dark:text-zinc-300">
-                      {r.responsible?.name ?? (
-                        <span className="text-zinc-400">—</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-zinc-700 dark:text-zinc-300">
-                      {tasks.length > 0 ? (
-                        <span>
-                          {openCount}/{tasks.length}
-                        </span>
-                      ) : (
-                        <span className="text-zinc-400">0/0</span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })
-            ) : (
-              <tr>
-                <td
-                  colSpan={4}
-                  className="px-4 py-12 text-center text-sm text-zinc-400"
-                >
-                  Nenhum projeto encontrado.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+      <div className="mt-4 border-b border-[var(--bq-hair)] pb-3 text-xs text-[var(--bq-t3)]">Tags: ainda não disponíveis.</div>
+      <div className="mt-3 space-y-2">
+        {isLoading ? <p role="status" className="p-3 text-sm text-[var(--bq-t3)]">Carregando projetos…</p> : isError ? <div role="alert" className="p-3 text-sm">Não foi possível carregar os projetos. <Button onClick={() => void refetch()}>Tentar novamente</Button></div> : filtered.length === 0 ? <p className="p-3 text-sm text-[var(--bq-t3)]">Nenhum projeto encontrado.</p> : filtered.map(project => <button type="button" key={project.id!}
+          aria-pressed={(selectedId || filtered[0]?.id) === project.id}
+          onClick={() => { setSelectedId(project.id!); setMobileDetail(true); }}
+          className={`w-full space-y-2 rounded-xl border p-3 text-left transition-colors hover:bg-[var(--bq-raised)] ${(selectedId || filtered[0]?.id) === project.id ? 'border-[var(--bq-hair-strong)] bg-[var(--bq-accent-soft)]' : 'border-[var(--bq-hair)] bg-[var(--bq-surface)]'}`}>
+          <span className="block text-[13px] font-semibold">{project.name}</span>
+          {project.description && <span className="line-clamp-2 text-xs text-[var(--bq-t3)]">{project.description}</span>}
+          <span className="flex flex-wrap items-center gap-2"><Pill tone="info">{phaseLabel(project.status) || 'Sem fase'}</Pill><span className="text-[11px] text-[var(--bq-t3)]">{project.responsible?.name || 'Sem responsável'}</span></span>
+          <span className="block text-[11px] text-[var(--bq-t3)]">{(project.tasks || []).filter(task => !task.done).length}/{(project.tasks || []).length} tarefas pendentes</span>
+        </button>)}
       </div>
+    </div>
+    </aside>
+    <main className={`${mobileDetail ? 'flex' : 'hidden md:flex'} h-full min-w-0 flex-1 flex-col`}>
+      {mobileDetail && <Button className="m-3 md:hidden" onClick={() => setMobileDetail(false)}>← Lista de projetos</Button>}
+      {(() => {
+        const id = filtered.some(project => project.id === selectedId) ? selectedId : filtered[0]?.id;
+        return id ? <div className="flex min-h-0 flex-1 flex-col"><Link className="bq-button m-3 self-end" href={`/projects/${id}`}>Abrir página do projeto</Link><div className="min-h-0 flex-1"><ProjectDetail key={id} projectId={id} /></div></div> : <div className="flex h-full items-center justify-center p-6 text-sm text-[var(--bq-t3)]">Selecione ou crie um projeto para acompanhar o escopo e a fase.</div>;
+      })()}
+    </main>
     </div>
   );
 }
