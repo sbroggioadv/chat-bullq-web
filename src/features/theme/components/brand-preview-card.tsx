@@ -37,7 +37,7 @@ export function BrandPreviewCard({
       disabled={disabled}
       onClick={() => onSelect(brand)}
       className={cn(
-        'group relative flex flex-col overflow-hidden rounded-xl border-2 text-left transition-all',
+        'group relative flex min-w-0 flex-col overflow-hidden rounded-xl border-2 text-left transition-all',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
         selected
           ? 'border-primary shadow-lg'
@@ -86,18 +86,18 @@ export function BrandPreviewCard({
             className="size-8 shrink-0 rounded-full"
             style={{ backgroundColor: meta.swatchPrimary }}
           />
-          <div className="flex-1">
+          <div className="min-w-0 flex-1">
             <div
-              className="h-2 w-24 rounded-full"
+              className="h-2 w-24 max-w-full rounded-full"
               style={{ backgroundColor: meta.swatchPrimary, opacity: 0.8 }}
             />
             <div
-              className="mt-1.5 h-1.5 w-32 rounded-full"
+              className="mt-1.5 h-1.5 w-32 max-w-full rounded-full"
               style={{ backgroundColor: meta.swatchPrimary, opacity: 0.3 }}
             />
           </div>
           <span
-            className="inline-flex size-5 items-center justify-center rounded-full text-[10px] font-bold text-white"
+            className="inline-flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
             style={{ backgroundColor: meta.swatchAccent }}
           >
             2
