@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ChannelCard } from '@/features/channels/components/channel-card';
 import type { Channel } from '@/features/channels/services/channels.service';
@@ -19,6 +19,7 @@ describe('permissões Google no cartão do canal', () => {
     for (const title of ['Leitura Gmail', 'Envio / reply Gmail', 'Google Agenda']) {
       expect(screen.queryByTitle(title)).not.toBeInTheDocument();
     }
+    fireEvent.click(screen.getByText('Conexão e sincronização'));
     expect(screen.getByRole('button', { name: 'Reconectar Google' })).toBeInTheDocument();
   });
   it('mostra os estados informados pela API, inclusive a negativa explícita', () => {
@@ -26,6 +27,7 @@ describe('permissões Google no cartão do canal', () => {
     expect(screen.getByTitle('Leitura Gmail')).toHaveTextContent('Leitura ✓');
     expect(screen.getByTitle('Envio / reply Gmail')).toHaveTextContent('Envio —');
     expect(screen.getByTitle('Google Agenda')).toHaveTextContent('Agenda ✓');
+    fireEvent.click(screen.getByText('Conexão e sincronização'));
     expect(screen.getByRole('button', { name: 'Reautorizar Agenda' })).toBeInTheDocument();
   });
 });

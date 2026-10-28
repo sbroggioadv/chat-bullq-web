@@ -1,5 +1,6 @@
 'use client';
 
+import styles from '@/features/settings/components/settings.module.css';
 import { Button } from '@/components/ui/foundation';
 import { useState } from 'react';
 import {
@@ -159,9 +160,9 @@ export function ChannelCard({ channel, onUpdate }: ChannelCardProps) {
       : 0;
 
   return (
-    <div className="relative grid min-w-0 grid-cols-[40px_minmax(0,1fr)_auto] items-start gap-3 rounded-xl border border-zinc-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900">
-      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-zinc-200/60 dark:border-zinc-700/60 ${meta.color}`}>
-        <Icon className="h-7 w-7" />
+    <div className={styles.channelRow}>
+      <div className={`flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-lg border border-zinc-200/60 dark:border-zinc-700/60 ${meta.color}`}>
+        <Icon className="h-4 w-4" />
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
@@ -283,7 +284,7 @@ export function ChannelCard({ channel, onUpdate }: ChannelCardProps) {
           </div>
         )}
 
-        <div className="mt-3 flex flex-wrap items-center gap-2">
+        <details className={styles.details}><summary>Conexão e sincronização</summary><div className="flex flex-wrap items-center gap-2 pb-2">
           <Button
             onClick={handleTest}
             disabled={isTesting}
@@ -373,9 +374,10 @@ export function ChannelCard({ channel, onUpdate }: ChannelCardProps) {
             )}
             {channel.isActive ? 'Desativar' : 'Ativar'}
           </Button>
-        </div>
+        </div></details>
       </div>
-      <div className="relative">
+      <div className="relative flex items-center gap-1">
+        <Button onClick={() => setEditing(true)}>Editar</Button>
         <Button
           aria-label={`Ações do canal ${channel.name}`}
           aria-expanded={showMenu}

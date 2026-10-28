@@ -39,7 +39,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
     <div className={styles.main}>
       <div className={styles.inner}>
         <Link href="/settings/sections" className={`bq-button ${styles.back}`}><ArrowLeft size={14} />Configurações</Link>
-        <header className={styles.heading}><span className={`${styles.tile} ${styles.large}`} data-tone={selected?.tone ?? 'neutral'}><Icon size={22} /></span><div><h1>{selected?.label ?? 'Configurações'}</h1><p>{selected?.description ?? 'Escolha uma seção para começar.'}</p></div><span id="settings-heading-actions" /></header>
+        <header className={styles.heading}><span className={`${styles.tile} ${styles.large}`} data-tone={selected?.tone ?? 'neutral'}><Icon size={22} /></span><div><h1>{selected?.label ?? 'Configurações'}</h1><p>{selected?.description ?? 'Escolha uma seção para começar.'}</p></div><span id="settings-heading-actions" className={styles.headingActions} /></header>
         <div className={styles.content} data-section={selected?.id} key={`${orgId}:${pathname}`}>
           {selected?.id === 'tags' && <p className="mb-4 text-xs text-[var(--bq-t3)]">Contagem de conversas por tag ainda não disponível.</p>}
           {children}

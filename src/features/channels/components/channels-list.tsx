@@ -1,7 +1,9 @@
 'use client';
 
+import styles from '@/features/settings/components/settings.module.css';
 import { Button } from '@/components/ui/foundation';
-import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { MessageCircle, Plus, Radio, ShieldCheck } from 'lucide-react';
@@ -11,7 +13,11 @@ import { ChannelCard } from '@/features/channels/components/channel-card';
 import { CreateChannelDialog } from '@/features/channels/components/create-channel-dialog';
 import { useOrgId } from '@/hooks/use-org-query-key';
 
+const subscribe = () => () => {};
+const getHeader = () => document.getElementById('settings-heading-actions');
+
 export function ChannelsList() {
+  const header = useSyncExternalStore(subscribe, getHeader, () => null);
   const [showCreate, setShowCreate] = useState(false);
   const searchParams = useSearchParams();
   const [didAutoOpen, setDidAutoOpen] = useState(false);
@@ -71,25 +77,11 @@ export function ChannelsList() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
+  const connect = <Button variant="solid" onClick={() => setShowCreate(true)}><Plus size={13} />Conectar canal</Button>;
   return (
     <div>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <a
-            href="/inbox"
-            className="bq-button"
-          >
-            Abrir inbox
-          </a>
-          <Button
-            onClick={() => setShowCreate(true)}
-          >
-            <Plus className="h-4 w-4" />
-            Conectar canal
-          </Button>
-        </div>
-      </div>
-
+      {header ? createPortal(connect, header) : connect}
+      <h2 className={styles.sectionTitle}>Seus canais{channels ? ` · ${channels.length}` : ''}</h2>
       {isInviteOnboarding && (
         <div className="mt-5 rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm text-zinc-800 dark:border-primary/30 dark:bg-primary/10 dark:text-zinc-100">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -127,7 +119,7 @@ export function ChannelsList() {
         </div>
       )}
 
-      <div className="mt-6 grid min-w-0 grid-cols-1 gap-3">
+      <div className={styles.block}>
         {isError ? <p role="alert">Não foi possível carregar os canais. Tente novamente mais tarde.</p> : isLoading ? (
           Array.from({ length: 2 }).map((_, i) => (
             <div key={i} className="h-32 animate-pulse rounded-xl border border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900" />
@@ -155,6 +147,7 @@ export function ChannelsList() {
         )}
       </div>
 
+      <a href="/inbox" className="bq-button mt-3">Abrir inbox</a>
       <CreateChannelDialog
         open={showCreate}
         onClose={() => setShowCreate(false)}

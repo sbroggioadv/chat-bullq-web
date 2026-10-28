@@ -146,5 +146,7 @@
 .content .fieldRow input:not([type=checkbox]):not([type=range]):not([type=color]) { background:transparent; }
 
 .heading > div { flex:1; min-width:0; }
+.headingActions:empty { display:none; }
+@media(max-width:760px) { .headingActions { flex-basis:100%; } }
 .inviteControls { flex:0 1 auto; }
 .me[data-active=true] { background:var(--bq-raised-2); }
