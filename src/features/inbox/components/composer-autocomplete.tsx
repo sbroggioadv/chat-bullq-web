@@ -35,22 +35,20 @@ export function ComposerAutocomplete({
     );
   }, [items, query]);
 
-  const [active, setActive] = useState(0);
+  const selectionKey = `${query}:${items.length}`;
+  const [selection, setSelection] = useState({ key: selectionKey, index: 0 });
+  const active = selection.key === selectionKey ? selection.index : 0;
   const listRef = useRef<HTMLUListElement>(null);
-
-  useEffect(() => {
-    setActive(0);
-  }, [query, items.length]);
 
   useEffect(() => {
     if (!open) return;
     function onDocKey(e: KeyboardEvent) {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
-        setActive((i) => Math.min(filtered.length - 1, i + 1));
+        setSelection({ key: selectionKey, index: Math.min(filtered.length - 1, active + 1) });
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
-        setActive((i) => Math.max(0, i - 1));
+        setSelection({ key: selectionKey, index: Math.max(0, active - 1) });
       } else if (e.key === 'Enter') {
         if (filtered[active]) {
           e.preventDefault();
@@ -64,7 +62,7 @@ export function ComposerAutocomplete({
     }
     document.addEventListener('keydown', onDocKey, true);
     return () => document.removeEventListener('keydown', onDocKey, true);
-  }, [open, filtered, active, onSelect, onClose]);
+  }, [open, filtered, active, selectionKey, onSelect, onClose]);
 
   if (!open) return null;
 
@@ -82,7 +80,7 @@ export function ComposerAutocomplete({
               key={it.id}
               role="option"
               aria-selected={idx === active}
-              onMouseEnter={() => setActive(idx)}
+              onMouseEnter={() => setSelection({ key: selectionKey, index: idx })}
               onMouseDown={(e) => {
                 e.preventDefault();
                 onSelect(it);

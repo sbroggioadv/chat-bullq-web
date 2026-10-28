@@ -39,7 +39,7 @@ function displayLabel(c: ContactWithDisplay): string {
   const candidates = [
     c.displayName,
     c.name,
-    ...(c.channels || []).map((ch) => ch.profileName || (ch as any).profileName),
+    ...(c.channels || []).map((ch) => ch.profileName),
     c.phone,
     c.email,
   ];
@@ -147,27 +147,27 @@ export function ShareContactDialog({ open, onClose, onShare }: Props) {
         aria-label="Fechar"
         onClick={onClose}
       />
-      <div className="relative z-10 flex max-h-[85vh] w-full max-w-md flex-col rounded-t-2xl border border-zinc-200 bg-white shadow-xl dark:border-zinc-700 dark:bg-zinc-900 sm:rounded-2xl">
-        <div className="flex items-center justify-between border-b border-zinc-200 px-4 py-3 dark:border-zinc-700">
+      <div className="relative z-10 flex max-h-[85vh] w-full max-w-md flex-col rounded-t-2xl border border-[var(--bq-hair)] bg-[var(--bq-win-solid)] shadow-xl   sm:rounded-2xl">
+        <div className="flex items-center justify-between border-b border-[var(--bq-hair)] px-4 py-3 ">
           <div>
             <h2 className="text-sm font-semibold">Compartilhar contato</h2>
-            <p className="text-[11px] text-zinc-500">
+            <p className="text-[11px] text-[var(--bq-t2)]">
               Só contatos com nome e telefone reais (sem IDs do WhatsApp)
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            className="rounded-lg p-1.5 text-[var(--bq-t3)] hover:bg-[var(--bq-raised)] "
             aria-label="Fechar"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
-        <div className="border-b border-zinc-200 px-3 py-2 dark:border-zinc-700">
-          <div className="flex items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 px-2.5 dark:border-zinc-700 dark:bg-zinc-800">
-            <Search className="h-4 w-4 shrink-0 text-zinc-400" />
+        <div className="border-b border-[var(--bq-hair)] px-3 py-2 ">
+          <div className="flex items-center gap-2 rounded-lg border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-2.5  ">
+            <Search className="h-4 w-4 shrink-0 text-[var(--bq-t3)]" />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -180,15 +180,15 @@ export function ShareContactDialog({ open, onClose, onShare }: Props) {
 
         <div className="min-h-0 flex-1 overflow-y-auto px-2 py-1">
           {isLoading ? (
-            <div className="flex items-center justify-center gap-2 py-10 text-sm text-zinc-500">
+            <div className="flex items-center justify-center gap-2 py-10 text-sm text-[var(--bq-t2)]">
               <Loader2 className="h-4 w-4 animate-spin" />
               Carregando contatos…
             </div>
           ) : filtered.length === 0 ? (
-            <div className="px-3 py-10 text-center text-sm text-zinc-500">
+            <div className="px-3 py-10 text-center text-sm text-[var(--bq-t2)]">
               <p>Nenhum contato com nome + telefone encontrado.</p>
               <p className="mt-2 text-xs opacity-80">
-                IDs tipo <code className="rounded bg-zinc-800 px-1">…@lid</code> são
+                IDs tipo <code className="rounded bg-[var(--bq-raised-2)] px-1">…@lid</code> são
                 ocultados. Cadastre o nome em Contatos ou use um número com perfil.
               </p>
             </div>
@@ -207,14 +207,14 @@ export function ShareContactDialog({ open, onClose, onShare }: Props) {
                       className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${
                         checked
                           ? 'bg-primary/10'
-                          : 'hover:bg-zinc-50 dark:hover:bg-zinc-800'
+                          : 'hover:bg-[var(--bq-surface)] '
                       }`}
                     >
                       <span
                         className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border text-[10px] ${
                           checked
                             ? 'border-primary bg-primary text-primary-foreground'
-                            : 'border-zinc-300 dark:border-zinc-600'
+                            : 'border-[var(--bq-hair-strong)] '
                         }`}
                       >
                         {checked ? '✓' : ''}
@@ -227,13 +227,13 @@ export function ShareContactDialog({ open, onClose, onShare }: Props) {
                           className="h-9 w-9 rounded-full object-cover"
                         />
                       ) : (
-                        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
-                          <UserRound className="h-4 w-4 text-zinc-400" />
+                        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--bq-raised)] ">
+                          <UserRound className="h-4 w-4 text-[var(--bq-t3)]" />
                         </span>
                       )}
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-medium">{label}</span>
-                        <span className="block truncate text-xs text-zinc-500 tabular-nums">
+                        <span className="block truncate text-xs text-[var(--bq-t2)] tabular-nums">
                           {formatPhone(phone)}
                         </span>
                       </span>
@@ -245,8 +245,8 @@ export function ShareContactDialog({ open, onClose, onShare }: Props) {
           )}
         </div>
 
-        <div className="flex items-center justify-between gap-2 border-t border-zinc-200 px-4 py-3 dark:border-zinc-700">
-          <span className="text-xs text-zinc-500">
+        <div className="flex items-center justify-between gap-2 border-t border-[var(--bq-hair)] px-4 py-3 ">
+          <span className="text-xs text-[var(--bq-t2)]">
             {selectedIds.size === 0
               ? 'Selecione contatos com nome real'
               : `${selectedIds.size} selecionado${selectedIds.size === 1 ? '' : 's'}`}

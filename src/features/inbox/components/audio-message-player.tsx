@@ -1,8 +1,9 @@
 'use client';
 
+import { inboxErrorMessage } from '@/features/inbox/components/inbox-error';
+
 import { useVisible } from '@/features/inbox/hooks/use-visible';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { isAxiosError } from 'axios';
 import { Play, Pause, Loader2, Sparkles, ChevronDown, Check } from 'lucide-react';
 import { Popover, PopoverButton, PopoverPanel } from '@headlessui/react';
 import { inboxService, type Message, type TranscriptionResult } from '@/features/inbox/services/inbox.service';
@@ -57,7 +58,7 @@ export function AudioMessagePlayer({
       setResolvedUrl(url);
       return url;
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Não foi possível carregar o áudio');
+      setError(inboxErrorMessage(err, 'Não foi possível carregar o áudio'));
       return null;
     } finally {
       setResolving(false);
@@ -78,17 +79,17 @@ export function AudioMessagePlayer({
   }, [message.metadata?.transcription]);
 
   const colorBubble = isOutbound
-    ? 'bg-primary text-primary-foreground'
-    : 'bg-white text-zinc-900 shadow-sm dark:bg-zinc-800 dark:text-zinc-100';
+    ? 'bg-[var(--bq-bubble-out)] text-[var(--bq-t1)] border border-[var(--bq-bubble-out-hair)]'
+    : 'bg-[var(--bq-win-solid)] text-[var(--bq-t1)] shadow-sm  ';
   const colorAccent = isOutbound
     ? 'bg-white/30'
-    : 'bg-zinc-200 dark:bg-zinc-700';
+    : 'bg-[var(--bq-raised-2)] ';
   const colorAccentFilled = isOutbound
-    ? 'bg-white'
+    ? 'bg-[var(--bq-win-solid)]'
     : 'bg-primary';
   const colorMuted = isOutbound
-    ? 'text-primary-foreground/70'
-    : 'text-zinc-500 dark:text-zinc-400';
+    ? 'text-[var(--bq-t1)]'
+    : 'text-[var(--bq-t2)] ';
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -119,7 +120,7 @@ export function AudioMessagePlayer({
         setPlaying(false);
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Erro ao reproduzir áudio');
+      setError(inboxErrorMessage(err, 'Erro ao reproduzir áudio'));
     } finally {
       setLoading(false);
     }
@@ -147,8 +148,7 @@ export function AudioMessagePlayer({
       onTranscribed?.(result);
     } catch (err: unknown) {
       setTranscribeError(
-        (isAxiosError<{ message?: string }>(err) && err.response?.data?.message) ||
-          (err instanceof Error ? err.message : 'Erro ao transcrever'),
+        inboxErrorMessage(err, 'Erro ao transcrever'),
       );
     } finally {
       setTranscribing(false);
@@ -184,7 +184,7 @@ export function AudioMessagePlayer({
           type="button"
           onClick={handleTogglePlay}
           className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-opacity ${
-            isOutbound ? 'bg-white/20 hover:bg-white/30' : 'bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-700 dark:hover:bg-zinc-600'
+            isOutbound ? 'bg-white/20 hover:bg-white/30' : 'bg-[var(--bq-raised)] hover:bg-[var(--bq-raised-2)]  '
           }`}
           aria-label={playing ? 'Pausar' : 'Reproduzir'}
         >
@@ -223,8 +223,8 @@ export function AudioMessagePlayer({
           <PopoverButton
             className={`inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[11px] font-medium outline-none transition-colors ${
               isOutbound
-                ? 'bg-white/15 hover:bg-white/25 text-primary-foreground'
-                : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700 dark:bg-zinc-700 dark:hover:bg-zinc-600 dark:text-zinc-100'
+                ? 'bg-white/15 hover:bg-white/25 text-[var(--bq-t1)]'
+                : 'bg-[var(--bq-raised)] hover:bg-[var(--bq-raised-2)] text-[var(--bq-t2)]   '
             }`}
             aria-label="Velocidade de reprodução"
           >
@@ -234,37 +234,37 @@ export function AudioMessagePlayer({
           <PopoverPanel
             anchor="bottom end"
             transition
-            className="z-50 mt-1 min-w-[80px] rounded-lg border border-zinc-200/80 bg-white p-1 shadow-lg outline-none transition duration-100 ease-out data-[closed]:scale-95 data-[closed]:opacity-0 dark:border-zinc-800 dark:bg-zinc-900"
+            className="z-50 mt-1 min-w-[80px] rounded-lg border border-[var(--bq-hair)] bg-[var(--bq-win-solid)] p-1 shadow-lg outline-none transition duration-100 ease-out data-[closed]:scale-95 data-[closed]:opacity-0  "
           >
-            {({ close }) => (<>
-              {SPEEDS.map((s) => (
+            {({ close }) => <> {
+              SPEEDS.map((s) => (
                 <button
                   key={s}
                   onClick={() => { setRate(s); close(); }}
                   className={`flex w-full items-center justify-between rounded-md px-2.5 py-1 text-left text-[12px] transition-colors ${
                     rate === s
                       ? 'bg-primary/[0.06] font-medium text-primary dark:bg-primary/10'
-                      : 'text-zinc-700 hover:bg-zinc-50 dark:text-zinc-200 dark:hover:bg-zinc-800/60'
+                      : 'text-[var(--bq-t2)] hover:bg-[var(--bq-surface)]  '
                   }`}
                 >
                   <span className="tabular-nums">{s}×</span>
                   {rate === s && <Check className="h-3 w-3" />}
                 </button>
-              ))}
-            </>)}
+              ))
+            } </>}
           </PopoverPanel>
         </Popover>
       </div>
 
       {error && (
-        <p className={`mt-1.5 text-[11px] ${isOutbound ? 'text-primary-foreground/70' : 'text-red-500'}`}>
+        <p className={`mt-1.5 text-[11px] ${isOutbound ? 'text-[var(--bq-t1)]' : 'text-[var(--bq-err)]'}`}>
           {error}
         </p>
       )}
 
       {/* Transcription area */}
       <div className={`mt-2 flex items-center gap-2 border-t pt-2 ${
-        isOutbound ? 'border-white/20' : 'border-zinc-200 dark:border-zinc-700'
+        isOutbound ? 'border-white/20' : 'border-[var(--bq-hair)] '
       }`}>
         {!transcript && !transcribing && (
           <button
@@ -272,8 +272,8 @@ export function AudioMessagePlayer({
             onClick={handleTranscribe}
             className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-medium transition-colors ${
               isOutbound
-                ? 'text-primary-foreground/80 hover:bg-white/15'
-                : 'text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700'
+                ? 'text-[var(--bq-t1)] hover:bg-white/15'
+                : 'text-[var(--bq-t2)] hover:bg-[var(--bq-raised)]  '
             }`}
           >
             <Sparkles className="h-3 w-3" />
@@ -287,13 +287,13 @@ export function AudioMessagePlayer({
           </span>
         )}
         {transcribeError && (
-          <span className="text-[11px] text-red-500">{transcribeError}</span>
+          <span className="text-[11px] text-[var(--bq-err)]">{transcribeError}</span>
         )}
       </div>
 
       {transcript?.text && (
         <p className={`mt-1 whitespace-pre-wrap text-sm leading-relaxed ${
-          isOutbound ? 'text-primary-foreground/95' : 'text-zinc-700 dark:text-zinc-200'
+          isOutbound ? 'text-[var(--bq-t1)]' : 'text-[var(--bq-t2)] '
         }`}>
           {transcript.text}
         </p>

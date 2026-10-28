@@ -1,5 +1,7 @@
 'use client';
 
+import { inboxErrorMessage } from '@/features/inbox/components/inbox-error';
+
 import { useState, useRef, useCallback, useEffect, forwardRef, useImperativeHandle } from 'react';
 import {
   Send,
@@ -17,11 +19,11 @@ import {
   File as FileIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useAudioRecorder } from '../hooks/use-audio-recorder';
-import { ComposerAutocomplete, type AutocompleteItem } from './composer-autocomplete';
-import { useQuickReplyTrigger } from '../hooks/use-quick-reply-trigger';
+import { useAudioRecorder } from '@/features/inbox/hooks/use-audio-recorder';
+import { ComposerAutocomplete, type AutocompleteItem } from '@/features/inbox/components/composer-autocomplete';
+import { useQuickReplyTrigger } from '@/features/inbox/hooks/use-quick-reply-trigger';
 import { useQuickReplies } from '@/features/quick-replies/hooks/use-quick-replies';
-import { ShareContactDialog } from './share-contact-dialog';
+import { ShareContactDialog } from '@/features/inbox/components/share-contact-dialog';
 import type { Contact as OrgContact } from '@/features/contacts/services/contacts.service';
 
 interface ChatInputProps {
@@ -288,9 +290,9 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
       if (textareaRef.current) {
         textareaRef.current.style.height = 'auto';
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.error(
-        err?.response?.data?.message || err?.message || 'Erro ao enviar anexo',
+        inboxErrorMessage(err, 'Erro ao enviar anexo'),
       );
     } finally {
       setIsSendingAttachment(false);
@@ -396,9 +398,9 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
     try {
       await onSendAudio(recorder.blob);
       recorder.reset();
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.error(
-        err?.response?.data?.message || err?.message || 'Erro ao enviar áudio',
+        inboxErrorMessage(err, 'Erro ao enviar áudio'),
       );
     } finally {
       setIsSendingAudio(false);
@@ -414,7 +416,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
 
   if (disabled) {
     return (
-      <div className="border-t border-zinc-200 bg-zinc-50 px-4 py-3 text-center text-sm text-zinc-400 dark:border-zinc-800 dark:bg-zinc-900/50">
+      <div className="border-t border-[var(--bq-hair)] bg-[var(--bq-surface)] px-4 py-3 text-center text-sm text-[var(--bq-t3)]  ">
         Conversa encerrada — reabra para enviar mensagens
       </div>
     );
@@ -423,26 +425,26 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
   // RECORDING MODE: shows a big bar with a pulsing red dot and the timer.
   if (recorder.state === 'recording') {
     return (
-      <div className="border-t border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-950">
-        <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 dark:border-red-900/40 dark:bg-red-500/10">
+      <div className="bq-composer">
+        <div className="flex items-center gap-2 rounded-xl border border-[var(--bq-err)] bg-[var(--bq-err-soft)] px-3 py-2.5  ">
           <button
             onClick={recorder.cancel}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-red-500 hover:bg-red-100 dark:hover:bg-red-500/20"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[var(--bq-err)] hover:bg-[var(--bq-err-soft)] "
             aria-label="Cancelar gravação"
           >
             <Trash2 className="h-4 w-4" />
           </button>
-          <div className="flex flex-1 items-center gap-2 text-sm text-red-700 dark:text-red-300">
+          <div className="flex flex-1 items-center gap-2 text-sm text-[var(--bq-err)] ">
             <span className="relative flex h-2.5 w-2.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
-              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-red-500" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--bq-err-soft)] opacity-75" />
+              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[var(--bq-err-soft)]" />
             </span>
             <span className="font-medium tabular-nums">{formatElapsed(recorder.elapsedMs)}</span>
             <span className="text-xs opacity-70">Gravando…</span>
           </div>
           <button
             onClick={recorder.stop}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-500 text-white hover:bg-red-600"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--bq-err-soft)] text-white hover:bg-[var(--bq-err-soft)]"
             aria-label="Parar gravação"
           >
             <Square className="h-4 w-4" />
@@ -456,11 +458,11 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
   if (recorder.state === 'stopped' && recorder.blob) {
     const audioSrc = URL.createObjectURL(recorder.blob);
     return (
-      <div className="border-t border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-950">
-        <div className="flex items-center gap-2 rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 dark:border-zinc-700 dark:bg-zinc-900">
+      <div className="bq-composer">
+        <div className="flex items-center gap-2 rounded-xl border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-3 py-2.5  ">
           <button
             onClick={recorder.cancel}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 hover:text-red-500 dark:hover:bg-zinc-800"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[var(--bq-t3)] hover:bg-[var(--bq-raised)] hover:text-[var(--bq-err)] "
             aria-label="Descartar áudio"
           >
             <Trash2 className="h-4 w-4" />
@@ -481,7 +483,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
           </button>
         </div>
         {recorder.error && (
-          <p className="mt-1 text-xs text-red-500">{recorder.error}</p>
+          <p className="mt-1 text-xs text-[var(--bq-err)]">{recorder.error}</p>
         )}
       </div>
     );
@@ -491,7 +493,6 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
   const canRecord = !!onSendAudio;
   const canSendImage = !!onSendImage || !!onSendFile;
   const canShareContact = !!onShareContacts;
-  const showMic = canRecord && !text.trim() && !pendingAttachment;
   const PreviewIcon = iconForBucket(pendingBucket);
   // Accept attribute do file picker: amplo no modo polimorfico, restrito a imagem no legacy.
   const fileAccept = acceptsAnyFile
@@ -500,7 +501,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
 
   return (
     <div
-      className={`border-t border-zinc-200 bg-white p-3 transition-colors dark:border-zinc-800 dark:bg-zinc-950 ${
+      className={`bq-composer transition-colors ${
         isDragging
           ? 'bg-primary/5 ring-2 ring-inset ring-primary/40'
           : ''
@@ -511,23 +512,23 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
     >
       {/* S18/W3-Z: attachment preview strip — adapts visual to bucket. */}
       {pendingAttachment && (
-        <div className="mb-2 flex items-start gap-3 rounded-xl border border-zinc-200 bg-zinc-50 p-2.5 dark:border-zinc-700 dark:bg-zinc-900">
+        <div className="mb-2 flex items-start gap-3 rounded-xl border border-[var(--bq-hair)] bg-[var(--bq-surface)] p-2.5  ">
           <div className="relative shrink-0">
             {pendingBucket === 'IMAGE' && pendingPreviewUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={pendingPreviewUrl}
                 alt="Pré-visualização do anexo a enviar"
-                className="h-20 w-20 rounded-lg object-cover ring-1 ring-zinc-200 dark:ring-zinc-700"
+                className="h-20 w-20 rounded-lg object-cover ring-1 ring-[var(--bq-hair)] "
               />
             ) : (
-              <div className="flex h-20 w-20 items-center justify-center rounded-lg bg-zinc-100 ring-1 ring-zinc-200 dark:bg-zinc-800 dark:ring-zinc-700">
-                <PreviewIcon className="h-10 w-10 text-zinc-400 dark:text-zinc-500" />
+              <div className="flex h-20 w-20 items-center justify-center rounded-lg bg-[var(--bq-raised)] ring-1 ring-[var(--bq-hair)]  ">
+                <PreviewIcon className="h-10 w-10 text-[var(--bq-t3)] " />
               </div>
             )}
           </div>
           <div className="flex min-w-0 flex-1 flex-col gap-1 text-sm">
-            <div className="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+            <div className="flex items-center gap-1.5 text-xs text-[var(--bq-t2)] ">
               <PreviewIcon className="h-3.5 w-3.5" />
               <span className="truncate">{pendingAttachment.name || 'anexo'}</span>
               <span className="shrink-0">
@@ -536,7 +537,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
                   : `${(pendingAttachment.size / 1024).toFixed(0)} KB`}
               </span>
             </div>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            <p className="text-xs text-[var(--bq-t2)] ">
               {text.trim()
                 ? 'O anexo será enviado com a legenda abaixo.'
                 : 'Adicione uma legenda opcional abaixo ou envie sem texto.'}
@@ -546,7 +547,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
             type="button"
             onClick={() => setPending(null)}
             disabled={isSendingAttachment}
-            className="shrink-0 rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-200 hover:text-red-500 disabled:opacity-50 dark:hover:bg-zinc-800"
+            className="shrink-0 rounded-lg p-1.5 text-[var(--bq-t3)] hover:bg-[var(--bq-raised-2)] hover:text-[var(--bq-err)] disabled:opacity-50 "
             aria-label="Cancelar anexo"
           >
             <Trash2 className="h-4 w-4" />
@@ -554,38 +555,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
         </div>
       )}
 
-      <div className="flex items-end gap-2">
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept={fileAccept}
-          className="hidden"
-          onChange={handlePickerChange}
-          aria-hidden="true"
-        />
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={!canSendImage || !!pendingAttachment}
-          className="mb-1 rounded-lg p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-zinc-800"
-          aria-label={acceptsAnyFile ? 'Anexar arquivo' : 'Anexar imagem'}
-          title={canSendImage ? (acceptsAnyFile ? 'Anexar arquivo' : 'Anexar imagem') : 'Indisponível nesta conversa'}
-        >
-          <Paperclip className="h-5 w-5" />
-        </button>
-        {canShareContact && (
-          <button
-            type="button"
-            onClick={() => setShareContactOpen(true)}
-            disabled={disabled || !!pendingAttachment}
-            className="mb-1 rounded-lg p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-zinc-800"
-            aria-label="Compartilhar contato"
-            title="Compartilhar contato"
-          >
-            <Contact className="h-5 w-5" />
-          </button>
-        )}
-        <div className="relative min-w-0 flex-1">
+        <div className="relative w-full min-w-0">
           <ComposerAutocomplete
             open={trigger.open}
             query={trigger.query}
@@ -611,16 +581,60 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
                     : 'Digite uma mensagem ou cole/arraste uma imagem…'
                   : 'Digite uma mensagem...'
             }
-            rows={1}
-            className="max-h-40 min-h-[40px] w-full resize-none rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm placeholder:text-zinc-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+            aria-label="Mensagem"
+            rows={2}
+            className="max-h-40 min-h-[48px] w-full resize-none border-0 px-1 py-1 text-[13px] placeholder:text-[var(--bq-t3)] focus:outline-none"
           />
         </div>
+      <div className="flex items-center gap-1">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept={fileAccept}
+          className="hidden"
+          onChange={handlePickerChange}
+          aria-hidden="true"
+        />
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={!canSendImage || !!pendingAttachment}
+          className="mb-1 rounded-lg p-2 text-[var(--bq-t3)] hover:bg-[var(--bq-raised)] hover:text-[var(--bq-t2)] disabled:cursor-not-allowed disabled:opacity-40 "
+          aria-label={acceptsAnyFile ? 'Anexar arquivo' : 'Anexar imagem'}
+          title={canSendImage ? (acceptsAnyFile ? 'Anexar arquivo' : 'Anexar imagem') : 'Indisponível nesta conversa'}
+        >
+          <Paperclip className="h-5 w-5" />
+        </button>
+        {canShareContact && (
+          <button
+            type="button"
+            onClick={() => setShareContactOpen(true)}
+            disabled={disabled || !!pendingAttachment}
+            className="mb-1 rounded-lg p-2 text-[var(--bq-t3)] hover:bg-[var(--bq-raised)] hover:text-[var(--bq-t2)] disabled:cursor-not-allowed disabled:opacity-40 "
+            aria-label="Compartilhar contato"
+            title="Compartilhar contato"
+          >
+            <Contact className="h-5 w-5" />
+          </button>
+        )}
+        {canRecord && !pendingAttachment && (
+          <button
+            onClick={recorder.start}
+            type="button"
+            className="mb-1 rounded-lg bg-[var(--bq-raised)] p-2.5 text-[var(--bq-t2)] transition-colors hover:bg-[var(--bq-raised-2)]   "
+            aria-label="Gravar áudio"
+          >
+            <Mic className="h-5 w-5" />
+          </button>
+        )}
+        <span className="flex-1" />
         {pendingAttachment ? (
           <button
             onClick={handleSendAttachment}
             disabled={isSendingAttachment}
             type="button"
-            className="mb-1 rounded-lg bg-primary p-2.5 text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+            className="bq-button"
+            data-variant="solid"
             aria-label="Enviar anexo"
           >
             {isSendingAttachment ? (
@@ -629,28 +643,20 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
               <Send className="h-5 w-5" />
             )}
           </button>
-        ) : showMic ? (
-          <button
-            onClick={recorder.start}
-            type="button"
-            className="mb-1 rounded-lg bg-zinc-100 p-2.5 text-zinc-600 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
-            aria-label="Gravar áudio"
-          >
-            <Mic className="h-5 w-5" />
-          </button>
         ) : (
           <button
             onClick={handleSubmit}
             disabled={!text.trim() || isSending}
-            className="mb-1 rounded-lg bg-primary p-2.5 text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+            className="bq-button"
+            data-variant="solid"
             aria-label="Enviar mensagem"
           >
-            {isSending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
+            {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} Enviar
           </button>
         )}
       </div>
       {recorder.error && (
-        <p className="mt-1.5 text-xs text-red-500">{recorder.error}</p>
+        <p className="mt-1.5 text-xs text-[var(--bq-err)]">{recorder.error}</p>
       )}
       {isDragging && (
         <p className="mt-1.5 text-center text-xs font-medium text-primary">

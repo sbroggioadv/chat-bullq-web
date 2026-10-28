@@ -88,3 +88,20 @@ it('mostra texto antes do POST confirmar e troca o id sem duplicar', async () =>
   fixture.deferSend = false;
   client.clear();
 });
+
+it('mostra lacunas de Projetos e Mentorias sem listar uma amostra como resultado completo', async () => {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: 30_000 } } });
+  render(<QueryClientProvider client={client}><InboxPage /></QueryClientProvider>);
+  await screen.findByText('Contato fixture');
+  await waitFor(() => expect(client.isFetching()).toBe(0));
+  fixture.requests.length = 0;
+  fireEvent.click(screen.getByRole('button', { name: 'Projetos', exact: true }));
+  expect(await screen.findByText('Conversas por projeto: ainda não disponível.')).toBeTruthy();
+  expect(screen.queryByText('Contato fixture')).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: 'Mentorias', exact: true }));
+  expect(await screen.findByText('Conversas de mentorias: ainda não disponível.')).toBeTruthy();
+  expect(fixture.requests.filter((request) => request.includes('/conversations'))).toEqual([]);
+  fireEvent.click(screen.getByRole('button', { name: 'Todas', exact: true }));
+  expect(await screen.findByText('Contato fixture')).toBeTruthy();
+  client.clear();
+});

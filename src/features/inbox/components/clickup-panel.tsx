@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ExternalLink, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ApiClientError } from '@/lib/api';
-import { inboxService, type Message } from '../services/inbox.service';
+import { inboxService, type Message } from '@/features/inbox/services/inbox.service';
 import { projectsService } from '@/features/projects/services/projects.service';
 import {
   classifyClickUpError,
@@ -16,12 +16,12 @@ import {
   type ClickUpCatalogResponse,
   type ClickUpCatalogShortcut,
   type ClickUpWorkbenchResponse,
-} from '../services/clickup-inbox.service';
+} from '@/features/inbox/services/clickup-inbox.service';
 
 const inputCls =
-  'w-full rounded-md border border-zinc-300 bg-white px-2.5 py-1.5 text-[13px] text-zinc-900 outline-none focus:border-primary focus:ring-1 focus:ring-primary dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100';
+  'w-full rounded-md border border-[var(--bq-hair-strong)] bg-[var(--bq-win-solid)] px-2.5 py-1.5 text-[13px] text-[var(--bq-t1)] outline-none focus:border-primary focus:ring-1 focus:ring-primary   ';
 const labelCls =
-  'text-[11px] font-medium uppercase tracking-wide text-zinc-400 dark:text-zinc-500';
+  'text-[11px] font-medium uppercase tracking-wide text-[var(--bq-t3)] ';
 
 export function ClickUpPanel({
   conversationId,
@@ -69,20 +69,20 @@ function ClickUpWorkbench({
   if (resolveQ.isLoading) {
     return (
       <div className="flex justify-center p-6" data-testid="clickup-state-loading">
-        <Loader2 className="h-5 w-5 animate-spin text-zinc-400" />
+        <Loader2 className="h-5 w-5 animate-spin text-[var(--bq-t3)]" />
       </div>
     );
   }
   if (errorKind === 'not_configured') {
     return (
-      <p className="p-4 text-xs text-zinc-500" data-testid="clickup-state-not-configured">
+      <p className="p-4 text-xs text-[var(--bq-t2)]" data-testid="clickup-state-not-configured">
         Integração ClickUp não configurada neste ambiente.
       </p>
     );
   }
   if (errorKind === 'upstream' || resolveQ.error) {
     return (
-      <p className="p-4 text-xs text-zinc-500" data-testid="clickup-state-upstream">
+      <p className="p-4 text-xs text-[var(--bq-t2)]" data-testid="clickup-state-upstream">
         ClickUp indisponível no momento. Tente de novo em instantes.
       </p>
     );
@@ -112,10 +112,10 @@ function ClickUpWorkbench({
 
       {data.dossier ? (
         <div
-          className="rounded-md border border-zinc-200 px-2.5 py-2 text-xs dark:border-zinc-700"
+          className="rounded-md border border-[var(--bq-hair)] px-2.5 py-2 text-xs "
           data-testid="clickup-dossier-chip"
         >
-          <p className="font-medium text-zinc-900 dark:text-zinc-100">Dossiê {data.dossier.name}</p>
+          <p className="font-medium text-[var(--bq-t1)] ">Dossiê {data.dossier.name}</p>
           {data.dossier.clickupTaskId && data.status !== 'task_vinculada' ? (
             <button
               type="button"
@@ -149,14 +149,14 @@ function ClickUpWorkbench({
       ) : null}
 
       {data.status === 'binding_invalido' ? (
-        <p className="text-xs text-zinc-500" data-testid="clickup-state-binding-invalido">
+        <p className="text-xs text-[var(--bq-t2)]" data-testid="clickup-state-binding-invalido">
           O vínculo ClickUp desta conversa está inválido ou inacessível. Vincule outra task ou crie
           uma nova — nada é escolhido automaticamente.
         </p>
       ) : null}
 
       {data.status === 'sem_vinculo' ? (
-        <p className="text-xs text-zinc-500" data-testid="clickup-state-sem-vinculo">
+        <p className="text-xs text-[var(--bq-t2)]" data-testid="clickup-state-sem-vinculo">
           Nenhuma task ClickUp vinculada a esta conversa.
         </p>
       ) : null}
@@ -220,12 +220,12 @@ function PhoneShortcutStrip({
 
   return (
     <div
-      className="space-y-2 rounded-md border border-zinc-200 px-2.5 py-2 dark:border-zinc-700"
+      className="space-y-2 rounded-md border border-[var(--bq-hair)] px-2.5 py-2 "
       data-testid="clickup-phone-shortcut"
     >
       {shortcut.status === 'unico' && shortcut.card ? (
         <>
-          <p className="text-xs text-zinc-500">
+          <p className="text-xs text-[var(--bq-t2)]">
             Card comercial: {shortcut.card.nome} · {shortcut.card.lista}
           </p>
           <div className="flex gap-2">
@@ -268,7 +268,7 @@ function PhoneShortcutStrip({
 
       {shortcut.status === 'ambiguo' ? (
         <div data-testid="clickup-state-ambiguo">
-          <p className="text-xs text-zinc-500">
+          <p className="text-xs text-[var(--bq-t2)]">
             Há mais de um card para este telefone. Escolha um — nada é selecionado automaticamente.
           </p>
           {(shortcut.candidatos ?? []).map((c) => (
@@ -276,11 +276,11 @@ function PhoneShortcutStrip({
               key={c.taskId}
               type="button"
               onClick={() => setPicked(c.taskId)}
-              className="mt-1 block w-full rounded-md border border-zinc-200 px-2.5 py-2 text-left text-xs hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-900"
+              className="mt-1 block w-full rounded-md border border-[var(--bq-hair)] px-2.5 py-2 text-left text-xs hover:bg-[var(--bq-surface)]  "
             >
-              <span className="font-medium text-zinc-900 dark:text-zinc-100">{c.nome || '—'}</span>
-              <span className="mt-0.5 block font-mono text-[11px] text-zinc-500">{c.taskId}</span>
-              <span className="block text-[11px] text-zinc-400">
+              <span className="font-medium text-[var(--bq-t1)] ">{c.nome || '—'}</span>
+              <span className="mt-0.5 block font-mono text-[11px] text-[var(--bq-t2)]">{c.taskId}</span>
+              <span className="block text-[11px] text-[var(--bq-t3)]">
                 {c.lista || 'lista'} · {c.status || '—'}
               </span>
             </button>
@@ -301,7 +301,7 @@ function PhoneShortcutStrip({
 
       {shortcut.status === 'sem_card' ? (
         <div data-testid="clickup-state-sem-card">
-          <p className="text-xs text-zinc-500">Nenhum card ClickUp para este telefone.</p>
+          <p className="text-xs text-[var(--bq-t2)]">Nenhum card ClickUp para este telefone.</p>
           {canCreateLead && mutable ? (
             <>
               <button
@@ -316,7 +316,7 @@ function PhoneShortcutStrip({
                   : `Criar lead em ${shortcut.primaryListLabel || 'Processo de Vendas'}`}
               </button>
               {!contactName.trim() ? (
-                <p className="mt-1 text-[11px] text-amber-600" data-testid="clickup-create-needs-name">
+                <p className="mt-1 text-[11px] text-[var(--bq-warn)]" data-testid="clickup-create-needs-name">
                   Nomeie o contato na aba Contato antes de criar o card.
                 </p>
               ) : null}
@@ -345,14 +345,14 @@ function WorkbenchBindCreate({
   const [listId, setListId] = useState('');
   const [name, setName] = useState(defaultName);
   const [spaceId, setSpaceId] = useState('');
-  const [crossLink, setCrossLink] = useState(Boolean(data.dossier && !data.dossier.clickupTaskId));
+  const dossierKey = `${data.dossier?.id ?? ''}:${data.dossier?.clickupTaskId ?? ''}`;
+  const [crossLinkChoice, setCrossLinkChoice] = useState<{ key: string; value: boolean } | null>(null);
+  const crossLink = crossLinkChoice?.key === dossierKey ? crossLinkChoice.value : Boolean(data.dossier && !data.dossier.clickupTaskId);
+  const setCrossLink = (value: boolean) => setCrossLinkChoice({ key: dossierKey, value });
   const [switchDialog, setSwitchDialog] = useState<null | { kind: 'bind'; ref: string } | { kind: 'create' }>(
     null,
   );
 
-  useEffect(() => {
-    setCrossLink(Boolean(data.dossier && !data.dossier.clickupTaskId));
-  }, [data.dossier?.id, data.dossier?.clickupTaskId]);
 
   const catalogQ = useQuery({
     queryKey: ['clickup-workbench-catalog', conversationId],
@@ -439,7 +439,7 @@ function WorkbenchBindCreate({
               type="button"
               data-testid="clickup-workbench-criar"
               onClick={() => setMode('criar')}
-              className="inline-flex w-full items-center justify-center rounded-md border border-zinc-300 px-3 py-1.5 text-xs font-medium dark:border-zinc-700"
+              className="inline-flex w-full items-center justify-center rounded-md border border-[var(--bq-hair-strong)] px-3 py-1.5 text-xs font-medium "
             >
               Criar nova
             </button>
@@ -450,7 +450,7 @@ function WorkbenchBindCreate({
       {switchDialog ? (
         <div
           role="dialog"
-          className="space-y-2 rounded-md border border-amber-300 bg-amber-50 px-2.5 py-2 text-xs dark:border-amber-700 dark:bg-amber-950"
+          className="space-y-2 rounded-md border border-[var(--bq-warn)] bg-[var(--bq-warn-soft)] px-2.5 py-2 text-xs  "
           data-testid="clickup-confirm-switch"
         >
           <p>Esta conversa já tem uma task. Trocar a âncora? A task anterior permanece no ClickUp.</p>
@@ -459,7 +459,7 @@ function WorkbenchBindCreate({
               type="button"
               data-testid="clickup-confirm-switch-cancel"
               onClick={() => setSwitchDialog(null)}
-              className="inline-flex flex-1 items-center justify-center rounded-md border border-zinc-300 px-3 py-1.5 font-medium dark:border-zinc-700"
+              className="inline-flex flex-1 items-center justify-center rounded-md border border-[var(--bq-hair-strong)] px-3 py-1.5 font-medium "
             >
               Cancelar
             </button>
@@ -524,10 +524,10 @@ function WorkbenchBindCreate({
           </button>
           {candidatos ? (
             candidatos.length === 0 ? (
-              <p className="text-[11px] text-zinc-500">Nenhuma task encontrada.</p>
+              <p className="text-[11px] text-[var(--bq-t2)]">Nenhuma task encontrada.</p>
             ) : (
               <div className="space-y-2" data-testid="clickup-workbench-candidatos">
-                <p className="text-[11px] text-zinc-500">
+                <p className="text-[11px] text-[var(--bq-t2)]">
                   Escolha uma task — nada é selecionado automaticamente.
                 </p>
                 {candidatos.map((c) => (
@@ -535,15 +535,15 @@ function WorkbenchBindCreate({
                     key={c.taskId}
                     type="button"
                     onClick={() => bindM.mutate({ ref: c.taskId })}
-                    className="block w-full rounded-md border border-zinc-200 px-2.5 py-2 text-left text-xs hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-900"
+                    className="block w-full rounded-md border border-[var(--bq-hair)] px-2.5 py-2 text-left text-xs hover:bg-[var(--bq-surface)]  "
                   >
-                    <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                    <span className="font-medium text-[var(--bq-t1)] ">
                       {c.nome || '—'}
                     </span>
-                    <span className="mt-0.5 block font-mono text-[11px] text-zinc-500">
+                    <span className="mt-0.5 block font-mono text-[11px] text-[var(--bq-t2)]">
                       {c.taskId}
                     </span>
-                    <span className="block text-[11px] text-zinc-400">
+                    <span className="block text-[11px] text-[var(--bq-t3)]">
                       {c.lista || 'lista'} · {c.status || '—'}
                     </span>
                   </button>
@@ -556,14 +556,14 @@ function WorkbenchBindCreate({
               data-testid="clickup-workbench-bind-paste"
               disabled={!taskRef.trim() || bindM.isPending}
               onClick={() => bindM.mutate({ ref: taskRef.trim() })}
-              className="inline-flex w-full items-center justify-center rounded-md border border-zinc-300 px-3 py-1.5 text-xs font-medium disabled:opacity-50 dark:border-zinc-700"
+              className="inline-flex w-full items-center justify-center rounded-md border border-[var(--bq-hair-strong)] px-3 py-1.5 text-xs font-medium disabled:opacity-50 "
             >
               Vincular esta referência
             </button>
           )}
           {data.dossier ? (
             <label
-              className="flex items-start gap-2 text-xs text-zinc-700 dark:text-zinc-300"
+              className="flex items-start gap-2 text-xs text-[var(--bq-t2)] "
               data-testid="clickup-cross-link-dossier"
             >
               <input
@@ -575,7 +575,7 @@ function WorkbenchBindCreate({
               <span>
                 Cruzar no dossiê {data.dossier.name}
                 {data.dossier.clickupTaskId && crossLink ? (
-                  <span className="mt-0.5 block text-[11px] text-amber-700 dark:text-amber-400" data-testid="clickup-cross-link-overwrite">
+                  <span className="mt-0.5 block text-[11px] text-[var(--bq-warn)] " data-testid="clickup-cross-link-overwrite">
                     A task atual do dossiê será substituída.
                   </span>
                 ) : null}
@@ -637,7 +637,7 @@ function WorkbenchBindCreate({
           />
           {data.dossier ? (
             <label
-              className="flex items-start gap-2 text-xs text-zinc-700 dark:text-zinc-300"
+              className="flex items-start gap-2 text-xs text-[var(--bq-t2)] "
               data-testid="clickup-cross-link-dossier"
             >
               <input
@@ -649,7 +649,7 @@ function WorkbenchBindCreate({
               <span>
                 Cruzar no dossiê {data.dossier.name}
                 {data.dossier.clickupTaskId && crossLink ? (
-                  <span className="mt-0.5 block text-[11px] text-amber-700 dark:text-amber-400" data-testid="clickup-cross-link-overwrite">
+                  <span className="mt-0.5 block text-[11px] text-[var(--bq-warn)] " data-testid="clickup-cross-link-overwrite">
                     A task atual do dossiê será substituída.
                   </span>
                 ) : null}
@@ -749,8 +749,8 @@ function ClickUpCardView({
     <div className="space-y-4 p-4" data-testid="clickup-state-unico">
       <div>
         <p className={labelCls}>Card</p>
-        <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{card.nome}</p>
-        <p className="text-[11px] text-zinc-400">{card.lista || 'lista'}</p>
+        <p className="text-sm font-medium text-[var(--bq-t1)] ">{card.nome}</p>
+        <p className="text-[11px] text-[var(--bq-t3)]">{card.lista || 'lista'}</p>
         {card.url ? (
           <a
             href={card.url}
@@ -856,7 +856,7 @@ function ClickUpCardView({
       {card.comentarios.length > 0 ? (
         <ul className="space-y-2">
           {card.comentarios.map((c) => (
-            <li key={c.id} className="whitespace-pre-wrap text-[11px] text-zinc-500">
+            <li key={c.id} className="whitespace-pre-wrap text-[11px] text-[var(--bq-t2)]">
               {c.texto}
             </li>
           ))}
@@ -909,18 +909,18 @@ function ClickUpIncorporate({
   const documents = hasDossier ? (projectQ.data?.attachments ?? []) : [];
 
   return (
-    <div className="space-y-2 border-t border-zinc-200 pt-3 dark:border-zinc-800" data-testid="clickup-incorporate">
+    <div className="space-y-2 border-t border-[var(--bq-hair)] pt-3 " data-testid="clickup-incorporate">
       <p className={labelCls}>Incorporar na task</p>
       {messages.length === 0 && documents.length === 0 ? (
-        <p className="text-[11px] text-zinc-500">Nenhuma mensagem ou arquivo para incorporar.</p>
+        <p className="text-[11px] text-[var(--bq-t2)]">Nenhuma mensagem ou arquivo para incorporar.</p>
       ) : null}
       {messages.map((msg) => (
         <div
           key={msg.id}
-          className="rounded-md border border-zinc-200 px-2.5 py-2 text-xs dark:border-zinc-700"
+          className="rounded-md border border-[var(--bq-hair)] px-2.5 py-2 text-xs "
           data-testid={`clickup-incorporate-msg-${msg.id}`}
         >
-          <p className="truncate text-zinc-700 dark:text-zinc-300">{messagePreview(msg)}</p>
+          <p className="truncate text-[var(--bq-t2)] ">{messagePreview(msg)}</p>
           <div className="mt-1 flex gap-2">
             {messageHasText(msg) ? (
               <button
@@ -950,10 +950,10 @@ function ClickUpIncorporate({
       {documents.map((doc) => (
         <div
           key={doc.id}
-          className="rounded-md border border-zinc-200 px-2.5 py-2 text-xs dark:border-zinc-700"
+          className="rounded-md border border-[var(--bq-hair)] px-2.5 py-2 text-xs "
           data-testid={`clickup-incorporate-doc-${doc.id}`}
         >
-          <p className="truncate text-zinc-700 dark:text-zinc-300">{doc.fileName || doc.label}</p>
+          <p className="truncate text-[var(--bq-t2)] ">{doc.fileName || doc.label}</p>
           <button
             type="button"
             data-testid={`clickup-incorporate-doc-file-${doc.id}`}

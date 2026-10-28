@@ -1,5 +1,6 @@
 'use client';
 
+import { isAxiosError } from 'axios';
 import { useVisible } from '@/features/inbox/hooks/use-visible';
 import { useEffect, useRef, useState } from 'react';
 import { inboxService, type Message } from '../services/inbox.service';
@@ -78,10 +79,10 @@ export function useResolvedMedia(
         const resolved = await inboxService.resolveMediaUrl(message.id);
         setUrl(resolved.url);
         if (resolved.mimeType) setMimeType(resolved.mimeType);
-      } catch (err: any) {
+      } catch (err: unknown) {
         setError(
-          err?.response?.data?.message ||
-            err?.message ||
+          (isAxiosError<{ message?: string }>(err) && err.response?.data?.message) ||
+            (err instanceof Error && err.message) ||
             'Não foi possível carregar a mídia',
         );
       } finally {

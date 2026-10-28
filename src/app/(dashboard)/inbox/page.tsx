@@ -138,6 +138,8 @@ export default function InboxPage() {
 
   return (
     <InboxLayout
+      active={!!activeConversation}
+      onBack={() => setActiveConversation(null)}
       list={
         <ConversationList
           activeId={activeConversation?.id || null}
@@ -147,7 +149,7 @@ export default function InboxPage() {
       }
       panel={
         activeConversation ? (
-          <div className="flex min-h-0 min-w-0 flex-1">
+          <div className="bq-conversation-workspace relative flex min-h-0 min-w-0 flex-1">
             <ChatPanel
               key={activeConversation.id}
               conversation={activeConversation}

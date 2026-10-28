@@ -127,3 +127,45 @@ it('payload sem cache não consome o id antes de absorver a entrega completa', (
   expect(client.getQueryData<ConversationPages>(key)!.pages[0].conversations[0].unreadCount).toBe(3);
   client.clear();
 });
+
+it.each([
+  ['all', false, false], ['all', true, false],
+  ['people', false, false], ['groups', true, false],
+  ['projects', false, true], ['projects', true, true],
+] as const)('mantém %s (grupo=%s, projeto=%s) após entrega duplicada sem GET', async (tab, isGroup, hasProject) => {
+  const { inboxService } = await import('@/features/inbox/services/inbox.service');
+  vi.mocked(inboxService.getConversation).mockClear();
+  const client = new QueryClient();
+  const key = ['conversations', 'org', null, '|||ps:|mp:0|t:tag', 'cliente', 'ch', null, 'MINE', 'user', tab];
+  const row = { id: 'c', organizationId: 'org', channelId: 'ch', assignedToId: 'user', isGroup, contact: { name: 'Cliente' }, tags: [{ tag: { id: 'tag' } }], project: hasProject ? { exists: true } : null, unreadCount: 0, messages: [] } as unknown as Conversation;
+  client.setQueryData(key, { pageParams: [1], pages: [{ conversations: [row], pagination: { page: 1 } }] });
+  receiveMessage(client, { message });
+  receiveMessage(client, { message });
+  expect(client.getQueryData<ConversationPages>(key)!.pages[0].conversations).toMatchObject([{ id: 'c', unreadCount: 1 }]);
+  expect(inboxService.getConversation).not.toHaveBeenCalled();
+  client.clear();
+});
+
+it.each([
+  ['people', true, false], ['groups', false, false], ['projects', false, false], ['mentorships', false, true],
+] as const)('não insere conversa incompatível na aba %s', (tab, isGroup, hasProject) => {
+  const client = new QueryClient();
+  const row = { id: 'c', organizationId: 'org', isGroup, contact: {}, project: hasProject ? { exists: true } : null, messages: [] } as unknown as Conversation;
+  const key = ['conversations', 'org', null, '|||ps:|mp:0|t:', '', null, null, 'ALL', 'user', tab];
+  client.setQueryData(['conversations'], { pageParams: [1], pages: [{ conversations: [row], pagination: {} }] });
+  client.setQueryData(key, { pageParams: [1], pages: [{ conversations: [], pagination: {} }] });
+  receiveMessage(client, { message });
+  expect(client.getQueryData<ConversationPages>(key)!.pages[0].conversations).toEqual([]);
+  client.clear();
+});
+
+it('combina Todas com os filtros da caixa salva sem excluir grupos', () => {
+  const client = new QueryClient();
+  const key = ['conversations', 'org', 'view', '|||ps:|mp:0|t:', '', null, null, 'ALL', 'user', 'all'];
+  const row = { id: 'c', organizationId: 'org', isGroup: true, status: 'OPEN', contact: {}, messages: [] } as unknown as Conversation;
+  client.setQueryData(['inbox-views'], [{ id: 'view', filters: { kind: 'GROUP', statuses: ['OPEN'] } }]);
+  client.setQueryData(key, { pageParams: [1], pages: [{ conversations: [row], pagination: {} }] });
+  receiveMessage(client, { message });
+  expect(client.getQueryData<ConversationPages>(key)!.pages[0].conversations).toHaveLength(1);
+  client.clear();
+});

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   CalendarDays,
@@ -12,11 +12,17 @@ import {
   Send,
   User,
   X,
+  ChevronDown,
+  KanbanSquare,
+  type LucideIcon,
 } from 'lucide-react';
-import { ClickUpPanel } from './clickup-panel';
+import { Button, Pill } from '@/components/ui/foundation';
+import { PipelinePopover } from '@/features/inbox/components/pipeline-popover';
+import { pipelinesService, type ConversationCard } from '@/features/pipelines/services/pipelines.service';
+import { ClickUpPanel } from '@/features/inbox/components/clickup-panel';
 import { toast } from 'sonner';
-import { emailDeepLink, type Conversation } from '../services/inbox.service';
-import { ProjectPanel } from './project-panel';
+import { emailDeepLink, type Conversation } from '@/features/inbox/services/inbox.service';
+import { ProjectPanel } from '@/features/inbox/components/project-panel';
 import {
   emailService,
   fileToOutboundAttachment,
@@ -27,7 +33,7 @@ import { calendarService } from '@/features/calendar/services/calendar.service';
 import { rememberRecipients } from '@/features/email/lib/recent-recipients';
 import { EmailRichEditor } from '@/features/email/components/email-rich-editor';
 
-type Tab = 'contact' | 'email' | 'agenda' | 'project' | 'clickup';
+type Tab = 'notes' | 'negotiation' | 'contact' | 'email' | 'agenda' | 'project' | 'clickup';
 
 interface ContactWorkspacePanelProps {
   conversation: Conversation;
@@ -43,7 +49,7 @@ export function ContactWorkspacePanel({
   onClose,
 }: ContactWorkspacePanelProps) {
   const isGroup = conversation.isGroup;
-  const [tab, setTab] = useState<Tab>(isGroup ? 'project' : 'contact');
+  const [tab, setTab] = useState<Tab | null>(isGroup ? 'project' : 'negotiation');
 
   const contact = conversation.contact;
   const contactEmail =
@@ -51,85 +57,65 @@ export function ContactWorkspacePanel({
     (contact.phone && contact.phone.includes('@') ? contact.phone : '') ||
     '';
 
-  const tabs: Array<{ id: Tab; label: string; icon: any; show: boolean }> = [
+  const tabs: Array<{ id: Tab; label: string; icon: LucideIcon; show: boolean }> = [
+    { id: 'negotiation', label: 'Negociação', icon: KanbanSquare, show: true },
     { id: 'contact', label: 'Contato', icon: User, show: true },
     { id: 'email', label: 'E-mail', icon: Mail, show: true },
-    { id: 'agenda', label: 'Agenda', icon: CalendarDays, show: true },
+    { id: 'agenda', label: 'Reuniões · Agenda', icon: CalendarDays, show: true },
     { id: 'project', label: 'Projeto', icon: FolderKanban, show: true },
+    { id: 'notes', label: 'Contexto e notas', icon: ClipboardList, show: true },
     { id: 'clickup', label: 'ClickUp', icon: ClipboardList, show: true },
   ];
 
   return (
-    <aside className="flex w-72 min-w-0 shrink-0 flex-col overflow-hidden border-l border-zinc-200 bg-white sm:w-80 dark:border-zinc-800 dark:bg-zinc-950">
-      <div className="flex items-center justify-between border-b border-zinc-200 px-3 py-2.5 dark:border-zinc-800">
-        <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-          Contato
-        </span>
-        <button
-          type="button"
-          onClick={onClose}
-          className="rounded-md p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800"
-        >
-          <X className="h-4 w-4" />
-        </button>
+    <aside className="bq-contact-panel" aria-label="Detalhes da conversa">
+      <div className="flex items-center justify-between border-b border-[var(--bq-hair)] px-4 py-3">
+        <span className="text-xs font-semibold">Detalhes</span>
+        <Button aria-label="Fechar detalhes" onClick={onClose}><X size={14} /></Button>
       </div>
-
-      <div className="flex flex-wrap gap-0.5 border-b border-zinc-200 px-2 py-1.5 dark:border-zinc-800">
-        {tabs
-          .filter((t) => t.show)
-          .map((t) => {
-            const Icon = t.icon;
-            const active = tab === t.id;
-            return (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => setTab(t.id)}
-                className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium ${
-                  active
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-900'
-                }`}
-              >
-                <Icon className="h-3 w-3" />
-                {t.label}
-              </button>
-            );
-          })}
+      <div className="bq-contact-profile text-center">
+        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--bq-raised-2)] text-lg font-semibold">{(contact.name || '?').slice(0, 2).toUpperCase()}</div>
+        <h2 className="font-semibold">{contact.name || contact.phone || 'Contato'}</h2>
+        <p className="mt-1 text-xs text-[var(--bq-t3)]">{contact.phone || 'Telefone não informado'}</p>
+        <p className="mt-1 break-all text-xs text-[var(--bq-t3)]">{contactEmail || 'E-mail não informado'}</p>
+        <div className="mt-3 flex flex-wrap justify-center gap-1"><Pill>{conversation.channel.name}</Pill>{contact.tags?.map(({tag}) => <Pill key={tag.id}>{tag.name}</Pill>)}</div>
       </div>
-
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      {tabs.map(({id, label, icon: Icon}) => <section key={id} className="bq-contact-section">
+        <button type="button" aria-expanded={tab === id} aria-controls={`contact-section-${id}`} onClick={() => setTab(tab === id ? null : id)}><Icon size={14} />{label}<ChevronDown size={14} className={tab === id ? 'rotate-180' : ''} /></button>
+        {tab === id && <div id={`contact-section-${id}`}>
+        {tab === 'notes' && <p className="px-4 pb-4 text-xs text-[var(--bq-t3)]">Resumo de contexto e notas da conversa ainda não disponíveis.</p>}
+        {tab === 'negotiation' && <NegotiationTab conversation={conversation} />}
         {tab === 'contact' && (
           <div className="space-y-3 p-4">
             <div>
-              <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-400">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-[var(--bq-t3)]">
                 Nome
               </p>
-              <p className="text-sm text-zinc-900 dark:text-zinc-100">
+              <p className="text-sm text-[var(--bq-t1)] ">
                 {contact.name || '—'}
               </p>
             </div>
             <div>
-              <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-400">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-[var(--bq-t3)]">
                 Telefone
               </p>
-              <p className="text-sm text-zinc-900 dark:text-zinc-100">
+              <p className="text-sm text-[var(--bq-t1)] ">
                 {contact.phone || '—'}
               </p>
             </div>
             <div>
-              <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-400">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-[var(--bq-t3)]">
                 E-mail
               </p>
-              <p className="text-sm text-zinc-900 dark:text-zinc-100">
+              <p className="text-sm text-[var(--bq-t1)] ">
                 {contactEmail || '—'}
               </p>
             </div>
             <div>
-              <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-400">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-[var(--bq-t3)]">
                 Canal
               </p>
-              <p className="text-sm text-zinc-900 dark:text-zinc-100">
+              <p className="text-sm text-[var(--bq-t1)] ">
                 {conversation.channel.name} · {conversation.channel.type}
               </p>
             </div>
@@ -172,7 +158,8 @@ export function ContactWorkspacePanel({
             isGroup={isGroup}
           />
         )}
-      </div>
+        </div>}
+      </section>)}
     </aside>
   );
 }
@@ -258,14 +245,14 @@ function EmailComposeTab({
   if (statusQ.isLoading) {
     return (
       <div className="flex justify-center p-6">
-        <Loader2 className="h-5 w-5 animate-spin text-zinc-400" />
+        <Loader2 className="h-5 w-5 animate-spin text-[var(--bq-t3)]" />
       </div>
     );
   }
 
   if (!channelId) {
     return (
-      <p className="p-4 text-xs text-zinc-500">
+      <p className="p-4 text-xs text-[var(--bq-t2)]">
         Nenhum Gmail conectado. Vá em Canais → Conectar Gmail.
       </p>
     );
@@ -277,13 +264,13 @@ function EmailComposeTab({
         value={to}
         onChange={(e) => setTo(e.target.value)}
         placeholder="Para"
-        className="w-full rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-1.5 text-xs dark:border-zinc-700 dark:bg-zinc-900"
+        className="w-full rounded-md border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-2.5 py-1.5 text-xs  "
       />
       <input
         value={subject}
         onChange={(e) => setSubject(e.target.value)}
         placeholder="Assunto"
-        className="w-full rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-1.5 text-xs dark:border-zinc-700 dark:bg-zinc-900"
+        className="w-full rounded-md border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-2.5 py-1.5 text-xs  "
       />
       <EmailRichEditor
         valueHtml={bodyHtml}
@@ -300,7 +287,7 @@ function EmailComposeTab({
           {pendingFiles.map((f, i) => (
             <span
               key={`${f.name}-${f.size}-${i}`}
-              className="inline-flex max-w-full items-center gap-1 rounded border border-zinc-200 bg-zinc-50 px-1.5 py-0.5 text-[10px] text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+              className="inline-flex max-w-full items-center gap-1 rounded border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-1.5 py-0.5 text-[10px] text-[var(--bq-t2)]   "
             >
               <Paperclip className="h-2.5 w-2.5 shrink-0" />
               <span className="truncate">{f.name}</span>
@@ -310,7 +297,7 @@ function EmailComposeTab({
                 onClick={() =>
                   setPendingFiles((prev) => prev.filter((_, idx) => idx !== i))
                 }
-                className="rounded p-0.5 text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800"
+                className="rounded p-0.5 text-[var(--bq-t3)] hover:bg-[var(--bq-raised-2)] "
               >
                 <X className="h-2.5 w-2.5" />
               </button>
@@ -330,7 +317,7 @@ function EmailComposeTab({
           type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={sending || pendingFiles.length >= MAX_OUTBOUND_ATTACHMENTS}
-          className="inline-flex items-center gap-1 rounded-md border border-zinc-200 bg-white px-2 py-1.5 text-[11px] font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+          className="inline-flex items-center gap-1 rounded-md border border-[var(--bq-hair)] bg-[var(--bq-win-solid)] px-2 py-1.5 text-[11px] font-medium text-[var(--bq-t2)] hover:bg-[var(--bq-surface)] disabled:opacity-50   "
         >
           <Paperclip className="h-3 w-3" />
           Anexar
@@ -384,13 +371,11 @@ function AgendaTab({
   );
   const [minutes, setMinutes] = useState(30);
   const [withMeet, setWithMeet] = useState(true);
-  const [calendarId, setCalendarId] = useState(defaultCal);
+  const [chosenCalendar, setCalendarId] = useState<string | null>(null);
+  const calendarId = chosenCalendar ?? defaultCal;
   const [creating, setCreating] = useState(false);
   const [lastMeet, setLastMeet] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (defaultCal) setCalendarId(defaultCal);
-  }, [defaultCal]);
 
   const startDefault = useMemo(() => {
     const d = new Date();
@@ -398,6 +383,11 @@ function AgendaTab({
     d.setHours(d.getHours() + 1);
     return d;
   }, []);
+
+  const [startLocal, setStartLocal] = useState(() => {
+    const d = new Date(startDefault.getTime() - startDefault.getTimezoneOffset() * 60000);
+    return d.toISOString().slice(0, 16);
+  });
 
   const create = async () => {
     if (!statusQ.data?.connected) {
@@ -410,7 +400,8 @@ function AgendaTab({
     }
     setCreating(true);
     try {
-      const start = new Date(startDefault);
+      const start = new Date(startLocal);
+      if (!Number.isFinite(start.getTime())) throw new Error('Informe a data e a hora da reunião');
       const end = new Date(start.getTime() + minutes * 60_000);
       const res = await calendarService.createFromConversation({
         conversationId,
@@ -443,18 +434,22 @@ function AgendaTab({
 
   return (
     <div className="space-y-3 p-4">
-      <p className="text-xs text-zinc-500">
-        Cria no Google (calendário escolhido) daqui a ~1h.
+      <p className="text-xs text-[var(--bq-t2)]">
+        Agende no Google e guarde o link nesta conversa.
       </p>
+      <label className="block text-xs">Data e hora<input type="datetime-local" value={startLocal} onChange={e => setStartLocal(e.target.value)} className="mt-1 w-full rounded-lg border border-[var(--bq-hair)] bg-[var(--bq-raised)] p-2" /></label>
+      <p className="text-[11px] text-[var(--bq-t3)]">Histórico de reuniões desta conversa ainda não disponível. Consulte a Agenda completa.</p>
       <input
+        aria-label="Título da reunião"
         value={summary}
         onChange={(e) => setSummary(e.target.value)}
-        className="w-full rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-1.5 text-xs dark:border-zinc-700 dark:bg-zinc-900"
+        className="w-full rounded-md border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-2.5 py-1.5 text-xs  "
       />
       <select
+        aria-label="Calendário"
         value={calendarId}
         onChange={(e) => setCalendarId(e.target.value)}
-        className="w-full rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-1.5 text-xs dark:border-zinc-700 dark:bg-zinc-900"
+        className="w-full rounded-md border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-2.5 py-1.5 text-xs  "
       >
         {(calendars.length
           ? calendars
@@ -475,14 +470,14 @@ function AgendaTab({
             className={`rounded-md px-2 py-1 text-[11px] ${
               minutes === m
                 ? 'bg-primary text-primary-foreground'
-                : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-900 dark:text-zinc-300'
+                : 'bg-[var(--bq-raised)] text-[var(--bq-t2)]  '
             }`}
           >
             {m}m
           </button>
         ))}
       </div>
-      <label className="flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-300">
+      <label className="flex items-center gap-2 text-xs text-[var(--bq-t2)] ">
         <input
           type="checkbox"
           checked={withMeet}
@@ -490,30 +485,29 @@ function AgendaTab({
         />
         Google Meet
       </label>
-      <p className="text-[10px] leading-snug text-zinc-400">
-        Gravação/transcrição: no Meet (ou admin Workspace). A API não liga isso
-        no create.
-      </p>
+
       {defaultAttendee ? (
-        <p className="text-[11px] text-zinc-400">Convidado: {defaultAttendee}</p>
+        <p className="text-[11px] text-[var(--bq-t3)]">Convidado: {defaultAttendee}</p>
       ) : (
-        <p className="text-[11px] text-amber-600">
+        <p className="text-[11px] text-[var(--bq-warn)]">
           Contato sem e-mail — evento só na sua agenda.
         </p>
       )}
+      {!statusQ.data?.connected && <p className="text-xs text-[var(--bq-t3)]">Conecte o Google em Configurações → Canais para agendar.</p>}
+      {statusQ.data?.needsReauthForCalendar && <p className="text-xs text-[var(--bq-warn)]">Reconecte o Google autorizando a Agenda.</p>}
       {lastMeet && (
         <a
           href={lastMeet}
           target="_blank"
           rel="noreferrer"
-          className="block truncate text-[11px] text-sky-500 hover:underline"
+          className="block truncate text-[11px] text-[var(--bq-info)] hover:underline"
         >
           Abrir Meet →
         </a>
       )}
       <button
         type="button"
-        disabled={creating}
+        disabled={creating || !statusQ.data?.connected || !!statusQ.data?.needsReauthForCalendar}
         onClick={create}
         className="inline-flex w-full items-center justify-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50"
       >
@@ -528,4 +522,27 @@ function AgendaTab({
       </a>
     </div>
   );
+}
+
+function NegotiationTab({ conversation }: { conversation: Conversation }) {
+  const cards = useQuery({ queryKey: ['conversation-pipelines', conversation.id], queryFn: () => pipelinesService.listByConversation(conversation.id), staleTime: 30_000 });
+  return <div className="space-y-3 px-4 pb-4 text-xs">
+    {cards.isLoading ? <p>Carregando negociação…</p> : cards.isError ? <p role="alert">Não foi possível carregar a negociação.</p> : cards.data?.length ? cards.data.map(card => <NegotiationCard key={card.id} card={card} />) : <p className="text-[var(--bq-t3)]">Nenhuma negociação vinculada a esta conversa.</p>}
+    <PipelinePopover conversation={conversation} />
+    <p className="text-[var(--bq-t3)]">Jornada de diagnóstico, proposta e contrato ainda não disponível aqui.</p>
+  </div>;
+}
+
+function NegotiationCard({ card }: { card: ConversationCard }) {
+  const board = useQuery({ queryKey: ['pipeline-board', card.pipelineId], queryFn: () => pipelinesService.getBoard(card.pipelineId), staleTime: 30_000 });
+  const detail = Object.values(board.data?.cards ?? {}).flat().find(item => item.id === card.id);
+  const value = detail?.value;
+  return <div className="space-y-2 rounded-xl border border-[var(--bq-hair)] p-3">
+    <p className="font-semibold">{detail?.title || card.pipeline.name}</p>
+    <p className="text-[var(--bq-t3)]">{card.pipeline.name}</p><Pill>{card.stage.name}</Pill>
+    <p>{value == null ? 'Valor não informado' : `${detail?.currency || 'BRL'} ${Number(value).toLocaleString('pt-BR', {minimumFractionDigits: 2})}`}</p>
+    <p className="text-[var(--bq-t3)]">{card.status === 'WON' ? 'Fechado' : card.status === 'LOST' ? 'Perdido' : 'Em negociação'}</p>
+    {detail?.closedReason && <p>{detail.closedReason}</p>}
+    {board.isError && <p role="alert">Não foi possível carregar os detalhes.</p>}
+  </div>;
 }

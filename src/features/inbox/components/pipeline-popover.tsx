@@ -1,5 +1,7 @@
 'use client';
 
+import { inboxErrorMessage } from '@/features/inbox/components/inbox-error';
+
 import { useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Popover, PopoverButton, PopoverPanel } from '@headlessui/react';
@@ -17,7 +19,7 @@ import {
   type Pipeline,
   type PipelineStage,
 } from '@/features/pipelines/services/pipelines.service';
-import { type Conversation } from '../services/inbox.service';
+import { type Conversation } from '@/features/inbox/services/inbox.service';
 
 interface Props {
   conversation: Conversation;
@@ -90,8 +92,8 @@ export function PipelinePopover({ conversation, onChanged }: Props) {
       await pipelinesService.moveCard(card.id, stageId, 0);
       toast.success('Estágio atualizado');
       invalidate();
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Erro ao trocar estágio');
+    } catch (err: unknown) {
+      toast.error(inboxErrorMessage(err, 'Erro ao trocar estágio'));
     } finally {
       setBusyCardId(null);
     }
@@ -128,8 +130,8 @@ export function PipelinePopover({ conversation, onChanged }: Props) {
       });
       toast.success(`Movida pra "${target.name}"`);
       invalidate();
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Erro ao trocar pipeline');
+    } catch (err: unknown) {
+      toast.error(inboxErrorMessage(err, 'Erro ao trocar pipeline'));
       // Reload pra refletir o estado real (caso o remove tenha passado e o
       // create tenha falhado, o user precisa ver a conversa fora do
       // pipeline original).
@@ -145,8 +147,8 @@ export function PipelinePopover({ conversation, onChanged }: Props) {
       await pipelinesService.removeCard(card.id);
       toast.success(`Removida de "${card.pipeline.name}"`);
       invalidate();
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Erro ao remover');
+    } catch (err: unknown) {
+      toast.error(inboxErrorMessage(err, 'Erro ao remover'));
     } finally {
       setBusyCardId(null);
     }
@@ -164,9 +166,9 @@ export function PipelinePopover({ conversation, onChanged }: Props) {
       setPickPipeline('');
       setPickStage('');
       invalidate();
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.error(
-        err?.response?.data?.message || 'Erro ao adicionar ao pipeline',
+        inboxErrorMessage(err, 'Erro ao adicionar ao pipeline'),
       );
     } finally {
       setAdding(false);
@@ -183,28 +185,28 @@ export function PipelinePopover({ conversation, onChanged }: Props) {
     <Popover className="relative">
       <PopoverButton
         title="Gerenciar pipelines da conversa"
-        className="inline-flex items-center gap-1.5 rounded-md bg-zinc-100 px-2.5 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+        className="inline-flex items-center gap-1.5 rounded-md bg-[var(--bq-raised)] px-2.5 py-1.5 text-xs font-medium text-[var(--bq-t2)] hover:bg-[var(--bq-raised-2)]   "
       >
         <KanbanSquare className="h-3.5 w-3.5" />
         <span className="max-w-[120px] truncate">{buttonLabel()}</span>
-        <ChevronDown className="h-3 w-3 text-zinc-400" />
+        <ChevronDown className="h-3 w-3 text-[var(--bq-t3)]" />
       </PopoverButton>
 
       <PopoverPanel
         anchor="bottom end"
         transition
-        className="z-50 mt-1.5 w-80 rounded-lg border border-zinc-200 bg-white p-3 shadow-lg outline-none transition duration-100 ease-out data-[closed]:scale-95 data-[closed]:opacity-0 dark:border-zinc-800 dark:bg-zinc-900 [--anchor-gap:0.25rem]"
+        className="z-50 mt-1.5 w-80 rounded-lg border border-[var(--bq-hair)] bg-[var(--bq-win-solid)] p-3 shadow-lg outline-none transition duration-100 ease-out data-[closed]:scale-95 data-[closed]:opacity-0   [--anchor-gap:0.25rem]"
       >
-        <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
+        <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[var(--bq-t2)]">
           Pipelines desta conversa
         </div>
 
         {isLoading ? (
-          <div className="flex items-center justify-center py-4 text-zinc-400">
+          <div className="flex items-center justify-center py-4 text-[var(--bq-t3)]">
             <Loader2 className="h-4 w-4 animate-spin" />
           </div>
         ) : cards.length === 0 ? (
-          <p className="rounded-md border border-dashed border-zinc-200 px-3 py-3 text-center text-[11px] text-zinc-400 dark:border-zinc-700">
+          <p className="rounded-md border border-dashed border-[var(--bq-hair)] px-3 py-3 text-center text-[11px] text-[var(--bq-t3)] ">
             Não está em nenhum pipeline
           </p>
         ) : (
@@ -227,7 +229,7 @@ export function PipelinePopover({ conversation, onChanged }: Props) {
               return (
                 <div
                   key={card.id}
-                  className="flex items-center gap-1.5 rounded-md border border-zinc-200 bg-zinc-50/60 px-2 py-1.5 dark:border-zinc-800 dark:bg-zinc-800/40"
+                  className="flex items-center gap-1.5 rounded-md border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-2 py-1.5  "
                 >
                   <div className="min-w-0 flex-1 space-y-1">
                     <select
@@ -237,7 +239,7 @@ export function PipelinePopover({ conversation, onChanged }: Props) {
                       }
                       disabled={busy}
                       title="Trocar de pipeline"
-                      className="w-full rounded border border-zinc-200 bg-white px-1.5 py-0.5 text-xs font-medium text-zinc-900 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                      className="w-full rounded border border-[var(--bq-hair)] bg-[var(--bq-win-solid)] px-1.5 py-0.5 text-xs font-medium text-[var(--bq-t1)] disabled:opacity-50   "
                     >
                       {swapOptions.map((p) => (
                         <option key={p.id} value={p.id}>
@@ -259,7 +261,7 @@ export function PipelinePopover({ conversation, onChanged }: Props) {
                       onChange={(e) => handleStageChange(card, e.target.value)}
                       disabled={busy || stages.length === 0}
                       title="Trocar de estágio"
-                      className="w-full rounded border border-zinc-200 bg-white px-1.5 py-0.5 text-[11px] text-zinc-700 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+                      className="w-full rounded border border-[var(--bq-hair)] bg-[var(--bq-win-solid)] px-1.5 py-0.5 text-[11px] text-[var(--bq-t2)] disabled:opacity-50   "
                     >
                       {stages.map((s) => (
                         <option key={s.id} value={s.id}>
@@ -274,7 +276,7 @@ export function PipelinePopover({ conversation, onChanged }: Props) {
                     onClick={() => handleRemove(card)}
                     disabled={busy}
                     title={`Remover de ${card.pipeline.name}`}
-                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-zinc-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-50 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[var(--bq-t3)] hover:bg-[var(--bq-err-soft)] hover:text-[var(--bq-err)] disabled:opacity-50  "
                   >
                     {busy ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -288,14 +290,14 @@ export function PipelinePopover({ conversation, onChanged }: Props) {
           </div>
         )}
 
-        <div className="my-3 border-t border-zinc-100 dark:border-zinc-800" />
+        <div className="my-3 border-t border-[var(--bq-hair)] " />
 
-        <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
+        <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--bq-t2)]">
           Adicionar a outro pipeline
         </div>
 
         {availablePipelines.length === 0 ? (
-          <p className="px-1 py-2 text-[11px] text-zinc-400">
+          <p className="px-1 py-2 text-[11px] text-[var(--bq-t3)]">
             A conversa já está em todos os pipelines disponíveis.
           </p>
         ) : (
@@ -306,7 +308,7 @@ export function PipelinePopover({ conversation, onChanged }: Props) {
                 setPickPipeline(e.target.value);
                 setPickStage('');
               }}
-              className="mb-2 w-full rounded border border-zinc-200 bg-white px-2 py-1 text-xs dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+              className="mb-2 w-full rounded border border-[var(--bq-hair)] bg-[var(--bq-win-solid)] px-2 py-1 text-xs   "
             >
               <option value="">Selecione um pipeline…</option>
               {availablePipelines.map((p) => (
@@ -320,7 +322,7 @@ export function PipelinePopover({ conversation, onChanged }: Props) {
               <select
                 value={pickStage}
                 onChange={(e) => setPickStage(e.target.value)}
-                className="mb-2 w-full rounded border border-zinc-200 bg-white px-2 py-1 text-xs dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                className="mb-2 w-full rounded border border-[var(--bq-hair)] bg-[var(--bq-win-solid)] px-2 py-1 text-xs   "
               >
                 <option value="">Selecione um estágio…</option>
                 {stagesOf(pickPipeline).map((s) => (

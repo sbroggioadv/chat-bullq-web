@@ -1,5 +1,7 @@
 'use client';
 
+import { inboxErrorMessage } from '@/features/inbox/components/inbox-error';
+
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -24,9 +26,9 @@ import { tagsService, type Tag } from '@/features/settings/services/tags.service
 import { useOrgId } from '@/hooks/use-org-query-key';
 import { pipelinesService } from '@/features/pipelines/services/pipelines.service';
 import { inboxViewsService, type InboxView } from '@/features/inbox-views/services/inbox-views.service';
-import { inboxService } from '../services/inbox.service';
-import type { Conversation } from '../services/inbox.service';
-import { RenameConversationDialog } from './rename-conversation-dialog';
+import { inboxService } from '@/features/inbox/services/inbox.service';
+import type { Conversation } from '@/features/inbox/services/inbox.service';
+import { RenameConversationDialog } from '@/features/inbox/components/rename-conversation-dialog';
 
 type Target = 'conversation' | 'contact';
 
@@ -54,7 +56,7 @@ export function ConversationContextMenu({
   const [archiving, setArchiving] = useState(false);
   const [markingUnread, setMarkingUnread] = useState(false);
   const [renameOpen, setRenameOpen] = useState(false);
-  const isArchived = (conversation as any).isArchived === true;
+  const isArchived = conversation.isArchived === true;
   const alreadyUnread = (conversation.unreadCount ?? 0) > 0;
 
   const { data: tags = [], isLoading } = useQuery({
@@ -157,10 +159,9 @@ export function ConversationContextMenu({
       queryClient.invalidateQueries({ queryKey: ['inbox-views'] });
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
       onClose();
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.error(
-        err?.response?.data?.message ||
-          (isPinned ? 'Erro ao remover da inbox' : 'Erro ao adicionar à inbox'),
+        inboxErrorMessage(err, isPinned ? 'Erro ao remover da inbox' : 'Erro ao adicionar à inbox'),
       );
     } finally {
       setPendingViewId(null);
@@ -173,15 +174,15 @@ export function ConversationContextMenu({
       const result = await inboxService.markAsUnread(conversation.id);
       // Optimistically bump the badge in cached list pages — the socket
       // event (conversation:unread) will reconcile if the count differs.
-      queryClient.setQueriesData<any>(
+      queryClient.setQueriesData<import('@tanstack/react-query').InfiniteData<Awaited<ReturnType<typeof inboxService.getConversations>>>>(
         { queryKey: ['conversations'] },
-        (old: any) => {
+        (old) => {
           if (!old?.pages) return old;
           return {
             ...old,
-            pages: old.pages.map((p: any) => ({
+            pages: old.pages.map((p) => ({
               ...p,
-              conversations: p.conversations.map((c: any) =>
+              conversations: p.conversations.map((c) =>
                 c.id === conversation.id
                   ? { ...c, unreadCount: result.unreadCount || 1 }
                   : c,
@@ -192,8 +193,8 @@ export function ConversationContextMenu({
       );
       toast.success('Marcada como não-lida');
       onClose();
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Erro ao marcar como não-lida');
+    } catch (err: unknown) {
+      toast.error(inboxErrorMessage(err, 'Erro ao marcar como não-lida'));
     } finally {
       setMarkingUnread(false);
     }
@@ -211,8 +212,8 @@ export function ConversationContextMenu({
       }
       invalidate();
       onClose();
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Erro ao arquivar');
+    } catch (err: unknown) {
+      toast.error(inboxErrorMessage(err, 'Erro ao arquivar'));
     } finally {
       setArchiving(false);
     }
@@ -227,9 +228,9 @@ export function ConversationContextMenu({
       toast.success(`Adicionada ao pipeline "${pipelineName}"`);
       queryClient.invalidateQueries({ queryKey: ['pipeline-board', pipelineId] });
       onClose();
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.error(
-        err?.response?.data?.message || 'Erro ao adicionar ao pipeline',
+        inboxErrorMessage(err, 'Erro ao adicionar ao pipeline'),
       );
     } finally {
       setPendingPipelineId(null);
@@ -260,102 +261,102 @@ export function ConversationContextMenu({
     <div
       ref={ref}
       style={{ top: clampedPos.y, left: clampedPos.x, width: MENU_WIDTH }}
-      className="fixed z-50 rounded-lg border border-zinc-200/80 bg-white p-1 shadow-lg outline-none dark:border-zinc-800 dark:bg-zinc-900"
+      className="fixed z-50 rounded-lg border border-[var(--bq-hair)] bg-[var(--bq-win-solid)] p-1 shadow-lg outline-none  "
       role="menu"
       onContextMenu={(e) => e.preventDefault()}
     >
       {view === 'root' && (
         <>
-          <div className="px-2.5 py-1.5 text-[11px] font-medium uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+          <div className="px-2.5 py-1.5 text-[11px] font-medium uppercase tracking-wider text-[var(--bq-t3)] ">
             Atribuir tag
           </div>
           <button
             onClick={() => setView('conversation')}
-            className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-[13px] text-zinc-700 transition-colors hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-800/60"
+            className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-[13px] text-[var(--bq-t2)] transition-colors hover:bg-[var(--bq-surface)]  "
           >
-            <MessageSquare className="h-3.5 w-3.5 shrink-0 text-zinc-500 dark:text-zinc-400" />
+            <MessageSquare className="h-3.5 w-3.5 shrink-0 text-[var(--bq-t2)] " />
             <span className="flex-1">Na conversa</span>
             {appliedConversation.size > 0 && (
               <span className="text-[10px] font-medium text-primary">
                 {appliedConversation.size}
               </span>
             )}
-            <ChevronRight className="h-3.5 w-3.5 text-zinc-400" />
+            <ChevronRight className="h-3.5 w-3.5 text-[var(--bq-t3)]" />
           </button>
           <button
             onClick={() => setView('contact')}
-            className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-[13px] text-zinc-700 transition-colors hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-800/60"
+            className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-[13px] text-[var(--bq-t2)] transition-colors hover:bg-[var(--bq-surface)]  "
           >
-            <User className="h-3.5 w-3.5 shrink-0 text-zinc-500 dark:text-zinc-400" />
+            <User className="h-3.5 w-3.5 shrink-0 text-[var(--bq-t2)] " />
             <span className="flex-1">No contato</span>
             {appliedContact.size > 0 && (
               <span className="text-[10px] font-medium text-primary">
                 {appliedContact.size}
               </span>
             )}
-            <ChevronRight className="h-3.5 w-3.5 text-zinc-400" />
+            <ChevronRight className="h-3.5 w-3.5 text-[var(--bq-t3)]" />
           </button>
 
-          <div className="mx-2 my-1 border-t border-zinc-100 dark:border-zinc-800" />
+          <div className="mx-2 my-1 border-t border-[var(--bq-hair)] " />
 
-          <div className="px-2.5 py-1.5 text-[11px] font-medium uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+          <div className="px-2.5 py-1.5 text-[11px] font-medium uppercase tracking-wider text-[var(--bq-t3)] ">
             Organizar
           </div>
           <button
             onClick={() => setView('inbox-views')}
-            className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-[13px] text-zinc-700 transition-colors hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-800/60"
+            className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-[13px] text-[var(--bq-t2)] transition-colors hover:bg-[var(--bq-surface)]  "
           >
-            <InboxIcon className="h-3.5 w-3.5 shrink-0 text-zinc-500 dark:text-zinc-400" />
+            <InboxIcon className="h-3.5 w-3.5 shrink-0 text-[var(--bq-t2)] " />
             <span className="flex-1">Adicionar a inbox</span>
             {pinnedViewIds.size > 0 && (
               <span className="text-[10px] font-medium text-primary">
                 {pinnedViewIds.size}
               </span>
             )}
-            <ChevronRight className="h-3.5 w-3.5 text-zinc-400" />
+            <ChevronRight className="h-3.5 w-3.5 text-[var(--bq-t3)]" />
           </button>
           <button
             onClick={() => setView('pipeline')}
-            className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-[13px] text-zinc-700 transition-colors hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-800/60"
+            className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-[13px] text-[var(--bq-t2)] transition-colors hover:bg-[var(--bq-surface)]  "
           >
-            <KanbanSquare className="h-3.5 w-3.5 shrink-0 text-zinc-500 dark:text-zinc-400" />
+            <KanbanSquare className="h-3.5 w-3.5 shrink-0 text-[var(--bq-t2)] " />
             <span className="flex-1">Adicionar a pipeline</span>
-            <ChevronRight className="h-3.5 w-3.5 text-zinc-400" />
+            <ChevronRight className="h-3.5 w-3.5 text-[var(--bq-t3)]" />
           </button>
 
-          <div className="mx-2 my-1 border-t border-zinc-100 dark:border-zinc-800" />
+          <div className="mx-2 my-1 border-t border-[var(--bq-hair)] " />
 
           <button
             onClick={() => setRenameOpen(true)}
-            className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-[13px] text-zinc-700 transition-colors hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-800/60"
+            className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-[13px] text-[var(--bq-t2)] transition-colors hover:bg-[var(--bq-surface)]  "
           >
-            <Pencil className="h-3.5 w-3.5 shrink-0 text-zinc-500 dark:text-zinc-400" />
+            <Pencil className="h-3.5 w-3.5 shrink-0 text-[var(--bq-t2)] " />
             <span className="flex-1">Renomear</span>
           </button>
           <button
             onClick={markUnread}
             disabled={markingUnread || alreadyUnread}
             title={alreadyUnread ? 'Conversa já está como não-lida' : undefined}
-            className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-[13px] text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent dark:text-zinc-300 dark:hover:bg-zinc-800/60"
+            className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-[13px] text-[var(--bq-t2)] transition-colors hover:bg-[var(--bq-surface)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent  "
           >
             {markingUnread ? (
-              <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-zinc-400" />
+              <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-[var(--bq-t3)]" />
             ) : (
-              <Mail className="h-3.5 w-3.5 shrink-0 text-zinc-500 dark:text-zinc-400" />
+              <Mail className="h-3.5 w-3.5 shrink-0 text-[var(--bq-t2)] " />
             )}
             <span className="flex-1">Marcar como não-lida</span>
           </button>
           <button
             onClick={toggleArchive}
             disabled={archiving}
-            className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-[13px] text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-60 dark:text-zinc-300 dark:hover:bg-zinc-800/60"
+            className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-[13px] text-[var(--bq-t2)] transition-colors hover:bg-[var(--bq-surface)] disabled:opacity-60  "
           >
             {archiving ? (
-              <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-zinc-400" />
+              <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-[var(--bq-t3)]" />
             ) : isArchived ? (
-              <ArchiveRestore className="h-3.5 w-3.5 shrink-0 text-zinc-500 dark:text-zinc-400" />
+              <ArchiveRestore className="h-3.5 w-3.5 shrink-0 text-[var(--bq-t2)] " />
             ) : (
-              <Archive className="h-3.5 w-3.5 shrink-0 text-zinc-500 dark:text-zinc-400" />
+              <Archive className="h-3.5 w-3.5 shrink-0 text-[var(--bq-t2)] " />
             )}
             <span className="flex-1">{isArchived ? 'Desarquivar' : 'Arquivar'}</span>
           </button>
@@ -366,28 +367,28 @@ export function ConversationContextMenu({
         <>
           <button
             onClick={() => setView('root')}
-            className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-[11px] font-medium uppercase tracking-wider text-zinc-400 transition-colors hover:bg-zinc-50 dark:text-zinc-500 dark:hover:bg-zinc-800/60"
+            className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-[11px] font-medium uppercase tracking-wider text-[var(--bq-t3)] transition-colors hover:bg-[var(--bq-surface)]  "
           >
             <ArrowLeft className="h-3 w-3" />
             Adicionar a inbox
           </button>
-          <div className="mx-2 my-1 border-t border-zinc-100 dark:border-zinc-800" />
+          <div className="mx-2 my-1 border-t border-[var(--bq-hair)] " />
           <div
             className="overflow-y-auto scrollbar-thin"
             style={{ maxHeight: MENU_MAX_HEIGHT - 80 }}
           >
             {inboxViewsLoading ? (
               <div className="flex items-center justify-center py-4">
-                <Loader2 className="h-3.5 w-3.5 animate-spin text-zinc-400" />
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--bq-t3)]" />
               </div>
             ) : inboxViews.length === 0 ? (
               <div className="flex flex-col items-center px-3 py-4 text-center">
-                <InboxIcon className="h-5 w-5 text-zinc-300 dark:text-zinc-700" />
-                <p className="mt-1.5 text-[11px] text-zinc-400">
+                <InboxIcon className="h-5 w-5 text-[var(--bq-t3)] " />
+                <p className="mt-1.5 text-[11px] text-[var(--bq-t3)]">
                   Nenhuma inbox personalizada
                 </p>
-                <p className="mt-0.5 text-[10px] text-zinc-400">
-                  Crie uma na sidebar (Inbox › Nova inbox) ou via "criar inbox da seleção"
+                <p className="mt-0.5 text-[10px] text-[var(--bq-t3)]">
+                  Crie uma na sidebar (Inbox › Nova inbox) ou via &quot;criar inbox da seleção&quot;
                 </p>
               </div>
             ) : (
@@ -399,21 +400,21 @@ export function ConversationContextMenu({
                     key={v.id}
                     onClick={() => toggleInboxView(v)}
                     disabled={isPending}
-                    className="group flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-[13px] text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-60 dark:text-zinc-300 dark:hover:bg-zinc-800/60"
+                    className="group flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-[13px] text-[var(--bq-t2)] transition-colors hover:bg-[var(--bq-surface)] disabled:opacity-60  "
                     title={
                       isPinned
                         ? `Remover de "${v.name}"`
                         : `Adicionar a "${v.name}"`
                     }
                   >
-                    <Filter className="h-3.5 w-3.5 shrink-0 text-zinc-500 dark:text-zinc-400" />
+                    <Filter className="h-3.5 w-3.5 shrink-0 text-[var(--bq-t2)] " />
                     <span className="flex-1 truncate">{v.name}</span>
                     {isPending ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin text-zinc-400" />
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--bq-t3)]" />
                     ) : isPinned ? (
                       <>
                         <Check className="h-3.5 w-3.5 text-primary group-hover:hidden" />
-                        <X className="hidden h-3.5 w-3.5 text-red-500 group-hover:block" />
+                        <X className="hidden h-3.5 w-3.5 text-[var(--bq-err)] group-hover:block" />
                       </>
                     ) : null}
                   </button>
@@ -428,27 +429,27 @@ export function ConversationContextMenu({
         <>
           <button
             onClick={() => setView('root')}
-            className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-[11px] font-medium uppercase tracking-wider text-zinc-400 transition-colors hover:bg-zinc-50 dark:text-zinc-500 dark:hover:bg-zinc-800/60"
+            className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-[11px] font-medium uppercase tracking-wider text-[var(--bq-t3)] transition-colors hover:bg-[var(--bq-surface)]  "
           >
             <ArrowLeft className="h-3 w-3" />
             Adicionar a pipeline
           </button>
-          <div className="mx-2 my-1 border-t border-zinc-100 dark:border-zinc-800" />
+          <div className="mx-2 my-1 border-t border-[var(--bq-hair)] " />
           <div
             className="overflow-y-auto scrollbar-thin"
             style={{ maxHeight: MENU_MAX_HEIGHT - 80 }}
           >
             {pipelinesLoading ? (
               <div className="flex items-center justify-center py-4">
-                <Loader2 className="h-3.5 w-3.5 animate-spin text-zinc-400" />
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--bq-t3)]" />
               </div>
             ) : pipelines.length === 0 ? (
               <div className="flex flex-col items-center py-4 text-center">
-                <KanbanSquare className="h-5 w-5 text-zinc-300 dark:text-zinc-700" />
-                <p className="mt-1.5 text-[11px] text-zinc-400">
+                <KanbanSquare className="h-5 w-5 text-[var(--bq-t3)] " />
+                <p className="mt-1.5 text-[11px] text-[var(--bq-t3)]">
                   Nenhum pipeline
                 </p>
-                <p className="mt-0.5 text-[10px] text-zinc-400">
+                <p className="mt-0.5 text-[10px] text-[var(--bq-t3)]">
                   Crie em /pipelines
                 </p>
               </div>
@@ -460,12 +461,12 @@ export function ConversationContextMenu({
                     key={p.id}
                     onClick={() => addToPipeline(p.id, p.name)}
                     disabled={isPending}
-                    className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-[13px] text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-60 dark:text-zinc-300 dark:hover:bg-zinc-800/60"
+                    className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-[13px] text-[var(--bq-t2)] transition-colors hover:bg-[var(--bq-surface)] disabled:opacity-60  "
                   >
                     <KanbanSquare className="h-3.5 w-3.5 shrink-0 text-primary" />
                     <span className="flex-1 truncate">{p.name}</span>
                     {isPending && (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin text-zinc-400" />
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--bq-t3)]" />
                     )}
                   </button>
                 );
@@ -479,25 +480,25 @@ export function ConversationContextMenu({
         <>
           <button
             onClick={() => setView('root')}
-            className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-[11px] font-medium uppercase tracking-wider text-zinc-400 transition-colors hover:bg-zinc-50 dark:text-zinc-500 dark:hover:bg-zinc-800/60"
+            className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-[11px] font-medium uppercase tracking-wider text-[var(--bq-t3)] transition-colors hover:bg-[var(--bq-surface)]  "
           >
             <ArrowLeft className="h-3 w-3" />
             {view === 'conversation' ? 'Tags da conversa' : 'Tags do contato'}
           </button>
-          <div className="mx-2 my-1 border-t border-zinc-100 dark:border-zinc-800" />
+          <div className="mx-2 my-1 border-t border-[var(--bq-hair)] " />
           <div
             className="overflow-y-auto scrollbar-thin"
             style={{ maxHeight: MENU_MAX_HEIGHT - 80 }}
           >
             {isLoading ? (
               <div className="flex items-center justify-center py-4">
-                <Loader2 className="h-3.5 w-3.5 animate-spin text-zinc-400" />
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--bq-t3)]" />
               </div>
             ) : tags.length === 0 ? (
               <div className="flex flex-col items-center py-4 text-center">
-                <TagIcon className="h-5 w-5 text-zinc-300 dark:text-zinc-700" />
-                <p className="mt-1.5 text-[11px] text-zinc-400">Nenhuma tag</p>
-                <p className="mt-0.5 text-[10px] text-zinc-400">
+                <TagIcon className="h-5 w-5 text-[var(--bq-t3)] " />
+                <p className="mt-1.5 text-[11px] text-[var(--bq-t3)]">Nenhuma tag</p>
+                <p className="mt-0.5 text-[10px] text-[var(--bq-t3)]">
                   Crie em Configurações › Tags
                 </p>
               </div>
@@ -512,7 +513,7 @@ export function ConversationContextMenu({
                     key={tag.id}
                     onClick={() => toggleTag(tag, view)}
                     disabled={isPending}
-                    className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-[13px] text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-60 dark:text-zinc-300 dark:hover:bg-zinc-800/60"
+                    className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-[13px] text-[var(--bq-t2)] transition-colors hover:bg-[var(--bq-surface)] disabled:opacity-60  "
                   >
                     <span
                       className="h-3 w-3 shrink-0 rounded-full"
@@ -520,7 +521,7 @@ export function ConversationContextMenu({
                     />
                     <span className="flex-1 truncate">{tag.name}</span>
                     {isPending ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin text-zinc-400" />
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--bq-t3)]" />
                     ) : isOn ? (
                       <Check className="h-3.5 w-3.5 text-primary" />
                     ) : null}

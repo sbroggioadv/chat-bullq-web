@@ -1,14 +1,14 @@
 'use client';
 
-import { useSocket } from '@/features/inbox/hooks/use-socket';
 import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { X, Loader2, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
-import { ChatPanel } from './chat-panel';
+import { useSocket } from '@/features/inbox/hooks/use-socket';
+import { ChatPanel } from '@/features/inbox/components/chat-panel';
 import {
   inboxService,
-} from '../services/inbox.service';
+} from '@/features/inbox/services/inbox.service';
 
 interface Props {
   conversationId: string | null;
@@ -26,17 +26,16 @@ interface Props {
  * conversation work, the inbox page is still the right place.
  */
 export function ConversationDialog({ conversationId, open, onClose }: Props) {
-  const { connected } = useSocket();
   const queryClient = useQueryClient();
+  const { connected } = useSocket();
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['conversation', conversationId],
     queryFn: () => inboxService.getConversation(conversationId!),
     enabled: open && !!conversationId,
-    refetchInterval: connected ? false : 5000,
+    refetchInterval: open && !connected ? 5000 : false,
   });
 
-  // Derive from the keyed query so another conversation never flashes on open.
   const active = open && data?.id === conversationId ? data : null;
 
   // ESC closes; lock body scroll while open.

@@ -102,6 +102,10 @@ function matchesList(client: QueryClient, key: QueryKey, row: Conversation): boo
   const filters = view?.filters;
   const [unread, archived, groups, projectStatus, mineProjects, tags] = String(key[3]).split('|');
   const userId = key[8];
+  // Optional suffix keeps the original positional key compatible with saved views.
+  const tab = key[9];
+  if (tab === 'mentorships') return false; // No canonical classification yet.
+  if (tab === 'projects' && !row.project?.exists) return false;
   if ((unread === 'u' || filters?.unreadOnly) && !(row.unreadCount ?? 0)) return false;
   const archiveMode = archived === 'a' ? 'only' : filters?.archived ?? 'exclude';
   if (archiveMode === 'only' ? !row.isArchived : archiveMode === 'exclude' && row.isArchived) return false;
@@ -117,7 +121,8 @@ function matchesList(client: QueryClient, key: QueryKey, row: Conversation): boo
   } else if (project || mineProjects === 'mp:1') { if (!row.isGroup) return false; }
   else {
     if (key[5] && row.channelId !== key[5]) return false;
-    if (groups === 'g' ? !row.isGroup : !view && row.isGroup) return false;
+    if (tab === 'people' && row.isGroup || tab === 'groups' && !row.isGroup) return false;
+    if (!tab && (groups === 'g' ? !row.isGroup : !view && row.isGroup)) return false;
   }
   if (key[7] === 'MINE' && row.assignedToId !== userId) return false;
   const search = String(key[4] ?? '').toLowerCase();

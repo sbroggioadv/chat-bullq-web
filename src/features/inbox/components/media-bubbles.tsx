@@ -19,8 +19,8 @@ import {
   X,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useResolvedMedia } from '../hooks/use-resolved-media';
-import type { Message } from '../services/inbox.service';
+import { useResolvedMedia } from '@/features/inbox/hooks/use-resolved-media';
+import type { Message } from '@/features/inbox/services/inbox.service';
 
 /**
  * One file, all media bubbles. They share three concerns: lazy-resolve a
@@ -44,7 +44,7 @@ export function MediaImage({ message, isOutbound }: MediaProps) {
     <div ref={ref}>
       <div
         className={`group relative overflow-hidden rounded-lg ${
-          isOutbound ? 'bg-primary-foreground/10' : 'bg-zinc-100 dark:bg-zinc-700/40'
+          isOutbound ? 'bg-primary-foreground/10' : 'bg-[var(--bq-raised)] '
         }`}
         style={{ minHeight: '120px', minWidth: '160px' }}
       >
@@ -90,7 +90,7 @@ export function MediaVideo({ message, isOutbound }: MediaProps) {
     <div ref={ref}>
       <div
         className={`overflow-hidden rounded-lg ${
-          isOutbound ? 'bg-primary-foreground/10' : 'bg-zinc-100 dark:bg-zinc-700/40'
+          isOutbound ? 'bg-primary-foreground/10' : 'bg-[var(--bq-raised)] '
         }`}
       >
         {url ? (
@@ -124,7 +124,7 @@ export function MediaDocument({ message, isOutbound }: MediaProps) {
   const filename = (message.content?.fileName as string | undefined) || 'Documento';
   const mimeType = (message.content?.mimeType as string | undefined) || '';
   const caption = message.content?.caption as string | undefined;
-  const Icon = pickDocIcon(mimeType, filename);
+  const documentIcon = pickDocIcon(mimeType, filename);
 
   const onClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     if (!url) {
@@ -144,21 +144,21 @@ export function MediaDocument({ message, isOutbound }: MediaProps) {
         className={`flex items-center gap-3 rounded-lg border px-3 py-2.5 transition-colors ${
           isOutbound
             ? 'border-primary-foreground/20 bg-primary-foreground/10 hover:bg-primary-foreground/15'
-            : 'border-zinc-200 bg-zinc-50 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800/60 dark:hover:bg-zinc-800'
+            : 'border-[var(--bq-hair)] bg-[var(--bq-surface)] hover:bg-[var(--bq-raised)]   '
         }`}
       >
         <div
           className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-md ${
             isOutbound
               ? 'bg-primary-foreground/15'
-              : 'bg-white shadow-sm dark:bg-zinc-700'
+              : 'bg-[var(--bq-win-solid)] shadow-sm '
           }`}
         >
-          <Icon className="h-5 w-5 opacity-80" />
+          {documentIcon}
         </div>
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium">{filename}</p>
-          <p className={`truncate text-[11px] ${isOutbound ? 'opacity-70' : 'text-zinc-500 dark:text-zinc-400'}`}>
+          <p className={`truncate text-[11px] ${isOutbound ? 'opacity-70' : 'text-[var(--bq-t2)] '}`}>
             {loading ? 'Preparando download…' : error ? 'Falhou — toque pra tentar de novo' : (mimeType || 'Arquivo')}
           </p>
         </div>
@@ -216,7 +216,7 @@ export function MediaLocation({ message, isOutbound }: MediaProps) {
       className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors ${
         isOutbound
           ? 'border-primary-foreground/20 bg-primary-foreground/10 hover:bg-primary-foreground/15'
-          : 'border-zinc-200 bg-zinc-50 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800/60 dark:hover:bg-zinc-800'
+          : 'border-[var(--bq-hair)] bg-[var(--bq-surface)] hover:bg-[var(--bq-raised)]   '
       }`}
     >
       <MapPin className="h-4 w-4 shrink-0 opacity-70" />
@@ -266,13 +266,13 @@ export function MediaContact({ message, isOutbound }: MediaProps) {
       className={`min-w-[200px] max-w-[280px] rounded-lg border px-3 py-2.5 ${
         isOutbound
           ? 'border-primary-foreground/20 bg-primary-foreground/10'
-          : 'border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/60'
+          : 'border-[var(--bq-hair)] bg-[var(--bq-surface)]  '
       }`}
     >
       <div className="flex items-start gap-2.5">
         <div
           className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
-            isOutbound ? 'bg-primary-foreground/15' : 'bg-zinc-200 dark:bg-zinc-700'
+            isOutbound ? 'bg-primary-foreground/15' : 'bg-[var(--bq-raised-2)] '
           }`}
         >
           <UserRound className="h-5 w-5 opacity-70" />
@@ -338,7 +338,7 @@ function MediaSkeleton({
       type="button"
       onClick={onRetry}
       className={`flex w-full items-center gap-2 ${compact ? 'px-2 py-1.5' : 'px-3 py-6'} text-xs ${
-        isOutbound ? 'text-primary-foreground/80' : 'text-zinc-500 dark:text-zinc-400'
+        isOutbound ? 'text-primary-foreground/80' : 'text-[var(--bq-t2)] '
       }`}
     >
       {error ? (
@@ -403,26 +403,26 @@ function pickDocIcon(mime: string, filename: string) {
   const m = (mime || '').toLowerCase();
   const ext = filename.split('.').pop()?.toLowerCase() || '';
   if (m.startsWith('image/') || ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic'].includes(ext)) {
-    return FileImage;
+    return <FileImage className="h-5 w-5 opacity-80" />;
   }
   if (m.startsWith('video/') || ['mp4', 'mov', '3gp', 'webm'].includes(ext)) {
-    return FileVideo;
+    return <FileVideo className="h-5 w-5 opacity-80" />;
   }
   if (m.startsWith('audio/') || ['mp3', 'm4a', 'wav', 'ogg'].includes(ext)) {
-    return FileAudio;
+    return <FileAudio className="h-5 w-5 opacity-80" />;
   }
-  if (m === 'application/pdf' || ext === 'pdf') return FileText;
-  if (m === 'application/zip' || ['zip', 'rar', '7z'].includes(ext)) return FileArchive;
+  if (m === 'application/pdf' || ext === 'pdf') return <FileText className="h-5 w-5 opacity-80" />;
+  if (m === 'application/zip' || ['zip', 'rar', '7z'].includes(ext)) return <FileArchive className="h-5 w-5 opacity-80" />;
   if (
     ['xlsx', 'xls', 'csv'].includes(ext) ||
     m === 'text/csv' ||
     m.includes('spreadsheet') ||
     m.includes('excel')
   ) {
-    return FileSpreadsheet;
+    return <FileSpreadsheet className="h-5 w-5 opacity-80" />;
   }
   if (m.startsWith('text/') || ['txt', 'md', 'doc', 'docx'].includes(ext)) {
-    return FileText;
+    return <FileText className="h-5 w-5 opacity-80" />;
   }
-  return FileIcon;
+  return <FileIcon className="h-5 w-5 opacity-80" />;
 }

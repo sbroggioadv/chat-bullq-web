@@ -1,5 +1,6 @@
 'use client';
 
+import { Button } from '@/components/ui/foundation';
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
@@ -30,9 +31,9 @@ interface ProjectPanelProps {
 }
 
 const inputCls =
-  'w-full rounded-md border border-zinc-300 bg-white px-2.5 py-1.5 text-[13px] text-zinc-900 outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100';
+  'w-full rounded-md border border-[var(--bq-hair-strong)] bg-[var(--bq-win-solid)] px-2.5 py-1.5 text-[13px] text-[var(--bq-t1)] outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary   ';
 const labelCls =
-  'text-[11px] font-medium uppercase tracking-wide text-zinc-400 dark:text-zinc-500';
+  'text-[11px] font-medium uppercase tracking-wide text-[var(--bq-t3)] ';
 
 /**
  * Painel lateral de Projeto (dossiê). Se já existe, mostra resumo + link
@@ -99,22 +100,33 @@ export function ProjectPanel({ conversationId, onClose }: ProjectPanelProps) {
       toast.error(err instanceof Error ? err.message : 'Erro ao ligar dossiê'),
   });
 
+  const [taskTitle, setTaskTitle] = useState('');
+  const taskMutation = useMutation({
+    mutationFn: async (task?: { id: string; done: boolean }) => {
+      if (!project?.id) throw new Error('Vincule um projeto primeiro');
+      return task ? projectsService.updateTask(project.id, task.id, { done: !task.done }) : projectsService.addTask(project.id, taskTitle.trim());
+    },
+    onSuccess: saved => { onLinked(saved); setTaskTitle(''); },
+    onError: () => toast.error('Não foi possível salvar a tarefa'),
+  });
+
   const exists = !!project?.exists && !!project.id;
   const tasks = project?.tasks ?? [];
   const pending = tasks.filter((t) => !t.done).length;
 
   return (
-    <aside className="flex w-80 shrink-0 flex-col border-l border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
-      <div className="flex items-center justify-between border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
+    <aside className="flex w-80 shrink-0 flex-col border-l border-[var(--bq-hair)] bg-[var(--bq-win-solid)]  ">
+      <div className="flex items-center justify-between border-b border-[var(--bq-hair)] px-4 py-3 ">
         <div className="flex items-center gap-2">
           <FolderKanban className="h-4 w-4 text-primary" />
-          <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+          <span className="text-sm font-semibold text-[var(--bq-t1)] ">
             Projeto
           </span>
         </div>
         <button
+          aria-label="Fechar projeto"
           onClick={onClose}
-          className="rounded-md p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800"
+          className="rounded-md p-1 text-[var(--bq-t3)] hover:bg-[var(--bq-raised)] hover:text-[var(--bq-t2)] "
         >
           <X className="h-4 w-4" />
         </button>
@@ -126,14 +138,14 @@ export function ProjectPanel({ conversationId, onClose }: ProjectPanelProps) {
             {Array.from({ length: 4 }).map((_, i) => (
               <div
                 key={i}
-                className="h-12 animate-pulse rounded-md bg-zinc-100 dark:bg-zinc-900"
+                className="h-12 animate-pulse rounded-md bg-[var(--bq-raised)] "
               />
             ))}
           </div>
         ) : exists ? (
           <>
             <div className="space-y-1">
-              <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+              <p className="text-sm font-semibold text-[var(--bq-t1)] ">
                 {project.name || 'Dossiê'}
               </p>
               {project.status && (
@@ -143,7 +155,7 @@ export function ProjectPanel({ conversationId, onClose }: ProjectPanelProps) {
               )}
             </div>
             {project.description && (
-              <p className="text-[13px] leading-relaxed text-zinc-600 dark:text-zinc-400">
+              <p className="text-[13px] leading-relaxed text-[var(--bq-t2)] ">
                 {project.description}
               </p>
             )}
@@ -157,29 +169,36 @@ export function ProjectPanel({ conversationId, onClose }: ProjectPanelProps) {
             <div className="space-y-1.5">
               <p className={labelCls}>Tarefas</p>
               {tasks.length === 0 ? (
-                <p className="text-[13px] text-zinc-400">Nenhuma tarefa.</p>
+                <p className="text-[13px] text-[var(--bq-t3)]">Nenhuma tarefa.</p>
               ) : (
                 <>
-                  <p className="text-[12px] text-zinc-500">
+                  <p className="text-[12px] text-[var(--bq-t2)]">
                     {pending} de {tasks.length} em aberto
                   </p>
                   <ul className="space-y-1">
-                    {tasks.slice(0, 5).map((t) => (
+                    {tasks.map((t) => (
                       <li
                         key={t.id}
                         className={`text-[13px] ${
                           t.done
-                            ? 'text-zinc-400 line-through'
-                            : 'text-zinc-700 dark:text-zinc-300'
+                            ? 'text-[var(--bq-t3)] line-through'
+                            : 'text-[var(--bq-t2)] '
                         }`}
                       >
-                        {t.title}
+                        <label className="flex items-start gap-2"><input type="checkbox" checked={t.done} disabled={taskMutation.isPending} onChange={() => taskMutation.mutate(t)} />{t.title}</label>
                       </li>
                     ))}
                   </ul>
                 </>
               )}
             </div>
+            <form className="flex gap-2" onSubmit={e => { e.preventDefault(); if (taskTitle.trim()) taskMutation.mutate(undefined); }}>
+              <input aria-label="Nova tarefa do projeto" placeholder="Adicionar tarefa…" className={inputCls} value={taskTitle} onChange={e => setTaskTitle(e.target.value)} />
+              <Button type="submit" disabled={!taskTitle.trim() || taskMutation.isPending}>Adicionar</Button>
+            </form>
+            <section className="space-y-2"><h3 className={labelCls}>Anexos do projeto</h3>
+              {project.attachments?.length ? project.attachments.map(file => <div key={file.id} className="text-xs">{file.url ? <a href={file.url} target="_blank" rel="noreferrer" className="underline">{file.label || file.fileName}</a> : <span>{file.label || file.fileName} · arquivo indisponível</span>}</div>) : <p className="text-xs text-[var(--bq-t3)]">Nenhum anexo. Use “Anexar ao projeto” em uma mensagem.</p>}
+            </section>
             {PROJECT_FIELDS.filter(
               (f) => f.key === 'hoppeId' || f.key === 'responsibleUserId',
             ).map((field) => (
@@ -199,7 +218,7 @@ export function ProjectPanel({ conversationId, onClose }: ProjectPanelProps) {
           </>
         ) : (
           <>
-            <p className="text-[13px] text-zinc-500">
+            <p className="text-[13px] text-[var(--bq-t2)]">
               Esta conversa ainda não tem dossiê. Crie um ou ligue a um
               existente.
             </p>
@@ -235,7 +254,7 @@ export function ProjectPanel({ conversationId, onClose }: ProjectPanelProps) {
               Criar dossiê
             </button>
 
-            <div className="border-t border-zinc-200 pt-4 dark:border-zinc-800">
+            <div className="border-t border-[var(--bq-hair)] pt-4 ">
               <p className={labelCls}>Ou ligar a um existente</p>
               <select
                 className={`${inputCls} mt-1.5`}
@@ -261,7 +280,7 @@ export function ProjectPanel({ conversationId, onClose }: ProjectPanelProps) {
                   linkMutation.mutate();
                 }}
                 disabled={linkMutation.isPending || !selectedProjectId}
-                className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-900"
+                className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-[var(--bq-hair-strong)] px-4 py-2 text-sm font-medium text-[var(--bq-t2)] hover:bg-[var(--bq-surface)] disabled:opacity-50   "
               >
                 {linkMutation.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin" />

@@ -1,10 +1,12 @@
 'use client';
 
+import { inboxErrorMessage } from '@/features/inbox/components/inbox-error';
+
 import { useEffect, useState } from 'react';
 import { X, Loader2, User, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
-import { inboxService, type Conversation } from '../services/inbox.service';
+import { inboxService, type Conversation } from '@/features/inbox/services/inbox.service';
 
 interface Props {
   conversation: Conversation;
@@ -86,8 +88,8 @@ export function RenameConversationDialog({ conversation, open, onClose }: Props)
         });
       }
       onClose();
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Erro ao salvar');
+    } catch (err: unknown) {
+      toast.error(inboxErrorMessage(err, 'Erro ao salvar'));
     } finally {
       setSaving(false);
     }
@@ -102,10 +104,10 @@ export function RenameConversationDialog({ conversation, open, onClose }: Props)
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-950"
+        className="w-full max-w-md overflow-hidden rounded-xl border border-[var(--bq-hair)] bg-[var(--bq-win-solid)] shadow-2xl  "
       >
-        <div className="flex items-center justify-between gap-2 border-b border-zinc-100 px-4 py-3 dark:border-zinc-800">
-          <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+        <div className="flex items-center justify-between gap-2 border-b border-[var(--bq-hair)] px-4 py-3 ">
+          <h2 className="text-sm font-semibold text-[var(--bq-t1)] ">
             Renomear
           </h2>
           <button
@@ -113,7 +115,7 @@ export function RenameConversationDialog({ conversation, open, onClose }: Props)
             onClick={onClose}
             disabled={saving}
             aria-label="Fechar"
-            className="flex h-7 w-7 items-center justify-center rounded-md text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 disabled:opacity-50 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+            className="flex h-7 w-7 items-center justify-center rounded-md text-[var(--bq-t3)] hover:bg-[var(--bq-raised)] hover:text-[var(--bq-t2)] disabled:opacity-50  "
           >
             <X className="h-4 w-4" />
           </button>
@@ -121,11 +123,11 @@ export function RenameConversationDialog({ conversation, open, onClose }: Props)
 
         <div className="space-y-4 px-4 py-4">
           <div>
-            <label className="flex items-center gap-1.5 text-[12px] font-medium text-zinc-700 dark:text-zinc-300">
-              <User className="h-3.5 w-3.5 text-zinc-400" />
+            <label className="flex items-center gap-1.5 text-[12px] font-medium text-[var(--bq-t2)] ">
+              <User className="h-3.5 w-3.5 text-[var(--bq-t3)]" />
               Nome do contato
             </label>
-            <p className="mt-0.5 text-[11px] text-zinc-500">
+            <p className="mt-0.5 text-[11px] text-[var(--bq-t2)]">
               Aparece pra todo o time. Não muda nada do lado do cliente.
             </p>
             <input
@@ -134,17 +136,17 @@ export function RenameConversationDialog({ conversation, open, onClose }: Props)
               onChange={(e) => setContactName(e.target.value)}
               disabled={saving}
               placeholder={conversation.contact?.phone ?? 'Sem nome'}
-              className="mt-1.5 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm outline-none transition-colors placeholder:text-zinc-400 focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+              className="mt-1.5 w-full rounded-md border border-[var(--bq-hair)] bg-[var(--bq-win-solid)] px-3 py-2 text-sm outline-none transition-colors placeholder:text-[var(--bq-t3)] focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-50   "
               autoFocus
             />
           </div>
 
           <div>
-            <label className="flex items-center gap-1.5 text-[12px] font-medium text-zinc-700 dark:text-zinc-300">
-              <MessageSquare className="h-3.5 w-3.5 text-zinc-400" />
+            <label className="flex items-center gap-1.5 text-[12px] font-medium text-[var(--bq-t2)] ">
+              <MessageSquare className="h-3.5 w-3.5 text-[var(--bq-t3)]" />
               Apelido da conversa
             </label>
-            <p className="mt-0.5 text-[11px] text-zinc-500">
+            <p className="mt-0.5 text-[11px] text-[var(--bq-t2)]">
               Opcional. Só aparece pra você na inbox — o cliente não vê.
             </p>
             <input
@@ -154,17 +156,17 @@ export function RenameConversationDialog({ conversation, open, onClose }: Props)
               disabled={saving}
               placeholder="ex: liberou ontem, aguardando feedback"
               maxLength={120}
-              className="mt-1.5 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm outline-none transition-colors placeholder:text-zinc-400 focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+              className="mt-1.5 w-full rounded-md border border-[var(--bq-hair)] bg-[var(--bq-win-solid)] px-3 py-2 text-sm outline-none transition-colors placeholder:text-[var(--bq-t3)] focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-50   "
             />
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-2 border-t border-zinc-100 bg-zinc-50/50 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900/50">
+        <div className="flex items-center justify-end gap-2 border-t border-[var(--bq-hair)] bg-[var(--bq-surface)] px-4 py-3  ">
           <button
             type="button"
             onClick={onClose}
             disabled={saving}
-            className="rounded-md px-3 py-1.5 text-xs font-medium text-zinc-600 hover:bg-zinc-100 disabled:opacity-50 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            className="rounded-md px-3 py-1.5 text-xs font-medium text-[var(--bq-t2)] hover:bg-[var(--bq-raised)] disabled:opacity-50  "
           >
             Cancelar
           </button>

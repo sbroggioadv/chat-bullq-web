@@ -1,17 +1,19 @@
 'use client';
 
+import '@/features/inbox/components/conversations.css';
+
 import { isAxiosError } from 'axios';
 import { VirtualList } from '@/features/inbox/components/virtual-list';
 import { Fragment, useEffect, useRef, useState, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, CheckCheck, Clock, AlertCircle, ExternalLink, Reply, Trash2, X, Ban, Forward, Paperclip } from 'lucide-react';
-import { ForwardMessageDialog } from './forward-message-dialog';
+import { ForwardMessageDialog } from '@/features/inbox/components/forward-message-dialog';
 import { toast } from 'sonner';
-import { inboxService, type Conversation, type Message } from '../services/inbox.service';
-import { ChatInput, validateFile, type ChatInputHandle } from './chat-input';
-import { ConversationHeader } from './conversation-header';
-import { StoryReplyCard } from './story-reply-card';
-import { AudioMessagePlayer } from './audio-message-player';
+import { inboxService, type Conversation, type Message } from '@/features/inbox/services/inbox.service';
+import { ChatInput, validateFile, type ChatInputHandle } from '@/features/inbox/components/chat-input';
+import { ConversationHeader } from '@/features/inbox/components/conversation-header';
+import { StoryReplyCard } from '@/features/inbox/components/story-reply-card';
+import { AudioMessagePlayer } from '@/features/inbox/components/audio-message-player';
 import {
   MediaImage,
   MediaVideo,
@@ -19,18 +21,18 @@ import {
   MediaSticker,
   MediaLocation,
   MediaContact,
-} from './media-bubbles';
+} from '@/features/inbox/components/media-bubbles';
 import { receiveMessage, upsertMessage } from '@/features/inbox/hooks/message-cache';
-import { useSocket } from '../hooks/use-socket';
+import { useSocket } from '@/features/inbox/hooks/use-socket';
 import { useAuthStore } from '@/stores/auth-store';
-import { PendingActionsList } from '../pending-actions/pending-actions-list';
+import { PendingActionsList } from '@/features/inbox/pending-actions/pending-actions-list';
 import type { Contact as OrgContact } from '@/features/contacts/services/contacts.service';
 import { projectsService } from '@/features/projects/services/projects.service';
 import {
   clickupInboxService,
   fanOutClipAttachment,
   type ClickUpWorkbenchResponse,
-} from '../services/clickup-inbox.service';
+} from '@/features/inbox/services/clickup-inbox.service';
 
 function translateSkipReason(reason: string): string {
   const map: Record<string, string> = {
@@ -116,7 +118,7 @@ function EngagementWindowBanner({
       : `${Math.floor(ageHours / 24)} dias`;
 
   return (
-    <div className="flex items-start gap-2 border-b border-amber-200 bg-amber-50 px-4 py-2.5 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
+    <div className="flex items-start gap-2 border-b border-[var(--bq-warn)] bg-[var(--bq-warn-soft)] px-4 py-2.5 text-xs text-[var(--bq-warn)]   ">
       <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
       <div className="flex-1 leading-relaxed">
         <strong>Janela de 24h expirada</strong> — última mensagem do cliente
@@ -177,12 +179,12 @@ function LinkPreviewCard({ url, isOutbound }: { url: string; isOutbound: boolean
         <img
           src={url}
           alt="Mídia compartilhada"
-          className="max-h-64 rounded-lg bg-zinc-100 object-cover dark:bg-zinc-800"
+          className="max-h-64 rounded-lg bg-[var(--bq-raised)] object-cover "
           onError={() => setImgOk(false)}
         />
         <span
           className={`mt-1 block text-[10px] ${
-            isOutbound ? 'opacity-80' : 'text-zinc-400'
+            isOutbound ? 'opacity-80' : 'text-[var(--bq-t3)]'
           }`}
         >
           {host}
@@ -199,7 +201,7 @@ function LinkPreviewCard({ url, isOutbound }: { url: string; isOutbound: boolean
       className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs transition-colors ${
         isOutbound
           ? 'border-primary-foreground/20 bg-primary-foreground/10 hover:bg-primary-foreground/15'
-          : 'border-zinc-200 bg-zinc-50 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800/60 dark:hover:bg-zinc-800'
+          : 'border-[var(--bq-hair)] bg-[var(--bq-surface)] hover:bg-[var(--bq-raised)]   '
       }`}
     >
       <ExternalLink className="h-3.5 w-3.5 shrink-0 opacity-60" />
@@ -286,7 +288,7 @@ function TemplateButtonRow({
         const baseClass = `block rounded-md border px-3 py-1.5 text-center text-xs font-medium transition-colors ${
           isOutbound
             ? 'border-primary-foreground/30 bg-primary-foreground/10 hover:bg-primary-foreground/20'
-            : 'border-zinc-200 bg-zinc-50 text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-200 dark:hover:bg-zinc-800'
+            : 'border-[var(--bq-hair)] bg-[var(--bq-surface)] text-[var(--bq-t2)] hover:bg-[var(--bq-raised)]    '
         }`;
         if (btn.url) {
           return (
@@ -336,7 +338,7 @@ function TemplateMessage({
           className={`overflow-hidden rounded-lg border ${
             isOutbound
               ? 'border-primary-foreground/20 bg-primary-foreground/5'
-              : 'border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/60'
+              : 'border-[var(--bq-hair)] bg-[var(--bq-surface)]  '
           }`}
         >
           {el.imageUrl && (
@@ -397,13 +399,13 @@ function ContactAvatar({
         alt={name || 'avatar'}
         referrerPolicy="no-referrer"
         onError={() => setFailed(true)}
-        className={`${dim} shrink-0 rounded-full bg-zinc-200 object-cover dark:bg-zinc-700`}
+        className={`${dim} shrink-0 rounded-full bg-[var(--bq-raised-2)] object-cover `}
       />
     );
   }
   return (
     <div
-      className={`${dim} flex shrink-0 items-center justify-center rounded-full bg-zinc-200 font-semibold text-zinc-500 dark:bg-zinc-700 dark:text-zinc-400`}
+      className={`${dim} flex shrink-0 items-center justify-center rounded-full bg-[var(--bq-raised-2)] font-semibold text-[var(--bq-t2)]  `}
     >
       {initials}
     </div>
@@ -903,7 +905,7 @@ export function ChatPanel({
     // ChatInput pra fora do painel — quebra dramaticamente quando o pai
     // é um modal com altura fixa.
     <div
-      className={`relative flex min-h-0 min-w-0 flex-1 flex-col transition-colors ${
+      className={`bq-chat-column relative flex min-h-0 min-w-0 flex-1 flex-col transition-colors ${
         isPanelDragging ? 'bg-primary/5 ring-2 ring-inset ring-primary/40' : ''
       }`}
       onDragEnter={handlePanelDragEnter}
@@ -931,7 +933,7 @@ export function ChatPanel({
 
       {/* Indicador de digitação vive no fio (bolha), no estilo WhatsApp. */}
       {aiSkip && (
-        <div className="flex items-center gap-2 border-b border-amber-100 bg-amber-50 px-4 py-2 text-xs text-amber-700 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-300">
+        <div className="flex items-center gap-2 border-b border-[var(--bq-warn)] bg-[var(--bq-warn-soft)] px-4 py-2 text-xs text-[var(--bq-warn)]   ">
           <span>⏸ IA pausada · {translateSkipReason(aiSkip.reason)}</span>
         </div>
       )}
@@ -941,13 +943,13 @@ export function ChatPanel({
         messages={messages}
       />
 
-      <div ref={timelineRef} className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-zinc-50 p-4 dark:bg-zinc-900/50">
+      <div ref={timelineRef} className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-[var(--bq-surface)] p-4 ">
         {isLoading ? (
           <div className="flex h-full items-center justify-center">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           </div>
         ) : messages.length === 0 && !aiTyping ? (
-          <div className="flex h-full items-center justify-center text-sm text-zinc-400">
+          <div className="flex h-full items-center justify-center text-sm text-[var(--bq-t3)]">
             Nenhuma mensagem ainda
           </div>
         ) : (
@@ -978,7 +980,7 @@ export function ChatPanel({
                   <Fragment key={msg.id}>
                   {showDateSeparator && (
                     <div className="flex justify-center pb-1 pt-3 first:pt-0">
-                      <span className="rounded-full bg-zinc-200/80 px-3 py-1 text-[11px] font-medium text-zinc-600 shadow-sm dark:bg-zinc-800 dark:text-zinc-300">
+                      <span className="rounded-full bg-[var(--bq-raised-2)] px-3 py-1 text-[11px] font-medium text-[var(--bq-t2)] shadow-sm  ">
                         {formatDateSeparator(msg.createdAt)}
                       </span>
                     </div>
@@ -998,7 +1000,7 @@ export function ChatPanel({
                         <button
                           type="button"
                           onClick={() => startReply(msg)}
-                          className="rounded-full bg-white p-1.5 text-zinc-400 shadow-sm ring-1 ring-zinc-200 hover:text-zinc-700 dark:bg-zinc-800 dark:ring-zinc-700 dark:hover:text-zinc-100"
+                          className="rounded-full bg-[var(--bq-win-solid)] p-1.5 text-[var(--bq-t3)] shadow-sm ring-1 ring-[var(--bq-hair)] hover:text-[var(--bq-t2)]   "
                           title="Responder"
                           aria-label="Responder esta mensagem"
                         >
@@ -1007,7 +1009,7 @@ export function ChatPanel({
                         <button
                           type="button"
                           onClick={() => handleStartForward(msg)}
-                          className="rounded-full bg-white p-1.5 text-zinc-400 shadow-sm ring-1 ring-zinc-200 hover:text-zinc-700 dark:bg-zinc-800 dark:ring-zinc-700 dark:hover:text-zinc-100"
+                          className="rounded-full bg-[var(--bq-win-solid)] p-1.5 text-[var(--bq-t3)] shadow-sm ring-1 ring-[var(--bq-hair)] hover:text-[var(--bq-t2)]   "
                           title="Encaminhar"
                           aria-label="Encaminhar esta mensagem"
                         >
@@ -1016,7 +1018,7 @@ export function ChatPanel({
                         <button
                           type="button"
                           onClick={() => handleAttachToProject(msg)}
-                          className="rounded-full bg-white p-1.5 text-zinc-400 shadow-sm ring-1 ring-zinc-200 hover:text-zinc-700 dark:bg-zinc-800 dark:ring-zinc-700 dark:hover:text-zinc-100"
+                          className="rounded-full bg-[var(--bq-win-solid)] p-1.5 text-[var(--bq-t3)] shadow-sm ring-1 ring-[var(--bq-hair)] hover:text-[var(--bq-t2)]   "
                           title="Anexar ao projeto"
                           aria-label="Anexar esta mensagem ao projeto"
                         >
@@ -1025,7 +1027,7 @@ export function ChatPanel({
                         <button
                           type="button"
                           onClick={() => handleRevoke(msg)}
-                          className="rounded-full bg-white p-1.5 text-zinc-400 shadow-sm ring-1 ring-zinc-200 hover:text-red-600 dark:bg-zinc-800 dark:ring-zinc-700 dark:hover:text-red-400"
+                          className="rounded-full bg-[var(--bq-win-solid)] p-1.5 text-[var(--bq-t3)] shadow-sm ring-1 ring-[var(--bq-hair)] hover:text-[var(--bq-err)]   "
                           title="Deletar pra todos"
                           aria-label="Deletar mensagem pra todos"
                         >
@@ -1068,7 +1070,7 @@ export function ChatPanel({
                           className={`mb-1 rounded-xl border px-3 py-2 text-xs ${
                             isOutbound
                               ? 'border-primary/40 bg-primary/10 text-primary-foreground/80'
-                              : 'border-zinc-200 bg-zinc-50 text-zinc-500 dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-400'
+                              : 'border-[var(--bq-hair)] bg-[var(--bq-surface)] text-[var(--bq-t2)]   '
                           }`}
                         >
                           <p className="text-[10px] uppercase tracking-wider opacity-70">
@@ -1114,7 +1116,7 @@ export function ChatPanel({
                             className={`mb-1 block w-full rounded-md border-l-2 border-primary px-2 py-1 text-left text-xs ${
                               isOutbound
                                 ? 'bg-primary/10 text-primary-foreground/80'
-                                : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800/70 dark:text-zinc-300 dark:hover:bg-zinc-800'
+                                : 'bg-[var(--bq-raised)] text-[var(--bq-t2)] hover:bg-[var(--bq-raised-2)]   '
                             }`}
                           >
                             {msg.metadata.replyTo.senderName && (
@@ -1134,7 +1136,7 @@ export function ChatPanel({
                           className={`flex items-center gap-2 rounded-2xl border border-dashed px-4 py-2.5 italic ${
                             isOutbound
                               ? 'rounded-br-md border-primary/40 bg-primary/5 text-primary/70'
-                              : 'rounded-bl-md border-zinc-300 bg-zinc-50 text-zinc-400 dark:border-zinc-700 dark:bg-zinc-800/40 dark:text-zinc-500'
+                              : 'rounded-bl-md border-[var(--bq-hair-strong)] bg-[var(--bq-surface)] text-[var(--bq-t3)]   '
                           }`}
                           title={
                             msg.revokeSucceededRemote
@@ -1162,7 +1164,7 @@ export function ChatPanel({
                           />
                           <div
                             className={`mt-1 flex items-center gap-1 px-1 text-[10px] ${
-                              isOutbound ? 'justify-end text-zinc-400' : 'text-zinc-400'
+                              isOutbound ? 'justify-end text-[var(--bq-t3)]' : 'text-[var(--bq-t3)]'
                             }`}
                           >
                             <span>{formatTime(msg.createdAt)}</span>
@@ -1171,7 +1173,7 @@ export function ChatPanel({
                                 <StatusIcon
                                   className={`h-3 w-3 ${
                                     msg.status === 'FAILED'
-                                      ? 'text-red-500'
+                                      ? 'text-[var(--bq-err)]'
                                       : msg.status === 'READ'
                                         ? 'text-primary'
                                         : ''
@@ -1183,11 +1185,7 @@ export function ChatPanel({
                         </>
                       ) : (
                         <div
-                          className={`rounded-2xl px-4 py-2.5 ${
-                            isOutbound
-                              ? 'rounded-br-md bg-primary text-primary-foreground'
-                              : 'rounded-bl-md bg-white shadow-sm dark:bg-zinc-800 dark:text-zinc-100'
-                          }`}
+                          className="bq-message-bubble" data-outbound={isOutbound}
                         >
                           {msg.type === 'CONTACT' ||
                           (msg.type === 'TEXT' &&
@@ -1244,7 +1242,7 @@ export function ChatPanel({
                           )}
                           <div
                             className={`mt-1 flex items-center gap-1 text-[10px] ${
-                              isOutbound ? 'justify-end opacity-70' : 'text-zinc-400'
+                              isOutbound ? 'justify-end opacity-70' : 'text-[var(--bq-t3)]'
                             }`}
                           >
                             <span>{formatTime(msg.createdAt)}</span>
@@ -1253,9 +1251,9 @@ export function ChatPanel({
                                 <StatusIcon
                                   className={`h-3 w-3 ${
                                     msg.status === 'FAILED'
-                                      ? 'text-red-300'
+                                      ? 'text-[var(--bq-err)]'
                                       : msg.status === 'READ'
-                                        ? 'text-blue-300'
+                                        ? 'text-[var(--bq-info)]'
                                         : ''
                                   }`}
                                 />
@@ -1266,10 +1264,10 @@ export function ChatPanel({
                       )}
                       {reactions.length > 0 && (
                         <div className={`absolute -bottom-2 ${isOutbound ? 'right-2' : 'left-2'} flex gap-0.5`}>
-                          <span className="rounded-full bg-white px-1.5 py-0.5 text-xs shadow-sm ring-1 ring-zinc-200/80 dark:bg-zinc-800 dark:ring-zinc-700">
+                          <span className="rounded-full bg-[var(--bq-win-solid)] px-1.5 py-0.5 text-xs shadow-sm ring-1 ring-[var(--bq-hair)]  ">
                             {[...new Set(reactions)].join('')}
                             {reactions.length > 1 && (
-                              <span className="ml-0.5 text-[10px] text-zinc-400">{reactions.length}</span>
+                              <span className="ml-0.5 text-[10px] text-[var(--bq-t3)]">{reactions.length}</span>
                             )}
                           </span>
                         </div>
@@ -1280,7 +1278,7 @@ export function ChatPanel({
                         <button
                           type="button"
                           onClick={() => startReply(msg)}
-                          className="rounded-full bg-white p-1.5 text-zinc-400 shadow-sm ring-1 ring-zinc-200 hover:text-zinc-700 dark:bg-zinc-800 dark:ring-zinc-700 dark:hover:text-zinc-100"
+                          className="rounded-full bg-[var(--bq-win-solid)] p-1.5 text-[var(--bq-t3)] shadow-sm ring-1 ring-[var(--bq-hair)] hover:text-[var(--bq-t2)]   "
                           title="Responder"
                           aria-label="Responder esta mensagem"
                         >
@@ -1289,7 +1287,7 @@ export function ChatPanel({
                         <button
                           type="button"
                           onClick={() => handleStartForward(msg)}
-                          className="rounded-full bg-white p-1.5 text-zinc-400 shadow-sm ring-1 ring-zinc-200 hover:text-zinc-700 dark:bg-zinc-800 dark:ring-zinc-700 dark:hover:text-zinc-100"
+                          className="rounded-full bg-[var(--bq-win-solid)] p-1.5 text-[var(--bq-t3)] shadow-sm ring-1 ring-[var(--bq-hair)] hover:text-[var(--bq-t2)]   "
                           title="Encaminhar"
                           aria-label="Encaminhar esta mensagem"
                         >
@@ -1298,7 +1296,7 @@ export function ChatPanel({
                         <button
                           type="button"
                           onClick={() => handleAttachToProject(msg)}
-                          className="rounded-full bg-white p-1.5 text-zinc-400 shadow-sm ring-1 ring-zinc-200 hover:text-zinc-700 dark:bg-zinc-800 dark:ring-zinc-700 dark:hover:text-zinc-100"
+                          className="rounded-full bg-[var(--bq-win-solid)] p-1.5 text-[var(--bq-t3)] shadow-sm ring-1 ring-[var(--bq-hair)] hover:text-[var(--bq-t2)]   "
                           title="Anexar ao projeto"
                           aria-label="Anexar esta mensagem ao projeto"
                         >
@@ -1352,12 +1350,12 @@ export function ChatPanel({
 function TypingBubble({ name }: { name: string }) {
   return (
     <div className="flex justify-start" aria-live="polite" aria-label={`${name} está digitando`}>
-      <div className="rounded-2xl rounded-bl-md bg-white px-3.5 py-2.5 shadow-sm dark:bg-zinc-800">
+      <div className="rounded-2xl rounded-bl-md bg-[var(--bq-win-solid)] px-3.5 py-2.5 shadow-sm ">
         <p className="mb-1.5 text-[11px] font-semibold text-primary">{name}</p>
         <div className="flex h-4 items-center gap-1 px-0.5">
-          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-zinc-400 [animation-delay:-0.32s] dark:bg-zinc-500" />
-          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-zinc-400 [animation-delay:-0.16s] dark:bg-zinc-500" />
-          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-zinc-400 dark:bg-zinc-500" />
+          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[var(--bq-raised-2)] [animation-delay:-0.32s] " />
+          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[var(--bq-raised-2)] [animation-delay:-0.16s] " />
+          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[var(--bq-raised-2)] " />
         </div>
       </div>
     </div>
@@ -1381,17 +1379,17 @@ function ReplyPreviewBar({
     (typeof c.caption === 'string' && c.caption) ||
     `[${(message.type || 'mensagem').toLowerCase()}]`;
   return (
-    <div className="flex items-center gap-2 border-t border-zinc-200 bg-zinc-50 px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900">
+    <div className="flex items-center gap-2 border-t border-[var(--bq-hair)] bg-[var(--bq-surface)] px-3 py-2  ">
       <div className="flex-1 min-w-0 border-l-2 border-primary pl-2">
         <p className="text-xs font-medium text-primary">Respondendo {sender}</p>
-        <p className="truncate text-xs text-zinc-600 dark:text-zinc-400">
+        <p className="truncate text-xs text-[var(--bq-t2)] ">
           {preview}
         </p>
       </div>
       <button
         type="button"
         onClick={onCancel}
-        className="rounded-md p-1 text-zinc-400 hover:bg-zinc-200 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+        className="rounded-md p-1 text-[var(--bq-t3)] hover:bg-[var(--bq-raised-2)] hover:text-[var(--bq-t2)]  "
         aria-label="Cancelar resposta"
       >
         <X className="h-4 w-4" />

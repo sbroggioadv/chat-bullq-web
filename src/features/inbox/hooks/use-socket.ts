@@ -15,19 +15,20 @@ export function useSocket() {
     bindLifecycle(socket);
   }, []);
 
-  const on = useCallback((event: string, handler: (...args: any[]) => void) => {
+  const on = useCallback(<Args extends unknown[]>(event: string, handler: (...args: Args) => void) => {
     socketRef.current?.on(event, handler);
     return () => {
       socketRef.current?.off(event, handler);
     };
   }, []);
 
-  const emit = useCallback((event: string, data: any) => {
+  const emit = useCallback((event: string, data: unknown) => {
     const socket = socketRef.current;
     if (!socket) return;
+    const conversationId = data && typeof data === 'object' && 'conversationId' in data && typeof data.conversationId === 'string' ? data.conversationId : null;
     // Track join/leave to support auto-rejoin across reconnects.
     if (event === 'join:conversation') {
-      setActiveConversation(data?.conversationId ?? null);
+      setActiveConversation(conversationId);
       // Defer the actual emit until backend signals `ready`. Without this,
       // a fresh tab opens the inbox, mounts ChatPanel, fires this emit
       // BEFORE handleConnection finishes the DB lookup, and the join is
@@ -35,7 +36,7 @@ export function useSocket() {
       if (!isSocketReady()) return;
     }
     if (event === 'leave:conversation') {
-      if (getActiveConversation() === data?.conversationId) {
+      if (getActiveConversation() === conversationId) {
         setActiveConversation(null);
       }
     }

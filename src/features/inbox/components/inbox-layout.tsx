@@ -1,5 +1,7 @@
 'use client';
 
+import { ArrowLeft } from 'lucide-react';
+import '@/features/inbox/components/conversations.css';
 import { type ReactNode, useCallback, useRef } from 'react';
 import {
   Group,
@@ -12,11 +14,13 @@ import {
   INBOX_COL_MAX,
   INBOX_COL_MIN,
   useInboxColumnWidth,
-} from '../hooks/use-inbox-column-width';
+} from '@/features/inbox/hooks/use-inbox-column-width';
 
 interface InboxLayoutProps {
   list: ReactNode;
   panel: ReactNode;
+  active?: boolean;
+  onBack?: () => void;
 }
 
 /**
@@ -33,7 +37,7 @@ interface InboxLayoutProps {
  * (override do default da lib — que resetaria pro último `defaultSize`,
  * ou seja, o último valor persistido — comportamento errado pra nós).
  */
-export function InboxLayout({ list, panel }: InboxLayoutProps) {
+export function InboxLayout({ list, panel, active = false, onBack }: InboxLayoutProps) {
   const { width, setWidth, isResizable, isHydrating } = useInboxColumnWidth();
   const listPanelRef = useRef<PanelImperativeHandle | null>(null);
 
@@ -62,39 +66,21 @@ export function InboxLayout({ list, panel }: InboxLayoutProps) {
     // então não precisamos persistir manualmente aqui.
   }, []);
 
-  // Mobile / SSR primeira pintura → layout antigo, sem panel group.
-  // Isso preserva o comportamento histórico (ConversationList com
-  // `w-full` cresce até o limite do flex pai). O `isHydrating` evita
-  // que o servidor renderize um `width` salvo no localStorage do
-  // cliente (causaria hydration mismatch) — durante o primeiro frame
-  // do client, o caller verá um layout fixo de 320px (o default do
-  // ConversationList via min-width). Após hidratação, expande pro
-  // valor salvo. Esse frame extra é imperceptível e é o trade-off
-  // padrão de qualquer "persisted layout" em SSR.
-  if (!isResizable || isHydrating) {
-    return (
-      <div className="flex h-full">
-        <div
-          className="shrink-0"
-          style={{
-            // No mobile a coluna some virtualmente quando o usuário
-            // abre uma conversa — mas isso é trabalho de uma futura
-            // sprint mobile-first. Por ora mantemos a largura default
-            // pra paridade visual com antes do resize.
-            width: isResizable ? width : INBOX_COL_DEFAULT,
-          }}
-        >
-          {list}
-        </div>
-        <div className="flex min-w-0 flex-1">{panel}</div>
-      </div>
-    );
+  if (!isResizable && !isHydrating) {
+    return <div className="bq-inbox bq-mobile-inbox h-full min-w-0">
+      <div className={active ? 'hidden' : 'h-full min-w-0'}>{list}</div>
+      {active && <div className="flex h-full min-w-0 flex-col">
+        <button type="button" className="bq-mobile-back" onClick={onBack}><ArrowLeft size={15} /> Conversas</button>
+        <div className="relative flex min-h-0 min-w-0 flex-1">{panel}</div>
+      </div>}
+    </div>;
   }
+  if (isHydrating) return <div className="bq-inbox flex h-full min-w-0"><div style={{ width }} className="shrink-0">{list}</div><div className="flex min-w-0 flex-1">{panel}</div></div>;
 
   return (
     <Group
       orientation="horizontal"
-      className="flex h-full w-full"
+      className="bq-inbox flex h-full w-full"
       onLayoutChanged={handleLayoutChanged}
     >
       <Panel
@@ -108,7 +94,7 @@ export function InboxLayout({ list, panel }: InboxLayoutProps) {
         {/* data-attr usado pelo handler de layout pra medir o px real
             após o snap dos constraints. Mais robusto que ler o flex-grow
             que a lib aplica no style inline do Panel. */}
-        <div data-inbox-list-panel className="flex h-full w-full">
+        <div data-inbox-list-panel className="bq-inbox flex h-full w-full">
           {list}
         </div>
       </Panel>

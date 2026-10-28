@@ -1,0 +1,42 @@
+/* SPEC-010 L4 — layout only; palette and primitives come from L3. */
+.bq-inbox { color: var(--bq-t1); background: var(--bq-win); font-size: 13px; }
+.bq-chat-column { container-type: inline-size; container-name: conversation; }
+.bq-conversation-head { height: 62px; flex-shrink: 0; display: flex; align-items: center; gap: 10px; padding: 10px 12px 10px 16px; border-bottom: 1px solid var(--bq-hair); background: var(--bq-glass); }
+.bq-chat-actions, .bq-chat-extras { display: flex; align-items: center; gap: 5px; }
+.bq-chat-actions { flex-shrink: 0; }
+.bq-chat-mobile-extras { display: none; }
+.bq-conversation-head .bq-chat-actions > div:first-child > button { color: var(--bq-agent-text); background: var(--bq-agent-soft); }
+.bq-list-heading { display: flex; justify-content: space-between; align-items: center; padding: 14px 14px 0; font-size: 15px; font-weight: 600; }
+.bq-list-segments { padding: 8px 12px; overflow-x: auto; flex-shrink: 0; }
+.bq-list-segments .bq-segments { width: max-content; }
+.bq-list-segments button { padding-inline: 7px; font-size: 11px; }
+.bq-mobile-back { display: flex; align-items: center; gap: 8px; padding: 10px 12px; text-align: left; color: var(--bq-t2); border-bottom: 1px solid var(--bq-hair); }
+.bq-contact-panel { width: 320px; flex-shrink: 0; min-width: 0; height: 100%; overflow: auto; border-left: 1px solid var(--bq-hair); background: var(--bq-glass); }
+.bq-contact-profile { padding: 20px 16px 16px; border-bottom: 1px solid var(--bq-hair); }
+.bq-contact-section { border-bottom: 1px solid var(--bq-hair); }
+.bq-contact-section > button { display: flex; align-items: center; gap: 8px; width: 100%; padding: 12px 16px; font-size: 12px; font-weight: 600; text-align: left; }
+.bq-contact-section > button:hover { background: var(--bq-raised); }
+.bq-contact-section > button svg:last-child { margin-left: auto; }
+.bq-inbox :is(button, input, textarea, select, a):focus-visible { outline: 2px solid var(--bq-accent); outline-offset: 2px; }
+.bq-timeline { background: var(--bq-surface); }
+.bq-message-bubble { padding: 9px 12px; border-radius: 15px; background: var(--bq-bubble-in); color: var(--bq-t1); border: 1px solid var(--bq-hair); font-size: 13.5px; line-height: 1.5; overflow-wrap: anywhere; }
+.bq-message-bubble[data-outbound="true"] { background: var(--bq-bubble-out); border-color: var(--bq-bubble-out-hair); border-top-right-radius: 5px; }
+.bq-message-bubble[data-outbound="false"] { border-top-left-radius: 5px; }
+.bq-composer { margin: 4px 16px 16px; padding: 10px 12px 8px; border-radius: 16px; background: var(--bq-raised); border: 1px solid var(--bq-hair-strong); }
+.bq-composer:focus-within { border-color: var(--bq-accent); box-shadow: 0 0 0 4px var(--bq-accent-soft); }
+.bq-composer textarea { background: transparent; color: var(--bq-t1); }
+/* Between the widest open chat (705px) and narrowest closed chat (821px) at 1440px. */
+@container conversation (max-width: 760px) { .bq-chat-extras { display: none; } }
+/* Portalled popovers are outside the chat container, so their compact actions stay reachable. */
+.bq-popover .bq-chat-mobile-extras { display: flex; }
+@media (max-width: 1120px) {
+  .bq-conversation-workspace > .bq-contact-panel, .bq-conversation-workspace > .bq-agent-logs { position: absolute; inset: 62px 0 0 auto; height: auto; z-index: 20; max-width: 100%; background: var(--bq-win-solid); box-shadow: var(--bq-shadow-pop); }
+}
+@media (max-width: 767px) {
+  .bq-mobile-inbox { width: 100%; }
+  .bq-conversation-head { gap: 5px; padding: 8px; }
+  .bq-conversation-head h2 { font-size: 12px; }
+  .bq-conversation-head .bq-button { padding-inline: 7px; }
+  .bq-conversation-head .bq-chat-actions { gap: 3px; }
+  .bq-composer { margin: 4px 8px 8px; padding: 8px; }
+}
