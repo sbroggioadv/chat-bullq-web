@@ -1,5 +1,6 @@
 'use client';
 
+import { ApiClientError } from '@/lib/api';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -32,11 +33,11 @@ const labelCls =
 const cardCls =
   'rounded-xl border border-[var(--bq-hair)] bg-[var(--bq-win-solid)] p-4  ';
 
-export function ProjectDetail({ projectId }: { projectId: string }) {
+export function ProjectDetail({ projectId, onBack }: { projectId: string; onBack?: () => void }) {
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  const { data: project, isLoading } = useQuery({
+  const { data: project, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['project', projectId],
     queryFn: () => projectsService.getById(projectId!),
     enabled: !!projectId,
@@ -183,13 +184,17 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
     );
   }
 
+  if ((isError && !(error instanceof ApiClientError && error.status === 404)) || (!project && !isError)) {
+    return <div className="flex h-full flex-col items-center justify-center gap-3 p-6"><p role="alert">Não foi possível carregar o projeto.</p><Button onClick={() => void refetch()}>Tentar novamente</Button><Button onClick={onBack ?? (() => router.push('/projects'))}>Voltar aos projetos</Button></div>;
+  }
+
   if (!project || project.exists === false) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3 p-6">
         <p className="text-sm text-[var(--bq-t3)]">Projeto não encontrado.</p>
         <button
           type="button"
-          onClick={() => router.push('/projects')}
+          onClick={onBack ?? (() => router.push('/projects'))}
           className="text-sm text-[var(--bq-accent-text)] hover:underline"
         >
           Voltar aos projetos
@@ -208,7 +213,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
       <div className="mb-5 flex flex-wrap items-center gap-3">
         <button
           type="button"
-          onClick={() => router.push('/projects')}
+          onClick={onBack ?? (() => router.push('/projects'))}
           className="rounded-md p-1.5 text-[var(--bq-t3)] hover:bg-[var(--bq-raised)] hover:text-[var(--bq-t1)]"
           aria-label="Voltar"
         >

@@ -254,7 +254,7 @@ export function ProjectsTable() {
       {mobileDetail && <Button className="m-3 md:hidden" onClick={() => setMobileDetail(false)}>← Lista de projetos</Button>}
       {(() => {
         const id = filtered.some(project => project.id === selectedId) ? selectedId : filtered[0]?.id;
-        return id ? <div className="flex min-h-0 flex-1 flex-col"><Link className="bq-button m-3 self-end" href={`/projects/${id}`}>Abrir página do projeto</Link><div className="min-h-0 flex-1"><ProjectDetail key={id} projectId={id} /></div></div> : <div className="flex h-full items-center justify-center p-6 text-sm text-[var(--bq-t3)]">Selecione ou crie um projeto para acompanhar o escopo e a fase.</div>;
+        return id ? <div className="flex min-h-0 flex-1 flex-col"><Link className="bq-button m-3 self-end" href={`/projects/${id}`}>Abrir página do projeto</Link><div className="min-h-0 flex-1"><ProjectDetail key={id} projectId={id} onBack={() => setMobileDetail(false)} /></div></div> : <div className="flex h-full items-center justify-center p-6 text-sm text-[var(--bq-t3)]">Selecione ou crie um projeto para acompanhar o escopo e a fase.</div>;
       })()}
     </main>
     </div>

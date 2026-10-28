@@ -2,18 +2,20 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { describe, expect, it, vi } from 'vitest';
+import { ApiClientError } from '@/lib/api';
 import { ProjectDetail } from '@/features/projects/components/project-detail';
 
-const mocks = vi.hoisted(() => ({ getById: vi.fn(), update: vi.fn(), addTask: vi.fn(), updateTask: vi.fn(), removeTask: vi.fn(), addContact: vi.fn(), removeContact: vi.fn(), removeAttachment: vi.fn(), emailParticipants: vi.fn() }));
-vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
+const mocks = vi.hoisted(() => ({ push: vi.fn(), getById: vi.fn(), update: vi.fn(), addTask: vi.fn(), updateTask: vi.fn(), removeTask: vi.fn(), addContact: vi.fn(), removeContact: vi.fn(), removeAttachment: vi.fn(), emailParticipants: vi.fn() }));
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push: mocks.push }) }));
 vi.mock('@/features/settings/services/members.service', () => ({ membersService: { list: async () => [] } }));
 vi.mock('@/features/projects/services/projects.service', () => ({ projectsService: mocks }));
 const project = { id: 'project', name: 'Projeto de teste', description: 'Escopo original', status: 'TODO', exists: true, conversationIds: ['conv'], contacts: [{ id: 'link', name: 'Contato de teste', contactId: 'contact' }], attachments: [{ id: 'attachment', label: 'Arquivo de teste', url: 'https://example.invalid/file' }], tasks: [{ id: 'task', title: 'Tarefa de teste', done: false }] };
-function mount() {
-  mocks.getById.mockResolvedValue(project);
+function mount(onBack?: () => void, result: unknown = project) {
+  if (result instanceof Error) mocks.getById.mockRejectedValue(result);
+  else mocks.getById.mockResolvedValue(result);
   mocks.update.mockResolvedValue(project);
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  render(<QueryClientProvider client={client}><ProjectDetail projectId="project" /></QueryClientProvider>);
+  render(<QueryClientProvider client={client}><ProjectDetail projectId="project" onBack={onBack} /></QueryClientProvider>);
 }
 describe('Projeto repaginado', () => {
   it('preserva edição do escopo e troca de fase sem gerar workflow fictício', async () => {
@@ -53,5 +55,32 @@ describe('Projeto repaginado', () => {
     await userEvent.type(screen.getByPlaceholderText('Corpo do e-mail'), 'Mensagem de teste');
     await userEvent.click(screen.getByRole('button', { name: 'Enviar e-mail' }));
     await waitFor(() => expect(mocks.emailParticipants).toHaveBeenCalledWith('project', { subject: 'Assunto de teste', body: 'Mensagem de teste', to: undefined }));
+  });
+});
+
+describe('Carregamento e retorno do dossiê', () => {
+  it('separa falha transitória de ausência e permite tentar novamente', async () => {
+    mount(undefined, new Error('offline'));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Não foi possível carregar o projeto');
+    expect(screen.queryByText('Projeto não encontrado.')).not.toBeInTheDocument();
+    mocks.getById.mockResolvedValue(project);
+    await userEvent.click(screen.getByRole('button', { name: 'Tentar novamente' }));
+    expect(await screen.findByText('Projeto de teste')).toBeVisible();
+  });
+  it.each([new ApiClientError('ausente', 404), { ...project, exists: false }])('reserva não encontrado para ausência real', async result => {
+    mount(undefined, result);
+    expect(await screen.findByText('Projeto não encontrado.')).toBeVisible();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+  it('retorna pelo callback da lista móvel', async () => {
+    const back = vi.fn(); mount(back);
+    await userEvent.click(await screen.findByRole('button', { name: 'Voltar' }));
+    expect(back).toHaveBeenCalledOnce();
+    expect(mocks.push).not.toHaveBeenCalled();
+  });
+  it('mantém navegação da rota independente', async () => {
+    mount();
+    await userEvent.click(await screen.findByRole('button', { name: 'Voltar' }));
+    expect(mocks.push).toHaveBeenCalledWith('/projects');
   });
 });
