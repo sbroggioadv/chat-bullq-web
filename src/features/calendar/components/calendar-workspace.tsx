@@ -1,5 +1,6 @@
 "use client";
 
+import styles from "@/features/calendar/components/calendar.module.css";
 import { Button, SegmentedControl } from "@/components/ui/foundation";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -21,14 +22,12 @@ import { CSS } from "@dnd-kit/utilities";
 import {
   CalendarDays,
   Loader2,
-  Pencil,
   Plus,
   RefreshCw,
   Trash2,
   Video,
   ExternalLink,
   X,
-  GripVertical,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
@@ -89,28 +88,6 @@ function fmtMonthTitle(d: Date) {
 function toLocalInputValue(d: Date) {
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-function hexToRgba(hex: string, alpha: number): string {
-  const raw = String(hex || "")
-    .replace("#", "")
-    .trim();
-  if (raw.length !== 3 && raw.length !== 6)
-    return `color-mix(in srgb, var(--bq-info) ${alpha * 100}%, transparent)`;
-  const full =
-    raw.length === 3
-      ? raw
-          .split("")
-          .map((c) => c + c)
-          .join("")
-      : raw;
-  const n = parseInt(full, 16);
-  if (Number.isNaN(n))
-    return `color-mix(in srgb, var(--bq-info) ${alpha * 100}%, transparent)`;
-  const r = (n >> 16) & 255;
-  const g = (n >> 8) & 255;
-  const b = n & 255;
-  return `rgba(${r},${g},${b},${alpha})`;
 }
 
 function eventDurationMs(ev: CalendarEvent): number {
@@ -183,7 +160,7 @@ function EventCard({
   dragging?: boolean;
   compact?: boolean;
 }) {
-  const solid = ev.backgroundColor || "var(--bq-info)";
+  const solid = ev.backgroundColor || "var(--bq-t2)";
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({
       id: ev.id,
@@ -193,67 +170,53 @@ function EventCard({
   const style: React.CSSProperties = {
     transform: CSS.Translate.toString(transform),
     opacity: isDragging || dragging ? 0.35 : 1,
-    backgroundColor: hexToRgba(solid, 0.18),
+    borderLeftColor: solid,
+    borderLeftWidth: "var(--bq-border-event)",
   };
 
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={`group relative block w-full ${compact ? "h-full" : ""} overflow-hidden rounded-md border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-2 py-1.5 pl-2.5 text-left text-[11px]  transition hover:ring-1 hover:ring-[var(--bq-hair-strong)]  `}
+      className={`group relative flex w-full flex-col gap-bq-space-hairline rounded-bq-radius-field border border-[var(--bq-hair-strong)] bg-[var(--bq-raised-2)] px-bq-space-control py-bq-space-xs text-left text-bq-text-auxiliary leading-bq-leading-event ${compact ? "h-full" : ""} ${compact && eventDurationMs(ev) < (3600000 * 43) / 48 ? "py-0!" : ""}`}
     >
-      <span
-        className="absolute bottom-0 left-0 top-0 w-1 rounded-l-md"
-        style={{ backgroundColor: solid }}
-      />
-      <div className="flex flex-wrap items-start gap-1">
+      <div className="flex h-full min-h-0 flex-col">
         <button
           type="button"
           {...attributes}
           {...listeners}
-          onClick={(e) => e.stopPropagation()}
-          className="mt-0.5 cursor-grab text-[var(--bq-t3)] opacity-70 hover:opacity-100 active:cursor-grabbing"
-          aria-label="Arrastar para outro dia"
-          title="Arrastar para remarcar"
-        >
-          <GripVertical className="h-3 w-3" />
-        </button>
-        <button
-          type="button"
           onClick={() => onEdit(ev)}
-          className="min-w-0 flex-1 text-left"
+          className={`min-h-0 min-w-0 flex-1 cursor-grab text-left active:cursor-grabbing ${compact && eventDurationMs(ev) < (3600000 * 43) / 48 ? "flex items-center gap-bq-space-compact" : ""}`}
           title={ev.summary}
+          aria-label={`Editar ${ev.summary}`}
         >
-          <div className="flex items-start gap-1">
-            <div
-              className={`min-w-0 flex-1 font-semibold leading-snug text-[var(--bq-t1)] ${compact ? "truncate" : "line-clamp-2"}`}
-            >
-              {ev.summary}
-            </div>
-            <Pencil className="mt-0.5 h-3 w-3 shrink-0 text-[var(--bq-t3)]" />
-          </div>
+          <span
+            className={`block min-w-0 font-semibold text-[var(--bq-t1)] ${compact ? "truncate" : "line-clamp-2"}`}
+          >
+            {ev.meetLink && (
+              <Video
+                className="mr-bq-space-xs inline size-bq-size-icon-xs"
+                aria-hidden="true"
+              />
+            )}
+            {ev.summary}
+          </span>
           {ev.start && !ev.allDay && (
-            <div className="text-[var(--bq-t2)] ">
+            <span className="block shrink-0 font-mono text-bq-text-phase-number font-medium text-[var(--bq-t3)]">
               {new Date(ev.start).toLocaleTimeString("pt-BR", {
                 hour: "2-digit",
                 minute: "2-digit",
               })}
               {ev.end && !compact
-                ? ` – ${new Date(ev.end).toLocaleTimeString("pt-BR", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}`
+                ? ` – ${new Date(ev.end).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`
                 : ""}
-            </div>
+            </span>
           )}
         </button>
         {!compact && (
           <div className="mt-1 flex w-full flex-wrap items-center gap-1.5 text-[var(--bq-t2)] ">
             {!compact && ev.calendarSummary && (
-              <span
-                className="inline-flex max-w-[9rem] truncate rounded px-1 py-0.5 text-[10px] font-semibold text-[var(--bq-t1)] "
-                style={{ backgroundColor: hexToRgba(solid, 0.4) }}
-              >
+              <span className="inline-flex max-w-[9rem] truncate rounded px-1 py-0.5 text-bq-text-phase-number font-semibold text-[var(--bq-t1)] ">
                 {ev.calendarSummary}
               </span>
             )}
@@ -322,7 +285,7 @@ function DayCell({
       {compact && (
         <div
           data-calendar-day-heading
-          className={`sticky top-0 z-10 mb-2 bg-[var(--bq-win-solid)] py-1 text-[11px] font-semibold uppercase tracking-wide ${
+          className={`sticky top-0 z-10 mb-2 bg-[var(--bq-win-solid)] py-1 text-bq-text-metadata font-semibold uppercase tracking-wide ${
             isToday
               ? "text-[var(--bq-t1)]"
               : isOutsideMonth
@@ -353,7 +316,7 @@ function DayCell({
         </div>
       ) : (
         <>
-          <div className="relative h-[1152px]">
+          <div className="relative h-[calc(24*var(--bq-size-agenda-slot))]">
             {Array.from({ length: 24 }, (_, hour) => (
               <button
                 key={hour}
@@ -365,8 +328,8 @@ function DayCell({
                   onCreate(slot);
                 }}
                 aria-label={`Criar evento em ${fmtDayShort(day)} às ${hour} horas`}
-                className="absolute left-0 right-0 h-12 border-t border-[var(--bq-hair)] text-left text-[9px] text-[var(--bq-t3)] hover:bg-[var(--bq-raised)]"
-                style={{ top: hour * 48 }}
+                className="absolute left-0 right-0 h-12 border-t border-[var(--bq-hair)] text-left text-bq-text-mark text-[var(--bq-t3)] hover:bg-[var(--bq-raised)]"
+                style={{ top: `calc(${hour} * var(--bq-size-agenda-slot))` }}
               ></button>
             ))}
             {events
@@ -376,13 +339,10 @@ function DayCell({
                 return (
                   <div
                     key={ev.id}
-                    className="absolute left-[3px] right-[3px] z-[2]"
+                    className="absolute left-bq-size-3px right-bq-size-3px z-[2]"
                     style={{
-                      top: (start.getHours() + start.getMinutes() / 60) * 48,
-                      height: Math.max(
-                        28,
-                        (eventDurationMs(ev) / 3600000) * 48 - 2,
-                      ),
+                      top: `calc(${start.getHours() + start.getMinutes() / 60} * var(--bq-size-agenda-slot) + var(--bq-space-hairline))`,
+                      height: `max(var(--bq-size-switch-height), calc(${eventDurationMs(ev) / 3600000} * var(--bq-size-agenda-slot) - var(--bq-space-step)))`,
                     }}
                   >
                     <EventCard ev={ev} onEdit={onEdit} compact />
@@ -449,7 +409,10 @@ export function CalendarWorkspace() {
     staleTime: 60_000,
   });
 
-  const calendars: GoogleCalendarRef[] = calendarsQ.data?.calendars || [];
+  const calendars: GoogleCalendarRef[] = useMemo(
+    () => calendarsQ.data?.calendars || [],
+    [calendarsQ.data],
+  );
 
   useEffect(() => {
     const gmail = searchParams.get("gmail");
@@ -500,7 +463,7 @@ export function CalendarWorkspace() {
       );
       if (!heading || !firstHour) return;
       // Show 08:00–20:00 below the sticky heading, retaining all 24 hours for scrolling.
-      grid.style.height = `${12 * 48 + heading.offsetHeight + 2}px`;
+      grid.style.height = `calc(12 * var(--bq-size-agenda-slot) + ${heading.offsetHeight + 2}px)`;
       grid.scrollTop +=
         firstHour.getBoundingClientRect().top -
         grid.getBoundingClientRect().top -
@@ -517,10 +480,17 @@ export function CalendarWorkspace() {
       if (!ev.start) continue;
       const key = dayKey(new Date(ev.start));
       if (!map.has(key)) map.set(key, []);
-      map.get(key)!.push(ev);
+      map
+        .get(key)!
+        .push({
+          ...ev,
+          backgroundColor:
+            ev.backgroundColor ||
+            calendars.find((c) => c.id === ev.calendarId)?.backgroundColor,
+        });
     }
     return map;
-  }, [eventsQ.data, visibleDays]);
+  }, [eventsQ.data, visibleDays, calendars]);
 
   const conversationsQ = useQuery({
     queryKey: ["calendar-conversation-options", conversationSearch],
@@ -823,14 +793,14 @@ export function CalendarWorkspace() {
   const weekdayLabels = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-[14px] overflow-y-auto px-5 py-[18px] text-[13px] text-[var(--bq-t1)] antialiased">
+    <div className="flex h-full min-h-0 flex-col gap-bq-space-section overflow-y-auto px-5 py-bq-space-content text-bq-text-body text-[var(--bq-t1)] antialiased">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl leading-[1.1] font-[family-name:var(--bq-f-display)] font-medium tracking-[-0.02em]">
+          <h1 className="text-2xl leading-bq-leading-page font-[family-name:var(--bq-f-display)] font-medium tracking-bq-tracking-display">
             Agenda
           </h1>
-          <p className="mt-[5px] text-[11.5px] text-[var(--bq-t3)]">
-            <span className="mr-1.5 inline-block size-[7px] rounded-full bg-[var(--bq-ok)]" />
+          <p className="mt-bq-space-label text-bq-text-auxiliary text-[var(--bq-t3)]">
+            <span className="mr-1.5 inline-block size-bq-size-source-dot rounded-full bg-[var(--bq-ok)]" />
             Google Agenda · {statusQ.data.email} · reuniões com link do Meet
           </p>
         </div>
@@ -877,7 +847,7 @@ export function CalendarWorkspace() {
           Salvando no Google…
         </p>
       )}
-      <div className="grid auto-rows-max min-h-0 flex-1 gap-[14px] min-[1121px]:basis-0 min-[1121px]:grid-rows-[minmax(0,1fr)] min-[1121px]:grid-cols-[minmax(0,1fr)_300px]">
+      <div className={styles.layout}>
         <div className="min-h-0 min-w-0 overflow-hidden rounded-2xl border border-[var(--bq-hair)] bg-[var(--bq-surface)]">
           <div
             ref={initializeGrid}
@@ -893,7 +863,7 @@ export function CalendarWorkspace() {
               onDragEnd={handleDragEnd}
             >
               {view === "month" && (
-                <div className="grid min-w-[770px] grid-cols-7 gap-px border-b border-[var(--bq-hair)] bg-[var(--bq-raised)] text-center text-[10px] font-semibold uppercase tracking-wide text-[var(--bq-t3)]   ">
+                <div className="grid min-w-[770px] grid-cols-7 gap-px border-b border-[var(--bq-hair)] bg-[var(--bq-raised)] text-center text-bq-text-phase-number font-semibold uppercase tracking-wide text-[var(--bq-t3)]   ">
                   {weekdayLabels.map((l) => (
                     <div key={l} className="bg-[var(--bq-surface)] py-1.5 ">
                       {l}
@@ -905,25 +875,25 @@ export function CalendarWorkspace() {
                 className={
                   view === "month"
                     ? "grid grid-cols-7 gap-px bg-[var(--bq-hair)] min-w-[770px]"
-                    : "grid min-w-[720px] grid-cols-[52px_repeat(7,minmax(0,1fr))]"
+                    : "grid min-w-bq-size-agenda-min grid-cols-[var(--bq-size-toolbar)_repeat(7,minmax(0,1fr))]"
                 }
               >
                 {view === "week" && (
                   <>
                     <div
                       data-calendar-day-heading
-                      className="sticky top-0 z-10 min-h-[60px] border-b border-[var(--bq-hair)] bg-[var(--bq-glass-strong)] backdrop-blur-[18px]"
+                      className="sticky top-0 z-10 border-b border-[var(--bq-hair)] bg-[var(--bq-glass-strong)] backdrop-blur-[18px]"
                     />
                     {visibleDays.map((day) => (
                       <div
                         key={`heading-${dayKey(day)}`}
-                        className="sticky top-0 z-10 min-h-[60px] border-b border-l border-[var(--bq-hair)] bg-[var(--bq-glass-strong)] px-2 pb-2 pt-[9px] text-[11.5px] text-[var(--bq-t3)] backdrop-blur-[18px]"
+                        className="sticky top-0 z-10 border-b border-l border-[var(--bq-hair)] bg-[var(--bq-glass-strong)] px-2 pb-2 pt-bq-space-row text-bq-text-auxiliary text-[var(--bq-t3)] backdrop-blur-[18px]"
                       >
                         {day
                           .toLocaleDateString("pt-BR", { weekday: "short" })
                           .replace(".", "")}
                         <b
-                          className={`block w-max min-w-7 text-[17px] font-medium font-[family-name:var(--bq-f-display)] ${dayKey(day) === todayKey ? "mt-px grid h-[26px] place-items-center rounded-lg bg-[var(--bq-solid-bg)] px-[5px] text-[var(--bq-solid-fg)]" : "text-[var(--bq-t1)]"}`}
+                          className={`block w-max min-w-7 text-bq-text-list-title font-medium font-[family-name:var(--bq-f-display)] ${dayKey(day) === todayKey ? "mt-px grid h-bq-size-segment place-items-center rounded-lg bg-[var(--bq-solid-bg)] px-bq-space-label text-[var(--bq-solid-fg)]" : "text-[var(--bq-t1)]"}`}
                         >
                           {day.getDate()}
                         </b>
@@ -931,7 +901,7 @@ export function CalendarWorkspace() {
                     ))}
                     {eventsQ.data?.events.some((event) => event.allDay) && (
                       <>
-                        <span className="p-1 text-[10px] text-[var(--bq-t3)]">
+                        <span className="p-1 text-bq-text-phase-number text-[var(--bq-t3)]">
                           Dia inteiro
                         </span>
                         {visibleDays.map((day) => (
@@ -952,12 +922,17 @@ export function CalendarWorkspace() {
                         ))}
                       </>
                     )}
-                    <div aria-label="Horários" className="relative h-[1152px]">
+                    <div
+                      aria-label="Horários"
+                      className="relative h-[calc(24*var(--bq-size-agenda-slot))]"
+                    >
                       {Array.from({ length: 24 }, (_, hour) => (
                         <div
                           key={hour}
-                          className="absolute right-2 top-0 pt-[3px] font-mono text-[10px] text-[var(--bq-t3)]"
-                          style={{ top: hour * 48 }}
+                          className="absolute right-2 top-0 pt-bq-space-step font-mono text-bq-text-phase-number text-[var(--bq-t3)]"
+                          style={{
+                            top: `calc(${hour} * var(--bq-size-agenda-slot))`,
+                          }}
                         >
                           {String(hour).padStart(2, "0")}:00
                         </div>
@@ -1012,7 +987,7 @@ export function CalendarWorkspace() {
         <aside
           ref={editorRef}
           aria-label="Eventos e edição"
-          className="min-w-0 self-start overflow-y-auto rounded-2xl border border-[var(--bq-hair)] bg-[var(--bq-surface)] p-[14px]"
+          className={`${styles.aside} min-w-0 self-start overflow-y-auto rounded-bq-radius-panel border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-bq-space-lg py-bq-space-section`}
         >
           {draft && (
             <div className="border-b border-[var(--bq-hair)] bg-[var(--bq-surface)] p-4  ">
@@ -1146,7 +1121,7 @@ export function CalendarWorkspace() {
                   )}
                 </div>
               )}
-              <p className="mt-2 text-[11px] text-[var(--bq-t3)]">
+              <p className="mt-2 text-bq-text-metadata text-[var(--bq-t3)]">
                 Espelha no Google na hora. Arraste o evento (ícone ⋮⋮) para
                 outro dia para remarcar rápido — preserva horário e duração.
               </p>
@@ -1187,13 +1162,14 @@ export function CalendarWorkspace() {
             <>
               <div className="mb-3 flex items-center gap-2">
                 <CalendarDays size={14} />
-                <h2 className="text-[13px] font-semibold">Próximos</h2>
-                <span className="rounded bg-[var(--bq-raised-2)] px-1 text-[11px] text-[var(--bq-t3)]">
+                <h2 className="text-bq-text-body font-semibold">Próximos</h2>
+                <span className="rounded bg-[var(--bq-raised-2)] px-1 text-bq-text-metadata text-[var(--bq-t3)]">
                   {eventsQ.data?.events.length ?? 0}
                 </span>
                 <span className="flex-1" />{" "}
-                <Button
-                  className="border-0! px-1!"
+                <button
+                  type="button"
+                  className="bq-icon"
                   aria-label="Atualizar agenda"
                   onClick={() => eventsQ.refetch()}
                 >
@@ -1201,7 +1177,7 @@ export function CalendarWorkspace() {
                     size={14}
                     className={eventsQ.isFetching ? "animate-spin" : ""}
                   />
-                </Button>
+                </button>
               </div>
               {eventsQ.isPending ? (
                 <p role="status">Carregando eventos…</p>
@@ -1210,31 +1186,32 @@ export function CalendarWorkspace() {
                   Nenhum evento neste período.
                 </p>
               ) : (
-                <div className="space-y-2">
+                <div className="flex flex-col gap-bq-space-micro">
                   {[...(eventsQ.data?.events || [])]
                     .sort((a, b) =>
                       (a.start || "").localeCompare(b.start || ""),
                     )
                     .map((ev) => (
-                      <Button
+                      <button
+                        type="button"
                         key={ev.id}
-                        className="h-auto! w-full! justify-start! whitespace-normal! border-0! px-1.5! py-[7px]! text-left"
+                        className="flex w-full items-start gap-bq-space-item rounded-bq-radius-input px-bq-space-compact py-bq-space-control text-left hover:bg-[var(--bq-raised)]"
                         onClick={() => openEdit(ev)}
                       >
-                        <span className="w-[38px] shrink-0 rounded-[9px] bg-[var(--bq-raised-2)] py-1 text-center font-mono text-[10px] text-[var(--bq-t3)]">
+                        <span className="w-bq-size-avatar-row shrink-0 rounded-bq-radius-button bg-[var(--bq-raised-2)] py-1 text-center font-mono text-bq-text-phase-number text-[var(--bq-t3)]">
                           {ev.start &&
                             new Date(ev.start)
                               .toLocaleDateString("pt-BR", { weekday: "short" })
                               .replace(".", "")}
-                          <b className="block text-[15px] font-medium text-[var(--bq-t1)]">
+                          <b className="block font-[family-name:var(--bq-f-display)] text-bq-text-heading font-medium text-[var(--bq-t1)]">
                             {ev.start ? new Date(ev.start).getDate() : "—"}
                           </b>
                         </span>
                         <span className="min-w-0">
-                          <b className="block truncate text-[12.5px] font-semibold">
+                          <b className="block truncate text-bq-text-row font-semibold">
                             {ev.summary}
                           </b>
-                          <small className="block text-[var(--bq-t3)]">
+                          <small className="block text-bq-text-auxiliary text-[var(--bq-t3)]">
                             {ev.start
                               ? new Date(ev.start).toLocaleTimeString("pt-BR", {
                                   hour: "2-digit",
@@ -1244,11 +1221,11 @@ export function CalendarWorkspace() {
                             {ev.meetLink ? " · Meet" : ""}
                           </small>
                         </span>
-                      </Button>
+                      </button>
                     ))}
                 </div>
               )}
-              <p className="mt-4 border-t border-[var(--bq-hair)] pt-3 text-xs text-[var(--bq-t3)]">
+              <p className="mt-bq-space-row border-t border-[var(--bq-hair)] pt-bq-space-row text-xs text-[var(--bq-t3)]">
                 Sugestões do Jarvis e avisos na conversa ainda não disponíveis.
               </p>
             </>

@@ -29,23 +29,23 @@ export function Heatmap({
       <div>
         <button
           type="button"
-          className="mb-2 text-[10px] text-[var(--bq-t3)] hover:text-[var(--bq-t1)]"
+          className="mb-2 text-bq-text-phase-number text-[var(--bq-t3)] hover:text-[var(--bq-t1)]"
           aria-pressed={fullDay}
           onClick={() => setFullDay(!fullDay)}
         >
           {fullDay ? "Ver 08h–20h" : "Ver as 24 horas"}
         </button>
         <div
-          className="grid gap-[3px]"
+          className="grid items-center gap-bq-space-step font-mono font-medium text-bq-text-chart-label"
           style={{
-            gridTemplateColumns: `30px repeat(${hours.length}, minmax(0,1fr))`,
+            gridTemplateColumns: `var(--bq-size-avatar-pipeline) repeat(${hours.length}, minmax(0,1fr))`,
           }}
         >
           <div />
           {hours.map((h) => (
             <div
               key={h}
-              className="text-center text-[9px] tabular-nums text-[var(--bq-t3)]"
+              className="text-center text-bq-text-chart-label tabular-nums text-[var(--bq-t3)]"
             >
               {h % 2 === 0 ? `${h}h` : ""}
             </div>
@@ -62,18 +62,6 @@ export function Heatmap({
               accent={accent}
             />
           ))}
-        </div>
-
-        <div className="mt-3 flex items-center justify-end gap-1.5 text-[10px] text-[var(--bq-t3)]">
-          <span>menos</span>
-          {[0.1, 0.3, 0.5, 0.75, 1].map((o, i) => (
-            <div
-              key={i}
-              className="h-2.5 w-3 rounded-sm"
-              style={{ backgroundColor: accent, opacity: o }}
-            />
-          ))}
-          <span>mais</span>
         </div>
       </div>
     </div>
@@ -97,7 +85,7 @@ function Row({
 }) {
   return (
     <>
-      <div className="pr-1 text-right text-[10px] font-medium text-[var(--bq-t3)]">
+      <div className="pr-1 text-right text-bq-text-chart-label font-medium text-[var(--bq-t3)]">
         {label}
       </div>
       {hours.map((h) => {
@@ -106,7 +94,7 @@ function Row({
         return (
           <div
             key={h}
-            className="group relative h-[18px] rounded-[3px] transition-opacity hover:opacity-100"
+            className="group relative h-bq-size-icon rounded-bq-radius-heat transition-opacity hover:opacity-100"
             style={{ backgroundColor: accent, opacity }}
             title={`${label} ${h}h: ${v} conversa${v === 1 ? "" : "s"}`}
           />

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Trash2, X } from "lucide-react";
+import { Plus, Trash2, X, Tag, Funnel, User, Send } from "lucide-react";
 import { Sheet } from "@/components/ui/foundation";
 import { toast } from "sonner";
 import {
@@ -297,6 +297,11 @@ export function AutomationBuilder({
             />
           </section>
 
+          <p className="text-bq-text-control text-[var(--bq-t3)]">
+            Automações de Incoming e de andamento no ClickUp ainda não
+            disponíveis.
+          </p>
+
           {/* Trigger */}
           <section className="space-y-3">
             <SectionTitle index={1} title="Quando" />
@@ -418,7 +423,6 @@ export function AutomationBuilder({
             {actions.map((action, i) => (
               <ActionRow
                 key={i}
-                index={i}
                 action={action}
                 lookups={lookups}
                 onChange={(patch) => updateAction(i, patch)}
@@ -711,7 +715,6 @@ function RuleRow({
 }
 
 function ActionRow({
-  index,
   action,
   lookups,
   onChange,
@@ -719,7 +722,6 @@ function ActionRow({
   onParamsChange,
   onRemove,
 }: {
-  index: number;
   action: ActionDefinition;
   lookups: AutomationLookups;
   onChange: (patch: Partial<ActionDefinition>) => void;
@@ -727,11 +729,21 @@ function ActionRow({
   onParamsChange: (patch: Record<string, unknown>) => void;
   onRemove: () => void;
 }) {
+  const Icon =
+    action.type === "add_tag" || action.type === "remove_tag"
+      ? Tag
+      : action.type === "add_to_pipeline" ||
+          action.type === "move_pipeline_stage"
+        ? Funnel
+        : action.type === "assign_user"
+          ? User
+          : Send;
   return (
     <div className="rounded-lg border border-[var(--bq-hair)] p-3 ">
       <div className="mb-2 flex items-center justify-between">
-        <span className="text-sm font-medium">
-          {index + 1}. {ACTION_LABELS[action.type]}
+        <span className="inline-flex items-center gap-bq-space-compact text-sm font-medium">
+          <Icon size={12} aria-hidden="true" />
+          {ACTION_LABELS[action.type]}
         </span>
         <button
           onClick={onRemove}

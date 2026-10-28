@@ -1,5 +1,6 @@
 "use client";
 
+import styles from "@/features/email/components/email.module.css";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -178,14 +179,14 @@ export function EmailWorkspace() {
     threadsQuery.data?.pages.flatMap((page) => page.threads) ?? [];
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-[14px] px-5 py-[18px] text-[13px] text-[var(--bq-t1)] antialiased">
+    <div className="flex h-full min-h-0 flex-col gap-bq-space-section px-5 py-bq-space-content text-bq-text-body text-[var(--bq-t1)] antialiased">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl leading-[1.1] font-[family-name:var(--bq-f-display)] font-medium tracking-[-0.02em]">
+          <h1 className="text-2xl leading-bq-leading-page font-[family-name:var(--bq-f-display)] font-medium tracking-bq-tracking-display">
             E-mail
           </h1>
-          <p className="mt-[5px] text-[11.5px] text-[var(--bq-t3)]">
-            <span className="mr-1.5 inline-block size-[7px] rounded-full bg-[var(--bq-ok)]" />
+          <p className="mt-bq-space-label text-bq-text-auxiliary text-[var(--bq-t3)]">
+            <span className="mr-1.5 inline-block size-bq-size-source-dot rounded-full bg-[var(--bq-ok)]" />
             Gmail ·{" "}
             {channels.find((channel) => channel.id === channelId)?.email ||
               channels.find((channel) => channel.id === channelId)?.name}{" "}
@@ -193,6 +194,14 @@ export function EmailWorkspace() {
           </p>
         </div>
         <div className="flex gap-2">
+          <button
+            type="button"
+            className={`bq-icon ${styles.back}`}
+            aria-label="Pastas e contas"
+            onClick={() => setFoldersOpen(true)}
+          >
+            <PanelLeft size={16} />
+          </button>
           <Button variant="solid" onClick={() => setComposing(true)}>
             <Pencil size={14} />
             Escrever
@@ -230,22 +239,8 @@ export function EmailWorkspace() {
         />
       )}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[var(--bq-hair)] bg-[var(--bq-surface)]">
-        <div className="flex items-center border-b border-[var(--bq-hair)] px-2 py-1 min-[1121px]:hidden">
-          <button
-            type="button"
-            className="bq-icon"
-            aria-label="Pastas e contas"
-            onClick={() => setFoldersOpen(true)}
-          >
-            <PanelLeft size={16} />
-          </button>
-          <span className="ml-1 text-xs text-[var(--bq-t3)]">{folderName}</span>
-        </div>
-        <div className="flex min-h-0 flex-1">
-          <nav
-            aria-label="Pastas e contas"
-            className="hidden w-[210px] shrink-0 min-[1121px]:flex"
-          >
+        <div data-email-grid className={styles.grid}>
+          <nav aria-label="Pastas e contas" className={styles.nav}>
             <EmailFolderList
               channels={channels}
               activeChannelId={channelId}
@@ -264,9 +259,7 @@ export function EmailWorkspace() {
           </nav>
           {/* Lista — no mobile ocupa a tela até abrir um thread */}
           <div
-            className={`w-full min-w-0 shrink-0 md:flex md:w-[340px] ${
-              threadId ? "hidden" : "flex"
-            }`}
+            className={`${styles.pane} ${threadId ? styles.hiddenMobile : ""}`}
           >
             <EmailThreadList
               folderName={folderName}
@@ -284,7 +277,7 @@ export function EmailWorkspace() {
 
           {/* Leitura */}
           <div
-            className={`min-w-0 flex-1 md:flex ${threadId ? "flex" : "hidden"}`}
+            className={`${styles.pane} ${threadId ? "" : styles.hiddenMobile}`}
           >
             <EmailThreadView
               key={threadId}

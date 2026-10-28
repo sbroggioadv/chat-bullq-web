@@ -1,0 +1,33 @@
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--bq-text-row);
+}
+.table th {
+  text-align: left;
+  font: var(--bq-weight-medium) var(--bq-text-counter) var(--bq-f-mono);
+  letter-spacing: var(--bq-tracking-file);
+  text-transform: uppercase;
+  color: var(--bq-t3);
+  padding: 0 var(--bq-space-sm) var(--bq-space-sm);
+  overflow-wrap: anywhere;
+}
+.table td {
+  padding: var(--bq-space-sm);
+  border-top: var(--bq-border-hairline) solid var(--bq-hair);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.table td:first-child,
+.table th:first-child {
+  padding-left: 0;
+}
+.who {
+  display: flex;
+  align-items: center;
+  gap: var(--bq-space-sm);
+}
+
+.who :global(.bq-avatar-mockup) {
+  --bq-avatar-size: var(--bq-size-compact-control);
+}

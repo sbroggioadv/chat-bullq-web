@@ -122,3 +122,79 @@ it("mantém as ações do leitor na barra separada do assunto", async () => {
     .mock.calls.find((call) => call[0] === "Arquivado")?.[1];
   expect(options?.action).toMatchObject({ label: "Desfazer" });
 });
+
+it("baixa anexos de mensagens distintas com os IDs originais após separar corpo e arquivos", async () => {
+  const download = vi.fn(async () => new Blob(["fixture"]));
+  Object.assign(emailService, { downloadAttachment: download });
+  vi.stubGlobal(
+    "URL",
+    Object.assign(URL, {
+      createObjectURL: vi.fn(() => "blob:attachment"),
+      revokeObjectURL: vi.fn(),
+    }),
+  );
+  const click = vi
+    .spyOn(HTMLAnchorElement.prototype, "click")
+    .mockImplementation(() => {});
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  render(
+    <QueryClientProvider client={client}>
+      <EmailThreadView
+        detail={{
+          id: "thread",
+          externalConversationId: "thread",
+          subject: "Dois anexos",
+          messages: [1, 2].map((i) => ({
+            id: `message-${i}`,
+            from: { name: "Contato", email: "contato@example.invalid" },
+            to: "equipe@example.invalid",
+            cc: "",
+            subject: "Dois anexos",
+            date: null,
+            body: `Corpo ${i}`,
+            snippet: "",
+            unread: false,
+            outbound: false,
+            attachments: [
+              {
+                attachmentId: `attachment-${i}`,
+                messageId: `original-${i}`,
+                filename: `arquivo-${i}.pdf`,
+                mimeType: "application/pdf",
+                size: 2048,
+              },
+            ],
+          })),
+        }}
+        channelId="account"
+        threadSelected
+        loading={false}
+        error={false}
+        onRetry={vi.fn()}
+        onBack={vi.fn()}
+        onSent={vi.fn()}
+      />
+    </QueryClientProvider>,
+  );
+  for (const i of [1, 2]) {
+    const button = screen.getByRole("button", {
+      name: new RegExp(`arquivo-${i}`),
+    });
+    expect(button.closest("article")).toBeNull();
+    await userEvent.click(button);
+    await waitFor(() =>
+      expect(download).toHaveBeenCalledWith({
+        channelId: "account",
+        messageId: `original-${i}`,
+        attachmentId: `attachment-${i}`,
+        filename: `arquivo-${i}.pdf`,
+        mimeType: "application/pdf",
+      }),
+    );
+  }
+  expect(click).toHaveBeenCalledTimes(2);
+  click.mockRestore();
+  vi.unstubAllGlobals();
+});

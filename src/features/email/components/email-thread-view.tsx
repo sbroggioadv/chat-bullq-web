@@ -1,5 +1,10 @@
 "use client";
 
+import styles from "@/features/email/components/email.module.css";
+import { Fragment, type CSSProperties } from "react";
+import { Avatar } from "@/components/ui/avatar";
+import { mockupAvatarHue } from "@/components/ui/avatar-hue";
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertOctagon,
@@ -376,23 +381,35 @@ export function EmailThreadView({
 
   return (
     <div className="flex h-full w-full min-w-0 flex-col ">
-      <div className="flex flex-wrap items-center gap-2 border-b border-[var(--bq-hair)] px-[18px] pb-2.5 pt-[14px]  ">
-        <button
-          type="button"
-          onClick={onBack}
-          aria-label="Voltar para a lista"
-          className="-ml-2 flex size-7 shrink-0 items-center justify-center rounded-md text-[var(--bq-t3)] hover:bg-[var(--bq-raised)] md:hidden  "
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </button>
-        <h2 className="min-w-0 flex-1 text-[18px] leading-tight font-medium font-[family-name:var(--bq-f-display)] tracking-[-.015em] text-[var(--bq-t1)]">
-          {detail.subject}
-        </h2>
+      <div className="flex flex-col gap-bq-space-sm border-b border-[var(--bq-hair)] px-bq-space-content pb-bq-space-item pt-bq-space-section  ">
+        <div className="flex items-center gap-bq-space-sm">
+          <button
+            type="button"
+            onClick={onBack}
+            aria-label="Voltar para a lista"
+            className={`bq-icon ${styles.back}`}
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+          <h2 className="min-w-0 flex-1 break-words text-bq-text-dialog-title leading-tight font-medium font-[family-name:var(--bq-f-display)] tracking-bq-tracking-heading text-[var(--bq-t1)]">
+            {detail.subject}
+          </h2>
+          {userLabels
+            .filter((l) => activeLabels.includes(l.id))
+            .map((l) => (
+              <span
+                key={l.id}
+                className="inline-flex h-bq-size-switch-height items-center rounded-bq-radius-file bg-[var(--bq-raised)] px-bq-space-sm text-bq-text-auxiliary font-medium text-[var(--bq-t2)]"
+              >
+                {l.name}
+              </span>
+            ))}
+        </div>
         <div className="flex w-full flex-wrap items-center gap-1.5">
           <button
             type="button"
             onClick={() => openCompose(mode === "reply" ? null : "reply")}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-[9px] border border-[var(--bq-hair-strong)] px-3 py-1.5 text-[12.5px] font-medium text-[var(--bq-t1)] hover:bg-[var(--bq-raised)]"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-bq-radius-button border border-[var(--bq-hair-strong)] px-3 py-1.5 text-bq-text-row font-medium text-[var(--bq-t1)] hover:bg-[var(--bq-raised)]"
           >
             <Reply className="h-3.5 w-3.5" />
             Responder
@@ -550,22 +567,6 @@ export function EmailThreadView({
         </div>
       </div>
 
-      {!!userLabels.length &&
-        activeLabels.some((id) => userLabels.some((u) => u.id === id)) && (
-          <div className="flex flex-wrap gap-1 border-b border-[var(--bq-hair)] px-5 py-1.5 ">
-            {userLabels
-              .filter((l) => activeLabels.includes(l.id))
-              .map((l) => (
-                <span
-                  key={l.id}
-                  className="rounded-full bg-[var(--bq-raised)] px-2 py-0.5 text-[10px] font-medium text-[var(--bq-t2)]  "
-                >
-                  {l.name}
-                </span>
-              ))}
-          </div>
-        )}
-
       {reauthHint && (
         <div className="border-b border-[var(--bq-warn-soft)] bg-[var(--bq-warn-soft)] px-5 py-2.5 text-xs text-[var(--bq-warn)]   ">
           O Google ainda não autorizou envio nesta conexão.{" "}
@@ -580,55 +581,66 @@ export function EmailThreadView({
         </div>
       )}
 
-      <div className="flex-1 space-y-3 overflow-y-auto p-4">
+      <div className="flex min-h-0 flex-1 flex-col gap-bq-space-md overflow-y-auto px-bq-space-content py-bq-space-section">
         {detail.messages.map((m) => {
           const fromLabel = m.from.name || m.from.email || "Desconhecido";
           return (
-            <article
-              key={m.id}
-              className={`rounded-xl border bg-[var(--bq-raised)] px-[14px] py-3  ${
-                m.outbound
-                  ? "border-[var(--bq-hair-strong)]"
-                  : "border-[var(--bq-hair)] "
-              }`}
-            >
-              <header className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                <span className="text-[13px] font-semibold text-[var(--bq-t1)] ">
-                  {fromLabel}
-                </span>
-                {m.from.name && m.from.email && (
-                  <span className="truncate text-xs text-[var(--bq-t3)] ">
-                    &lt;{m.from.email}&gt;
+            <Fragment key={m.id}>
+              <article
+                data-email-message
+                className="flex flex-none flex-col gap-bq-space-sm rounded-bq-radius-menu border border-[var(--bq-hair)] bg-[var(--bq-raised)] px-bq-space-section py-bq-space-md"
+              >
+                <header
+                  data-email-sender
+                  className="flex flex-wrap items-center gap-bq-space-row text-bq-text-control text-[var(--bq-t3)]"
+                  style={
+                    {
+                      "--bq-avatar-hue": mockupAvatarHue(fromLabel),
+                      "--bq-avatar-size": "var(--bq-size-file-width)",
+                    } as CSSProperties
+                  }
+                >
+                  <Avatar
+                    initials={fromLabel.slice(0, 2)}
+                    className={`bq-avatar-mockup ${styles.senderAvatar}`}
+                  />
+                  <span className="min-w-0 break-words text-bq-text-row font-semibold text-[var(--bq-t1)]">
+                    {fromLabel}
                   </span>
+                  {m.from.name && m.from.email && (
+                    <span className="min-w-0 break-all">
+                      &lt;{m.from.email}&gt;
+                    </span>
+                  )}
+                  <time dateTime={m.date || undefined} className="ml-auto">
+                    {formatLongDate(m.date)}
+                  </time>
+                </header>
+                {m.to && (
+                  <p className="mt-0.5 truncate text-bq-text-metadata text-[var(--bq-t3)] ">
+                    para {m.to}
+                  </p>
                 )}
-                <span className="ml-auto shrink-0 text-[11px] text-[var(--bq-t3)] ">
-                  {formatLongDate(m.date)}
-                </span>
-              </header>
-              {m.to && (
-                <p className="mt-0.5 truncate text-[11px] text-[var(--bq-t3)] ">
-                  para {m.to}
-                </p>
-              )}
-              {m.cc ? (
-                <p className="truncate text-[11px] text-[var(--bq-t3)] ">
-                  cc {m.cc}
-                </p>
-              ) : null}
-              <div className="mt-3">
-                <EmailSafeBody
-                  body={m.body}
-                  bodyHtml={m.bodyHtml}
-                  snippet={m.snippet}
-                />
-              </div>
+                {m.cc ? (
+                  <p className="truncate text-bq-text-metadata text-[var(--bq-t3)] ">
+                    cc {m.cc}
+                  </p>
+                ) : null}
+                <div>
+                  <EmailSafeBody
+                    body={m.body}
+                    bodyHtml={m.bodyHtml}
+                    snippet={m.snippet}
+                  />
+                </div>
+              </article>
               {!!m.attachments?.length && (
-                <div className="mt-2 flex flex-wrap gap-1.5">
+                <div className="flex flex-none flex-wrap gap-bq-space-compact">
                   {m.attachments.map((a) => (
                     <button
                       key={a.attachmentId}
                       type="button"
-                      className="inline-flex max-w-full items-center gap-1 rounded-md border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-2 py-1 text-[11px] text-[var(--bq-t2)] hover:bg-[var(--bq-raised)]    "
+                      className="inline-flex max-w-full items-center gap-1 rounded-md border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-2 py-1 text-bq-text-metadata text-[var(--bq-t2)] hover:bg-[var(--bq-raised)]    "
                       title={`Baixar ${a.filename}`}
                       onClick={async () => {
                         if (!channelId) return;
@@ -668,7 +680,7 @@ export function EmailThreadView({
                   ))}
                 </div>
               )}
-            </article>
+            </Fragment>
           );
         })}
       </div>
@@ -726,7 +738,7 @@ export function EmailThreadView({
                 </div>
               )}
               {recent.length > 0 && !forwardTo.trim() && (
-                <p className="mt-1 text-[11px] text-[var(--bq-t3)]">
+                <p className="mt-1 text-bq-text-metadata text-[var(--bq-t3)]">
                   Destinatários recentes salvos neste navegador
                 </p>
               )}
@@ -752,7 +764,7 @@ export function EmailThreadView({
               {pendingFiles.map((f, i) => (
                 <span
                   key={`${f.name}-${f.size}-${i}`}
-                  className="inline-flex max-w-full items-center gap-1 rounded-md border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-2 py-1 text-[11px] text-[var(--bq-t2)]   "
+                  className="inline-flex max-w-full items-center gap-1 rounded-md border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-2 py-1 text-bq-text-metadata text-[var(--bq-t2)]   "
                 >
                   <Paperclip className="h-3 w-3 shrink-0" />
                   <span className="truncate">{f.name}</span>
@@ -794,7 +806,7 @@ export function EmailThreadView({
                 Anexar
               </button>
               {pendingFiles.length > 0 && (
-                <span className="text-[11px] text-[var(--bq-t3)]">
+                <span className="text-bq-text-metadata text-[var(--bq-t3)]">
                   {pendingFiles.length}/{MAX_OUTBOUND_ATTACHMENTS}
                 </span>
               )}

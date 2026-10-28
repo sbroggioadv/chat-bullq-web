@@ -114,6 +114,7 @@ export function AutomationRunsPanel({
             <p className="text-xs text-[var(--bq-t3)]">{automation.name}</p>
           </div>
           <button
+            aria-label="Fechar logs de execução"
             onClick={onClose}
             className="rounded-lg p-1.5 text-[var(--bq-t3)] hover:bg-[var(--bq-raised)] "
           >
@@ -130,7 +131,7 @@ export function AutomationRunsPanel({
                   onClick={() => setStatusFilter(s)}
                   className={`rounded-full px-3 py-1 text-xs font-medium transition ${
                     statusFilter === s
-                      ? "bg-[var(--bq-raised)] text-white  "
+                      ? "bg-[var(--bq-raised)] text-[var(--bq-t1)]  "
                       : "bg-[var(--bq-raised)] text-[var(--bq-t2)] hover:bg-[var(--bq-raised)]  "
                   }`}
                 >
@@ -205,7 +206,12 @@ function RunRow({
         </span>
         <div className="flex-1 text-sm">
           <div className="flex items-center justify-between text-xs text-[var(--bq-t3)]">
-            <span>{new Date(run.startedAt).toLocaleString("pt-BR")}</span>
+            <time
+              dateTime={run.startedAt}
+              title={new Date(run.startedAt).toLocaleString("pt-BR")}
+            >
+              {new Date(run.startedAt).toLocaleString("pt-BR")}
+            </time>
             {run.durationMs !== null && <span>{run.durationMs}ms</span>}
           </div>
           {run.errorCode && (
@@ -237,7 +243,7 @@ function RunRow({
                       {entry.index + 1}. {ACTION_LABELS[entry.type]}
                     </span>
                     <span
-                      className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                      className={`rounded-full px-2 py-0.5 text-bq-text-phase-number font-medium ${
                         entry.status === "success"
                           ? "bg-[var(--bq-ok-soft)] text-[var(--bq-ok)]  "
                           : entry.status === "skipped"
@@ -255,7 +261,7 @@ function RunRow({
                     </div>
                   )}
                   {entry.output && Object.keys(entry.output).length > 0 && (
-                    <pre className="mt-1 overflow-x-auto text-[10px] text-[var(--bq-t3)]">
+                    <pre className="mt-1 overflow-x-auto text-bq-text-phase-number text-[var(--bq-t3)]">
                       {JSON.stringify(entry.output, null, 2)}
                     </pre>
                   )}
@@ -271,7 +277,7 @@ function RunRow({
             <summary className="cursor-pointer text-[var(--bq-t3)]">
               Ver payload do gatilho
             </summary>
-            <pre className="mt-2 overflow-x-auto rounded bg-[var(--bq-surface)] p-2 text-[10px] ">
+            <pre className="mt-2 overflow-x-auto rounded bg-[var(--bq-surface)] p-2 text-bq-text-phase-number ">
               {JSON.stringify(run.triggerPayload, null, 2)}
             </pre>
           </details>

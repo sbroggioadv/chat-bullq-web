@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import DashboardPage from "@/app/(dashboard)/dashboard/page";
 import { dashboardService } from "@/features/dashboard/services/dashboard.service";
@@ -38,6 +38,18 @@ vi.mock("@/features/dashboard/services/dashboard.service", () => {
     },
   };
 });
+
+beforeEach(() => {
+  vi.stubGlobal(
+    "ResizeObserver",
+    class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    },
+  );
+});
+afterEach(() => vi.unstubAllGlobals());
 
 it("mantém as legendas dos três canais na janela consultada ao trocar o período", async () => {
   const client = new QueryClient({
@@ -212,3 +224,65 @@ it.each([
     expect(card.textContent).not.toContain("%");
   },
 );
+
+it("espera dimensão real positiva, desmonta em zero e remonta sem warning do Recharts", async () => {
+  let width = 0;
+  const callbacks: Array<() => void> = [];
+  vi.stubGlobal(
+    "ResizeObserver",
+    class {
+      constructor(callback: () => void) {
+        callbacks.push(callback);
+      }
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    },
+  );
+  const rect = vi
+    .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+    .mockImplementation(() => ({
+      width,
+      height: width ? 170 : 0,
+      x: 0,
+      y: 0,
+      top: 0,
+      left: 0,
+      right: width,
+      bottom: 170,
+      toJSON() {},
+    }));
+  const warn = vi.spyOn(console, "warn");
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  const { container } = render(
+    <QueryClientProvider client={client}>
+      <DashboardPage />
+    </QueryClientProvider>,
+  );
+  await screen.findByRole("heading", { name: "Mensagens" });
+  expect(container.querySelectorAll(".recharts-surface")).toHaveLength(0);
+  // Only our observer callbacks run here; Recharts keeps its own observer in the browser proof.
+  const measuring = [...callbacks];
+  width = 320;
+  await act(async () => measuring.forEach((callback) => callback()));
+  await waitFor(() =>
+    expect(
+      container.querySelectorAll(".recharts-surface").length,
+    ).toBeGreaterThan(0),
+  );
+  width = 0;
+  await act(async () => measuring.forEach((callback) => callback()));
+  expect(container.querySelectorAll(".recharts-surface")).toHaveLength(0);
+  width = 280;
+  await act(async () => measuring.forEach((callback) => callback()));
+  await waitFor(() =>
+    expect(
+      container.querySelectorAll(".recharts-surface").length,
+    ).toBeGreaterThan(0),
+  );
+  expect(warn.mock.calls.flat().join(" ")).not.toContain("width(-1)");
+  warn.mockRestore();
+  rect.mockRestore();
+});

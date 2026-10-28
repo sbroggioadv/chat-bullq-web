@@ -1,0 +1,23 @@
+.volumeRow,
+.halfRow {
+  display: grid;
+  gap: var(--bq-space-md);
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+}
+.volumeRow > :first-child {
+  grid-column: span 8;
+}
+.volumeRow > :last-child {
+  grid-column: span 4;
+}
+.halfRow > * {
+  grid-column: span 6;
+}
+/* DESIGN.md --bq-breakpoint-workspace, mockup L957; variables cannot appear in media conditions. */
+@media (max-width: 1100px) {
+  .volumeRow > :first-child,
+  .volumeRow > :last-child,
+  .halfRow > * {
+    grid-column: span 12;
+  }
+}

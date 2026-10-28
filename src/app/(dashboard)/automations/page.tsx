@@ -1,11 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import styles from "@/features/automations/components/automation-flow.module.css";
+import { Fragment, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Plus,
   Pencil,
-  Trash2,
+  X,
+  Tag,
+  Funnel,
+  User,
+  Send,
   Activity,
   Sparkles,
   ArrowRight,
@@ -69,15 +74,15 @@ export default function AutomationsPage() {
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-[14px] px-5 py-[18px] text-[13px] text-[var(--bq-t1)] antialiased">
+    <div className="flex h-full min-h-0 flex-col gap-bq-space-section px-5 py-bq-space-content text-bq-text-body text-[var(--bq-t1)] antialiased">
       <header className="">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div className="flex items-center gap-2">
             <div>
-              <h1 className="text-2xl leading-[1.1] font-[family-name:var(--bq-f-display)] font-medium tracking-[-0.02em]">
+              <h1 className="text-2xl leading-bq-leading-page font-[family-name:var(--bq-f-display)] font-medium tracking-bq-tracking-display">
                 Automações
               </h1>
-              <p className="mt-[5px] text-[13px] text-[var(--bq-t3)]">
+              <p className="mt-bq-space-label text-bq-text-body text-[var(--bq-t3)]">
                 Quando algo acontece → executa uma sequência de ações. Regras
                 com{" "}
                 <Sparkles
@@ -113,12 +118,15 @@ export default function AutomationsPage() {
           </div>
         )}
         {!isLoading && !isError && automations.length === 0 && (
-          <p role="status" className="py-3 text-[12.5px] text-[var(--bq-t3)]">
+          <p
+            role="status"
+            className="py-3 text-bq-text-row text-[var(--bq-t3)]"
+          >
             Nenhuma automação ainda. Crie uma regra em Nova automação.
           </p>
         )}
         {!isLoading && automations.length > 0 && (
-          <ul className="space-y-2">
+          <ul className="space-y-bq-space-item">
             {automations.map((a) => (
               <AutomationRow
                 key={a.id}
@@ -162,6 +170,24 @@ export default function AutomationsPage() {
   );
 }
 
+function relativeRun(value: string) {
+  const timestamp = new Date(value).getTime();
+  if (!Number.isFinite(timestamp)) return "Data indisponível";
+  const seconds = (timestamp - Date.now()) / 1000;
+  const [unit, divisor] =
+    Math.abs(seconds) < 60
+      ? (["second", 1] as const)
+      : Math.abs(seconds) < 3600
+        ? (["minute", 60] as const)
+        : Math.abs(seconds) < 86400
+          ? (["hour", 3600] as const)
+          : (["day", 86400] as const);
+  return new Intl.RelativeTimeFormat("pt-BR", { numeric: "auto" }).format(
+    Math.round(seconds / divisor),
+    unit,
+  );
+}
+
 function AutomationRow({
   automation,
   onEdit,
@@ -191,10 +217,14 @@ function AutomationRow({
     "groups" in automation.conditions ? automation.conditions : null;
 
   return (
-    <li className={`space-y-2.5 rounded-2xl border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-[15px] py-[13px] ${automation.enabled ? "" : "opacity-[.72]"}`}>
-      <div className="flex items-start gap-3">
+    <li
+      className={`space-y-2.5 rounded-2xl border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-bq-space-card py-bq-space-kpi ${automation.enabled ? "" : "opacity-[.72]"}`}
+    >
+      <div className="flex items-start gap-bq-space-item">
         <div className="min-w-0 flex-1">
-          <h2 className="text-[13.5px] font-semibold">{automation.name}</h2>
+          <h2 className="text-bq-text-message font-semibold">
+            {automation.name}
+          </h2>
           {automation.description && (
             <p className="mt-0.5 text-xs text-[var(--bq-t3)]">
               {automation.description}
@@ -215,27 +245,26 @@ function AutomationRow({
           para zerar o contador de falhas.
         </div>
       )}
-      <div className="flex flex-wrap items-center gap-1.5 text-xs [&_.bq-pill]:h-[26px] [&_.bq-pill]:rounded-lg [&_.bq-pill]:px-[9px] [&_.bq-pill]:text-xs">
-        <span className="text-[10px] font-semibold uppercase text-[var(--bq-t3)]">
+      <div className={styles.flow}>
+        <span className="mr-bq-space-micro font-mono text-bq-text-phase-number font-semibold uppercase tracking-bq-tracking-label text-[var(--bq-t3)]">
           Quando
         </span>
         <Pill tone="info">{TRIGGER_LABELS[automation.trigger]}</Pill>
         <ArrowRight size={12} aria-hidden="true" />
-        <span className="text-[10px] font-semibold uppercase text-[var(--bq-t3)]">
-          Se
+        <span className="mr-bq-space-micro font-mono text-bq-text-phase-number font-semibold uppercase tracking-bq-tracking-label text-[var(--bq-t3)]">
+          Se{" "}
+          {conditions?.groups?.length
+            ? conditions.match === "AND"
+              ? "todos os grupos"
+              : "qualquer grupo"
+            : ""}
         </span>
         {conditions?.groups?.length ? (
           <div className="flex flex-wrap items-center gap-1">
-            <span className="text-[var(--bq-t3)]">
-              {conditions.match === "AND"
-                ? "Todos os grupos"
-                : "Qualquer grupo"}
-              :
-            </span>
             {conditions.groups.map((group, gi) => (
               <span
                 key={gi}
-                className="rounded-lg border border-dashed border-[var(--bq-hair-strong)] px-2 py-1"
+                className="inline-flex min-h-bq-size-segment items-center rounded-bq-radius-field border border-dashed border-[var(--bq-hair-strong)] bg-[var(--bq-raised)] px-bq-space-row text-[var(--bq-t2)]"
               >
                 {group.rules
                   .map(
@@ -247,23 +276,38 @@ function AutomationRow({
             ))}
           </div>
         ) : (
-          <span className="rounded-lg border border-dashed border-[var(--bq-hair-strong)] px-2 py-1 text-[var(--bq-t2)]">
+          <span className="inline-flex min-h-bq-size-segment items-center rounded-bq-radius-field border border-dashed border-[var(--bq-hair-strong)] bg-[var(--bq-raised)] px-bq-space-row text-[var(--bq-t2)] text-[var(--bq-t2)]">
             Sem condições
           </span>
         )}
         <ArrowRight size={12} aria-hidden="true" />
-        <span className="text-[10px] font-semibold uppercase text-[var(--bq-t3)]">
+        <span className="mr-bq-space-micro font-mono text-bq-text-phase-number font-semibold uppercase tracking-bq-tracking-label text-[var(--bq-t3)]">
           Faz
         </span>
         {actionsCount === 0
           ? "Nenhuma ação"
-          : automation.actions.map((action, i) => (
-              <Pill key={i}>
-                {i + 1}. {ACTION_LABELS[action.type]}
-              </Pill>
-            ))}
+          : automation.actions.map((action, i) => {
+              const Icon =
+                action.type === "add_tag" || action.type === "remove_tag"
+                  ? Tag
+                  : action.type === "add_to_pipeline" ||
+                      action.type === "move_pipeline_stage"
+                    ? Funnel
+                    : action.type === "assign_user"
+                      ? User
+                      : Send;
+              return (
+                <Fragment key={i}>
+                  {i > 0 && <ArrowRight size={12} aria-hidden="true" />}
+                  <Pill>
+                    <Icon size={12} aria-hidden="true" />
+                    {ACTION_LABELS[action.type]}
+                  </Pill>
+                </Fragment>
+              );
+            })}
       </div>
-      <div className="flex flex-wrap items-center gap-2 font-mono text-[11px] text-[var(--bq-t3)]">
+      <div className="flex flex-wrap items-center gap-2 font-mono text-bq-text-metadata text-[var(--bq-t3)]">
         <span>
           {automation.runCount} execuções · {automation.successCount} OK ·{" "}
           {automation.failureCount} falhas
@@ -271,9 +315,16 @@ function AutomationRow({
         </span>
         <span>
           ·{" "}
-          {automation.lastRunAt
-            ? `última: ${new Date(automation.lastRunAt).toLocaleString("pt-BR")}`
-            : "Ainda sem execução"}
+          {automation.lastRunAt ? (
+            <time
+              dateTime={automation.lastRunAt}
+              title={new Date(automation.lastRunAt).toLocaleString("pt-BR")}
+            >
+              última: {relativeRun(automation.lastRunAt)}
+            </time>
+          ) : (
+            "Ainda sem execução"
+          )}
         </span>
         <div className="ml-auto flex flex-wrap gap-2">
           <Button onClick={onViewRuns}>
@@ -282,9 +333,14 @@ function AutomationRow({
           <Button onClick={onEdit}>
             <Pencil size={14} /> Editar
           </Button>
-          <Button onClick={onRemove} aria-label={`Remover ${automation.name}`}>
-            <Trash2 size={14} />
-          </Button>
+          <button
+            type="button"
+            className="bq-icon"
+            onClick={onRemove}
+            aria-label={`Remover ${automation.name}`}
+          >
+            <X size={12} />
+          </button>
         </div>
       </div>
     </li>

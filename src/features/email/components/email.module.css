@@ -1,0 +1,41 @@
+.grid {
+  display: grid;
+  flex: 1;
+  min-height: 0;
+  grid-template-columns: var(--bq-size-email-nav) var(
+      --bq-size-email-list
+    ) minmax(0, 1fr);
+}
+.nav,
+.pane {
+  display: flex;
+  min-height: 0;
+  min-width: 0;
+}
+.back {
+  display: none;
+}
+.senderAvatar:global(.bq-avatar-mockup) {
+  --bq-avatar-size: var(--bq-size-file-width);
+}
+/* DESIGN.md --bq-breakpoint-workspace; var() is not valid in media conditions. */
+@media (max-width: 1100px) {
+  .grid {
+    grid-template-columns: var(--bq-size-email-nav-compact) var(
+        --bq-size-email-list-compact
+      ) minmax(0, 1fr);
+  }
+}
+/* DESIGN.md --bq-breakpoint-pane, inclusive as in mockup L958. */
+@media (max-width: 760px) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .nav,
+  .hiddenMobile {
+    display: none;
+  }
+  .back {
+    display: grid;
+  }
+}
