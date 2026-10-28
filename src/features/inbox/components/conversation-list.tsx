@@ -487,14 +487,7 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
     staleTime: 30_000,
   });
 
-  const conversations = useMemo(() => {
-    const loaded = data?.pages.flatMap((p) => p.conversations) || [];
-    if (unavailableTab) return [];
-    const list = loaded;
-    if (activeTab === 'groups') return list;
-    if (!jarvisDeskConv || viewId) return list;
-    return [jarvisDeskConv, ...list.filter((c) => c.id !== jarvisDeskConv.id)];
-  }, [data, jarvisDeskConv, viewId, activeTab, unavailableTab]);
+  const conversations = useMemo(() => unavailableTab ? [] : data?.pages.flatMap(page => page.conversations) ?? [], [data, unavailableTab]);
 
   // Total count from the paginated response — same value across pages
   // (it's the count(where) from Postgres). Used to show "Não lidas (N)"
@@ -881,7 +874,7 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
     // dos nomes longos não funciona porque o flex item assume o
     // intrinsic content-width como mínimo.
     <div className="flex h-full w-full min-w-0 flex-col border-r border-[var(--bq-hair)] bg-[var(--bq-win-solid)]  ">
-      <div className="bq-list-heading"><h1>Conversas</h1><span className="text-[11px] font-normal text-[var(--bq-t3)]">{data?.pages[0]?.pagination.total ?? '—'}</span></div>
+      <div className="bq-list-heading"><h1>Conversas</h1><span className="text-[11px] font-normal text-[var(--bq-t3)]">{data?.pages[0]?.pagination.total ?? '—'}</span>{jarvisDeskConv && <button type="button" className="bq-button ml-auto" aria-label="Abrir conversa com Jarvis" title="Abrir conversa com Jarvis" onClick={() => onSelect(jarvisDeskConv)}><MessageSquare size={14} /></button>}</div>
       {/* Search + Filter */}
       <div onClickCapture={clearTreeSelection} onChangeCapture={clearTreeSelection} className="flex items-center gap-1.5 px-3 pt-2 pb-2">
         <div className="group relative flex-1">
