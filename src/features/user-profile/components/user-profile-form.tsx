@@ -28,11 +28,14 @@ function ProfileEditor({ profile }: { profile: ReturnType<typeof useUserProfile>
   };
   return <div className="space-y-5">
     <section className={styles.block} aria-label="Dados do perfil">
-      <div className={`border-b border-[var(--bq-hair)] p-4 ${styles.avatarUpload}`}><ImageUpload value={avatar} onChange={avatarUrl => setDraft(current => ({ ...current, avatarUrl }))} shape="circle" placeholderIcon={UserCircle} label="Foto de perfil" description="PNG, JPG ou WebP, até 5 MB." /></div>
-      <SettingRow title="Nome" description="Como você aparece para a equipe."><div className="w-full sm:w-64"><input aria-label="Nome completo" aria-invalid={Boolean(error)} aria-describedby="profile-name-help" value={name} maxLength={120} onChange={event => setDraft(current => ({ ...current, name: event.target.value }))} className="w-full border px-3 py-2" /><p id="profile-name-help" className="mt-1 text-xs text-[var(--bq-t3)]">{error ?? `${name.length}/120 caracteres`}</p></div></SettingRow>
-      <SettingRow title="E-mail" description="Alterações exigem verificação pelo suporte."><span className="break-all text-[var(--bq-t2)]">{user.email}</span></SettingRow>
+      <div className={styles.photoRow}>
+        <div className={styles.photoText}><h3>Foto de perfil</h3><p>PNG, JPG ou WebP, até 5 MB.</p></div>
+        <div className={styles.avatarUpload}><ImageUpload value={avatar} onChange={avatarUrl => setDraft(current => ({ ...current, avatarUrl }))} shape="circle" placeholderIcon={UserCircle} /></div>
+      </div>
+      <div className={styles.fieldRow}><SettingRow title="Nome completo"><div className={styles.fieldControl}><input aria-label="Nome completo" aria-invalid={Boolean(error)} aria-describedby="profile-name-help" value={name} maxLength={120} onChange={event => setDraft(current => ({ ...current, name: event.target.value }))} /><p id="profile-name-help" className={error ? styles.fieldError : 'sr-only'}>{error ?? `${name.length}/120 caracteres`}</p></div></SettingRow></div>
+      <div className={styles.fieldRow}><SettingRow title="E-mail" description="Trocar o e-mail exige verificação. Fale com o suporte."><input aria-label="E-mail" type="email" value={user.email} readOnly /></SettingRow></div>
     </section>
-    <section><h2 className={styles.sectionTitle}>Sessão</h2><div className={styles.block}><SettingRow title="Sair do BullQ" description="Volta para a tela de entrada."><Button onClick={logout}>Sair</Button></SettingRow></div></section>
+    <section><h2 className={styles.sectionTitle}>Sessão</h2><div className={styles.block}><SettingRow title="Sair do BullQ" description="Volta para a tela de entrada."><Button className={styles.danger} onClick={logout}>Sair</Button></SettingRow></div></section>
     <SettingsSaveBar dirty={dirty} saving={isSaving} disabled={Boolean(error)} onSave={() => void handleSave()} onDiscard={() => setDraft({})} />
   </div>;
 }

@@ -1,4 +1,4 @@
-import { UserCircle, Bell, Palette, Building2, Users, Radio, Layers, Zap, Tags, BookUser, Sparkles, Inbox, Clock, KeyRound, List, CalendarDays, PenTool, Plug } from 'lucide-react';
+import { UserRound as UserCircle, Bell, Sun as Palette, Briefcase as Building2, Users, MessageSquare as Radio, Grid2X2 as Layers, Zap, Tag as Tags, Phone as BookUser, Sparkles, Inbox, Clock, KeyRound, List, CalendarDays, PenTool, Plug } from 'lucide-react';
 
 export const settingsGroups = [
   { label: 'Você', items: [

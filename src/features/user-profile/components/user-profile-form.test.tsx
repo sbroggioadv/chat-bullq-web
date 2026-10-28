@@ -23,4 +23,20 @@ describe('limite do nome do perfil', () => {
     await user.click(screen.getByRole('button', { name: 'Salvar', exact: true }));
     await waitFor(() => expect(save).toHaveBeenCalledWith({ name: 'N'.repeat(120) }));
   });
+  it('mantém e-mail somente leitura e descarta o nome sem enviar PATCH', async () => {
+    const user = userEvent.setup();
+    render(<UserProfileForm />);
+    const email = screen.getByRole('textbox', { name: 'E-mail' });
+    expect(email).toHaveAttribute('readonly');
+    expect(email).toHaveValue('test@example.test');
+    const input = screen.getByRole('textbox', { name: 'Nome completo' });
+    await user.clear(input);
+    expect(screen.getByText('Mínimo 2 caracteres')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Salvar', exact: true })).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: 'Descartar' }));
+    expect(input).toHaveValue('Pessoa');
+    expect(screen.queryByRole('region', { name: 'Alterações pendentes' })).not.toBeInTheDocument();
+    expect(save).not.toHaveBeenCalled();
+  });
+
 });

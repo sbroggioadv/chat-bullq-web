@@ -4,7 +4,6 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ArrowLeft, Search, ChevronRight, Settings } from 'lucide-react';
-import { Button } from '@/components/ui/foundation';
 import { Avatar } from '@/components/ui/avatar';
 import { useAuthStore } from '@/stores/auth-store';
 import { settingsGroups, settingsItems, normalizeSearch } from '@/features/settings/components/settings-navigation';
@@ -22,7 +21,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
   const groups = settingsGroups.map(group => ({ ...group, items: group.items.filter(item => normalizeSearch(`${group.label} ${item.label} ${item.keywords}`).includes(search)) })).filter(group => group.items.length);
   return <div className={styles.settings} data-panel={Boolean(selected)}>
     <nav className={styles.nav} aria-label="Seções das configurações">
-      <Link className={styles.me} href="/settings/profile">
+      <Link className={styles.me} data-active={selected?.id === 'profile'} href="/settings/profile">
         <Avatar src={user?.avatarUrl} initials={user?.name?.slice(0, 2).toUpperCase() ?? 'BQ'} className="size-10 shrink-0" />
         <span><strong>{user?.name ?? 'Seu perfil'}</strong><small>{org?.name ?? 'Configurações da conta'}</small></span><ChevronRight size={14} />
       </Link>
@@ -40,15 +39,13 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
     <div className={styles.main}>
       <div className={styles.inner}>
         <Link href="/settings/sections" className={`bq-button ${styles.back}`}><ArrowLeft size={14} />Configurações</Link>
-        <header className={styles.heading}><span className={`${styles.tile} ${styles.large}`} data-tone={selected?.tone ?? 'neutral'}><Icon size={22} /></span><div><h1>{selected?.label ?? 'Configurações'}</h1><p>{selected?.description ?? 'Escolha uma seção para começar.'}</p></div></header>
+        <header className={styles.heading}><span className={`${styles.tile} ${styles.large}`} data-tone={selected?.tone ?? 'neutral'}><Icon size={22} /></span><div><h1>{selected?.label ?? 'Configurações'}</h1><p>{selected?.description ?? 'Escolha uma seção para começar.'}</p></div><span id="settings-heading-actions" /></header>
         <div className={styles.content} data-section={selected?.id} key={`${orgId}:${pathname}`}>
-          {selected?.id === 'appearance' && <p className="mb-4 text-xs text-[var(--bq-t3)]">Densidade da organização no Theme Builder. Preferências pessoais de densidade e vidro ainda não disponíveis.</p>}
-          {selected?.id === 'ai' && <p className="mb-4 text-xs text-[var(--bq-t3)]">Controles de resumo e sugestões ainda não disponíveis nesta configuração.</p>}
           {selected?.id === 'tags' && <p className="mb-4 text-xs text-[var(--bq-t3)]">Contagem de conversas por tag ainda não disponível.</p>}
-          {selected?.id === 'contacts' && <div className="mb-4 flex flex-wrap items-center gap-3"><Button disabled>Importar contatos</Button><p className="text-xs text-[var(--bq-t3)]">Importação ainda não disponível.</p></div>}
           {children}
         </div>
       </div>
+      <div id="settings-save-host" className={styles.saveHost} />
     </div>
   </div>;
 }
