@@ -163,7 +163,7 @@
     "heading": {
       "fontFamily": "\"Geist\", -apple-system, \"SF Pro Display\", system-ui, sans-serif",
       "fontSize": "15px",
-      "fontWeight": 600,
+      "fontWeight": 500,
       "letterSpacing": "-0.02em"
     }
   },
@@ -456,13 +456,13 @@ Janela macOS de vidro sobre gradiente grafite. Fonte canônica: `docs/design/202
 Valores literais dos dois primeiros blocos :root do mockup estão no front matter. Transparências preservadas. `t1`, `t2`, `t3` formam a hierarquia; `agent` identifica IA, `info` informação e `ok/warn/err` estados. No CSS, todos recebem prefixo `--bq-` para coexistir com os temas legados e o editor de marca.
 
 ## 3. Typography Rules
-Interface 13px/1.45 na pilha nativa SF Pro Text/Geist. Display Geist/SF Pro Display, 15px e peso 600 no nome. Números e atalhos usam Geist Mono/SF Mono. Não baixar fontes como requisito de execução; fallback nativo declarado no mockup.
+Interface 13px/1.45 na pilha nativa SF Pro Text/Geist. Títulos de página em Geist/SF Pro Display com peso 500; breadcrumb na fonte de UI com peso 600. Números e atalhos usam Geist Mono/SF Mono. Não baixar fontes como requisito de execução; fallback nativo declarado no mockup.
 
 ## 4. Components
 Botão 30px com variantes padrão, sólido e agente. Pill 20px, segmentos de 26px dentro de trilho com padding 2px. Menu de vidro com raio 12px. Sheet e janela usam Dialog do Headless UI, com foco e Escape. Janela usa controles macOS com nomes acessíveis; minimizar/maximizar são opcionais e só aparecem quando há handler. Switch usa role switch. Linha de ajustes associa texto e controle.
 
 ## 5. Layout Principles
-Papel de parede com margens 16px horizontais e 14px verticais; janela com raio 18px. Trilho 60px recolhido e 204px expandido, itens 40px. Topo 52px. As árvores existentes de caixas, pastas, pipelines e agentes são preservadas em navegação secundária contextual. Conteúdo interno pertence à W1.
+Papel de parede com margens 16px horizontais e 14px verticais; janela com raio 18px. Trilho 60px recolhido e 204px expandido, itens 40px. Topo 52px. A coluna secundária externa fica só em Conversas (Caixas); pastas, pipelines e agentes têm navegação dentro das próprias páginas. Conteúdo interno pertence à W1.
 
 ## 6. Depth & Elevation
 Janela blur 30px saturate 160%; topo blur 24px saturate 160%; popover blur 28px saturate 180%. Bordas finas hair/hair-strong e sombras literais. Sem suporte a backdrop-filter usar win-solid.
@@ -471,7 +471,7 @@ Janela blur 30px saturate 160%; topo blur 24px saturate 160%; popover blur 28px 
 Usar apenas a paleta extraída. Preservar transparências. Não inventar status conectado. Não criar funcionalidades do piloto Incoming. Não remover fluxos existentes. Não alterar as telas W1. Não substituir configurações de marca persistidas. Nomear botões de ícone. Exibir foco. Respeitar movimento reduzido.
 
 ## 8. Responsive Behavior
-A busca fica oculta até 1120px. Em largura até 560px, trilho fixo de 52px, itens de 36px, padding-block de 8px na parede e rótulos ocultos; navegação secundária em drawer acessível. Topo mantém organização e título, reduzindo ações. Conteúdo usa min-width zero e min-height zero. Em altura baixa o trilho rola, preservando acesso ao rodapé.
+A busca fica oculta até 1120px. Em largura até 560px, trilho fixo de 52px, itens de 36px, padding-block de 8px na parede e rótulos ocultos; navegação secundária em drawer acessível. Topo oculta organização até 860px e preserva o título; a troca de organização continua no menu do perfil. Conteúdo usa min-width zero e min-height zero. Em altura baixa o trilho rola, preservando acesso ao rodapé.
 
 ## 9. Agent Prompt Guide
 ### Quick Color Reference
@@ -507,3 +507,11 @@ Next.js 16, React 19, Tailwind 4; configuração CSS-first em `src/app/globals.c
 | --bq-hair | border-bq-border |
 
 Sem geração intermediária. Para regenerar, extrair os blocos :root do mockup aprovado, preservar valores e prefixar somente os nomes com bq. Os tokens legados continuam disponíveis; a W1 pode adotar os novos progressivamente.
+
+### Casca · fidelidade SPEC-010, Emenda 1.17
+
+- Títulos de página usam `--bq-f-display`, peso 500 (a lista de Conversas preserva 600, como `.lh-top h2` no mockup) e tracking -0.02em; o breadcrumb mantém 600 na fonte de UI, como `.crumbs b` do mockup. Ícones do trilho usam a geometria SVG literal do mockup, 18px e traço 1.75, em `shell-icon.tsx`.
+- Só Conversas tem navegação secundária externa (`InboxTree`). Pastas/contas do E-mail, seletor de Pipelines e abas de Agentes ficam nas páginas respectivas. A coluna de Caixas recolhe em 1380px, com acesso pelo botão de navegação da seção.
+- Organização sai do topo em 860px. A troca continua no menu do perfil do trilho, em todos os tamanhos. Em 560px, o indicador de conexão conserva a bolinha e o nome acessível, sem texto visual.
+- “Ao vivo” só aparece depois de `ready` no socket compartilhado; sem confirmação, mostra “Sem conexão”, inclusive durante a reconexão. Usa `--bq-ok`/`--bq-ok-soft` conectado e `--bq-t3`/`--bq-raised` aguardando.
+- Busca visível acima de 1120px: Ctrl+K e ⌘K focam o campo. O campo é somente leitura e explica no foco que a busca global ainda não está conectada; as buscas de cada tela continuam disponíveis. Nenhuma consulta fictícia.
