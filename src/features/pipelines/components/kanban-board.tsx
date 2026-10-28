@@ -5,6 +5,8 @@ import {
   DndContext,
   DragOverlay,
   PointerSensor,
+  KeyboardSensor,
+  type KeyboardCoordinateGetter,
   useSensor,
   useSensors,
   closestCenter,
@@ -24,6 +26,26 @@ interface Props {
   pipelineId: string;
 }
 
+// O quadro move para o fim de uma etapa; o teclado percorre essas mesmas etapas.
+const stageCoordinates: KeyboardCoordinateGetter = (event, { currentCoordinates, context }) => {
+  if (!['ArrowRight', 'ArrowLeft'].includes(event.code)) return;
+  event.preventDefault();
+  const { collisionRect, droppableContainers, droppableRects } = context;
+  if (!collisionRect) return;
+  const stages = droppableContainers.getEnabled()
+    .filter(item => item.data.current?.type === 'stage')
+    .map(item => ({ id: item.id, rect: droppableRects.get(item.id) }))
+    .filter(item => item.rect !== undefined)
+    .sort((a, b) => a.rect!.left - b.rect!.left);
+  const current = stages.findIndex(item => item.id === (context.over?.id ?? context.active?.data.current?.card.stageId));
+  const target = stages[current + (event.code === 'ArrowRight' ? 1 : -1)];
+  if (!target?.rect) return;
+  return {
+    x: currentCoordinates.x + target.rect.left + target.rect.width / 2 - (collisionRect.left + collisionRect.width / 2),
+    y: currentCoordinates.y,
+  };
+};
+
 export function KanbanBoard({ pipelineId }: Props) {
   const qc = useQueryClient();
   const [activeCard, setActiveCard] = useState<CardSummary | null>(null);
@@ -41,6 +63,10 @@ export function KanbanBoard({ pipelineId }: Props) {
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, {
+      keyboardCodes: { start: ['Space'], cancel: ['Escape'], end: ['Space', 'Enter', 'Tab'] },
+      coordinateGetter: stageCoordinates,
+    }),
   );
 
   // Build a fast lookup: cardId → { stageId, index } for the move handler.
@@ -132,8 +158,18 @@ export function KanbanBoard({ pipelineId }: Props) {
         collisionDetection={closestCenter}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
+        onDragCancel={() => setActiveCard(null)}
+        accessibility={{
+          screenReaderInstructions: { draggable: 'Enter abre a negociação. Espaço inicia o arraste; use as setas esquerda e direita para escolher a etapa. Espaço ou Enter solta; Escape cancela.' },
+          announcements: {
+            onDragStart: ({ active }) => `Arrastando ${active.data.current?.card.title}.`,
+            onDragOver: ({ over }) => over ? `Etapa ${over.data.current?.stage.name}.` : 'Fora de uma etapa.',
+            onDragEnd: ({ over }) => over ? `Solto em ${over.data.current?.stage.name}.` : 'Movimento cancelado.',
+            onDragCancel: () => 'Movimento cancelado.',
+          },
+        }}
       >
-        <div className="grid h-full auto-cols-[minmax(205px,1fr)] grid-flow-col gap-3 overflow-x-auto pb-0.5">
+        <div data-pipeline-board className="grid h-full auto-cols-[minmax(var(--bq-size-pipeline-column),1fr)] grid-flow-col gap-3 overflow-x-auto pb-0.5">
           {board.stages.map((stage) => (
             <KanbanColumn
               key={stage.id}
@@ -150,7 +186,7 @@ export function KanbanBoard({ pipelineId }: Props) {
           ))}
         </div>
         <DragOverlay>
-          {activeCard ? <KanbanCard card={activeCard} /> : null}
+          {activeCard ? <KanbanCard card={activeCard} overlay /> : null}
         </DragOverlay>
       </DndContext>
 

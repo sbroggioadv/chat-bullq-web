@@ -5,7 +5,8 @@ import { KanbanCard } from '@/features/pipelines/components/kanban-card';
 import type { CardSummary } from '@/features/pipelines/services/pipelines.service';
 
 const drag = vi.hoisted(() => vi.fn());
-vi.mock('@dnd-kit/core', () => ({ useDraggable: () => ({ attributes: {}, listeners: { onPointerDown: drag }, setNodeRef: vi.fn() }) }));
+const keyboardDrag = vi.hoisted(() => vi.fn());
+vi.mock('@dnd-kit/core', () => ({ useDraggable: () => ({ attributes: {}, listeners: { onPointerDown: drag, onKeyDown: keyboardDrag }, setNodeRef: vi.fn() }) }));
 const card = { id: 'c1', title: 'Revisão do contrato', value: 125, currency: 'EUR', status: 'OPEN', contact: { name: 'Marina Almeida', avatarUrl: null }, conversationId: 'conv', conversation: { channel: { type: 'WHATSAPP_ZAPPFY', name: 'WhatsApp escritório' } }, assignedTo: { name: 'Luís', avatarUrl: null } } as CardSummary;
 
 describe('Card fiel ao quadro', () => {
@@ -16,7 +17,9 @@ describe('Card fiel ao quadro', () => {
     expect(open).toHaveBeenCalledOnce();
     fireEvent.keyDown(button, { key: 'Enter' });
     fireEvent.keyDown(button, { key: ' ' });
-    expect(open).toHaveBeenCalledTimes(3);
+    expect(open).toHaveBeenCalledTimes(2);
+    expect(keyboardDrag).toHaveBeenCalledOnce();
+    expect(button.querySelectorAll('button, a, input, [tabindex]')).toHaveLength(0);
     drag.mockClear(); fireEvent.pointerDown(button, { pointerId: 1 });
     expect(drag).toHaveBeenCalledOnce();
     expect(screen.queryByRole('button', { name: 'Arrastar' })).not.toBeInTheDocument();
