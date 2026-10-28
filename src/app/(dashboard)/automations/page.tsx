@@ -218,7 +218,7 @@ function AutomationRow({
 
   return (
     <li
-      className={`space-y-2.5 rounded-2xl border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-bq-space-card py-bq-space-kpi ${automation.enabled ? "" : "opacity-[.72]"}`}
+      className={`space-y-2.5 rounded-2xl border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-bq-space-card py-bq-space-kpi ${automation.enabled ? "" : "opacity-bq-automation-paused"}`}
     >
       <div className="flex items-start gap-bq-space-item">
         <div className="min-w-0 flex-1">

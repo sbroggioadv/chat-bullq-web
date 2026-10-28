@@ -399,7 +399,7 @@ export function EmailThreadView({
             .map((l) => (
               <span
                 key={l.id}
-                className="inline-flex h-bq-size-switch-height items-center rounded-bq-radius-file bg-[var(--bq-raised)] px-bq-space-sm text-bq-text-auxiliary font-medium text-[var(--bq-t2)]"
+                className="bq-ptag"
               >
                 {l.name}
               </span>
