@@ -5,7 +5,7 @@ import { Popover, PopoverButton, PopoverPanel } from '@headlessui/react';
 import { mockupAvatarHue } from '@/components/ui/avatar-hue';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { RefreshCw, Activity, PanelRight, ArrowLeft, FolderKanban, CheckCheck, RotateCcw, Sparkles, ChevronDown, MessageSquare, Mail, Instagram } from 'lucide-react';
+import { RefreshCw, Activity, PanelRight, ArrowLeft, FolderKanban, CheckCheck, RotateCcw, Sparkles, ChevronDown, MessageSquare, Mail } from 'lucide-react';
 import { ConversationAiToggle } from '@/features/inbox/components/conversation-ai-toggle';
 import { AssignmentPopover } from '@/features/inbox/components/assignment-popover';
 import { AgentPinPopover } from '@/features/inbox/components/agent-pin-popover';
@@ -91,7 +91,7 @@ export function ConversationHeader({
     <header className="bq-conversation-head">
       {onBack && <Button className="bq-mobile-back" aria-label="Voltar para Conversas" onClick={onBack}><ArrowLeft size={16} /></Button>}
       <div className="bq-chat-identity flex min-w-0 flex-1 items-center">
-        <div className="relative shrink-0"><HeaderAvatar key={conversation.contact.avatarUrl} name={conversation.contact.name} avatarUrl={conversation.contact.avatarUrl} isGroup={conversation.isGroup} /><span className="bq-channel-badge" style={{"--bq-channel-color": `var(--bq-${conversation.channel.type.startsWith("WHATSAPP") ? "wa" : conversation.channel.type === "GMAIL" ? "mail" : conversation.channel.type === "INSTAGRAM" ? "ig" : "t3"})`} as CSSProperties}>{conversation.channel.type === "GMAIL" ? <Mail /> : conversation.channel.type === "INSTAGRAM" ? <Instagram /> : <MessageSquare />}</span></div>
+        <div className="relative shrink-0"><HeaderAvatar key={conversation.contact.avatarUrl} name={conversation.contact.name} avatarUrl={conversation.contact.avatarUrl} isGroup={conversation.isGroup} /><span className="bq-channel-badge" style={{"--bq-channel-color": `var(--bq-${conversation.channel.type.startsWith("WHATSAPP") ? "wa" : conversation.channel.type === "GMAIL" ? "mail" : conversation.channel.type === "INSTAGRAM" ? "ig" : "t3"})`} as CSSProperties}>{conversation.channel.type === "GMAIL" ? <Mail /> : conversation.channel.type === "INSTAGRAM" ? <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="5" /><circle cx="12" cy="12" r="4" /></svg> : conversation.channel.type.startsWith("WHATSAPP") ? <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" /></svg> : <MessageSquare />}</span></div>
         <div className="min-w-0 flex-1">
           <h2 className="truncate text-sm font-semibold" title={conversation.contact.name || conversation.contact.phone || 'Desconhecido'}>{conversation.contact.name || conversation.contact.phone || 'Desconhecido'}</h2>
           <p className="truncate text-[11px] text-[var(--bq-t3)]" title={conversation.contact.phone || undefined}>
@@ -101,7 +101,7 @@ export function ConversationHeader({
       </div>
       {conversation.channel.type !== 'JARVIS' && <div className="bq-chat-actions" data-ai={conversation.aiEnabled === true ? "forced" : conversation.aiEnabled === false ? "paused" : "default"}>
         <span className="bq-conversation-status" data-status={conversation.status} title={statusLabel}><span />{statusLabel}</span>
-        <Popover className="relative"><PopoverButton className="bq-button" aria-label={aiLabel} title={aiLabel}><Sparkles className="size-bq-size-icon-xs shrink-0" /><span className="truncate">{aiLabel}</span><ChevronDown className="size-bq-size-icon-xs shrink-0" /></PopoverButton><PopoverPanel anchor="bottom start" className="bq-popover">
+        <Popover className="relative"><PopoverButton className={`bq-button ${conversation.aiEnabled === true ? "text-bq-on-agent-forced" : ""}`} aria-label={aiLabel} title={aiLabel}><span className={`contents ${conversation.aiEnabled === true ? "text-bq-on-agent-forced" : ""}`}><Sparkles className="size-bq-size-icon-xs shrink-0" /><span className="truncate">{aiLabel}</span><ChevronDown className="size-bq-size-icon-xs shrink-0" /></span></PopoverButton><PopoverPanel anchor="bottom start" className="bq-popover">
           <div className="w-64 space-y-3 p-2" aria-label="IA nesta conversa">
             <ConversationAiToggle inline conversation={conversation} disabled={isLoading}
               onChange={(next) => handleAction(() => inboxService.toggleAi(conversation.id, next), next === null ? 'IA no padrão global' : next ? 'IA forçada nesta conversa' : 'IA pausada nesta conversa')}

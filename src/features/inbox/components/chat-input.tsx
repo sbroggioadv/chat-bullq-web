@@ -656,9 +656,9 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
             disabled={!text.trim() || isSending}
             className="bq-button"
             data-variant="solid"
-            aria-label="Enviar mensagem"
+            aria-label="Enviar"
           >
-            {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} Enviar
+            {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} <span className="bq-send-label">Enviar</span>
           </button>
         )}
       </div>
