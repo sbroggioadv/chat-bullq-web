@@ -57,8 +57,8 @@ describe('Projeto repaginado', () => {
     expect(screen.getByRole('link', { name: 'Arquivo de teste' })).toHaveAttribute('href', 'https://example.invalid/file');
     await userEvent.click(screen.getByRole('button', { name: 'Remover anexo' }));
     expect(mocks.removeAttachment).toHaveBeenCalledWith('project', 'attachment');
-    await userEvent.click(screen.getByRole('button', { name: 'Mais ações do projeto' }));
-    await userEvent.click(screen.getByRole('menuitem', { name: 'E-mail' }));
+    expect(screen.queryByRole('button', { name: 'Mais ações do projeto' })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'E-mail do projeto' }));
     await userEvent.type(screen.getByPlaceholderText('Assunto'), 'Assunto de teste');
     await userEvent.type(screen.getByPlaceholderText('Corpo do e-mail'), 'Mensagem de teste');
     await userEvent.click(screen.getByRole('button', { name: 'Enviar e-mail' }));
@@ -97,8 +97,10 @@ describe('Carregamento e retorno do dossiê', () => {
 describe('Hierarquia do dossiê', () => {
   it('avança usando a sequência existente, sem criar status, e calcula progresso pelas tarefas', async () => {
     mount(undefined, { ...project, tasks: [{ id: 't1', done: true }, { id: 't2', done: false }] });
+    await userEvent.click(await screen.findByRole('button', { name: 'Ver tarefas' }));
     expect(await screen.findByRole('progressbar', { name: 'Progresso das tarefas' })).toHaveAttribute('value', '1');
     expect(screen.getByRole('progressbar')).toHaveAttribute('max', '2');
+    await userEvent.click(screen.getByRole('button', { name: 'Fechar janela' }));
     await userEvent.click(screen.getByRole('button', { name: 'Avançar fase' }));
     await waitFor(() => expect(mocks.update).toHaveBeenCalledWith('project', { status: 'WAITING_DOCS' }));
   });
@@ -106,8 +108,19 @@ describe('Hierarquia do dossiê', () => {
     mount(undefined, { ...project, status: 'DONE', tasks: [] });
     expect(await screen.findByRole('button', { name: 'Avançar fase' })).toBeDisabled();
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
-    expect(screen.getByText('Progresso indisponível · sem tarefas')).toBeVisible();
-    expect(screen.getByRole('button', { name: 'Enviar arquivo' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Anexar', exact: true })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Incluir grupo' })).toBeDisabled();
+    await userEvent.click(screen.getByRole('button', { name: 'Ver tarefas' }));
+    expect(screen.getByText('Progresso indisponível · sem tarefas')).toBeVisible();
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
   });
 });
+
+ it('preserva abrir página e voltar nas ações de edição, sem menu extra no cabeçalho', async () => {
+    const back = vi.fn(); mount(back);
+    await userEvent.click(await screen.findByRole('button', { name: 'Editar escopo e dados' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Abrir página do projeto' }));
+    expect(mocks.push).toHaveBeenCalledWith('/projects/project');
+    await userEvent.click(screen.getByRole('button', { name: 'Voltar aos projetos' }));
+    expect(back).toHaveBeenCalledOnce();
+ });

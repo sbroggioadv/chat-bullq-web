@@ -95,21 +95,22 @@ export function ProjectsTable() {
     <div className="flex h-full min-w-0 flex-col text-[var(--bq-t1)] md:flex-row">
       <aside aria-label="Lista de projetos" className="flex max-h-[40%] w-full shrink-0 flex-col border-b border-[var(--bq-hair)] md:max-h-none md:w-[300px] md:border-b-0 md:border-r">
         <div className="flex items-center gap-2 p-[14px]"><h1 className="flex-1 font-[family-name:var(--bq-f-display)] text-[17px] font-semibold tracking-tight">Projetos</h1><Button variant="solid" onClick={() => setCreating(true)}><Plus size={13} />Novo projeto</Button></div>
-        <div className="flex flex-wrap gap-[5px] px-[14px] pb-2.5" role="group" aria-label="Filtrar projetos por fase">
-          {[{ value: '', label: 'Todas' }, ...PROJECT_STATUSES.map(value => ({ value, label: PHASE_LABELS[value] }))].map(option => <button type="button" key={option.value} aria-pressed={status === option.value} onClick={() => setStatus(option.value)} className={`h-6 rounded-full border px-[9px] text-[11.5px] ${status === option.value ? 'border-transparent bg-[var(--bq-solid-bg)] text-[var(--bq-solid-fg)]' : 'border-[var(--bq-hair-strong)] text-[var(--bq-t2)]'}`}>{option.label}</button>)}
+        <div className="flex flex-wrap items-center gap-[5px] px-[14px] pb-2.5" role="group" aria-label="Filtros de projetos">
+          <button type="button" aria-pressed={!status && !responsibleUserId && !search} onClick={() => { setStatus(''); setResponsibleUserId(''); setSearch(''); }} className={`h-6 rounded-full border px-[9px] text-[11.5px] ${!status && !responsibleUserId && !search ? 'border-transparent bg-[var(--bq-solid-bg)] text-[var(--bq-solid-fg)]' : 'border-[var(--bq-hair-strong)] text-[var(--bq-t2)]'}`}>Todas</button>
+          <span className="text-[11.5px] text-[var(--bq-t3)]">Tags ainda não disponíveis</span>
           <FoundationPopover label="Buscar e filtrar"><div className="flex max-w-[250px] flex-col gap-3 p-2">
             <label className="text-xs">Buscar projetos<div className="relative mt-1"><Search className="pointer-events-none absolute left-2 top-2.5 h-4 w-4 text-[var(--bq-t3)]" /><input className={`${controlCls} w-full pl-8`} value={search} onChange={e => setSearch(e.target.value)} placeholder="Nome ou descrição" /></div></label>
+            <label className="text-xs">Filtrar por fase<select className={`${controlCls} mt-1 w-full`} value={status} onChange={e => setStatus(e.target.value)}><option value="">Todas as fases</option>{PROJECT_STATUSES.map(value => <option key={value} value={value}>{PHASE_LABELS[value]}</option>)}</select></label>
             <label className="text-xs">Filtrar por responsável<select className={`${controlCls} mt-1 w-full`} value={responsibleUserId} onChange={e => setResponsibleUserId(e.target.value)}><option value="">Todos os responsáveis</option>{members.filter(m => m.user.isActive).map(m => <option key={m.user.id} value={m.user.id}>{m.user.name}</option>)}</select></label>
             <p className="text-xs text-[var(--bq-t3)]">Tags: ainda não disponíveis.</p>
           </div></FoundationPopover>
         </div>
         <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto px-2 pb-3">
           {isLoading ? <p role="status" className="p-3 text-sm text-[var(--bq-t3)]">Carregando projetos…</p> : isError ? <div role="alert" className="p-3 text-sm">Não foi possível carregar os projetos. <Button onClick={() => void refetch()}>Tentar novamente</Button></div> : filtered.length === 0 ? <p className="p-3 text-sm text-[var(--bq-t3)]">Nenhum projeto encontrado.</p> : filtered.map(project => {
-            const total = project.tasks?.length ?? 0;
-            const done = (project.tasks ?? []).filter(task => task.done).length;
+            const phaseIndex = PROJECT_STATUSES.findIndex(status => status === project.status);
             return <button type="button" key={project.id!} aria-pressed={activeId === project.id} onClick={() => setSelectedId(project.id!)} className={`flex w-full shrink-0 flex-col gap-[7px] rounded-xl p-[11px] text-left hover:bg-[var(--bq-raised)] ${activeId === project.id ? 'bg-[var(--bq-raised-2)] shadow-[inset_0_0_0_1px_var(--bq-hair)]' : ''}`}>
               <span className="text-[13px] font-semibold">{project.name}</span>
-              {total > 0 ? <><progress aria-label={`Progresso de ${project.name}`} className="h-1 w-full overflow-hidden rounded [&::-webkit-progress-bar]:bg-[var(--bq-raised-2)] [&::-webkit-progress-value]:bg-[var(--bq-ok)] [&::-moz-progress-bar]:bg-[var(--bq-ok)]" value={done} max={total} /><span className="text-[11px] text-[var(--bq-t3)]">{done}/{total} tarefas concluídas</span></> : <span className="text-[11px] text-[var(--bq-t3)]">Progresso indisponível · sem tarefas</span>}
+              <span role="img" aria-label={`Fase de ${project.name}: ${phaseLabel(project.status) || 'não informada'}`} className="flex w-full gap-[3px]">{PROJECT_STATUSES.map((status, index) => <span key={status} className={`h-1 min-w-0 flex-1 rounded-[1px] ${index === phaseIndex ? 'bg-[var(--bq-accent)]' : 'bg-[var(--bq-raised-2)]'}`} />)}</span>
               <span className="flex justify-between gap-2 text-[11.5px] text-[var(--bq-t3)]"><span>{phaseLabel(project.status) || 'Sem fase'}</span><span>{project.responsible?.name || 'Sem responsável'}</span></span>
             </button>;
           })}

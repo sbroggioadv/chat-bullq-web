@@ -17,31 +17,39 @@ function mount() {
   render(<QueryClientProvider client={client}><ProjectsTable /></QueryClientProvider>);
 }
 describe('Lista de projetos compacta', () => {
-  it('mantém lista e detalhe juntos, seleção e progresso somente quando há tarefas', async () => {
+  it('mantém lista e detalhe juntos, seleção e sequência da fase sem simular tarefas ou tags', async () => {
     mount();
     const list = await screen.findByRole('complementary', { name: 'Lista de projetos' });
     await screen.findByText('Detalhe p1 integrado');
-    const progress = within(list).getByRole('progressbar', { name: 'Progresso de Projeto Um' });
-    expect(progress).toHaveAttribute('value', '1'); expect(progress).toHaveAttribute('max', '2');
-    expect(within(list).queryByRole('progressbar', { name: 'Progresso de Projeto Dois' })).not.toBeInTheDocument();
+    expect(within(list).getByRole('img', { name: 'Fase de Projeto Um: A fazer' })).toBeVisible();
+    expect(within(list).getByRole('img', { name: 'Fase de Projeto Dois: Em execução' })).toBeVisible();
+    expect(within(list).queryByRole('progressbar')).not.toBeInTheDocument();
     await userEvent.click(within(list).getByRole('button', { name: /Projeto Dois/ }));
     expect(screen.getByText('Detalhe p2 integrado')).toBeVisible();
     expect(list).not.toHaveClass('hidden');
   });
-  it('chips e painel secundário preservam filtros de fase, responsável e busca por descrição', async () => {
+  it('Todas e painel secundário preservam filtros de fase, responsável e busca por descrição', async () => {
     mount();
-    await userEvent.click(screen.getByRole('button', { name: 'Em execução', exact: true }));
-    await waitFor(() => expect(mocks.list).toHaveBeenCalledWith({ status: 'IN_PROGRESS', responsibleUserId: undefined }));
     await userEvent.click(screen.getByRole('button', { name: 'Buscar e filtrar' }));
+    await userEvent.selectOptions(screen.getByLabelText('Filtrar por fase'), 'IN_PROGRESS');
+    await waitFor(() => expect(mocks.list).toHaveBeenCalledWith({ status: 'IN_PROGRESS', responsibleUserId: undefined }));
     await userEvent.selectOptions(screen.getByLabelText('Filtrar por responsável'), 'u1');
     await waitFor(() => expect(mocks.list).toHaveBeenCalledWith({ status: 'IN_PROGRESS', responsibleUserId: 'u1' }));
     await userEvent.type(screen.getByLabelText('Buscar projetos'), 'Documentos');
     expect(screen.queryByRole('button', { name: /Projeto Um/ })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Projeto Dois/ })).toBeVisible();
+    await userEvent.keyboard('{Escape}');
+    expect(screen.getByRole('button', { name: 'Todas', exact: true })).toHaveAttribute('aria-pressed', 'false');
+    await userEvent.click(screen.getByRole('button', { name: 'Todas', exact: true }));
+    await waitFor(() => expect(mocks.list).toHaveBeenLastCalledWith({ status: undefined, responsibleUserId: undefined }));
+    expect(screen.getByRole('button', { name: /Projeto Um/ })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Todas', exact: true })).toHaveAttribute('aria-pressed', 'true');
   });
   it('criação mantém payload, seleciona novo projeto e limpa filtro', async () => {
     mount();
-    await userEvent.click(screen.getByRole('button', { name: 'Em execução', exact: true }));
+    await userEvent.click(screen.getByRole('button', { name: 'Buscar e filtrar' }));
+    await userEvent.selectOptions(screen.getByLabelText('Filtrar por fase'), 'IN_PROGRESS');
+    await userEvent.keyboard('{Escape}');
     await userEvent.click(screen.getByRole('button', { name: 'Novo projeto' }));
     const dialog = screen.getByRole('dialog', { name: 'Novo projeto' });
     await userEvent.type(within(dialog).getByLabelText('Nome'), 'Projeto Novo');

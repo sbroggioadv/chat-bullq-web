@@ -1,7 +1,7 @@
 'use client';
 
 import { ApiClientError } from '@/lib/api';
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
@@ -9,6 +9,7 @@ import {
   ArrowLeft,
   ExternalLink,
   FileText,
+  Paperclip,
   ListChecks,
   Sparkles,
   ChevronRight,
@@ -23,7 +24,8 @@ import {
   Trash2,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Button, FoundationMenu, MacWindow } from '@/components/ui/foundation';
+import { Button, MacWindow } from '@/components/ui/foundation';
+import { Avatar } from '@/components/ui/avatar';
 import { contactsService } from '@/features/contacts/services/contacts.service';
 import { membersService } from '@/features/settings/services/members.service';
 import { projectsService } from '@/features/projects/services/projects.service';
@@ -38,7 +40,7 @@ const inputCls =
 const labelCls =
   'text-[11px] font-medium uppercase tracking-wide text-[var(--bq-t3)] ';
 const cardCls =
-  'rounded-2xl border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-4 py-[14px]';
+  'min-w-0 shrink-0 [overflow-wrap:anywhere] rounded-2xl border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-4 py-[14px]';
 
 export function ProjectDetail({ projectId, onBack, embedded = false }: { projectId: string; onBack?: () => void; embedded?: boolean }) {
   const router = useRouter();
@@ -226,7 +228,7 @@ export function ProjectDetail({ projectId, onBack, embedded = false }: { project
   const phaseIndex = PROJECT_STATUSES.findIndex(status => status === project.status);
   const done = tasks.filter(task => task.done).length;
   return (
-    <div className="flex h-full min-w-0 flex-col gap-[14px] overflow-y-auto px-[22px] pb-6 pt-[18px]">
+    <div data-project-detail className="flex h-full min-w-0 flex-col gap-[14px] overflow-y-auto px-[22px] pb-6 pt-[18px]">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0"><h1 className="font-[family-name:var(--bq-f-display)] text-[22px] font-medium leading-[1.15] tracking-[-0.02em] [text-wrap:balance]">{project.name || 'Dossiê'}</h1>
           <p className="mt-1.5 text-xs text-[var(--bq-t3)]">Responsável: {project.responsible?.name || 'Sem responsável'}</p>
@@ -235,7 +237,7 @@ export function ProjectDetail({ projectId, onBack, embedded = false }: { project
         <div className="flex flex-wrap items-center gap-2">
           {firstConversationId ? <Link className="bq-button" href={`/inbox?conversationId=${firstConversationId}`}><MessageSquare size={13} />Abrir conversa</Link> : <Button disabled title="Nenhuma conversa vinculada">Abrir conversa</Button>}
           <Button variant="solid" disabled={phaseMutation.isPending || phaseIndex < 0 || phaseIndex >= PROJECT_STATUSES.length - 1} onClick={() => phaseMutation.mutate(PROJECT_STATUSES[phaseIndex + 1])}>Avançar fase<ChevronRight size={12} /></Button>
-          <div className="relative [&>button]:w-[30px] [&>button]:px-0 [&>button]:!text-[0px]"><FoundationMenu label="Mais ações do projeto" items={[{ label: 'Tarefas', onClick: () => setPanel('tasks') }, { label: 'E-mail', onClick: () => setPanel('email') }, { label: 'Abrir página do projeto', onClick: () => router.push(`/projects/${projectId}`) }, { label: 'Voltar aos projetos', onClick: onBack ?? (() => router.push('/projects')) }]} /><span aria-hidden="true" className="pointer-events-none absolute inset-0 grid place-items-center text-base text-[var(--bq-t2)]">⋯</span></div>
+
           {!embedded && <Button aria-label="Voltar" onClick={onBack ?? (() => router.push('/projects'))}><ArrowLeft size={13} /></Button>}
         </div>
       </header>
@@ -329,25 +331,24 @@ export function ProjectDetail({ projectId, onBack, embedded = false }: { project
             )}
             Salvar escopo e dados
           </button>
+          <div className="mt-3 flex flex-wrap gap-2"><Button onClick={() => router.push(`/projects/${projectId}`)}>Abrir página do projeto</Button><Button onClick={onBack ?? (() => router.push('/projects'))}>Voltar aos projetos</Button></div>
           </div>
         </section>
       <section className={cardCls}>
-        <div className="mb-[11px] flex flex-wrap items-center gap-2"><ListChecks size={14} /><h2 className="text-[13px] font-semibold">Fase em que está</h2><span className="font-mono text-[11.5px] text-[var(--bq-t3)]">{phaseIndex >= 0 ? `${phaseIndex + 1}/${PROJECT_STATUSES.length}` : 'Fase não informada'}</span></div>
+        <div className="mb-[11px] flex flex-wrap items-center gap-2"><ListChecks size={14} /><h2 className="text-[13px] font-semibold">Fase em que está</h2><span className="font-mono text-[11.5px] text-[var(--bq-t3)]">{phaseIndex >= 0 ? `${phaseIndex + 1}/${PROJECT_STATUSES.length}` : 'Fase não informada'}</span><button className="ml-auto text-xs text-[var(--bq-t2)]" onClick={() => setPanel('tasks')}>Ver tarefas</button></div>
         <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Fase atual do projeto">
-          {PROJECT_STATUSES.map((status, index) => <button key={status} type="button" aria-pressed={project.status === status} disabled={phaseMutation.isPending} onClick={() => phaseMutation.mutate(status)} className={`flex h-[30px] items-center gap-[7px] rounded-[9px] border pl-1.5 pr-[11px] text-xs ${project.status === status ? 'border-[var(--bq-accent)] bg-[var(--bq-accent-soft)] text-[var(--bq-t1)]' : 'border-[var(--bq-hair)] text-[var(--bq-t2)] hover:border-[var(--bq-hair-strong)]'}`}><span aria-hidden="true" className={`grid size-[19px] place-items-center rounded-full font-mono text-[10px] ${project.status === status ? 'bg-[var(--bq-accent)] text-[var(--bq-on-accent)]' : 'bg-[var(--bq-raised-2)]'}`}>{index + 1}</span>{PHASE_LABELS[status]}</button>)}
+          {PROJECT_STATUSES.map((status, index) => <Fragment key={status}>{index > 0 && <ChevronRight size={12} className="text-[var(--bq-t3)]" />}<button key={status} type="button" aria-pressed={project.status === status} disabled={phaseMutation.isPending} onClick={() => phaseMutation.mutate(status)} className={`flex h-[30px] items-center gap-[7px] rounded-[9px] border pl-1.5 pr-[11px] text-xs ${project.status === status ? 'border-[var(--bq-accent)] bg-[var(--bq-accent-soft)] text-[var(--bq-t1)]' : 'border-[var(--bq-hair)] text-[var(--bq-t2)] hover:border-[var(--bq-hair-strong)]'}`}><span aria-hidden="true" className={`grid size-[19px] place-items-center rounded-full font-mono text-[10px] ${project.status === status ? 'bg-[var(--bq-accent)] text-[var(--bq-on-accent)]' : 'bg-[var(--bq-raised-2)]'}`}>{index + 1}</span>{PHASE_LABELS[status]}</button></Fragment>)}
         </div>
-        <div className="mt-3 flex items-center gap-2 text-[11px] text-[var(--bq-t3)]">{tasks.length ? <><progress aria-label="Progresso das tarefas" className="h-1 min-w-0 flex-1 overflow-hidden rounded [&::-webkit-progress-bar]:bg-[var(--bq-raised-2)] [&::-webkit-progress-value]:bg-[var(--bq-ok)] [&::-moz-progress-bar]:bg-[var(--bq-ok)]" value={done} max={tasks.length} /><span>{done}/{tasks.length} tarefas concluídas</span></> : <span>Progresso indisponível · sem tarefas</span>}<button className="ml-auto underline" onClick={() => setPanel('tasks')}>Ver tarefas</button></div>
+
       </section>
       <section className={cardCls}>
         <div className="mb-[11px] flex flex-wrap items-center gap-2"><Sparkles size={14} /><h2 className="flex-1 text-[13px] font-semibold">Fluxograma</h2><Button variant="agent" disabled>Refazer com o Jarvis</Button></div>
         <div className="flex min-h-[306px] items-center justify-center rounded-xl border border-[var(--bq-hair)] bg-[radial-gradient(circle_at_1px_1px,var(--bq-hair-strong)_1px,transparent_1.5px)] bg-[length:18px_18px] p-5 text-center text-xs text-[var(--bq-t3)]">O fluxo deste projeto ainda não está disponível.</div>
       </section>
-      <div className="grid items-start gap-[14px] min-[1180px]:grid-cols-2">
-        <div className="flex flex-col gap-[14px]">
+      <div data-project-blocks className="grid min-w-0 grid-cols-[minmax(0,1fr)] items-start gap-[14px] min-[1180px]:grid-cols-2">
+        <div className="flex min-w-0 flex-col gap-[14px]">
         <section className={cardCls}>
-          <h2 className="mb-3 flex items-center gap-2 text-[13px] font-semibold text-[var(--bq-t1)]">
-            <FileText size={14} /> Documentos
-          </h2>
+          <div className="mb-3 flex flex-wrap items-center gap-2"><Paperclip size={14} /><h2 className="text-[13px] font-semibold">Documentos</h2><span className="rounded bg-[var(--bq-raised-2)] px-1.5 font-mono text-[10px] text-[var(--bq-t2)]">{attachments.length}</span><Button className="ml-auto" disabled title="Upload direto ainda não disponível"><Upload size={13} />Anexar</Button></div>
           {attachments.length === 0 ? (
             <p className="text-sm text-[var(--bq-t3)]">
               Nenhum anexo. Use o clipe na conversa para anexar uma mensagem.
@@ -357,15 +358,16 @@ export function ProjectDetail({ projectId, onBack, embedded = false }: { project
               {attachments.map((a) => (
                 <li
                   key={a.id}
-                  className="flex items-center justify-between gap-2 rounded-md border border-[var(--bq-hair)] px-3 py-2"
+                  className="flex min-w-0 items-center gap-[9px] py-[7px]"
                 >
-                  <div className="min-w-0">
+                  <FileText size={24} className="shrink-0 text-[var(--bq-t3)]" />
+                  <div className="min-w-0 flex-1">
                     {a.url ? (
                       <a
                         href={a.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="truncate text-sm font-medium text-[var(--bq-accent-text)] hover:underline"
+                        className="block truncate text-sm font-medium text-[var(--bq-accent-text)] hover:underline"
                       >
                         {a.label || a.fileName || 'Anexo'}
                       </a>
@@ -392,14 +394,11 @@ export function ProjectDetail({ projectId, onBack, embedded = false }: { project
               ))}
             </ul>
           )}
-          <div className="mt-3 flex flex-col items-center gap-[5px] rounded-xl border border-dashed border-[var(--bq-hair-strong)] p-3 text-center text-xs text-[var(--bq-t3)]"><Upload size={18} /><Button disabled>Enviar arquivo</Button><span>Upload direto ainda não disponível.</span>{firstConversationId && <Link className="underline" href={`/inbox?conversationId=${firstConversationId}`}>Anexar mensagem pela conversa</Link>}</div>
+          <div className="mt-3 flex flex-col items-center gap-[5px] rounded-xl border border-dashed border-[var(--bq-hair-strong)] p-3 text-center text-xs text-[var(--bq-t3)]"><Upload size={18} /><span>Arraste arquivos aqui ou <button type="button" disabled className="underline">escolha no computador</button></span><span>Upload direto ainda não disponível.</span>{firstConversationId && <Link className="underline" href={`/inbox?conversationId=${firstConversationId}`}>Anexar mensagem pela conversa</Link>}</div>
         </section>
 
         <section className={cardCls}>
-          <h2 className="mb-3 flex items-center gap-2 text-[13px] font-semibold text-[var(--bq-t1)]">
-            <Users size={14} /> Contatos e grupos
-          </h2>
-          <div className="mb-3 flex flex-wrap gap-2"><Button onClick={() => setPanel('contacts')}><Plus size={12} />Incluir contato</Button><Button disabled title="Vínculo de grupo ainda não disponível">Incluir grupo</Button></div>
+          <div className="mb-3 flex flex-wrap items-center gap-2"><Users size={14} /><h2 className="text-[13px] font-semibold">Contatos e grupos do contrato</h2><span className="rounded bg-[var(--bq-raised-2)] px-1.5 font-mono text-[10px] text-[var(--bq-t2)]">{contacts.length}</span><button type="button" className="ml-auto text-[var(--bq-t2)]" aria-label="E-mail do projeto" onClick={() => setPanel('email')}><Mail size={14} /></button></div>
           {project.groupJid && <p className="mb-2 text-xs text-[var(--bq-t2)]">Grupo vinculado: {project.groupJid}</p>}
           <p className="mb-2 text-[11px] text-[var(--bq-t3)]">Incluir grupo ainda não disponível.</p>
 
@@ -410,13 +409,14 @@ export function ProjectDetail({ projectId, onBack, embedded = false }: { project
               {contacts.map((c) => (
                 <li
                   key={c.id}
-                  className="flex items-start justify-between gap-2 rounded-md border border-[var(--bq-hair)] px-3 py-2"
+                  className="flex min-w-0 items-center gap-[9px] py-[7px]"
                 >
-                  <div className="min-w-0">
+                  <Avatar square className="!size-9 !bg-[var(--bq-agent-soft)] [&>span]:!text-[var(--bq-agent-text)]" initials={(c.name || c.phone || '?').slice(0, 2)} />
+                  <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-[var(--bq-t1)]">
                       {c.name || c.phone || c.email || c.contactId}
                     </p>
-                    <p className="truncate text-xs text-[var(--bq-t3)]">
+                    <p className="break-words text-[11.5px] text-[var(--bq-t3)]">
                       {[c.phone, c.email].filter(Boolean).join(' · ') ||
                         c.contactId}
                     </p>
@@ -433,14 +433,16 @@ export function ProjectDetail({ projectId, onBack, embedded = false }: { project
               ))}
             </ul>
           )}
+          <div className="mt-3 flex flex-wrap gap-2"><Button onClick={() => setPanel('contacts')}><Plus size={12} />Incluir contato</Button><Button disabled title="Vínculo de grupo ainda não disponível">Incluir grupo</Button></div>
         </section>
 
         <section className={cardCls}><h2 className="text-[13px] font-semibold">Contrato e honorários</h2><div className="mt-3 flex items-baseline gap-2"><span className="text-[22px]">—</span><span className="text-xs text-[var(--bq-t3)]">Valor contratado ainda não disponível</span></div><p className="mt-3 text-xs text-[var(--bq-t3)]">Contratos e assinaturas ainda não disponíveis.</p><Button className="mt-3" disabled>Enviar contrato</Button></section>
-        </div><div className="flex flex-col gap-[14px]">
+        </div><div className="flex min-w-0 flex-col gap-[14px]">
         <section className={cardCls}><div className="flex flex-wrap items-center gap-2"><Calendar size={14} /><h2 className="flex-1 text-[13px] font-semibold">Reuniões</h2><Button disabled>Agendar</Button></div><p className="mt-3 text-xs text-[var(--bq-t3)]">Histórico e agendamento pelo projeto ainda não disponíveis.</p></section>        <section className={cardCls}><h2 className="text-[13px] font-semibold">ClickUp</h2><div className="mt-3 rounded-xl border border-[var(--bq-hair)] p-3"><p className="text-xs text-[var(--bq-t3)]">O caso vinculado a este projeto ainda não está disponível.</p><Button className="mt-3" disabled>Ver o caso</Button></div>{firstConversationId && <Link className="bq-button mt-3" href={`/inbox?conversationId=${firstConversationId}`}>Abrir conversa do projeto</Link>}</section>
         </div>
       </div>
       <MacWindow open={panel === 'tasks'} onClose={() => setPanel(null)} title="Tarefas do projeto">        <section className={cardCls}>
+        <div className="mt-3 flex items-center gap-2 text-[11px] text-[var(--bq-t3)]">{tasks.length ? <><progress aria-label="Progresso das tarefas" className="h-1 min-w-0 flex-1 overflow-hidden rounded [&::-webkit-progress-bar]:bg-[var(--bq-raised-2)] [&::-webkit-progress-value]:bg-[var(--bq-ok)] [&::-moz-progress-bar]:bg-[var(--bq-ok)]" value={done} max={tasks.length} /><span>{done}/{tasks.length} tarefas concluídas</span></> : <span>Progresso indisponível · sem tarefas</span>}</div>
           <h2 className="mb-3 text-sm font-semibold text-[var(--bq-t1)]">
             Tarefas
           </h2>
