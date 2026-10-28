@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { jarvisDeskService } from '@/features/ai-agents/services/jarvis-desk.service';
 import { AgentDetail } from '@/features/ai-agents/components/agent-detail';
+import { AgentsPageHeader } from '@/features/ai-agents/components/agents-page-header';
 import { MessageSquare, Plus } from 'lucide-react';
 import {
   Button,
@@ -98,37 +99,28 @@ function AgentsHeader({
 }) {
   const router = useRouter();
   return (
-    <header className={styles.header}>
-      <div>
-        <h1>Agentes</h1>
-        <p>
-          Os agentes de IA que atendem pelo escritório: quem são, quanto custam
-          e como melhorar.
-        </p>
-      </div>
-      <div className={styles.headerTools}>
-        {children}
-        <Button
-          onClick={async () => {
-            try {
-              const desk = await jarvisDeskService.open();
-              router.push(
-                `/inbox?conversationId=${desk.conversationId}&jarvis=1`,
-              );
-            } catch {
-              toast.error('Não foi possível abrir o Jarvis');
-            }
-          }}
-        >
-          <MessageSquare size={14} />
-          Conversar com o Jarvis
-        </Button>
-        <Button variant="solid" onClick={onCreate}>
-          <Plus size={14} />
-          Novo agente
-        </Button>
-      </div>
-    </header>
+    <AgentsPageHeader>
+      {children}
+      <Button
+        onClick={async () => {
+          try {
+            const desk = await jarvisDeskService.open();
+            router.push(
+              `/inbox?conversationId=${desk.conversationId}&jarvis=1`,
+            );
+          } catch {
+            toast.error('Não foi possível abrir o Jarvis');
+          }
+        }}
+      >
+        <MessageSquare size={14} />
+        Conversar com o Jarvis
+      </Button>
+      <Button variant="solid" onClick={onCreate}>
+        <Plus size={14} />
+        Novo agente
+      </Button>
+    </AgentsPageHeader>
   );
 }
 

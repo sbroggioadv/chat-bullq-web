@@ -29,9 +29,12 @@ vi.mock('@/features/ai-agents/components/create-agent-dialog', () => ({
 vi.mock('@/features/ai-agents/components/agents-list', () => ({
   AgentsList: () => <p>Organograma real</p>,
 }));
-vi.mock('@/features/ai-agents/components/jarvis/overview-tab', () => ({
+vi.mock('@/features/ai-agents/services/ai-agents.service', () => ({
+  aiAgentsService: { orgStats: vi.fn(() => new Promise(() => {})) },
+}));
+vi.mock('@/features/ai-agents/components/jarvis/overview-tab', async (importOriginal) => ({
+  ...await importOriginal<typeof import('@/features/ai-agents/components/jarvis/overview-tab')>(),
   JarvisOverviewTab: () => <p>Visão geral real</p>,
-  OverviewControls: () => <p>Controles do resumo</p>,
 }));
 vi.mock('@/features/ai-agents/components/jarvis/agent-tab', () => ({
   JarvisAgentTab: () => <p>Estatísticas individuais</p>,
@@ -129,6 +132,27 @@ it('mantém um único título e ações enquanto URL/conteúdo suspendem, com es
     within(screen.getByRole('status')).queryByRole('heading'),
   ).not.toBeInTheDocument();
 });
+it('mantém os dois botões e os controles reais de período no cabeçalho da visão geral', () => {
+  open('overview');
+  const header = within(screen.getByRole('banner'));
+  expect(header.getByRole('heading', { level: 1, name: 'Agentes' })).toBeVisible();
+  expect(header.getByRole('button', { name: 'Conversar com o Jarvis' })).toBeVisible();
+  expect(header.getByRole('button', { name: 'Novo agente' })).toBeVisible();
+  expect(header.getByRole('button', { name: 'Tokens, limites e latência' })).toBeVisible();
+  const period = header.getByRole('combobox', { name: 'Período das execuções' });
+  expect(period).toHaveValue('30d');
+  for (const value of ['24h', '7d', '30d']) {
+    fireEvent.change(period, { target: { value } });
+    expect(period).toHaveValue(value);
+  }
+});
+it('mantém as ações sem controles do resumo em outra aba', () => {
+  open('skills');
+  const header = within(screen.getByRole('banner'));
+  expect(header.getByRole('button', { name: 'Conversar com o Jarvis' })).toBeVisible();
+  expect(header.getByRole('button', { name: 'Novo agente' })).toBeVisible();
+  expect(header.queryByRole('combobox', { name: 'Período das execuções' })).not.toBeInTheDocument();
+});
 it('preserva a página individual sem o cabeçalho da visão geral', () => {
   navigation.params = new URLSearchParams({ agentId: 'a' });
   render(
@@ -140,5 +164,7 @@ it('preserva a página individual sem o cabeçalho da visão geral', () => {
   expect(
     screen.queryByRole('heading', { name: 'Agentes' }),
   ).not.toBeInTheDocument();
-  expect(screen.queryByText('Controles do resumo')).not.toBeInTheDocument();
+  expect(screen.queryByRole('combobox', { name: 'Período das execuções' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Novo agente' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Conversar com o Jarvis' })).not.toBeInTheDocument();
 });
