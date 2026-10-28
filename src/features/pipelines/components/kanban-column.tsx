@@ -2,6 +2,7 @@
 
 import { useDroppable } from '@dnd-kit/core';
 import { Plus } from 'lucide-react';
+import { FoundationMenu } from '@/components/ui/foundation';
 import { currencyTotals } from '@/features/pipelines/components/money';
 import { KanbanCard } from '@/features/pipelines/components/kanban-card';
 import type {
@@ -34,6 +35,12 @@ export function KanbanColumn({ stage, cards, onAddCard, onCardClick }: Props) {
           {stage.type !== 'NORMAL' && <span aria-hidden="true" className={`size-1.5 shrink-0 rounded-full ${stage.type === 'WON' ? 'bg-[var(--bq-ok)]' : 'bg-[var(--bq-err)]'}`} />}
           <span className="truncate">{stage.name}</span>
           <span style={{ color }} className="font-mono text-[11px] font-medium">{cards.length}</span>
+          {stage.type !== 'NORMAL' && (
+            <div className="relative ml-auto shrink-0 [&>button]:h-5 [&>button]:w-5 [&>button]:border-0 [&>button]:px-0 [&>button]:!text-[0px]">
+              <FoundationMenu label={`Mais opções da etapa ${stage.name}`} items={[{ label: 'Adicionar conversa', onClick: onAddCard }]} />
+              <span aria-hidden="true" className="pointer-events-none absolute inset-0 grid place-items-center text-base text-[var(--bq-t3)]">⋯</span>
+            </div>
+          )}
         </div>
         <p aria-label="Total da etapa" className="font-mono text-[11px] text-[var(--bq-t3)]">{totalLabel || 'Sem valor informado'}</p>
       </div>
@@ -41,7 +48,7 @@ export function KanbanColumn({ stage, cards, onAddCard, onCardClick }: Props) {
         {cards.length === 0 && <p className="px-1 pb-2 text-[11px] text-[var(--bq-t3)]">Nenhuma conversa nesta etapa.</p>}
         {cards.map(c => <KanbanCard key={c.id} card={c} onClick={() => onCardClick(c)} />)}
       </div>
-      <button type="button" className="mx-[9px] mb-2.5 flex items-center gap-1 rounded px-1 py-1 text-left text-xs text-[var(--bq-t3)] hover:bg-[var(--bq-raised)] hover:text-[var(--bq-t1)]" onClick={onAddCard}><Plus size={12} />Adicionar conversa</button>
+      {stage.type === 'NORMAL' && <button type="button" className="mx-[9px] mb-2.5 flex items-center gap-1 rounded px-1 py-1 text-left text-xs text-[var(--bq-t3)] hover:bg-[var(--bq-raised)] hover:text-[var(--bq-t1)]" onClick={onAddCard}><Plus size={12} />Adicionar conversa</button>}
     </div>
   );
 }
