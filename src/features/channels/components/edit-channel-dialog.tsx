@@ -49,7 +49,7 @@ function ChannelEditor({ channel, onClose, onSaved }: EditChannelDialogProps & {
       <label className="block text-sm">Nome do canal<input className={inputClass} value={name} onChange={event => setName(event.target.value)} /></label>
       {fields.map(field => <div key={field.key} className="space-y-2">
         <label className="block text-sm" htmlFor={`channel-${field.key}`}>{field.label} {field.optional ? '(opcional)' : ''} · {channel.configFields?.[field.key] === true ? 'Preenchido' : 'Vazio'}</label>
-        <input id={`channel-${field.key}`} className={inputClass} type="password" autoComplete="new-password" disabled={config[field.key] === null} placeholder="Cole um novo valor para trocar" value={config[field.key] ?? ''} onChange={event => { const value = event.target.value; if (!value) discardField(field.key); else setConfig(previous => ({ ...previous, [field.key]: value })); }} />
+        <input id={`channel-${field.key}`} className={inputClass} type={field.secret ? "password" : "text"} autoComplete={field.secret ? "new-password" : "off"} disabled={config[field.key] === null} placeholder="Cole um novo valor para trocar" value={config[field.key] ?? ''} onChange={event => { const value = event.target.value; if (!value) discardField(field.key); else setConfig(previous => ({ ...previous, [field.key]: value })); }} />
         <div className="flex gap-2">
           {field.optional && <Button onClick={() => setConfig(previous => ({ ...previous, [field.key]: null }))}>Limpar {field.label}</Button>}
           {field.key in config && <Button onClick={() => discardField(field.key)}>Manter valor salvo</Button>}
@@ -67,6 +67,7 @@ function ChannelEditor({ channel, onClose, onSaved }: EditChannelDialogProps & {
 }
 
 interface FieldDef {
+  secret?: boolean;
   key: string;
   label: string;
   placeholder?: string;
@@ -79,20 +80,20 @@ function fieldsFor(type: Channel['type']): FieldDef[] {
   if (type === 'WHATSAPP_OFFICIAL') {
     return [
       { key: 'phoneNumberId', label: 'Phone Number ID', placeholder: 'Encontrado no Meta Business Suite' },
-      { key: 'accessToken', label: 'Access Token', placeholder: 'System User Token ou Temporary Token' },
-      { key: 'appSecret', label: 'App Secret', placeholder: 'Chave secreta do app (Settings → Basic na Meta)' },
+      { key: 'accessToken', secret: true, label: 'Access Token', placeholder: 'System User Token ou Temporary Token' },
+      { key: 'appSecret', secret: true, label: 'App Secret', placeholder: 'Chave secreta do app (Settings → Basic na Meta)' },
       { key: 'businessAccountId', label: 'Business Account ID (WABA)', placeholder: 'Habilita auto-subscribe do webhook', optional: true },
     ];
   }
   if (type === 'WHATSAPP_ZAPPFY') {
     return [
-      { key: 'token', label: 'Token', placeholder: 'Token da instância Zappfy' },
+      { key: 'token', secret: true, label: 'Token', placeholder: 'Token da instância Zappfy' },
     ];
   }
   if (type === 'INSTAGRAM') {
     return [
-      { key: 'accessToken', label: 'Access Token', placeholder: 'Instagram User Access Token (IGAAN...)' },
-      { key: 'appSecret', label: 'App Secret', placeholder: 'Chave secreta do app' },
+      { key: 'accessToken', secret: true, label: 'Access Token', placeholder: 'Instagram User Access Token (IGAAN...)' },
+      { key: 'appSecret', secret: true, label: 'App Secret', placeholder: 'Chave secreta do app' },
       { key: 'igBusinessId', label: 'Instagram Business ID', placeholder: 'Detectado automaticamente', optional: true },
       { key: 'igAppId', label: 'Instagram App ID', optional: true },
     ];
@@ -100,9 +101,9 @@ function fieldsFor(type: Channel['type']): FieldDef[] {
   if (type === 'GMAIL') {
     return [
       { key: 'email', label: 'E-mail', placeholder: 'caixa@dominio.com', optional: true },
-      { key: 'refreshToken', label: 'Refresh Token OAuth', placeholder: '1//...' },
+      { key: 'refreshToken', secret: true, label: 'Refresh Token OAuth', placeholder: '1//...' },
       { key: 'clientId', label: 'Client ID', optional: true },
-      { key: 'clientSecret', label: 'Client Secret', optional: true },
+      { key: 'clientSecret', secret: true, label: 'Client Secret', optional: true },
       { key: 'query', label: 'Filtro Gmail (query)', placeholder: 'in:inbox', optional: true },
     ];
   }

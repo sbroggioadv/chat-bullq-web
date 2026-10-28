@@ -10,6 +10,31 @@ beforeEach(() => { vi.mocked(api.patch).mockResolvedValue({ data: { data: channe
 afterEach(() => { cleanup(); vi.clearAllMocks(); });
 const open = () => render(<EditChannelDialog channel={channel} onClose={vi.fn()} onSaved={vi.fn()} />);
 describe('PATCH de canal preserva credenciais omitidas', () => {
+  it.each([
+    ['WHATSAPP_OFFICIAL', ['phoneNumberId', 'businessAccountId'], ['accessToken', 'appSecret']],
+    ['INSTAGRAM', ['igBusinessId', 'igAppId'], ['accessToken', 'appSecret']],
+    ['GMAIL', ['email', 'clientId', 'query'], ['refreshToken', 'clientSecret']],
+    ['WHATSAPP_ZAPPFY', [], ['token']],
+  ] as const)('%s mostra entradas públicas e mascara apenas segredos, sem preencher valores salvos', async (type, publicFields, secretFields) => {
+    render(<EditChannelDialog channel={{ ...channel, type, configFields: Object.fromEntries([...publicFields, ...secretFields].map(key => [key, true])) }} onClose={vi.fn()} onSaved={vi.fn()} />);
+    await screen.findByLabelText('Nome do canal');
+    for (const [keys, inputType] of [[publicFields, 'text'], [secretFields, 'password']] as const) {
+      for (const key of keys) {
+        const input = document.getElementById(`channel-${key}`)!;
+        expect(input).toHaveAttribute('type', inputType);
+        expect(input).toHaveValue('');
+        fireEvent.change(input, { target: { value: 'valor-de-teste' } });
+        fireEvent.change(input, { target: { value: '' } });
+      }
+    }
+    fireEvent.change(screen.getByLabelText('Ação do Webhook Secret'), { target: { value: 'replace' } });
+    expect(screen.getByLabelText('Novo Webhook Secret')).toHaveAttribute('type', 'password');
+    expect(screen.getByLabelText('Novo Webhook Secret')).toHaveValue('');
+    fireEvent.change(screen.getByLabelText('Ação do Webhook Secret'), { target: { value: 'keep' } });
+    fireEvent.change(screen.getByLabelText('Nome do canal'), { target: { value: 'Renomeado' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar', exact: true }));
+    await waitFor(() => expect(api.patch).toHaveBeenCalledWith('/channels/channel', { name: 'Renomeado' }));
+  });
   it('editar só nome envia somente name', async () => {
     open();
     fireEvent.change(await screen.findByLabelText('Nome do canal'), { target: { value: 'Novo nome' } });

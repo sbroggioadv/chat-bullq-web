@@ -189,7 +189,8 @@ export function ChannelCard({ channel, onUpdate }: ChannelCardProps) {
         </div>
         <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">{meta.label}</p>
         {channel.type === 'GMAIL' && (() => {
-          const { hasRead = false, hasSend = false, hasCalendar: hasCal = false } = channel.googlePermissions ?? {};
+          if (!channel.googlePermissions) return null;
+          const { hasRead, hasSend, hasCalendar: hasCal } = channel.googlePermissions;
           const badge = (ok: boolean, okCls: string) =>
             ok
               ? okCls
