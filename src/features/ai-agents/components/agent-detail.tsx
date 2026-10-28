@@ -169,7 +169,7 @@ export function AgentDetail({
               ) : (
                 <p>
                   Onde atua e cadência ainda não disponíveis para este agente.
-                  Os canais podem ser configurados em Prompt e configuração.
+                  Os canais podem ser configurados em Onde atua.
                 </p>
               )}
             </div>

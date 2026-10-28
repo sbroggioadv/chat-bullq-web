@@ -229,7 +229,7 @@ export function EditAgentDialog({
                   </option>
                 ))}
                 {!CURATED_MODELS.some((m) => m.id === modelId) && (
-                  <option aria-label="Modelo" value={modelId}>
+                  <option value={modelId}>
                     {modelId} (custom)
                   </option>
                 )}
