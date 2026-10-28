@@ -1,5 +1,6 @@
 'use client';
 
+import { VirtualList } from '@/features/inbox/components/virtual-list';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import {
   MessageSquare,
@@ -44,6 +45,7 @@ import { PHASE_LABELS, PROJECT_STATUSES } from '@/features/projects/project-fiel
 import { tagsService } from '@/features/settings/services/tags.service';
 import { ZappfyIcon, MetaIcon, InstagramIcon } from '@/components/ui/icons';
 import { useOrgId } from '@/hooks/use-org-query-key';
+import { receiveMessage } from '@/features/inbox/hooks/message-cache';
 import { useSocket } from '../hooks/use-socket';
 import { useAuthStore } from '@/stores/auth-store';
 import { useInboxPreferences } from '../hooks/use-inbox-preferences';
@@ -604,8 +606,8 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
   // Realtime: refresh list on inbound messages, imported conversations, or
   // state transitions (assign/close/reopen/transfer).
   useEffect(() => {
-    const unsubNew = on('message:new', () => {
-      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+    const unsubNew = on('message:new', (payload) => {
+      receiveMessage(queryClient, payload, activeId);
     });
     const unsubImported = on('conversation:imported', () => {
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
@@ -673,7 +675,7 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
       unsubUnread?.();
       unsubReconnect?.();
     };
-  }, [on, onReconnect, queryClient]);
+  }, [on, onReconnect, queryClient, activeId]);
 
   const handleBulkAction = useCallback(
     async (action: 'close' | 'assign' | 'reopen') => {
@@ -1388,7 +1390,7 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
           </div>
         ) : (
           <>
-            {conversations.map((conv, index) => {
+            {<VirtualList items={conversations} itemKey={(conv) => conv.id} scrollRef={scrollContainerRef} estimate={84} renderItem={(conv, index) => {
               const isActive = conv.id === activeId;
               const isSelected = selectedIds.has(conv.id);
               const inSelectionMode = selectedIds.size > 0;
@@ -1544,7 +1546,7 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
                   </div>
                 </button>
               );
-            })}
+            }} />}
             {/* Sentinel for infinite scroll */}
             <div ref={sentinelRef} className="h-1" />
             {isFetchingNextPage && (

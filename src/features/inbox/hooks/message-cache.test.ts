@@ -1,0 +1,59 @@
+import { QueryClient } from '@tanstack/react-query';
+import { expect, it, vi } from 'vitest';
+import { receiveMessage, upsertMessage } from '@/features/inbox/hooks/message-cache';
+import type { Conversation, Message } from '@/features/inbox/services/inbox.service';
+vi.mock('@/features/inbox/services/inbox.service', () => ({ inboxService: { getConversation: vi.fn() } }));
+const message = { id: 'new', conversationId: 'c', direction: 'INBOUND', createdAt: '2026-10-27T12:00:00Z', content: { text: 'hello' } } as Message;
+it('deduplica salas e consumidores, reordena páginas e preserva metadados', () => {
+  const client = new QueryClient();
+  const key = ['conversations', 'org'];
+  client.setQueryData(key, { pageParams: [1, 2], pages: [{ conversations: [{ id: 'other', lastMessageAt: '2026-10-26', unreadCount: 1 }], pagination: { page: 1 } }, { conversations: [{ id: 'c', unreadCount: 2, lastMessageAt: '2026-10-25' }], pagination: { page: 2 } }] });
+  client.setQueryData(['messages', 'c'], { messages: [], pagination: { preserved: true } });
+  for (let i = 0; i < 4; i++) receiveMessage(client, { message });
+  const data = client.getQueryData<any>(key);
+  expect(data.pages[0].conversations[0].id).toBe('c');
+  expect(data.pages[0].conversations[0].unreadCount).toBe(3);
+  expect(data.pageParams).toEqual([1, 2]);
+  expect(client.getQueryData<any>(['messages', 'c'])).toEqual({ messages: [message], pagination: { preserved: true } });
+  client.clear();
+});
+it('atualiza somente o detalhe correspondente e não altera preview para evento antigo', () => {
+  const client = new QueryClient();
+  client.setQueryData(['conversation', 'c'], { id: 'c', lastMessageAt: '2026-10-28', messages: [{ id: 'latest' }] } as Conversation);
+  client.setQueryData(['conversations'], { pageParams: [1], pages: [{ conversations: [{ id: 'c', lastMessageAt: '2026-10-28' }], pagination: {} }] });
+  receiveMessage(client, { message }, 'c');
+  expect(client.getQueryData<any>(['conversation', 'c']).messages).toEqual([{ id: 'latest' }]);
+  expect(client.getQueryData<any>(['conversation', 'c']).unreadCount).toBe(0);
+  client.clear();
+});
+it('POST confirma uma bolha mesmo se o WS já inseriu o id definitivo', () => {
+  const client = new QueryClient();
+  client.setQueryData(['messages', 'c'], { messages: [{ ...message, id: 'pending:1' }, message] });
+  upsertMessage(client, message, 'pending:1');
+  expect(client.getQueryData<any>(['messages', 'c']).messages).toEqual([message]);
+  client.clear();
+});
+it('entrada e saída em views de direção preservam filtros e não fazem refetch', () => {
+  const client = new QueryClient();
+  const row = { id: 'c', organizationId: 'org', unreadCount: 1, contact: {}, messages: [], lastMessageAt: null } as unknown as Conversation;
+  const baseKey = ['conversations', 'org', null, '|||ps:|mp:0|t:', '', null, null, 'ALL', 'user'];
+  const inboundKey = ['conversations', 'org', 'inbound-view', '|||ps:|mp:0|t:', '', null, null, 'ALL', 'user'];
+  const outboundKey = ['conversations', 'org', 'outbound-view', '|||ps:|mp:0|t:', '', null, null, 'ALL', 'user'];
+  client.setQueryData(['inbox-views', 'org'], [{ id: 'inbound-view', filters: { lastDirection: 'inbound' } }, { id: 'outbound-view', filters: { lastDirection: 'outbound' } }]);
+  for (const key of [baseKey, inboundKey, outboundKey]) client.setQueryData(key, { pageParams: [1], pages: [{ conversations: key === outboundKey ? [row] : key === baseKey ? [row] : [], pagination: {} }] });
+  const invalidate = vi.spyOn(client, 'invalidateQueries');
+  receiveMessage(client, { message });
+  expect(client.getQueryData<any>(inboundKey).pages[0].conversations[0].id).toBe('c');
+  expect(client.getQueryData<any>(outboundKey).pages[0].conversations).toHaveLength(0);
+  expect(invalidate).not.toHaveBeenCalled();
+  client.clear();
+});
+it('preserva a linha aberta no inbox geral sem filtros nem projeto', () => {
+  const client = new QueryClient();
+  const key = ['conversations', 'fixture-org', null, '|||ps:|mp:|t:', '', null, null, 'ALL', 'fixture-user'];
+  const row = { id: 'c', organizationId: 'fixture-org', isGroup: false, contact: {}, unreadCount: 0, messages: [], lastMessageAt: '2026-10-27T12:00:00Z' } as unknown as Conversation;
+  client.setQueryData(key, { pageParams: [1], pages: [{ conversations: [row, { ...row, id: 'same-date' }], pagination: {} }] });
+  receiveMessage(client, { message }, 'c');
+  expect(client.getQueryData<any>(key).pages[0].conversations.map((row: Conversation) => row.id)).toEqual(['c', 'same-date']);
+  client.clear();
+});

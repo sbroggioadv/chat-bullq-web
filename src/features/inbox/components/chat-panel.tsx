@@ -1,5 +1,6 @@
 'use client';
 
+import { VirtualList } from '@/features/inbox/components/virtual-list';
 import { Fragment, useEffect, useRef, useState, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, CheckCheck, Clock, AlertCircle, ExternalLink, Reply, Trash2, X, Ban, Forward, Paperclip } from 'lucide-react';
@@ -18,6 +19,7 @@ import {
   MediaLocation,
   MediaContact,
 } from './media-bubbles';
+import { receiveMessage, upsertMessage } from '@/features/inbox/hooks/message-cache';
 import { useSocket } from '../hooks/use-socket';
 import { useAuthStore } from '@/stores/auth-store';
 import { PendingActionsList } from '../pending-actions/pending-actions-list';
@@ -412,12 +414,20 @@ export function ChatPanel({
 }: ChatPanelProps) {
   const queryClient = useQueryClient();
   const bottomRef = useRef<HTMLDivElement>(null);
+  const timelineRef = useRef<HTMLDivElement>(null);
+  const scrollToMessage = useRef<((index: number) => void) | null>(null);
   const { on, emit, onReconnect } = useSocket();
   const user = useAuthStore((s) => s.user);
 
   const { data, isLoading } = useQuery({
     queryKey: ['messages', conversation.id],
-    queryFn: () => inboxService.getMessages(conversation.id),
+    queryFn: async () => {
+      const result = await inboxService.getMessages(conversation.id);
+      // Keep realtime/optimistic arrivals received while the HTTP request was in flight.
+      const cached = queryClient.getQueryData<{ messages: Message[] }>(['messages', conversation.id]);
+      const ids = new Set(result.messages.map((message) => message.id));
+      return { ...result, messages: [...result.messages, ...(cached?.messages.filter((message) => !ids.has(message.id) && (message.id.startsWith('pending:') || message.createdAt >= (result.messages.at(-1)?.createdAt ?? ''))) ?? [])] };
+    },
     // Defenses against socket gaps: refetch when the tab regains focus
     // and on browser-level reconnect. Realtime is the happy path; these
     // catch the case where a `message:new` was missed.
@@ -446,39 +456,7 @@ export function ChatPanel({
       const convId = payload.conversationId ?? msg.conversationId;
       if (convId !== conversation.id) return;
 
-      // Merge into the current cache. If there's no cache yet (initial
-      // fetch still in flight, or cache evicted) we DON'T discard the
-      // event — we invalidate so the refetch picks the new message up.
-      const existingCache = queryClient.getQueryData<{ messages: Message[] }>([
-        'messages',
-        conversation.id,
-      ]);
-      if (!existingCache) {
-        queryClient.invalidateQueries({
-          queryKey: ['messages', conversation.id],
-        });
-      } else {
-        queryClient.setQueryData<{ messages: Message[] }>(
-          ['messages', conversation.id],
-          (prev) => {
-            if (!prev) return prev;
-            const existing = prev.messages || [];
-            // Dedup by id (authoritative) or by externalId when present.
-            const match = existing.findIndex(
-              (m) =>
-                m.id === msg.id ||
-                (msg.externalId && m.externalId && m.externalId === msg.externalId),
-            );
-            if (match !== -1) {
-              const merged = [...existing];
-              merged[match] = { ...existing[match], ...msg };
-              return { ...prev, messages: merged };
-            }
-            return { ...prev, messages: [...existing, msg] };
-          },
-        );
-      }
-      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+      receiveMessage(queryClient, payload, conversation.id);
       if (msg.direction === 'INBOUND') {
         setAiTyping(null);
       }
@@ -525,7 +503,7 @@ export function ChatPanel({
       queryClient.invalidateQueries({
         queryKey: ['messages', conversation.id],
       });
-      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+      queryClient.invalidateQueries({ queryKey: ['conversation', conversation.id] });
     });
     // Watchdog/admin revogou uma mensagem — pinta a bolha como "deletada"
     // pra todo mundo que tá com a conversa aberta, sem refresh.
@@ -634,7 +612,7 @@ export function ChatPanel({
   );
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    bottomRef.current?.scrollIntoView({ behavior: 'auto' });
   }, [messages.length, aiTyping]);
 
   // S22 — Auto-clear AI typing banner after ETA expires
@@ -727,34 +705,23 @@ export function ChatPanel({
   // duplicar.
   const upsertMessageInCache = useCallback(
     (msg: Message) => {
-      queryClient.setQueryData<{ messages: Message[] } | undefined>(
-        ['messages', conversation.id],
-        (prev) => {
-          if (!prev) return prev;
-          const existing = prev.messages || [];
-          const match = existing.findIndex(
-            (m) =>
-              m.id === msg.id ||
-              (msg.externalId && m.externalId && m.externalId === msg.externalId),
-          );
-          if (match !== -1) {
-            const merged = [...existing];
-            merged[match] = { ...existing[match], ...msg };
-            return { ...prev, messages: merged };
-          }
-          return { ...prev, messages: [...existing, msg] };
-        },
-      );
+      upsertMessage(queryClient, msg);
+
     },
     [conversation.id, queryClient],
   );
 
   const handleSend = async (text: string) => {
-    // Optimistic insert: server retorna a Message QUEUED já no body do POST.
-    // Inserimos imediatamente; o `message:new` do WS chega depois e faz
-    // merge no mesmo id (handler acima já tem dedup). Antes desse fix a UI
-    // dependia 100% do WS broadcast, o que falhava em contexto headless.
     const replyToMessageId = replyingTo?.id;
+    const temporaryId = `pending:${crypto.randomUUID()}`;
+    const temporary: Message = {
+      id: temporaryId, conversationId: conversation.id, direction: 'OUTBOUND', type: 'TEXT',
+      content: { text }, status: 'QUEUED', externalId: null, senderId: user?.id ?? null,
+      senderName: user?.name ?? null, sender: null, sentAt: null, deliveredAt: null,
+      readAt: null, createdAt: new Date().toISOString(),
+      metadata: replyToMessageId ? { replyTo: { messageId: replyToMessageId, previewText: replyingTo?.content?.text } } : null,
+    };
+    upsertMessage(queryClient, temporary);
     try {
       const created = await inboxService.sendMessage({
         conversationId: conversation.id,
@@ -763,7 +730,7 @@ export function ChatPanel({
         replyToMessageId,
       });
       if (created) {
-        upsertMessageInCache(created);
+        upsertMessage(queryClient, created, temporaryId);
       }
       if (conversation.channel.type === 'JARVIS') {
         setAiTyping({
@@ -774,8 +741,7 @@ export function ChatPanel({
       }
       setReplyingTo(null);
     } catch (err) {
-      // Fallback: if send fails, force a refresh to drop any stale UI state.
-      queryClient.invalidateQueries({ queryKey: ['messages', conversation.id] });
+      upsertMessage(queryClient, { ...temporary, status: 'FAILED', failedReason: 'Envio não confirmado. Tente novamente.' });
       throw err;
     }
   };
@@ -963,7 +929,7 @@ export function ChatPanel({
         messages={messages}
       />
 
-      <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-zinc-50 p-4 dark:bg-zinc-900/50">
+      <div ref={timelineRef} className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-zinc-50 p-4 dark:bg-zinc-900/50">
         {isLoading ? (
           <div className="flex h-full items-center justify-center">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
@@ -987,16 +953,15 @@ export function ChatPanel({
                 }
               }
               const visibleMessages = messages.filter((m) => m.type !== 'REACTION');
-              let lastDateKey = '';
-              return visibleMessages.map((msg) => {
+              return <VirtualList items={visibleMessages} itemKey={(msg) => msg.id} scrollRef={timelineRef} scrollToIndexRef={scrollToMessage} estimate={100} gap={8} renderItem={(msg, index) => {
                 const isOutbound = msg.direction === 'OUTBOUND';
                 const StatusIcon = statusIcons[msg.status] || Clock;
                 const reactions = reactionMap.get(msg.externalId || '') || [];
                 const isRevoked = !!msg.revokedAt;
                 const msgDate = new Date(msg.createdAt);
                 const dateKey = `${msgDate.getFullYear()}-${msgDate.getMonth()}-${msgDate.getDate()}`;
-                const showDateSeparator = dateKey !== lastDateKey;
-                lastDateKey = dateKey;
+                const previousDate = index > 0 ? new Date(visibleMessages[index - 1].createdAt) : null;
+                const showDateSeparator = !previousDate || dateKey !== `${previousDate.getFullYear()}-${previousDate.getMonth()}-${previousDate.getDate()}`;
                 return (
                   <Fragment key={msg.id}>
                   {showDateSeparator && (
@@ -1117,6 +1082,9 @@ export function ChatPanel({
                             onClick={() => {
                               const targetId = msg.metadata?.replyTo?.messageId;
                               if (!targetId) return;
+                              const index = messages.filter((m) => m.type !== 'REACTION').findIndex((m) => m.id === targetId);
+                              if (index >= 0) scrollToMessage.current?.(index);
+                              requestAnimationFrame(() => {
                               const el = document.getElementById(
                                 `msg-${targetId}`,
                               );
@@ -1129,6 +1097,7 @@ export function ChatPanel({
                                   1500,
                                 );
                               }
+                              });
                             }}
                             className={`mb-1 block w-full rounded-md border-l-2 border-primary px-2 py-1 text-left text-xs ${
                               isOutbound
@@ -1328,7 +1297,7 @@ export function ChatPanel({
                   </div>
                   </Fragment>
                 );
-              });
+              }} />;
             })()}
             {aiTyping && <TypingBubble name={aiTyping.agentName} />}
             <div ref={bottomRef} />
