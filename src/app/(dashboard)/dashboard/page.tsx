@@ -1,10 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Menu, MenuButton, MenuItems, MenuItem } from "@headlessui/react";
 import { Button, SegmentedControl } from "@/components/ui/foundation";
 import { useQuery } from "@tanstack/react-query";
 import {
-  LineChart,
+  ComposedChart,
   Line,
   BarChart,
   Bar,
@@ -19,10 +20,6 @@ import {
   Area,
 } from "recharts";
 import {
-  Activity,
-  Clock,
-  Target,
-  CheckCircle2,
   TrendingUp,
   TrendingDown,
   Minus,
@@ -31,10 +28,10 @@ import {
   CalendarClock,
   Star,
   RotateCcw,
-  ShieldCheck,
   Mail,
   Instagram,
   Phone,
+  ChevronDown,
 } from "lucide-react";
 import {
   dashboardService,
@@ -87,7 +84,6 @@ function HeroKpi({
   suffix,
   trend,
   trendDirection,
-  icon: Icon,
   accent,
   sparkline,
   sparklineSuffix,
@@ -98,7 +94,6 @@ function HeroKpi({
   suffix?: string;
   trend?: number;
   trendDirection?: TrendDirection;
-  icon: React.ElementType;
   accent: string;
   sparkline?: SparklinePoint[];
   sparklineSuffix?: string;
@@ -106,31 +101,33 @@ function HeroKpi({
 }) {
   const gradientId = `grad-${label.replace(/\s+/g, "-")}`;
   return (
-    <div className="relative min-w-0 flex flex-col rounded-[14px] border border-[var(--bq-hair)] bg-[var(--bq-surface)] p-3   ">
-      <div className="flex items-center justify-between">
-        <span className="text-[11.5px] font-medium text-[var(--bq-t3)]">
-          {label}
-        </span>
-        <div
-          className="flex h-7 w-7 items-center justify-center rounded-lg"
-          style={{
-            backgroundColor: `color-mix(in srgb, ${accent} 12%, transparent)`,
-            color: accent,
-          }}
+    <div className="relative min-h-[122px] min-w-0 flex flex-col rounded-[14px] border border-[var(--bq-hair)] bg-[var(--bq-surface)] p-3   ">
+      <details className="group relative text-[11.5px] text-[var(--bq-t3)]">
+        <summary
+          className="cursor-pointer list-none truncate"
+          title="Ver detalhes do indicador"
         >
-          <Icon className="h-4 w-4" />
-        </div>
-      </div>
+          {label}
+        </summary>
+        {footer && (
+          <div className="absolute left-0 top-6 z-20 w-56 rounded-lg border border-[var(--bq-hair)] bg-[var(--bq-glass-strong)] p-3 shadow-lg">
+            {footer}
+          </div>
+        )}
+      </details>
 
-      <div className="mt-1 flex items-end gap-2">
-        <span className="text-[23px] font-medium tabular-nums text-[var(--bq-t1)] ">
+      <div className="mt-1 flex flex-col items-start gap-1">
+        <span className="text-[23px] leading-[1.15] font-[family-name:var(--bq-f-display)] font-medium tabular-nums text-[var(--bq-t1)] ">
           {value}
           {suffix && (
-            <span className="ml-0.5 text-lg text-[var(--bq-t3)]">{suffix}</span>
+            <span className="ml-0.5 text-xs text-[var(--bq-t3)]">{suffix}</span>
           )}
         </span>
         {trend !== undefined && trendDirection && (
-          <TrendBadge value={trend} direction={trendDirection} />
+          <div className="flex flex-wrap items-center gap-1 font-mono text-[11px]">
+            <TrendBadge value={trend} direction={trendDirection} />
+            <span className="text-[var(--bq-t3)]">vs. anterior</span>
+          </div>
         )}
       </div>
 
@@ -170,19 +167,15 @@ function HeroKpi({
               <Area
                 type="monotone"
                 dataKey="value"
-                stroke={accent}
-                strokeWidth={1.75}
-                fill={`url(#${gradientId})`}
+                stroke="var(--bq-t2)"
+                strokeWidth={1.5}
+                fill="transparent"
                 dot={false}
                 isAnimationActive={false}
               />
             </AreaChart>
           </ResponsiveContainer>
         </div>
-      )}
-
-      {footer && (
-        <div className="mt-2 text-[11px] text-[var(--bq-t3)]">{footer}</div>
       )}
     </div>
   );
@@ -198,17 +191,19 @@ function ChartCard({
   title,
   icon: Icon,
   children,
-  height = "h-[190px]",
+  height = "h-[170px]",
   subtitle,
+  legend,
 }: {
   title: string;
   icon?: React.ElementType;
   children: React.ReactNode;
   height?: string;
   subtitle?: string;
+  legend?: React.ReactNode;
 }) {
   return (
-    <div className="min-w-0 rounded-xl border border-[var(--bq-hair)] bg-[var(--bq-surface)] p-3   ">
+    <div className="min-w-0 rounded-[14px] border border-[var(--bq-hair)] bg-[var(--bq-surface)] p-[14px]   ">
       <div className="flex items-center justify-between">
         <div>
           <h3 className="flex items-center gap-1.5 text-sm font-semibold text-[var(--bq-t2)] ">
@@ -219,8 +214,9 @@ function ChartCard({
             <p className="text-[11px] text-[var(--bq-t3)]">{subtitle}</p>
           )}
         </div>
+        {legend}
       </div>
-      <div className={`mt-4 ${height}`}>{children}</div>
+      <div className={`mt-3 ${height}`}>{children}</div>
     </div>
   );
 }
@@ -299,10 +295,12 @@ export default function DashboardPage() {
 
   return (
     <div className="h-full min-h-0 overflow-y-auto">
-      <div className="mx-auto w-full max-w-none px-5 py-[18px] text-[13px] text-[var(--bq-t1)]">
+      <div className="mx-auto w-full max-w-none px-5 py-[18px] text-[13px] text-[var(--bq-t1)] antialiased">
         <header className="mb-[14px] flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-medium tracking-tight">Dashboard</h1>
+            <h1 className="text-2xl leading-[1.1] font-[family-name:var(--bq-f-display)] font-medium tracking-[-0.02em]">
+              Dashboard
+            </h1>
             <p className="mt-1 text-[var(--bq-t3)]">
               Premissas · WhatsApp · Instagram · E-mail · últimos {period} dias
             </p>
@@ -318,30 +316,41 @@ export default function DashboardPage() {
               ]}
               onChange={setPeriod}
             />
-            <Button
-              disabled={!overview}
-              onClick={() => {
-                if (!overview) return;
-                const csv = [
-                  "Indicador;Valor",
-                  ...Object.entries(overview)
-                    .filter(([, value]) => typeof value !== "object")
-                    .map(([key, value]) => `${key};${value ?? ""}`),
-                ].join("\n");
-                const url = URL.createObjectURL(
-                  new Blob(["\ufeff" + csv], {
-                    type: "text/csv;charset=utf-8",
-                  }),
-                );
-                const link = document.createElement("a");
-                link.href = url;
-                link.download = `bullq-dashboard-${period}d.csv`;
-                link.click();
-                URL.revokeObjectURL(url);
-              }}
-            >
-              Exportar
-            </Button>
+            <Menu>
+              <MenuButton className="bq-button">
+                <ChevronDown size={14} aria-hidden="true" />
+                Exportar
+              </MenuButton>
+              <MenuItems anchor="bottom end" className="bq-popover">
+                <MenuItem>
+                  <button
+                    type="button"
+                    disabled={!overview}
+                    onClick={() => {
+                      if (!overview) return;
+                      const csv = [
+                        "Indicador;Valor",
+                        ...Object.entries(overview)
+                          .filter(([, value]) => typeof value !== "object")
+                          .map(([key, value]) => `${key};${value ?? ""}`),
+                      ].join("\n");
+                      const url = URL.createObjectURL(
+                        new Blob(["\ufeff" + csv], {
+                          type: "text/csv;charset=utf-8",
+                        }),
+                      );
+                      const link = document.createElement("a");
+                      link.href = url;
+                      link.download = `bullq-dashboard-${period}d.csv`;
+                      link.click();
+                      URL.revokeObjectURL(url);
+                    }}
+                  >
+                    Baixar indicadores (CSV)
+                  </button>
+                </MenuItem>
+              </MenuItems>
+            </Menu>
           </div>
         </header>
         {overviewError && (
@@ -366,7 +375,6 @@ export default function DashboardPage() {
               <HeroKpi
                 label="Conversas ativas"
                 value={overview.activeConversations}
-                icon={Activity}
                 accent="var(--bq-info)"
                 sparkline={sparklines?.active}
                 footer={
@@ -397,7 +405,6 @@ export default function DashboardPage() {
                 }
                 trend={overview.avgFirstResponseTrend}
                 trendDirection="lower-is-better"
-                icon={Clock}
                 accent="var(--bq-warn)"
                 sparkline={sparklines?.firstResponse}
                 sparklineSuffix="min"
@@ -411,7 +418,6 @@ export default function DashboardPage() {
                 }
                 trend={overview.slaTrend}
                 trendDirection="higher-is-better"
-                icon={Target}
                 accent="var(--bq-ok)"
                 sparkline={sparklines?.sla}
                 sparklineSuffix="%"
@@ -433,7 +439,6 @@ export default function DashboardPage() {
                 }
                 trend={overview.resolutionTrend}
                 trendDirection="higher-is-better"
-                icon={CheckCircle2}
                 accent="var(--bq-agent)"
                 sparkline={sparklines?.resolution}
                 sparklineSuffix="%"
@@ -459,7 +464,6 @@ export default function DashboardPage() {
                     : 0
                 }
                 trendDirection="higher-is-better"
-                icon={Star}
                 accent="var(--bq-warn)"
                 footer={
                   overview.csatResponses === 0 ? (
@@ -478,7 +482,6 @@ export default function DashboardPage() {
                 label="FCR (sem reabertura)"
                 value={overview.fcrPercent ?? "—"}
                 suffix={overview.fcrPercent !== null ? "%" : undefined}
-                icon={ShieldCheck}
                 accent="var(--bq-info)"
                 footer={<span>% das fechadas que não foram reabertas</span>}
               />
@@ -491,16 +494,18 @@ export default function DashboardPage() {
                     ? "%"
                     : undefined
                 }
-                icon={RotateCcw}
                 accent="var(--bq-err)"
                 footer={
                   reopens ? (
                     <span>
                       {reopens.uniqueConversationsReopened} conversa
-                      {reopens.uniqueConversationsReopened === 1 ? "" : "s"}{" "}
+                      {reopens.uniqueConversationsReopened === 1
+                        ? ""
+                        : "s"}{" "}
                       reaberta
-                      {reopens.uniqueConversationsReopened === 1 ? "" : "s"} ·{" "}
-                      {reopens.totalReopens} total
+                      {reopens.uniqueConversationsReopened === 1
+                        ? ""
+                        : "s"} · {reopens.totalReopens} total
                     </span>
                   ) : (
                     <span>Carregando…</span>
@@ -515,10 +520,21 @@ export default function DashboardPage() {
         <div className="mt-[14px] grid gap-3 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
           <ChartCard
             title="Volume × resolução"
-            subtitle="Conversas criadas vs fechadas por dia"
+            legend={
+              <div className="flex flex-wrap gap-3 text-[11.5px] text-[var(--bq-t2)]">
+                <span>
+                  <i className="mr-1 inline-block size-2.5 rounded-sm border border-[var(--bq-hair-strong)] bg-[var(--bq-raised-2)]" />
+                  Criadas
+                </span>
+                <span>
+                  <i className="mr-1 inline-block size-2.5 rounded-sm bg-[var(--bq-agent)]" />
+                  Fechadas
+                </span>
+              </div>
+            }
           >
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={volumeFlow || []}>
+              <ComposedChart data={volumeFlow || []}>
                 <CartesianGrid
                   strokeDasharray="3 3"
                   stroke="var(--bq-hair)"
@@ -534,28 +550,28 @@ export default function DashboardPage() {
                   contentStyle={tooltipStyle}
                   labelFormatter={(d) => (typeof d === "string" ? d : "")}
                 />
-                <Legend wrapperStyle={{ fontSize: 11 }} iconSize={8} />
-                <Line
-                  type="monotone"
+                <Bar
+                  isAnimationActive={false}
                   dataKey="created"
                   name="Criadas"
-                  stroke="var(--bq-info)"
-                  strokeWidth={2}
-                  dot={false}
+                  fill="var(--bq-raised-2)"
+                  stroke="var(--bq-hair-strong)"
+                  radius={[3, 3, 0, 0]}
                 />
                 <Line
-                  type="monotone"
+                  isAnimationActive={false}
+                  type="linear"
                   dataKey="closed"
                   name="Fechadas"
-                  stroke="var(--bq-ok)"
+                  stroke="var(--bq-agent)"
                   strokeWidth={2}
                   dot={false}
                 />
-              </LineChart>
+              </ComposedChart>
             </ResponsiveContainer>
           </ChartCard>
 
-          <div className="min-w-0 rounded-xl border border-[var(--bq-hair)] bg-[var(--bq-surface)] p-3">
+          <div className="min-w-0 rounded-[14px] border border-[var(--bq-hair)] bg-[var(--bq-surface)] p-[14px]">
             <h2 className="mb-3 text-sm font-semibold">Incoming</h2>
             <div className="grid grid-cols-3 gap-2">
               {["Chegou", "Agendado", "Resolvido"].map((label) => (
@@ -582,6 +598,60 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        <div
+          className="mt-3 grid gap-3 lg:grid-cols-2"
+          data-dashboard-row="channels"
+        >
+          <ChartCard
+            title="Picos de horário"
+            icon={CalendarClock}
+            subtitle="Dia da semana × hora (UTC)"
+            height=""
+          >
+            {peakHours ? (
+              <Heatmap
+                matrix={peakHours.matrix}
+                max={peakHours.max}
+                accent="var(--bq-agent)"
+              />
+            ) : (
+              <p className="py-6 text-xs text-[var(--bq-t3)]">
+                Dados ainda não disponíveis.
+              </p>
+            )}
+          </ChartCard>
+          <div className="min-w-0 rounded-[14px] border border-[var(--bq-hair)] bg-[var(--bq-surface)] p-[14px]">
+            <h3 className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-[var(--bq-t2)]">
+              <MessageCircle size={14} />
+              Mensagens por canal
+            </h3>
+            <ChannelMessages data={channelPremises} />
+            <h3 className="mb-3 mt-4 flex items-center gap-1.5 text-sm font-semibold text-[var(--bq-t2)]">
+              <TagIcon size={14} />
+              Top motivos
+            </h3>
+            {topTags ? (
+              <TopTagsPanel tags={topTags} />
+            ) : (
+              <p className="text-xs text-[var(--bq-t3)]">
+                Dados ainda não disponíveis.
+              </p>
+            )}
+          </div>
+        </div>
+        {/* ROW 5 — agentes (full width) */}
+        <div className="mt-3">
+          <ChartCard
+            title="Performance dos agentes"
+            subtitle="Carga atual + métricas no período"
+            height=""
+          >
+            <AgentList agents={agents || []} />
+          </ChartCard>
+        </div>
+        <h2 className="mt-5 text-sm font-medium text-[var(--bq-t2)]">
+          Detalhes operacionais
+        </h2>
         {/* ROW 2 — mensagens + canal */}
         <div className="mt-3 grid gap-3 lg:grid-cols-2">
           <ChartCard
@@ -744,7 +814,9 @@ export default function DashboardPage() {
                   {d?.connected ? (
                     <dl className="mt-3 grid grid-cols-2 gap-2 text-[11px]">
                       <div>
-                        <dt className="text-[var(--bq-t3)]">Conversas ({period}d)</dt>
+                        <dt className="text-[var(--bq-t3)]">
+                          Conversas ({period}d)
+                        </dt>
                         <dd className="text-base font-semibold tabular-nums text-[var(--bq-t1)] ">
                           {d.conversationsInPeriod}
                         </dd>
@@ -804,43 +876,6 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* ROW 3 — bot + tags */}
-        <div className="mt-3 grid gap-3 lg:grid-cols-2">
-          <ChartCard
-            title="Picos de horário"
-            icon={CalendarClock}
-            subtitle="Dia da semana × hora (UTC)"
-            height=""
-          >
-            {peakHours ? (
-              <Heatmap
-                matrix={peakHours.matrix}
-                max={peakHours.max}
-                accent="var(--bq-info)"
-              />
-            ) : (
-              <p className="py-6 text-xs text-[var(--bq-t3)]">
-                Dados ainda não disponíveis.
-              </p>
-            )}
-          </ChartCard>
-
-          <ChartCard
-            title="Top motivos"
-            icon={TagIcon}
-            subtitle="Tags mais frequentes"
-            height=""
-          >
-            {topTags ? (
-              <TopTagsPanel tags={topTags} />
-            ) : (
-              <p className="py-6 text-xs text-[var(--bq-t3)]">
-                Dados ainda não disponíveis.
-              </p>
-            )}
-          </ChartCard>
-        </div>
-
         {/* ROW 4 — CSAT + reaberturas */}
         <div className="mt-3 grid gap-3 lg:grid-cols-2">
           <ChartCard
@@ -873,17 +908,6 @@ export default function DashboardPage() {
             )}
           </ChartCard>
         </div>
-
-        {/* ROW 5 — agentes (full width) */}
-        <div className="mt-3">
-          <ChartCard
-            title="Performance dos agentes"
-            subtitle="Carga atual + métricas no período"
-            height=""
-          >
-            <AgentList agents={agents || []} />
-          </ChartCard>
-        </div>
       </div>
     </div>
   );
@@ -905,34 +929,28 @@ function BotPerformancePanel({
   }
 
   const segments = [
-    { label: "Bot resolveu", value: data.botResolved, color: "var(--bq-info)" },
+    {
+      label: "Bot resolveu",
+      value: data.botResolved,
+      rate: data.botResolutionRate,
+      color: "var(--bq-ok)",
+    },
     {
       label: "Encaminhada",
       value: data.humanHandled,
+      rate: data.escalationRate,
       color: "var(--bq-agent)",
     },
-    { label: "Em andamento", value: data.inFlight, color: "var(--bq-t3)" },
+    {
+      label: "Em andamento",
+      value: data.inFlight,
+      rate: Math.round((data.inFlight / data.total) * 100),
+      color: "var(--bq-warn)",
+    },
   ];
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-3">
-        <Stat
-          label="Resolução pelo bot"
-          value={
-            data.botResolutionRate !== null ? `${data.botResolutionRate}%` : "—"
-          }
-          accent="var(--bq-info)"
-          hint={`${data.botResolved} conversa${data.botResolved === 1 ? "" : "s"}`}
-        />
-        <Stat
-          label="Taxa de transbordo"
-          value={data.escalationRate !== null ? `${data.escalationRate}%` : "—"}
-          accent="var(--bq-agent)"
-          hint={`${data.humanHandled} transferida${data.humanHandled === 1 ? "" : "s"}`}
-        />
-      </div>
-
       <div>
         <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-[var(--bq-raised)] ">
           {segments.map((s) => (
@@ -954,8 +972,11 @@ function BotPerformancePanel({
                 style={{ backgroundColor: s.color }}
               />
               {s.label}{" "}
-              <span className="tabular-nums text-[var(--bq-t3)]">
-                {s.value}
+              <span
+                title={`${s.value} conversas`}
+                className="tabular-nums text-[var(--bq-t3)]"
+              >
+                {s.rate === null ? "—" : `${s.rate}%`}
               </span>
             </span>
           ))}
@@ -1199,7 +1220,7 @@ function TopTagsPanel({
     <div className="space-y-2.5">
       {tags.map((t) => (
         <div key={t.id} className="flex items-center gap-3">
-          <div className="flex w-32 shrink-0 items-center gap-2 min-w-0">
+          <div className="flex w-[92px] shrink-0 items-center gap-2 min-w-0">
             <span
               className="h-2 w-2 shrink-0 rounded-full"
               style={{ backgroundColor: t.color }}
@@ -1209,7 +1230,7 @@ function TopTagsPanel({
             </span>
           </div>
           <div className="flex flex-1 items-center gap-2">
-            <div className="relative h-5 flex-1 overflow-hidden rounded bg-[var(--bq-raised)] ">
+            <div className="relative h-2 flex-1 overflow-hidden rounded bg-[var(--bq-raised)] ">
               <div
                 className="h-full rounded transition-all"
                 style={{
@@ -1225,6 +1246,56 @@ function TopTagsPanel({
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+function ChannelMessages({
+  data,
+}: {
+  data:
+    | Awaited<ReturnType<typeof dashboardService.getChannelPremises>>
+    | undefined;
+}) {
+  const channels = [
+    { name: "WhatsApp", value: data?.whatsapp, color: "var(--bq-wa)" },
+    { name: "E-mail", value: data?.email, color: "var(--bq-mail)" },
+    { name: "Instagram", value: data?.instagram, color: "var(--bq-ig)" },
+  ].filter((channel) => channel.value?.connected);
+  const total = channels.reduce(
+    (sum, channel) =>
+      sum + channel.value!.inboundMessages + channel.value!.outboundMessages,
+    0,
+  );
+  if (!total)
+    return (
+      <p className="py-3 text-xs text-[var(--bq-t3)]">
+        {data ? "Sem mensagens no período." : "Dados ainda não disponíveis."}
+      </p>
+    );
+  return (
+    <div className="space-y-[7px]">
+      {channels.map((channel) => {
+        const count =
+          channel.value!.inboundMessages + channel.value!.outboundMessages;
+        const percent = Math.round((count / total) * 100);
+        return (
+          <div
+            key={channel.name}
+            className="grid grid-cols-[92px_minmax(0,1fr)_44px] items-center gap-2.5 text-xs text-[var(--bq-t2)]"
+            title={`${count} mensagens recebidas e enviadas`}
+          >
+            <span>{channel.name}</span>
+            <span className="h-2 overflow-hidden rounded bg-[var(--bq-raised-2)]">
+              <span
+                className="block h-full rounded"
+                style={{ width: `${percent}%`, background: channel.color }}
+              />
+            </span>
+            <span className="text-right font-mono text-[11px]">{percent}%</span>
+          </div>
+        );
+      })}
     </div>
   );
 }
