@@ -1,11 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Bot } from 'lucide-react';
-import { aiAgentsService, type AiAgent } from '../../services/ai-agents.service';
+import {
+  aiAgentsService,
+  type AiAgent,
+} from '@/features/ai-agents/services/ai-agents.service';
 import { useOrgId } from '@/hooks/use-org-query-key';
-import { AgentScopeForm } from '../agent-scope-form';
+import { AgentScopeForm } from '@/features/ai-agents/components/agent-scope-form';
 
 interface AgentWithScope extends AiAgent {
   pipelineScope: string[];
@@ -18,33 +21,33 @@ interface AgentWithScope extends AiAgent {
 
 export function JarvisScopeTab() {
   const orgId = useOrgId();
-  const [agentId, setAgentId] = useState<string>('');
+  const [selectedId, setAgentId] = useState<string>('');
 
   const { data: agents } = useQuery({
     queryKey: ['ai-agents', orgId],
     queryFn: () => aiAgentsService.list(),
   });
 
-  useEffect(() => {
-    if (!agentId && agents && agents.length > 0) {
-      setAgentId(agents[0].id);
-    }
-  }, [agents, agentId]);
+  const agentId = selectedId || agents?.[0]?.id || '';
 
-  const { data: agent, isLoading } = useQuery<AgentWithScope>({
-    queryKey: ['ai-agent', agentId],
+  const {
+    data: agent,
+    isLoading,
+    isError,
+  } = useQuery<AgentWithScope | null>({
+    queryKey: ['ai-agent', orgId, agentId],
     queryFn: async () => {
       const result = await aiAgentsService.findOne(agentId);
-      // Provide S22 field defaults when backend hasn't deployed yet
-      return {
-        ...result,
-        pipelineScope: (result as any).pipelineScope ?? [],
-        mentionHandle: (result as any).mentionHandle ?? null,
-        rateLimitPerHour: (result as any).rateLimitPerHour ?? 60,
-        consecutiveMsgCap: (result as any).consecutiveMsgCap ?? 5,
-        humanizationEnabled: (result as any).humanizationEnabled ?? true,
-        minDelayMs: (result as any).minDelayMs ?? 15000,
-      } as AgentWithScope;
+      const candidate = result as Partial<AgentWithScope>;
+      if (
+        !Array.isArray(candidate.pipelineScope) ||
+        typeof candidate.rateLimitPerHour !== 'number' ||
+        typeof candidate.consecutiveMsgCap !== 'number' ||
+        typeof candidate.humanizationEnabled !== 'boolean' ||
+        typeof candidate.minDelayMs !== 'number'
+      )
+        return null;
+      return result as AgentWithScope;
     },
     enabled: !!agentId,
   });
@@ -79,7 +82,11 @@ export function JarvisScopeTab() {
         >
           {agents.map((a) => (
             <option key={a.id} value={a.id}>
-              {a.name} ({a.kind === 'ORCHESTRATOR' ? 'orquestrador' : a.category ?? 'worker'})
+              {a.name} (
+              {a.kind === 'ORCHESTRATOR'
+                ? 'orquestrador'
+                : (a.category ?? 'worker')}
+              )
             </option>
           ))}
         </select>
@@ -87,16 +94,23 @@ export function JarvisScopeTab() {
 
       <div className="max-w-3xl">
         <div className="mb-4">
-          <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Scope & Cadência</h2>
+          <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+            Scope & Cadência
+          </h2>
           <p className="mt-0.5 text-sm text-zinc-500">
-            Define onde {agent?.name ?? '…'} atua + cadência humanizada + limites anti-ban.
+            Define onde {agent?.name ?? '…'} atua + cadência humanizada +
+            limites anti-ban.
           </p>
         </div>
 
-        {isLoading || !agent ? (
+        {isError ? (
+          <p role="alert">Não foi possível carregar a cadência.</p>
+        ) : !isLoading && !agent ? (
+          <p>Cadência ainda não disponível para este agente.</p>
+        ) : isLoading || !agent ? (
           <div className="text-sm text-zinc-500">Carregando…</div>
         ) : (
-          <AgentScopeForm agent={agent} />
+          <AgentScopeForm key={agent.id} agent={agent} />
         )}
       </div>
     </div>

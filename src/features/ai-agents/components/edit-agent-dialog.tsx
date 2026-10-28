@@ -10,22 +10,26 @@ import {
   DEPARTMENTS,
   type AiAgent,
   type AgentMode,
-} from '../services/ai-agents.service';
-import { aiCatalogService } from '../services/ai-catalog.service';
+} from '@/features/ai-agents/services/ai-agents.service';
+import { aiCatalogService } from '@/features/ai-agents/services/ai-catalog.service';
 import { channelsService } from '@/features/channels/services/channels.service';
 import { useOrgId } from '@/hooks/use-org-query-key';
-import { AgentKnowledgeField } from './agent-knowledge-field';
+import { AgentKnowledgeField } from '@/features/ai-agents/components/agent-knowledge-field';
 
 interface EditAgentDialogProps {
   agent: AiAgent | null;
   onClose: () => void;
   onSaved: () => void;
+  embedded?: boolean;
+  section?: 'prompt' | 'where';
 }
 
 export function EditAgentDialog({
   agent,
   onClose,
   onSaved,
+  embedded = false,
+  section = 'prompt',
 }: EditAgentDialogProps) {
   const orgId = useOrgId();
   const [name, setName] = useState('');
@@ -37,9 +41,8 @@ export function EditAgentDialog({
   const [department, setDepartment] = useState<string>('');
   const [squad, setSquad] = useState('');
   const [operationalContext, setOperationalContext] = useState('');
-  const [operationalContextUpdatedAt, setOperationalContextUpdatedAt] = useState<
-    string | null
-  >(null);
+  const [operationalContextUpdatedAt, setOperationalContextUpdatedAt] =
+    useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [showAddChannel, setShowAddChannel] = useState(false);
   const [newChannelId, setNewChannelId] = useState('');
@@ -90,23 +93,28 @@ export function EditAgentDialog({
       });
       toast.success('Agente atualizado');
       onSaved();
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Erro ao salvar');
+    } catch (err: unknown) {
+      toast.error(
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message || 'Erro ao salvar',
+      );
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!confirm(`Excluir "${agent.name}"? Essa ação é irreversível.`))
-      return;
+    if (!confirm(`Excluir "${agent.name}"? Essa ação é irreversível.`)) return;
     try {
       await aiAgentsService.remove(agent.id);
       toast.success('Agente excluído');
       onSaved();
       onClose();
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Erro ao excluir');
+    } catch (err: unknown) {
+      toast.error(
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message || 'Erro ao excluir',
+      );
     }
   };
 
@@ -121,8 +129,11 @@ export function EditAgentDialog({
       setShowAddChannel(false);
       setNewChannelId('');
       onSaved();
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Erro ao vincular canal');
+    } catch (err: unknown) {
+      toast.error(
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message || 'Erro ao vincular canal',
+      );
     }
   };
 
@@ -131,8 +142,11 @@ export function EditAgentDialog({
       await aiAgentsService.unassignChannel(agent.id, channelId);
       toast.success('Canal removido do agente');
       onSaved();
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Erro ao desvincular');
+    } catch (err: unknown) {
+      toast.error(
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message || 'Erro ao desvincular',
+      );
     }
   };
 
@@ -141,14 +155,30 @@ export function EditAgentDialog({
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-xl bg-white shadow-xl dark:bg-zinc-900">
-        <div className="flex items-center justify-between border-b border-zinc-200 px-6 py-4 dark:border-zinc-800">
+    <div
+      className={
+        embedded
+          ? ''
+          : 'fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4'
+      }
+    >
+      <div
+        className={
+          embedded
+            ? 'w-full'
+            : 'w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-xl bg-white shadow-xl dark:bg-zinc-900'
+        }
+      >
+        <div
+          hidden={embedded}
+          className="flex items-center justify-between border-b border-zinc-200 px-6 py-4 dark:border-zinc-800"
+        >
           <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
             Editar agente
           </h3>
           <button
             onClick={onClose}
+            aria-label="Fechar edição"
             className="rounded p-1 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
           >
             <X className="h-4 w-4" />
@@ -156,263 +186,279 @@ export function EditAgentDialog({
         </div>
 
         <div className="space-y-4 px-6 py-5">
-          <div>
-            <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300">
-              Nome
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300">
-              Descrição
-            </label>
-            <input
-              type="text"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300">
-              Modelo
-            </label>
-            <select
-              value={modelId}
-              onChange={(e) => setModelId(e.target.value)}
-              className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
-            >
-              {CURATED_MODELS.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.label} — {m.badge}
-                </option>
-              ))}
-              {!CURATED_MODELS.some((m) => m.id === modelId) && (
-                <option value={modelId}>{modelId} (custom)</option>
-              )}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300">
-              System prompt
-            </label>
-            <textarea
-              value={systemPrompt}
-              onChange={(e) => setSystemPrompt(e.target.value)}
-              rows={10}
-              className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 font-mono text-xs dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
-            />
-          </div>
-
-          <div className="rounded-lg border-2 border-amber-200 bg-amber-50/50 p-4 dark:border-amber-900/40 dark:bg-amber-900/10">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-amber-800 dark:text-amber-300">
-                  Contexto operacional do dia
-                </p>
-                <p className="mt-0.5 text-[11px] text-amber-700/80 dark:text-amber-200/70">
-                  Memória viva injetada no prompt — atualize quando rodar
-                  campanha, der aula, mudar oferta. Ex: &quot;Hoje 20h teve aula
-                  de Skills. Pra quem responder feedback positivo, ofereça
-                  Dominando Claude Code R$ 1.497 (link X).&quot;
-                </p>
-              </div>
-              {operationalContextUpdatedAt && (
-                <span className="shrink-0 text-[10px] uppercase tracking-wide text-amber-700 dark:text-amber-300">
-                  Atualizado{' '}
-                  {formatRelative(operationalContextUpdatedAt)}
-                </span>
-              )}
+          <div hidden={embedded && section !== 'prompt'} className="space-y-4">
+            <div>
+              <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                Nome
+              </label>
+              <input
+                type="text"
+                aria-label="Nome do agente"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+              />
             </div>
-            <textarea
-              value={operationalContext}
-              onChange={(e) => setOperationalContext(e.target.value)}
-              rows={4}
-              placeholder="Deixe vazio se hoje não tem nada operacional..."
-              maxLength={8000}
-              className="mt-3 w-full rounded-md border border-amber-300 bg-white px-3 py-2 text-xs dark:border-amber-900/60 dark:bg-zinc-900 dark:text-zinc-100"
-            />
-            <p className="mt-1 text-right text-[10px] text-amber-700/60 dark:text-amber-300/60">
-              {operationalContext.length}/8000
-            </p>
-          </div>
 
-          <AgentKnowledgeField
-            agentId={agent.id}
-            pendingFiles={[]}
-            onPendingFilesChange={() => undefined}
-          />
+            <div>
+              <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                Descrição
+              </label>
+              <input
+                type="text"
+                aria-label="Descrição"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+              />
+            </div>
 
-          <div>
-            <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300">
-              Criatividade ({temperature.toFixed(2)})
-            </label>
-            <input
-              type="range"
-              min="0"
-              max="1.5"
-              step="0.05"
-              value={temperature}
-              onChange={(e) => setTemperature(parseFloat(e.target.value))}
-              className="mt-2 w-full"
-            />
-          </div>
+            <div>
+              <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                Modelo
+              </label>
+              <select
+                aria-label="Modelo"
+                value={modelId}
+                onChange={(e) => setModelId(e.target.value)}
+                className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+              >
+                {CURATED_MODELS.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.label} — {m.badge}
+                  </option>
+                ))}
+                {!CURATED_MODELS.some((m) => m.id === modelId) && (
+                  <option aria-label="Modelo" value={modelId}>
+                    {modelId} (custom)
+                  </option>
+                )}
+              </select>
+            </div>
 
-          {/* Organograma matricial ágil */}
-          <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-900/50">
-            <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-              Organograma
-            </p>
-            <p className="mt-0.5 text-[11px] text-zinc-500">
-              Define hierarquia (chefia direta), departamento e squad ágil.
-            </p>
+            <div>
+              <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                System prompt
+              </label>
+              <textarea
+                aria-label="System prompt"
+                value={systemPrompt}
+                onChange={(e) => setSystemPrompt(e.target.value)}
+                rows={10}
+                className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 font-mono text-xs dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+              />
+            </div>
 
-            <div className="mt-3 space-y-3">
-              <div>
-                <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300">
-                  Reporta a (chefe direto)
-                </label>
-                <select
-                  value={parentAgentId}
-                  onChange={(e) => setParentAgentId(e.target.value)}
-                  className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
-                >
-                  <option value="">— Raiz / sem chefe (CEO virtual) —</option>
-                  {(allAgents ?? [])
-                    .filter((a) => a.id !== agent.id)
-                    .map((a) => (
-                      <option key={a.id} value={a.id}>
-                        {a.name}{' '}
-                        {a.kind === 'ORCHESTRATOR' ? '(Orquestrador)' : ''}
-                      </option>
-                    ))}
-                </select>
+            <div className="rounded-lg border-2 border-amber-200 bg-amber-50/50 p-4 dark:border-amber-900/40 dark:bg-amber-900/10">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-amber-800 dark:text-amber-300">
+                    Contexto operacional do dia
+                  </p>
+                  <p className="mt-0.5 text-[11px] text-amber-700/80 dark:text-amber-200/70">
+                    Memória viva injetada no prompt — atualize quando rodar
+                    campanha, der aula, mudar oferta. Ex: &quot;Hoje 20h teve
+                    aula de Skills. Pra quem responder feedback positivo,
+                    ofereça Dominando Claude Code R$ 1.497 (link X).&quot;
+                  </p>
+                </div>
+                {operationalContextUpdatedAt && (
+                  <span className="shrink-0 text-[10px] uppercase tracking-wide text-amber-700 dark:text-amber-300">
+                    Atualizado {formatRelative(operationalContextUpdatedAt)}
+                  </span>
+                )}
               </div>
+              <textarea
+                aria-label="Contexto operacional do dia"
+                value={operationalContext}
+                onChange={(e) => setOperationalContext(e.target.value)}
+                rows={4}
+                placeholder="Deixe vazio se hoje não tem nada operacional..."
+                maxLength={8000}
+                className="mt-3 w-full rounded-md border border-amber-300 bg-white px-3 py-2 text-xs dark:border-amber-900/60 dark:bg-zinc-900 dark:text-zinc-100"
+              />
+              <p className="mt-1 text-right text-[10px] text-amber-700/60 dark:text-amber-300/60">
+                {operationalContext.length}/8000
+              </p>
+            </div>
 
-              <div className="grid gap-3 sm:grid-cols-2">
+            <AgentKnowledgeField
+              agentId={agent.id}
+              pendingFiles={[]}
+              onPendingFilesChange={() => undefined}
+            />
+
+            <div>
+              <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                Criatividade ({temperature.toFixed(2)})
+              </label>
+              <input
+                type="range"
+                min="0"
+                max="1.5"
+                step="0.05"
+                aria-label="Criatividade"
+                value={temperature}
+                onChange={(e) => setTemperature(parseFloat(e.target.value))}
+                className="mt-2 w-full"
+              />
+            </div>
+          </div>
+          <div hidden={embedded && section !== 'where'} className="space-y-4">
+            {/* Organograma matricial ágil */}
+            <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-900/50">
+              <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                Organograma
+              </p>
+              <p className="mt-0.5 text-[11px] text-zinc-500">
+                Define hierarquia (chefia direta), departamento e squad ágil.
+              </p>
+
+              <div className="mt-3 space-y-3">
                 <div>
                   <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300">
-                    Departamento
+                    Reporta a (chefe direto)
                   </label>
                   <select
-                    value={department}
-                    onChange={(e) => setDepartment(e.target.value)}
+                    aria-label="Reporta a"
+                    value={parentAgentId}
+                    onChange={(e) => setParentAgentId(e.target.value)}
                     className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
                   >
-                    <option value="">— Não definido —</option>
-                    {DEPARTMENTS.map((d) => (
-                      <option key={d} value={d}>
-                        {d}
+                    <option value="">— Raiz / sem chefe (CEO virtual) —</option>
+                    {(allAgents ?? [])
+                      .filter((a) => a.id !== agent.id)
+                      .map((a) => (
+                        <option key={a.id} value={a.id}>
+                          {a.name}{' '}
+                          {a.kind === 'ORCHESTRATOR' ? '(Orquestrador)' : ''}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                      Departamento
+                    </label>
+                    <select
+                      aria-label="Departamento"
+                      value={department}
+                      onChange={(e) => setDepartment(e.target.value)}
+                      className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                    >
+                      <option value="">— Não definido —</option>
+                      {DEPARTMENTS.map((d) => (
+                        <option key={d} value={d}>
+                          {d}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                      Squad ágil
+                    </label>
+                    <input
+                      type="text"
+                      aria-label="Squad"
+                      value={squad}
+                      onChange={(e) => setSquad(e.target.value)}
+                      placeholder="Ex: Inbound B2C"
+                      className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {!embedded && agent && <AgentSkillsAndTools agentId={agent.id} />}
+
+            <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-900/50">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                  Canais
+                </h4>
+                {!showAddChannel && availableChannels.length > 0 && (
+                  <button
+                    onClick={() => setShowAddChannel(true)}
+                    className="inline-flex items-center gap-1 rounded-md bg-white px-2 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-100 dark:bg-zinc-800 dark:text-zinc-300"
+                  >
+                    <Plus className="h-3 w-3" /> Vincular canal
+                  </button>
+                )}
+              </div>
+              {showAddChannel && (
+                <div className="mt-3 flex items-center gap-2">
+                  <select
+                    aria-label="Canal a vincular"
+                    value={newChannelId}
+                    onChange={(e) => setNewChannelId(e.target.value)}
+                    className="flex-1 rounded-md border border-zinc-300 bg-white px-2 py-1 text-xs dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                  >
+                    <option value="">Selecione um canal…</option>
+                    {availableChannels.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name} ({c.type})
                       </option>
                     ))}
                   </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300">
-                    Squad ágil
-                  </label>
-                  <input
-                    type="text"
-                    value={squad}
-                    onChange={(e) => setSquad(e.target.value)}
-                    placeholder="Ex: Inbound B2C"
-                    className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {agent && (
-            <AgentSkillsAndTools agentId={agent.id} />
-          )}
-
-          <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-900/50">
-            <div className="flex items-center justify-between">
-              <h4 className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                Canais
-              </h4>
-              {!showAddChannel && availableChannels.length > 0 && (
-                <button
-                  onClick={() => setShowAddChannel(true)}
-                  className="inline-flex items-center gap-1 rounded-md bg-white px-2 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-100 dark:bg-zinc-800 dark:text-zinc-300"
-                >
-                  <Plus className="h-3 w-3" /> Vincular canal
-                </button>
-              )}
-            </div>
-            {showAddChannel && (
-              <div className="mt-3 flex items-center gap-2">
-                <select
-                  value={newChannelId}
-                  onChange={(e) => setNewChannelId(e.target.value)}
-                  className="flex-1 rounded-md border border-zinc-300 bg-white px-2 py-1 text-xs dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
-                >
-                  <option value="">Selecione um canal…</option>
-                  {availableChannels.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name} ({c.type})
-                    </option>
-                  ))}
-                </select>
-                <select
-                  value={newChannelMode}
-                  onChange={(e) => setNewChannelMode(e.target.value as AgentMode)}
-                  className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-xs dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
-                >
-                  <option value="AUTONOMOUS">Autônomo</option>
-                  <option value="COPILOT">Copiloto</option>
-                  <option value="DISABLED">Desativado</option>
-                </select>
-                <button
-                  onClick={handleAddChannel}
-                  className="rounded-md bg-primary px-3 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/90"
-                >
-                  OK
-                </button>
-                <button
-                  onClick={() => setShowAddChannel(false)}
-                  className="rounded-md p-1 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </div>
-            )}
-            <div className="mt-3 space-y-2">
-              {(agent.channels ?? []).map((c) => (
-                <div
-                  key={c.id}
-                  className="flex items-center justify-between rounded-md border border-zinc-200 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800"
-                >
-                  <div className="text-sm">
-                    <span className="font-medium text-zinc-900 dark:text-zinc-100">
-                      {c.channel.name}
-                    </span>
-                    <span className="ml-2 text-[11px] text-zinc-500">
-                      {c.channel.type} · {c.mode.toLowerCase()}
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => handleRemoveChannel(c.channelId)}
-                    className="rounded p-1 text-zinc-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20"
+                  <select
+                    aria-label="Modo no canal"
+                    value={newChannelMode}
+                    onChange={(e) =>
+                      setNewChannelMode(e.target.value as AgentMode)
+                    }
+                    className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-xs dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
+                    <option value="AUTONOMOUS">Autônomo</option>
+                    <option value="COPILOT">Copiloto</option>
+                    <option value="DISABLED">Desativado</option>
+                  </select>
+                  <button
+                    onClick={handleAddChannel}
+                    className="rounded-md bg-primary px-3 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+                  >
+                    OK
+                  </button>
+                  <button
+                    onClick={() => setShowAddChannel(false)}
+                    className="rounded-md p-1 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                  >
+                    <X className="h-3 w-3" />
                   </button>
                 </div>
-              ))}
-              {(agent.channels ?? []).length === 0 && (
-                <p className="text-xs text-zinc-500">
-                  Nenhum canal vinculado. O agente não vai responder ninguém ainda.
-                </p>
               )}
+              <div className="mt-3 space-y-2">
+                {(agent.channels ?? []).map((c) => (
+                  <div
+                    key={c.id}
+                    className="flex items-center justify-between rounded-md border border-zinc-200 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800"
+                  >
+                    <div className="text-sm">
+                      <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                        {c.channel.name}
+                      </span>
+                      <span className="ml-2 text-[11px] text-zinc-500">
+                        {c.channel.type} · {c.mode.toLowerCase()}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => handleRemoveChannel(c.channelId)}
+                      className="rounded p-1 text-zinc-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+                {(agent.channels ?? []).length === 0 && (
+                  <p className="text-xs text-zinc-500">
+                    Nenhum canal vinculado. O agente não vai responder ninguém
+                    ainda.
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -456,7 +502,7 @@ function formatRelative(iso: string): string {
   return `há ${Math.floor(ageDays / 30)} meses`;
 }
 
-function AgentSkillsAndTools({ agentId }: { agentId: string }) {
+export function AgentSkillsAndTools({ agentId }: { agentId: string }) {
   const [skillIds, setSkillIds] = useState<string[]>([]);
   const [savingSkills, setSavingSkills] = useState(false);
   const queryClient = useQueryClient();
@@ -502,8 +548,11 @@ function AgentSkillsAndTools({ agentId }: { agentId: string }) {
         queryKey: ['ai-agent-skills', agentId],
       });
       toast.success('Skills atualizadas');
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Erro');
+    } catch (err: unknown) {
+      toast.error(
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message || 'Erro',
+      );
     } finally {
       setSavingSkills(false);
     }
@@ -520,8 +569,11 @@ function AgentSkillsAndTools({ agentId }: { agentId: string }) {
           ? 'Skill agora exige aprovação humana antes de executar'
           : 'Skill volta a executar automaticamente',
       );
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Erro ao salvar');
+    } catch (err: unknown) {
+      toast.error(
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message || 'Erro ao salvar',
+      );
     }
   };
 
@@ -546,8 +598,9 @@ function AgentSkillsAndTools({ agentId }: { agentId: string }) {
           incluídas automaticamente.
         </p>
         <p className="mt-2 text-[10px] text-zinc-400">
-          💡 Skills marcadas com <ShieldCheck className="inline h-3 w-3 text-amber-600" />{' '}
-          exigem aprovação humana via inbox antes de executar — útil pra ações
+          💡 Skills marcadas com{' '}
+          <ShieldCheck className="inline h-3 w-3 text-amber-600" /> exigem
+          aprovação humana via inbox antes de executar — útil pra ações
           irreversíveis (liberar acesso, resetar senha). Padrão: executa direto.
         </p>
         <div className="mt-2 max-h-72 overflow-y-auto">

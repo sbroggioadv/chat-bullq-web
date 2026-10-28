@@ -1,45 +1,63 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Bot, Coins, Cpu, Activity, CheckCircle2, ArrowRightLeft } from 'lucide-react';
+import {
+  Bot,
+  Coins,
+  Cpu,
+  Activity,
+  CheckCircle2,
+  ArrowRightLeft,
+} from 'lucide-react';
 import {
   aiAgentsService,
   type Period,
-} from '../../services/ai-agents.service';
+} from '@/features/ai-agents/services/ai-agents.service';
 import { useOrgId } from '@/hooks/use-org-query-key';
-import { KpiCard } from './kpi-card';
-import { PeriodSelector } from './period-selector';
-import { BreakdownList } from './breakdown-list';
-import { RunsTable } from './runs-table';
-import { fmtMs, fmtNum, fmtUsdShort } from './format';
+import { KpiCard } from '@/features/ai-agents/components/jarvis/kpi-card';
+import { PeriodSelector } from '@/features/ai-agents/components/jarvis/period-selector';
+import { BreakdownList } from '@/features/ai-agents/components/jarvis/breakdown-list';
+import { RunsTable } from '@/features/ai-agents/components/jarvis/runs-table';
+import {
+  fmtMs,
+  fmtNum,
+  fmtUsdShort,
+} from '@/features/ai-agents/components/jarvis/format';
 
-export function JarvisAgentTab() {
+export function JarvisAgentTab({
+  initialAgentId = '',
+}: {
+  initialAgentId?: string;
+}) {
   const orgId = useOrgId();
   const [period, setPeriod] = useState<Period>('7d');
-  const [agentId, setAgentId] = useState<string>('');
+  const [selectedId, setAgentId] = useState<string>(initialAgentId);
 
   const { data: agents } = useQuery({
     queryKey: ['ai-agents', orgId],
     queryFn: () => aiAgentsService.list(),
   });
 
-  // Auto-select first agent
-  useEffect(() => {
-    if (!agentId && agents && agents.length > 0) {
-      setAgentId(agents[0].id);
-    }
-  }, [agents, agentId]);
+  const agentId = selectedId || agents?.[0]?.id || '';
 
-  const { data: stats, isLoading: statsLoading } = useQuery({
-    queryKey: ['ai-agent-stats', agentId, period],
+  const {
+    data: stats,
+    isLoading: statsLoading,
+    isError: statsError,
+  } = useQuery({
+    queryKey: ['ai-agent-stats', orgId, agentId, period],
     queryFn: () => aiAgentsService.agentStats(agentId, period),
     enabled: !!agentId,
     refetchInterval: 5000,
   });
 
-  const { data: runs, isLoading: runsLoading } = useQuery({
-    queryKey: ['ai-agent-feed', agentId],
+  const {
+    data: runs,
+    isLoading: runsLoading,
+    isError: runsError,
+  } = useQuery({
+    queryKey: ['ai-agent-feed', orgId, agentId],
     queryFn: () => aiAgentsService.feed({ agentId, limit: 50 }),
     enabled: !!agentId,
     refetchInterval: 5000,
@@ -67,18 +85,37 @@ export function JarvisAgentTab() {
     );
   }
 
+  if (statsError || runsError)
+    return (
+      <p role="alert" className="p-6">
+        Não foi possível carregar os dados de execução deste agente.
+      </p>
+    );
+  if (statsLoading || !stats)
+    return (
+      <p role="status" className="p-6">
+        Carregando estatísticas…
+      </p>
+    );
+
   return (
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <select
+            aria-label="Agente"
+            disabled={!!initialAgentId}
             value={agentId}
             onChange={(e) => setAgentId(e.target.value)}
             className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-medium dark:border-zinc-700 dark:bg-zinc-900"
           >
             {agents.map((a) => (
               <option key={a.id} value={a.id}>
-                {a.name} ({a.kind === 'ORCHESTRATOR' ? 'orquestrador' : a.category ?? 'worker'})
+                {a.name} (
+                {a.kind === 'ORCHESTRATOR'
+                  ? 'orquestrador'
+                  : (a.category ?? 'worker')}
+                )
               </option>
             ))}
           </select>
@@ -107,7 +144,7 @@ export function JarvisAgentTab() {
               : undefined
           }
           icon={Coins}
-          accent="#16a34a"
+          accent="var(--bq-ok)"
         />
         <KpiCard
           label="Tokens"
@@ -116,7 +153,7 @@ export function JarvisAgentTab() {
             stats ? `${fmtNum(stats.tokens.cacheRead)} cache hits` : undefined
           }
           icon={Cpu}
-          accent="#2563eb"
+          accent="var(--bq-info)"
         />
         <KpiCard
           label="Runs"
@@ -127,7 +164,7 @@ export function JarvisAgentTab() {
               : undefined
           }
           icon={Activity}
-          accent="#9333ea"
+          accent="var(--bq-agent)"
         />
         <KpiCard
           label="Sucesso"
@@ -148,10 +185,10 @@ export function JarvisAgentTab() {
             stats?.runs.successRate == null
               ? undefined
               : stats.runs.successRate > 90
-                ? '#16a34a'
+                ? 'var(--bq-ok)'
                 : stats.runs.successRate > 70
-                  ? '#eab308'
-                  : '#dc2626'
+                  ? 'var(--bq-warn)'
+                  : 'var(--bq-err)'
           }
         />
       </div>
