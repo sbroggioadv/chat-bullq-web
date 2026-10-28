@@ -3,13 +3,13 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
-import { Pill } from '@/components/ui/foundation';
+import { FoundationPopover, Pill } from '@/components/ui/foundation';
 import { useOrgId } from '@/hooks/use-org-query-key';
 import {
   aiAgentsService,
   type Period,
 } from '@/features/ai-agents/services/ai-agents.service';
-import { PeriodSelector } from '@/features/ai-agents/components/jarvis/period-selector';
+import styles from '@/features/ai-agents/components/agents-workspace.module.css';
 import { RunsTable } from '@/features/ai-agents/components/jarvis/runs-table';
 import {
   fmtMs,
@@ -25,34 +25,32 @@ const ACTIONS: Record<string, string> = {
   CLOSED_CONVERSATION: 'Encerrou a conversa',
   NO_ACTION: 'Sem ação',
 };
-const panel =
-  'rounded-xl border border-[var(--bq-hair)] bg-[var(--bq-surface)] p-4';
+const panel = styles.panel;
 
 function Bars({
   title,
   rows,
   money = false,
+  embedded = false,
 }: {
   title: string;
   rows: { label: string; value: number }[];
   money?: boolean;
+  embedded?: boolean;
 }) {
   const max = Math.max(...rows.map((row) => row.value), 1);
   return (
-    <section className={panel}>
-      <h2 className="mb-4 text-sm font-semibold">{title}</h2>
+    <section className={embedded ? styles.barGroup : panel} aria-label={title}>
+      <h2 className={styles.panelTitle}>{title}</h2>
       {rows.length ? (
         rows.map((row, i) => (
-          <div
-            key={`${row.label}-${i}`}
-            className="my-3 grid grid-cols-[minmax(0,1fr)_minmax(30px,1fr)_auto] items-center gap-3 text-xs"
-          >
-            <span className="truncate text-[var(--bq-t2)]" title={row.label}>
+          <div key={`${row.label}-${i}`} className={styles.barRow}>
+            <span className="text-[var(--bq-t2)]" title={row.label}>
               {row.label}
             </span>
-            <span className="h-1.5 rounded-full bg-[var(--bq-raised)]">
+            <span className="h-2 rounded bg-[var(--bq-raised-2)]">
               <span
-                className="block h-full rounded-full bg-[var(--bq-agent)]"
+                className="block h-full rounded-full bg-[var(--bq-t2)]"
                 style={{ width: `${(row.value / max) * 100}%` }}
               />
             </span>
@@ -107,13 +105,7 @@ export function JarvisOverviewTab() {
     ? (stats.runs.failed / stats.runs.total) * 100
     : 0;
   return (
-    <div className="space-y-4 px-6 pb-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <span className="text-xs text-[var(--bq-t3)]">
-          Dados da organização · atualiza a cada 10 s
-        </span>
-        <PeriodSelector value={period} onChange={setPeriod} />
-      </div>
+    <div className={styles.overview}>
       {failedRate > 30 && stats.runs.total >= 5 && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--bq-hair)] bg-[var(--bq-err-soft)] p-3">
           <p>
@@ -132,7 +124,7 @@ export function JarvisOverviewTab() {
             utilizados.
           </p>
         )}
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(158px,1fr))] gap-3">
+      <div className={styles.metrics}>
         {[
           [
             'Custo no período',
@@ -155,16 +147,28 @@ export function JarvisOverviewTab() {
             'No período selecionado',
           ],
         ].map(([label, value, hint]) => (
-          <section key={label} className={panel}>
-            <p className="text-xs text-[var(--bq-t3)]">{label}</p>
-            <p className="my-2 text-2xl font-semibold tracking-tight tabular-nums">
-              {value}
-            </p>
-            <p className="text-[11px] text-[var(--bq-t3)]">{hint}</p>
+          <section key={label} className={styles.metric}>
+            <div className={styles.metricLabel}>
+              <span>{label === 'Custo no período' ? 'Custo' : label}</span>
+              {label === 'Custo no período' && (
+                <select
+                  aria-label="Período das execuções"
+                  className={styles.period}
+                  value={period}
+                  onChange={(event) => setPeriod(event.target.value as Period)}
+                >
+                  <option value="24h">24h</option>
+                  <option value="7d">7 dias</option>
+                  <option value="30d">30 dias</option>
+                </select>
+              )}
+            </div>
+            <p className={styles.metricValue}>{value}</p>
+            <p className={styles.metricHint}>{hint}</p>
           </section>
         ))}
       </div>
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,320px),1fr))] gap-3">
+      <div className={styles.overviewGrid}>
         <Bars
           title="Custo por modelo"
           rows={stats.byModel.map((model) => ({
@@ -180,33 +184,44 @@ export function JarvisOverviewTab() {
             value,
           }))}
         />
-        <section className={panel}>
-          <h2 className="mb-3 text-sm font-semibold">Por agente</h2>
-          <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] gap-3 border-b border-[var(--bq-hair)] pb-2 text-xs text-[var(--bq-t3)]">
-            <span>Agente</span>
-            <span>Execuções</span>
-            <span>Custo</span>
+        <section className={panel} aria-label="Por agente">
+          <h2 className={styles.panelTitle}>Por agente</h2>
+          <div className={styles.agentRows}>
+            <div className={`${styles.agentRow} ${styles.agentRowHeader}`}>
+              <span>Agente</span>
+              <span>Execuções</span>
+              <span>Sucesso</span>
+              <span>Custo</span>
+            </div>
+            {stats.byAgent.length ? (
+              stats.byAgent.map((agent) => (
+                <Link
+                  key={agent.agentId}
+                  prefetch={false}
+                  href={`/ai-agents?agentId=${encodeURIComponent(agent.agentId)}`}
+                  className={styles.agentRow}
+                >
+                  <span>{name(agent.agentId)}</span>
+                  <span>{fmtNum(agent.runs)}</span>
+                  <span
+                    aria-label="Sucesso por agente indisponível"
+                    title="O resumo da organização não informa sucesso por agente."
+                  >
+                    —
+                  </span>
+                  <span>{fmtUsdShort(agent.cost)}</span>
+                </Link>
+              ))
+            ) : (
+              <p className="py-3 text-xs text-[var(--bq-t3)]">
+                Sem execuções no período.
+              </p>
+            )}
           </div>
-          {stats.byAgent.length ? (
-            stats.byAgent.map((agent) => (
-              <Link
-                key={agent.agentId}
-                href={`/ai-agents?agentId=${encodeURIComponent(agent.agentId)}`}
-                className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-4 border-b border-[var(--bq-hair)] py-3 text-xs"
-              >
-                <span className="truncate">{name(agent.agentId)}</span>
-                <span>{fmtNum(agent.runs)}</span>
-                <span>{fmtUsdShort(agent.cost)}</span>
-              </Link>
-            ))
-          ) : (
-            <p className="py-3 text-xs text-[var(--bq-t3)]">
-              Sem execuções no período.
-            </p>
-          )}
         </section>
-        <div className="space-y-4">
+        <section className={panel} aria-label="Tools e passagens entre agentes">
           <Bars
+            embedded
             title="Tools mais chamadas"
             rows={stats.tools.map((tool) => ({
               label: tool.name,
@@ -214,35 +229,37 @@ export function JarvisOverviewTab() {
             }))}
           />
           <Bars
+            embedded
             title="Passagens entre agentes"
             rows={stats.handoffs.map((handoff) => ({
               label: `${name(handoff.fromAgentId)} → ${name(handoff.toAgentId)}`,
               value: handoff.count,
             }))}
           />
-        </div>
+        </section>
       </div>
-      <details className={panel}>
-        <summary className="cursor-pointer text-sm font-semibold">
-          Tokens, limites e latência
-        </summary>
-        <p className="mt-3 text-xs text-[var(--bq-t2)]">
-          {fmtNum(stats.tokens.total)} tokens · {fmtNum(stats.tokens.cacheRead)}{' '}
-          em cache · p50 {fmtMs(stats.latency.p50)} · p95{' '}
-          {fmtMs(stats.latency.p95)}
-        </p>
-        <p className="mt-2 text-xs text-[var(--bq-t3)]">
-          Limite mensal de tokens:{' '}
-          {stats.monthlyCap.cap == null
-            ? 'sem limite definido'
-            : `${fmtNum(stats.monthlyCap.used)} / ${fmtNum(stats.monthlyCap.cap)}`}
-          . Limite financeiro ainda não disponível.
-        </p>
-      </details>
       <section className={panel}>
-        <div className="mb-4 flex items-center gap-3">
-          <h2 className="text-sm font-semibold">Últimas execuções</h2>
-          <Pill tone="agent">A cada 10 s</Pill>
+        <div className={styles.feedHeading}>
+          <div className="flex items-center gap-2">
+            <h2 className={styles.panelTitle}>Últimas execuções</h2>
+            <Pill tone="agent">A cada 10 s</Pill>
+          </div>
+          <FoundationPopover label="Tokens, limites e latência">
+            <div className="max-w-xs p-3">
+              <p className="mt-3 text-xs text-[var(--bq-t2)]">
+                {fmtNum(stats.tokens.total)} tokens ·{' '}
+                {fmtNum(stats.tokens.cacheRead)} em cache · p50{' '}
+                {fmtMs(stats.latency.p50)} · p95 {fmtMs(stats.latency.p95)}
+              </p>
+              <p className="mt-2 text-xs text-[var(--bq-t3)]">
+                Limite mensal de tokens:{' '}
+                {stats.monthlyCap.cap == null
+                  ? 'sem limite definido'
+                  : `${fmtNum(stats.monthlyCap.used)} / ${fmtNum(stats.monthlyCap.cap)}`}
+                . Limite financeiro ainda não disponível.
+              </p>
+            </div>
+          </FoundationPopover>
         </div>
         {feed.isPending ? (
           <p role="status">Carregando execuções…</p>
@@ -251,6 +268,7 @@ export function JarvisOverviewTab() {
         ) : (
           <div className="overflow-x-auto">
             <RunsTable
+              appearance="cards"
               runs={feed.data ?? []}
               emptyHint="Nenhuma execução recente."
             />

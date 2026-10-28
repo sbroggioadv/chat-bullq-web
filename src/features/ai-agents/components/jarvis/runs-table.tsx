@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDown, ChevronRight } from 'lucide-react';
-import { type FeedRun } from '../../services/ai-agents.service';
+import { Bot, ChevronDown, ChevronRight } from 'lucide-react';
+import { type FeedRun } from '@/features/ai-agents/services/ai-agents.service';
 import {
   FINAL_ACTION_META,
   STATUS_META,
@@ -10,20 +10,69 @@ import {
   fmtNum,
   fmtRelative,
   fmtUsd,
-} from './format';
+} from '@/features/ai-agents/components/jarvis/format';
+import styles from '@/features/ai-agents/components/agents-workspace.module.css';
 
 interface RunsTableProps {
   runs: FeedRun[];
   emptyHint?: string;
+  appearance?: 'table' | 'cards';
 }
 
-export function RunsTable({ runs, emptyHint }: RunsTableProps) {
+export function RunsTable({
+  runs,
+  emptyHint,
+  appearance = 'table',
+}: RunsTableProps) {
   const [expanded, setExpanded] = useState<string | null>(null);
 
   if (!runs.length) {
     return (
       <div className="rounded-xl border-2 border-dashed border-zinc-200 py-10 text-center text-sm text-zinc-500 dark:border-zinc-800">
         {emptyHint ?? 'Nenhuma execução ainda.'}
+      </div>
+    );
+  }
+
+  if (appearance === 'cards') {
+    return (
+      <div className={styles.runList}>
+        {runs.map((run) => {
+          const action = FINAL_ACTION_META[run.finalAction ?? 'NONE'];
+          const status = STATUS_META[run.status];
+          const tone =
+            run.status === 'FAILED'
+              ? 'error'
+              : run.finalAction === 'DELEGATED'
+                ? 'agent'
+                : run.finalAction === 'TRANSFERRED_TO_HUMAN'
+                  ? 'human'
+                  : 'default';
+          return (
+            <details key={run.id} className={styles.runCard}>
+              <summary>
+                <span className={styles.runIcon}>
+                  <Bot size={14} />
+                </span>
+                <span className={styles.runText}>
+                  <strong>{run.agent.name}</strong>
+                  <span>
+                    {fmtRelative(run.startedAt)} · {fmtMs(run.durationMs)} ·{' '}
+                    {fmtUsd(Number(run.costUsd))}
+                  </span>
+                  <span>
+                    {run.modelId} · {fmtNum(run.inputTokens + run.outputTokens)}{' '}
+                    tokens · {status.label}
+                  </span>
+                </span>
+                <span className={styles.runResult} data-tone={tone}>
+                  {run.status === 'FAILED' ? status.label : action.label}
+                </span>
+              </summary>
+              <RunDetail run={run} fallbackError={run.errorMessage} card />
+            </details>
+          );
+        })}
       </div>
     );
   }
@@ -92,7 +141,11 @@ function RunRow({
         onClick={onToggle}
       >
         <td className="px-3 py-2 text-zinc-400">
-          {isExpanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+          {isExpanded ? (
+            <ChevronDown className="h-3.5 w-3.5" />
+          ) : (
+            <ChevronRight className="h-3.5 w-3.5" />
+          )}
         </td>
         <td className="whitespace-nowrap px-3 py-2 text-xs text-zinc-500">
           {fmtRelative(run.startedAt)}
@@ -146,62 +199,72 @@ function RunRow({
 function RunDetail({
   run,
   fallbackError,
+  card = false,
 }: {
   run: FeedRun;
   fallbackError: string | null;
+  card?: boolean;
 }) {
   const tools = run.toolCalls ?? [];
-  return (
-    <tr className="border-b border-zinc-100 bg-zinc-50/40 dark:border-zinc-800 dark:bg-zinc-900/40">
-      <td colSpan={9} className="px-6 py-3">
-        {fallbackError && (
-          <p className="mb-2 text-xs text-red-600 dark:text-red-400">
-            <strong>Erro:</strong> {fallbackError}
+  const content = (
+    <>
+      {fallbackError && (
+        <p className="mb-2 text-xs text-red-600 dark:text-red-400">
+          <strong>Erro:</strong> {fallbackError}
+        </p>
+      )}
+      <div className="grid gap-3 text-xs sm:grid-cols-2 md:grid-cols-3">
+        <div>
+          <p className="text-[10px] font-semibold uppercase text-zinc-500">
+            Run id
           </p>
-        )}
-        <div className="grid gap-3 text-xs sm:grid-cols-2 md:grid-cols-3">
-          <div>
-            <p className="text-[10px] font-semibold uppercase text-zinc-500">
-              Run id
-            </p>
-            <code className="mt-0.5 block truncate rounded bg-zinc-100 px-1.5 py-0.5 text-[11px] dark:bg-zinc-800">
-              {run.id}
-            </code>
-          </div>
-          <div>
-            <p className="text-[10px] font-semibold uppercase text-zinc-500">
-              Conversa
-            </p>
-            <code className="mt-0.5 block truncate rounded bg-zinc-100 px-1.5 py-0.5 text-[11px] dark:bg-zinc-800">
-              {run.conversationId}
-            </code>
-          </div>
-          <div>
-            <p className="text-[10px] font-semibold uppercase text-zinc-500">
-              Cache
-            </p>
-            <p className="mt-0.5 tabular-nums text-zinc-700 dark:text-zinc-300">
-              {fmtNum(run.cacheReadTokens)} read · {fmtNum(run.cacheWriteTokens)} write
-            </p>
+          <code className="mt-0.5 block truncate rounded bg-zinc-100 px-1.5 py-0.5 text-[11px] dark:bg-zinc-800">
+            {run.id}
+          </code>
+        </div>
+        <div>
+          <p className="text-[10px] font-semibold uppercase text-zinc-500">
+            Conversa
+          </p>
+          <code className="mt-0.5 block truncate rounded bg-zinc-100 px-1.5 py-0.5 text-[11px] dark:bg-zinc-800">
+            {run.conversationId}
+          </code>
+        </div>
+        <div>
+          <p className="text-[10px] font-semibold uppercase text-zinc-500">
+            Cache
+          </p>
+          <p className="mt-0.5 tabular-nums text-zinc-700 dark:text-zinc-300">
+            {fmtNum(run.cacheReadTokens)} read · {fmtNum(run.cacheWriteTokens)}{' '}
+            write
+          </p>
+        </div>
+      </div>
+      {tools.length > 0 && (
+        <div className="mt-3">
+          <p className="text-[10px] font-semibold uppercase text-zinc-500">
+            Tools chamadas ({tools.length})
+          </p>
+          <div className="mt-1 flex flex-wrap gap-1.5">
+            {tools.map((t, i) => (
+              <span
+                key={i}
+                className="rounded bg-zinc-100 px-2 py-0.5 text-[11px] text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+              >
+                {t.toolName}
+              </span>
+            ))}
           </div>
         </div>
-        {tools.length > 0 && (
-          <div className="mt-3">
-            <p className="text-[10px] font-semibold uppercase text-zinc-500">
-              Tools chamadas ({tools.length})
-            </p>
-            <div className="mt-1 flex flex-wrap gap-1.5">
-              {tools.map((t, i) => (
-                <span
-                  key={i}
-                  className="rounded bg-zinc-100 px-2 py-0.5 text-[11px] text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
-                >
-                  {t.toolName}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
+      )}
+    </>
+  );
+  return card ? (
+    <div className="px-3 pb-3">{content}</div>
+  ) : (
+    <tr className="border-b border-zinc-100 bg-zinc-50/40 dark:border-zinc-800 dark:bg-zinc-900/40">
+      <td colSpan={9} className="px-6 py-3">
+        {content}
       </td>
     </tr>
   );
