@@ -25,7 +25,7 @@ import {
   FolderKanban,
   Mail,
 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -134,6 +134,11 @@ interface ConversationListProps {
 }
 
 export function ConversationList({ activeId, onSelect, viewId }: ConversationListProps) {
+  const { data: savedViews = [] } = useQuery({ queryKey: ['inbox-views'], queryFn: () => inboxViewsService.list(), staleTime: 60_000 });
+  const responseView = savedViews.find(view => view.filters.lastDirection === 'inbound');
+  const router = useRouter();
+  const navigation = useSearchParams();
+  const navigationKey = new URLSearchParams(Array.from(navigation.entries()).filter(([key]) => ['box', 'kind', 'channel', 'tag'].includes(key))).toString();
   const queryClient = useQueryClient();
   const orgId = useOrgId();
   const { on, onReconnect, connected } = useSocket();
@@ -311,6 +316,27 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
     },
     [updatePrefs],
   );
+
+  // Tree links apply existing filters after saved preferences have hydrated.
+  useEffect(() => {
+    if (!prefsLoaded || !navigationKey) return;
+    const filters = new URLSearchParams(navigationKey);
+    setConversationTab(filters.get('kind') === 'groups' ? 'groups' : 'all');
+    setUnreadOnly(filters.get('box') === 'unread');
+    setScope(filters.get('box') === 'mine' ? 'MINE' : 'ALL');
+    setSelectedChannelId(filters.get('channel'));
+    setSelectedSegmentId(null);
+    setSelectedTagIds(filters.get('tag') ? [filters.get('tag')!] : []);
+    setArchivedOnly(false);
+    setSelectedProjectStatus('');
+    setMineProjects(false);
+    setSearch('');
+    setDebouncedSearch('');
+  }, [navigationKey, prefsLoaded]);
+
+  const clearTreeSelection = useCallback(() => {
+    if (navigationKey) router.replace('/inbox', { scroll: false });
+  }, [navigationKey, router]);
 
   const tagsKey = useMemo(
     () => [...selectedTagIds].sort().join(','),
@@ -793,7 +819,6 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
   // Bulk: pin the selected conversations into a brand-new inbox view.
   // Asks for the inbox name with a quick prompt (no full dialog overhead),
   // creates the view with conversationIds=selected, then navigates to it.
-  const router = useRouter();
   const handleCreateInboxFromSelection = useCallback(async () => {
     const ids = Array.from(selectedIds);
     if (ids.length === 0) return;
@@ -858,7 +883,7 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
     <div className="flex h-full w-full min-w-0 flex-col border-r border-[var(--bq-hair)] bg-[var(--bq-win-solid)]  ">
       <div className="bq-list-heading"><h1>Conversas</h1><span className="text-[11px] font-normal text-[var(--bq-t3)]">{data?.pages[0]?.pagination.total ?? '—'}</span></div>
       {/* Search + Filter */}
-      <div className="flex items-center gap-1.5 px-3 pt-2 pb-2">
+      <div onClickCapture={clearTreeSelection} onChangeCapture={clearTreeSelection} className="flex items-center gap-1.5 px-3 pt-2 pb-2">
         <div className="group relative flex-1">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--bq-t3)] transition-colors group-focus-within:text-primary" />
           <input
@@ -1088,21 +1113,16 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
         </Popover>
       </div>
 
-      <div className="bq-list-segments"><SegmentedControl<ConversationTab> label="Tipo de conversa" value={conversationTab ?? (showGroups ? 'all' : 'people')} onChange={(tab) => { setConversationTab(tab); clearSelection(); }} options={[{value:'all',label:'Todas'}, {value:'people',label:'Pessoas'}, {value:'groups',label:'Grupos'}, {value:'projects',label:'Projetos'}, {value:'mentorships',label:'Mentorias'}]} /></div>
+      <div onClickCapture={clearTreeSelection} className="bq-list-segments"><SegmentedControl<ConversationTab> label="Tipo de conversa" value={conversationTab ?? (showGroups ? 'all' : 'people')} onChange={(tab) => { setConversationTab(tab); clearSelection(); }} options={[{value:'all',label:'Todas'}, {value:'people',label:'Pessoas'}, {value:'groups',label:'Grupos'}, {value:'projects',label:'Projetos'}, {value:'mentorships',label:'Mentorias'}]} /></div>
       {conversationTab === 'projects' && <p className="px-3 pb-2 text-[11px] text-[var(--bq-t3)]">Listagem completa de conversas com projeto ainda não disponível. Acesse Projetos no menu ou use os filtros de status e responsável em Todas.</p>}
       {conversationTab === 'mentorships' && <p className="p-3 text-xs text-[var(--bq-t3)]">Classificação de mentorias ainda não disponível. Use as caixas e tags configuradas para encontrar suas conversas.</p>}
-      <div className="flex gap-2 px-3 pb-2">
-        <button type="button" className="bq-button" aria-pressed={unreadOnly} onClick={() => toggleListFilter('unread')}>Não lidas</button>
-        <button type="button" className="bq-button" aria-pressed={scope === 'MINE'} disabled={!currentUserId} onClick={() => handleScopeChange(scope === 'MINE' ? 'ALL' : 'MINE')}>Minhas</button>
-      </div>
-
       {/* Channel selector — hidden when an inbox view is active, since the
           view already pins the channel(s) via its saved filters. Letting
           the user override here would just confuse the result. */}
       {!viewId && (
-      <div className="px-3 pt-2">
+      <div onClickCapture={clearTreeSelection} className="bq-list-channel px-3 pb-2">
         <Popover className="relative">
-          <PopoverButton className="flex w-full items-center gap-2 rounded-md border border-[var(--bq-hair)] bg-[var(--bq-win-solid)] px-2.5 py-1.5 text-left text-[13px] text-[var(--bq-t2)] outline-none transition-colors hover:bg-[var(--bq-surface)] data-[open]:border-primary/40 data-[open]:bg-[var(--bq-surface)]     ">
+          <PopoverButton className="flex max-w-full items-center gap-2 rounded-lg border border-[var(--bq-hair)] bg-[var(--bq-raised)] px-2.5 py-1 text-left text-[11.5px] text-[var(--bq-t2)] outline-none transition-colors hover:bg-[var(--bq-surface)] data-[open]:border-primary/40 data-[open]:bg-[var(--bq-surface)]     ">
             {(() => {
               const Icon = selectedSegment
                 ? Layers
@@ -1123,7 +1143,7 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
           <PopoverPanel
             anchor="bottom start"
             transition
-            className="z-50 mt-1.5 w-[var(--button-width)] rounded-lg border border-[var(--bq-hair)] bg-[var(--bq-win-solid)] p-1 shadow-lg outline-none transition duration-100 ease-out data-[closed]:scale-95 data-[closed]:opacity-0   [--anchor-gap:0.25rem]"
+            className="z-50 mt-1.5 w-64 rounded-lg border border-[var(--bq-hair)] bg-[var(--bq-win-solid)] p-1 shadow-lg outline-none transition duration-100 ease-out data-[closed]:scale-95 data-[closed]:opacity-0   [--anchor-gap:0.25rem]"
           >
             {({ close }) => (
               <>
@@ -1198,6 +1218,12 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
         </Popover>
       </div>
       )}
+
+      <div onClickCapture={clearTreeSelection} className="bq-list-chips">
+        <button type="button" className="bq-button" aria-pressed={unreadOnly} onClick={() => toggleListFilter('unread')}>Não lidas</button>
+        <button type="button" className="bq-button" disabled={!responseView} title={responseView ? 'Abrir caixa de mensagens sem resposta' : 'Configure uma caixa com última mensagem recebida'} onClick={() => responseView && router.push(`/inbox?view=${responseView.id}`)}>Sem resposta</button>
+        <button type="button" className="bq-button" aria-pressed={scope === 'MINE'} disabled={!currentUserId} onClick={() => handleScopeChange(scope === 'MINE' ? 'ALL' : 'MINE')}>Minhas</button>
+      </div>
 
       {/* Active filter chips */}
       {activeFilterCount > 0 && (
@@ -1337,7 +1363,7 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
       )}
 
       {/* Conversation list */}
-      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto scrollbar-thin">
+      <div ref={scrollContainerRef} className="bq-conversation-rows min-h-0 flex-1 overflow-y-auto scrollbar-thin">
         {unavailableTab ? (
           <div role="status" className="px-6 py-16 text-center text-sm text-[var(--bq-t3)]">
             {activeTab === 'projects' ? 'Conversas por projeto' : 'Conversas de mentorias'}: ainda não disponível.
@@ -1386,7 +1412,7 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
                       position: { x: e.clientX, y: e.clientY },
                     });
                   }}
-                  className={`group flex w-full gap-3 px-3 text-left transition-colors duration-100 [padding-block:var(--density-py-list,0.625rem)] ${
+                  className={`bq-conversation-row group flex w-full gap-3 px-3 text-left transition-colors duration-100 [padding-block:var(--density-py-list,0.625rem)] ${
                     isSelected
                       ? 'bg-primary/[0.06] dark:bg-primary/10'
                       : isActive
@@ -1509,7 +1535,7 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
                             {t.tag.name}
                           </span>
                         ))}
-                        {conv.contact.tags?.map((t) => (
+                        {conv.contact.tags?.filter((t) => !conv.tags?.some(({tag}) => tag.id === t.tag.id)).map((t) => (
                           <span
                             key={`ct-${t.tag.id}`}
                             title={`Tag no contato: ${t.tag.name}`}

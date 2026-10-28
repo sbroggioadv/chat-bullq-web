@@ -1,232 +1,91 @@
 'use client';
 
-import { useState } from 'react';
-import { useSearchParams, usePathname, useRouter } from 'next/navigation';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  Inbox,
-  ChevronRight,
-  ChevronDown,
-  Plus,
-  MessageSquare,
-  Phone,
-  Instagram,
-  Mail,
-  Send,
-  Users,
-  Tag,
-  Star,
-  Filter,
-  Pencil,
-  Trash2,
-  Archive,
-  MailOpen,
-} from 'lucide-react';
+import { useState, type ReactNode } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Inbox, ChevronDown, Plus, MessageSquare, Users, Tag, User, Clock, Pencil, Trash2, type LucideIcon } from 'lucide-react';
 import { toast } from 'sonner';
-import {
-  inboxViewsService,
-  type InboxView,
-} from '../services/inbox-views.service';
-import { InboxViewDialog } from './inbox-view-dialog';
+import { inboxViewsService, type InboxView } from '@/features/inbox-views/services/inbox-views.service';
+import { InboxViewDialog } from '@/features/inbox-views/components/inbox-view-dialog';
+import { channelsService } from '@/features/channels/services/channels.service';
+import { tagsService } from '@/features/settings/services/tags.service';
+import { useOrgId } from '@/hooks/use-org-query-key';
+import { inboxService } from '@/features/inbox/services/inbox.service';
+import { inboxErrorMessage } from '@/features/inbox/components/inbox-error';
 
-const VIEW_ICON: Record<string, any> = {
-  Inbox,
-  MessageSquare,
-  Phone,
-  Instagram,
-  Mail,
-  MailOpen,
-  Send,
-  Users,
-  Tag,
-  Star,
-  Filter,
-  Archive,
-};
-
-const COLOR_CLS: Record<string, string> = {
-  default: 'text-sidebar-foreground/60',
-  green: 'text-green-600 dark:text-green-400',
-  pink: 'text-pink-600 dark:text-pink-400',
-  violet: 'text-violet-600 dark:text-violet-400',
-  blue: 'text-blue-600 dark:text-blue-400',
-  amber: 'text-amber-600 dark:text-amber-400',
-  red: 'text-red-600 dark:text-red-400',
-};
-
-const STORAGE_KEY = 'inbox-tree-expanded';
-
+/** Navigation uses the same server filters as the conversation list, never a loaded-page subset. */
 export function InboxTree() {
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const params = useSearchParams();
   const router = useRouter();
   const qc = useQueryClient();
-
-  // Programmatic navigation that GUARANTEES the query string resets when
-  // jumping back to "Geral" from a custom view. <Link href="/inbox"> on its
-  // own keeps `?view=…` in the URL because Next treats same-pathname clicks
-  // as a no-op for query params.
-  const goGeral = () => router.push('/inbox');
-  const goView = (id: string) => router.push(`/inbox?view=${id}`);
-  const [expanded, setExpanded] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return true;
-    return window.localStorage.getItem(STORAGE_KEY) !== '0';
-  });
+  const orgId = useOrgId();
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<InboxView | null>(null);
-
-  const { data: views = [] } = useQuery({
-    queryKey: ['inbox-views'],
-    queryFn: () => inboxViewsService.list(),
-    staleTime: 60000,
+  const { data: views = [] } = useQuery({ queryKey: ['inbox-views'], queryFn: () => inboxViewsService.list(), staleTime: 60_000 });
+  const { data: channels = [] } = useQuery({ queryKey: ['channels', orgId], queryFn: () => channelsService.list(), staleTime: 60_000 });
+  const { data: tags = [] } = useQuery({ queryKey: ['tags', orgId], queryFn: () => tagsService.list(), staleTime: 60_000 });
+  const groupQuery = useInfiniteQuery({
+    queryKey: ['inbox-navigation-groups', orgId],
+    queryFn: ({ pageParam = 1 }) => inboxService.getConversations({ groups: 'only', archived: 'exclude', page: String(pageParam), limit: '30' }),
+    initialPageParam: 1,
+    getNextPageParam: page => page.pagination.hasMore || (page.pagination.totalPages !== null && page.pagination.page < page.pagination.totalPages) ? page.pagination.page + 1 : undefined,
+    staleTime: 60_000,
   });
-
-  const toggleExpanded = () => {
-    const next = !expanded;
-    setExpanded(next);
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(STORAGE_KEY, next ? '1' : '0');
-    }
-  };
-
-  const isInbox = pathname === '/inbox' || pathname?.startsWith('/inbox');
-  const activeViewId = searchParams.get('view');
-
-  const handleDelete = async (view: InboxView) => {
+  const groupConversations = groupQuery.data?.pages.flatMap(page => page.conversations) ?? [];
+  const go = (filters: Record<string, string>) => router.push(`/inbox?${new URLSearchParams({ box: 'all', ...filters })}`);
+  const remove = async (view: InboxView) => {
     if (!confirm(`Excluir inbox "${view.name}"?`)) return;
-    try {
-      await inboxViewsService.remove(view.id);
-      toast.success('Inbox removida');
-      qc.invalidateQueries({ queryKey: ['inbox-views'] });
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Erro ao excluir');
-    }
+    try { await inboxViewsService.remove(view.id); toast.success('Inbox removida'); qc.invalidateQueries({ queryKey: ['inbox-views'] }); }
+    catch (error) { toast.error(inboxErrorMessage(error, 'Erro ao excluir')); }
   };
-
-  return (
-    <div className="space-y-0.5">
-      <div className="flex items-center gap-0.5">
-        <button
-          type="button"
-          onClick={toggleExpanded}
-          aria-label={expanded ? 'Recolher' : 'Expandir'}
-          className="flex h-7 w-5 items-center justify-center rounded text-sidebar-foreground/50 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
-        >
-          {expanded ? (
-            <ChevronDown className="size-3.5" />
-          ) : (
-            <ChevronRight className="size-3.5" />
-          )}
-        </button>
-        <button
-          type="button"
-          onClick={goGeral}
-          className={`flex flex-1 items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm font-medium ${
-            isInbox && !activeViewId
-              ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-              : 'text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground'
-          }`}
-        >
-          <Inbox className="size-5" />
-          <span className="flex-1">Inbox</span>
-        </button>
-      </div>
-
-      {expanded && (
-        <div className="ml-5 space-y-0.5 border-l border-sidebar-border pl-2">
-          <button
-            type="button"
-            onClick={goGeral}
-            className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs ${
-              isInbox && !activeViewId
-                ? 'bg-sidebar-accent font-medium text-sidebar-accent-foreground'
-                : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground'
-            }`}
-          >
-            <Inbox className="size-3.5 text-sidebar-foreground/50" />
-            <span className="flex-1">Geral</span>
-          </button>
-
-          {views.map((v) => {
-            const Icon = VIEW_ICON[v.icon ?? ''] ?? Filter;
-            const colorCls = COLOR_CLS[v.color ?? 'default'] ?? COLOR_CLS.default;
-            const isActive = activeViewId === v.id && isInbox;
-            const isBuiltin = v.metadata?.builtin === true;
-            return (
-              <div
-                key={v.id}
-                className={`group flex items-center gap-1 rounded-md ${
-                  isActive
-                    ? 'bg-sidebar-accent'
-                    : 'hover:bg-sidebar-accent/50'
-                }`}
-              >
-                <button
-                  type="button"
-                  onClick={() => goView(v.id)}
-                  className={`flex flex-1 items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs ${
-                    isActive
-                      ? 'font-medium text-sidebar-accent-foreground'
-                      : 'text-sidebar-foreground/70 hover:text-sidebar-accent-foreground'
-                  }`}
-                  title={v.name}
-                >
-                  <Icon className={`size-3.5 ${colorCls}`} />
-                  <span className="flex-1 truncate">{v.name}</span>
-                </button>
-                {!isBuiltin && (
-                  <div className="flex shrink-0 opacity-0 transition-opacity group-hover:opacity-100">
-                    <button
-                      type="button"
-                      onClick={() => setEditing(v)}
-                      aria-label="Editar"
-                      className="flex size-6 items-center justify-center rounded text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                    >
-                      <Pencil className="size-3" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(v)}
-                      aria-label="Excluir"
-                      className="mr-1 flex size-6 items-center justify-center rounded text-sidebar-foreground/50 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20"
-                    >
-                      <Trash2 className="size-3" />
-                    </button>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-
-          <button
-            type="button"
-            onClick={() => setCreating(true)}
-            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
-          >
-            <Plus className="size-3.5" />
-            <span>Nova inbox</span>
-          </button>
-        </div>
-      )}
-
-      <InboxViewDialog
-        open={creating}
-        view={null}
-        onClose={() => setCreating(false)}
-        onSaved={() => {
-          qc.invalidateQueries({ queryKey: ['inbox-views'] });
-          setCreating(false);
-        }}
-      />
-      <InboxViewDialog
-        open={!!editing}
-        view={editing}
-        onClose={() => setEditing(null)}
-        onSaved={() => {
-          qc.invalidateQueries({ queryKey: ['inbox-views'] });
-          setEditing(null);
-        }}
-      />
-    </div>
-  );
+  const saved = (items: InboxView[]) => items.map(view => <div className="group flex min-w-0 items-center" key={view.id}>
+    <NavItem label={view.name} icon={Inbox} active={params.get('view') === view.id} onClick={() => router.push(`/inbox?view=${view.id}`)} />
+    {view.metadata?.builtin !== true && <div className="flex shrink-0 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100">
+      <button type="button" className="p-1" aria-label={`Editar ${view.name}`} onClick={() => setEditing(view)}><Pencil size={12} /></button>
+      <button type="button" className="p-1" aria-label={`Excluir ${view.name}`} onClick={() => remove(view)}><Trash2 size={12} /></button>
+    </div>}
+  </div>);
+  const responseView = views.find(view => view.filters.lastDirection === 'inbound');
+  const groups = views.filter(view => view.filters.kind === 'GROUP');
+  const holdingTag = tags.find(tag => tag.name.toLocaleLowerCase('pt-BR') === 'holding');
+  return <nav aria-label="Caixas e canais" className="space-y-4 text-[var(--bq-t2)]">
+    <NavSection title="Caixas" persist>
+      <NavItem label="Todas" icon={Inbox} active={!params.get('view') && (!params.get('box') || params.get('box') === 'all') && !params.get('channel') && !params.get('tag') && !params.get('kind')} onClick={() => go({})} />
+      <NavItem label="Não lidas" icon={MessageSquare} active={params.get('box') === 'unread'} onClick={() => go({ box: 'unread' })} />
+      <NavItem label="Minhas" icon={User} active={params.get('box') === 'mine'} onClick={() => go({ box: 'mine' })} />
+      <NavItem label="Sem resposta" icon={Clock} active={!!responseView && params.get('view') === responseView.id} disabled={!responseView} title={!responseView ? 'Configure uma caixa com última mensagem recebida para usar este filtro' : undefined} onClick={() => responseView && router.push(`/inbox?view=${responseView.id}`)} />
+      {saved(views.filter(view => view.filters.kind !== 'GROUP'))}
+      <NavItem label="Nova inbox" icon={Plus} onClick={() => setCreating(true)} />
+    </NavSection>
+    <NavSection title="Canais">
+      {channels.map(channel => <NavItem key={channel.id} label={channel.name} icon={MessageSquare} active={params.get('channel') === channel.id} onClick={() => go({ channel: channel.id })} />)}
+      {!channels.length && <Empty>Sem canais disponíveis.</Empty>}
+    </NavSection>
+    <NavSection title="Grupos">
+      <NavItem label="Todos os grupos" icon={Users} active={params.get('kind') === 'groups' && !params.get('tag')} onClick={() => go({ kind: 'groups' })} />
+      {saved(groups)}
+      {groupConversations.map(conversation => <NavItem key={conversation.id} label={conversation.contact.name || conversation.contact.phone || 'Grupo'} icon={Users} active={params.get('conversationId') === conversation.id} onClick={() => router.push(`/inbox?conversationId=${encodeURIComponent(conversation.id)}`)} />)}
+      {groupQuery.hasNextPage && <NavItem label={groupQuery.isFetchingNextPage ? 'Carregando…' : 'Mais grupos'} icon={Plus} disabled={groupQuery.isFetchingNextPage} onClick={() => { void groupQuery.fetchNextPage(); }} />}
+      {groupQuery.isError ? <Empty>Não foi possível carregar os grupos.</Empty> : groupQuery.isLoading ? <Empty>Carregando grupos…</Empty> : !groupConversations.length && <Empty>Sem grupos disponíveis.</Empty>}
+    </NavSection>
+    <NavSection title="Holdings">
+      {holdingTag ? <NavItem label="Grupos com etiqueta Holding" icon={Users} active={params.get('tag') === holdingTag.id} onClick={() => go({ kind: 'groups', tag: holdingTag.id })} /> : <Empty>Sem etiqueta Holding cadastrada.</Empty>}
+      <Empty>Fases das holdings ainda não disponíveis nesta navegação.</Empty>
+    </NavSection>
+    <NavSection title="Etiquetas">
+      {tags.map(tag => <NavItem key={tag.id} label={tag.name} icon={Tag} active={params.get('tag') === tag.id} onClick={() => go({ tag: tag.id })} />)}
+      {!tags.length && <Empty>Sem etiquetas cadastradas.</Empty>}
+    </NavSection>
+    <InboxViewDialog open={creating} view={null} onClose={() => setCreating(false)} onSaved={() => { qc.invalidateQueries({ queryKey: ['inbox-views'] }); setCreating(false); }} />
+    <InboxViewDialog open={!!editing} view={editing} onClose={() => setEditing(null)} onSaved={() => { qc.invalidateQueries({ queryKey: ['inbox-views'] }); setEditing(null); }} />
+  </nav>;
 }
+
+function NavSection({ title, children, persist = false }: { title: string; children: ReactNode; persist?: boolean }) {
+  const [open, setOpen] = useState(() => !persist || typeof window === 'undefined' || localStorage.getItem('inbox-tree-expanded') !== '0');
+  return <section><button type="button" className="flex w-full items-center justify-between px-2 py-2 text-[10.5px] font-medium uppercase tracking-[.08em] text-[var(--bq-t3)]" aria-expanded={open} onClick={() => { setOpen(!open); if (persist) localStorage.setItem('inbox-tree-expanded', open ? '0' : '1'); }}>{title}<ChevronDown size={12} className={open ? '' : '-rotate-90'} /></button>{open && <div>{children}</div>}</section>;
+}
+function NavItem({ label, icon: Icon, active, disabled, title, onClick }: { label: string; icon: LucideIcon; active?: boolean; disabled?: boolean; title?: string; onClick: () => void }) {
+  return <button type="button" title={title || label} disabled={disabled} aria-current={active ? 'page' : undefined} onClick={onClick} className={`flex min-w-0 flex-1 w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[12.5px] disabled:opacity-45 ${active ? 'bg-[var(--bq-raised-2)] text-[var(--bq-t1)]' : 'hover:bg-[var(--bq-raised)]'}`}><Icon size={14} className="shrink-0" /><span className="truncate">{label}</span></button>;
+}
+function Empty({ children }: { children: ReactNode }) { return <p className="px-2 py-1 text-[11px] leading-relaxed text-[var(--bq-t3)]">{children}</p>; }
