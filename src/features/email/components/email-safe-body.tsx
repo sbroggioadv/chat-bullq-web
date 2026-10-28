@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   looksLikeCssDump,
   sanitizeEmailHtml,
-} from '../lib/email-sanitize';
+} from "@/features/email/lib/email-sanitize";
 
 interface EmailSafeBodyProps {
   body?: string | null;
@@ -22,18 +22,18 @@ export function EmailSafeBody({
   body,
   bodyHtml,
   snippet,
-  className = '',
+  className = "",
 }: EmailSafeBodyProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [frameH, setFrameH] = useState(240);
 
   const safeHtml = useMemo(
-    () => sanitizeEmailHtml(bodyHtml, 'display'),
+    () => sanitizeEmailHtml(bodyHtml, "display"),
     [bodyHtml],
   );
 
   const docHtml = useMemo(() => {
-    if (!safeHtml) return '';
+    if (!safeHtml) return "";
     // documento mínimo: dark-friendly + img responsiva
     return `<!DOCTYPE html><html><head><meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -44,12 +44,13 @@ export function EmailSafeBody({
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     font-size: 14px;
     line-height: 1.5;
-    color: #18181b;
+    color: CanvasText;
+    color-scheme: light;
     word-break: break-word;
-    background: transparent;
+    background: Canvas;
   }
   img { max-width: 100%; height: auto; }
-  a { color: #2563eb; }
+  a { color: LinkText; }
   table { max-width: 100%; border-collapse: collapse; }
 </style></head><body>${safeHtml}</body></html>`;
   }, [safeHtml]);
@@ -75,8 +76,8 @@ export function EmailSafeBody({
         const imgs = iframe.contentDocument?.images;
         if (imgs) {
           Array.from(imgs).forEach((img) => {
-            img.addEventListener('load', resize);
-            img.addEventListener('error', resize);
+            img.addEventListener("load", resize);
+            img.addEventListener("error", resize);
           });
         }
       } catch {
@@ -84,9 +85,9 @@ export function EmailSafeBody({
       }
     };
 
-    iframe.addEventListener('load', onLoad);
+    iframe.addEventListener("load", onLoad);
     // srcDoc set triggers load
-    return () => iframe.removeEventListener('load', onLoad);
+    return () => iframe.removeEventListener("load", onLoad);
   }, [docHtml]);
 
   if (docHtml) {
@@ -106,16 +107,16 @@ export function EmailSafeBody({
     );
   }
 
-  let plain = (body || snippet || '(mensagem sem conteúdo)').trim();
+  let plain = (body || snippet || "(mensagem sem conteúdo)").trim();
   if (looksLikeCssDump(plain)) {
     plain =
-      (snippet && !looksLikeCssDump(snippet) ? snippet : '') ||
-      '(conteúdo HTML sem texto legível — abra no Gmail se precisar do layout completo)';
+      (snippet && !looksLikeCssDump(snippet) ? snippet : "") ||
+      "(conteúdo HTML sem texto legível — abra no Gmail se precisar do layout completo)";
   }
 
   return (
     <div
-      className={`whitespace-pre-wrap break-words text-sm leading-relaxed text-zinc-800 dark:text-zinc-200 ${className}`}
+      className={`whitespace-pre-wrap break-words text-sm leading-relaxed text-[var(--bq-t2)] ${className}`}
     >
       {plain}
     </div>

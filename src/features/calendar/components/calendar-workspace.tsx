@@ -2,7 +2,7 @@
 
 import { Button, SegmentedControl } from "@/components/ui/foundation";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -150,6 +150,8 @@ type Draft = {
   calendarId: string;
   eventId?: string;
   googleCalendarId?: string;
+  meetLink?: string | null;
+  htmlLink?: string | null;
 };
 
 function defaultDraft(calendarId = "primary"): Draft {
@@ -172,10 +174,12 @@ function EventCard({
   ev,
   onEdit,
   dragging,
+  compact = false,
 }: {
   ev: CalendarEvent;
   onEdit: (ev: CalendarEvent) => void;
   dragging?: boolean;
+  compact?: boolean;
 }) {
   const solid = ev.backgroundColor || "var(--bq-info)";
   const { attributes, listeners, setNodeRef, transform, isDragging } =
@@ -200,7 +204,7 @@ function EventCard({
         className="absolute bottom-0 left-0 top-0 w-1 rounded-l-md"
         style={{ backgroundColor: solid }}
       />
-      <div className="flex items-start gap-1">
+      <div className="flex flex-wrap items-start gap-1">
         <button
           type="button"
           {...attributes}
@@ -216,10 +220,12 @@ function EventCard({
           type="button"
           onClick={() => onEdit(ev)}
           className="min-w-0 flex-1 text-left"
-          title="Clique para editar"
+          title={ev.summary}
         >
           <div className="flex items-start gap-1">
-            <div className="min-w-0 flex-1 font-semibold leading-snug text-[var(--bq-t1)] ">
+            <div
+              className={`min-w-0 flex-1 font-semibold leading-snug text-[var(--bq-t1)] ${compact ? "truncate" : "line-clamp-2"}`}
+            >
               {ev.summary}
             </div>
             <Pencil className="mt-0.5 h-3 w-3 shrink-0 text-[var(--bq-t3)]" />
@@ -230,7 +236,7 @@ function EventCard({
                 hour: "2-digit",
                 minute: "2-digit",
               })}
-              {ev.end
+              {ev.end && !compact
                 ? ` – ${new Date(ev.end).toLocaleTimeString("pt-BR", {
                     hour: "2-digit",
                     minute: "2-digit",
@@ -239,38 +245,42 @@ function EventCard({
             </div>
           )}
         </button>
-        <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[var(--bq-t2)] ">
-          {ev.calendarSummary && (
-            <span
-              className="inline-flex max-w-[9rem] truncate rounded px-1 py-0.5 text-[10px] font-semibold text-[var(--bq-t1)] "
-              style={{ backgroundColor: hexToRgba(solid, 0.4) }}
-            >
-              {ev.calendarSummary}
-            </span>
-          )}
-          {ev.meetLink && (
-            <a
-              href={ev.meetLink}
-              target="_blank"
-              rel="noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="inline-flex items-center gap-0.5 font-medium text-[var(--bq-info-text)] hover:underline "
-            >
-              <Video className="h-3 w-3" /> Meet
-            </a>
-          )}
-          {ev.htmlLink && (
-            <a
-              href={ev.htmlLink}
-              target="_blank"
-              rel="noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="inline-flex items-center gap-0.5 font-medium text-[var(--bq-t2)] hover:underline "
-            >
-              <ExternalLink className="h-3 w-3" /> Google
-            </a>
-          )}
-        </div>
+        {!compact && (
+          <div className="mt-1 flex w-full flex-wrap items-center gap-1.5 text-[var(--bq-t2)] ">
+            {!compact && ev.calendarSummary && (
+              <span
+                className="inline-flex max-w-[9rem] truncate rounded px-1 py-0.5 text-[10px] font-semibold text-[var(--bq-t1)] "
+                style={{ backgroundColor: hexToRgba(solid, 0.4) }}
+              >
+                {ev.calendarSummary}
+              </span>
+            )}
+            {ev.meetLink && (
+              <a
+                aria-label={`Abrir Meet de ${ev.summary}`}
+                href={ev.meetLink}
+                target="_blank"
+                rel="noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="inline-flex items-center gap-0.5 font-medium text-[var(--bq-info-text)] hover:underline "
+              >
+                <Video className="h-3 w-3" /> {!compact && "Meet"}
+              </a>
+            )}
+            {ev.htmlLink && (
+              <a
+                aria-label={`Abrir ${ev.summary} no Google`}
+                href={ev.htmlLink}
+                target="_blank"
+                rel="noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="inline-flex items-center gap-0.5 font-medium text-[var(--bq-t2)] hover:underline "
+              >
+                <ExternalLink className="h-3 w-3" /> {!compact && "Google"}
+              </a>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -378,7 +388,7 @@ function DayCell({
                       ),
                     }}
                   >
-                    <EventCard ev={ev} onEdit={onEdit} />
+                    <EventCard ev={ev} onEdit={onEdit} compact />
                   </div>
                 );
               })}
@@ -390,6 +400,7 @@ function DayCell({
 }
 
 export function CalendarWorkspace() {
+  const gridRef = useRef<HTMLDivElement>(null);
   const qc = useQueryClient();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -457,6 +468,11 @@ export function CalendarWorkspace() {
     }
     router.replace("/calendar");
   }, [searchParams, qc, router]);
+
+  useEffect(() => {
+    if (gridRef.current)
+      gridRef.current.scrollTop = view === "week" ? 8 * 48 : 0;
+  }, [view, statusQ.data?.connected, statusQ.data?.needsReauthForCalendar]);
 
   const eventsQ = useQuery({
     queryKey: ["calendar-events", from, to, statusQ.data?.channelId],
@@ -526,6 +542,8 @@ export function CalendarWorkspace() {
       calendarId: ev.calendarId || "primary",
       eventId: ev.eventId || ev.id.split(":").slice(1).join(":") || ev.id,
       googleCalendarId: ev.calendarId || "primary",
+      meetLink: ev.meetLink,
+      htmlLink: ev.htmlLink,
     });
   };
 
@@ -830,7 +848,10 @@ export function CalendarWorkspace() {
         </p>
       )}
       <div className="grid min-h-0 flex-1 gap-[14px] xl:grid-cols-[minmax(0,1fr)_300px]">
-        <div className="order-2 min-h-[400px] min-w-0 overflow-auto rounded-2xl border border-[var(--bq-hair)] bg-[var(--bq-surface)] xl:order-1">
+        <div
+          ref={gridRef}
+          className="order-2 min-h-[400px] min-w-0 overflow-auto rounded-2xl border border-[var(--bq-hair)] bg-[var(--bq-surface)] xl:order-1"
+        >
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
