@@ -32,69 +32,43 @@
 .body {
   min-height: 0;
 }
-.workspace :global([class*='border-zinc-']) {
+.workspace :global([class~='border-zinc-200']),
+.workspace :global([class~='border-zinc-300']),
+.workspace :global([class~='dark:border-zinc-700']),
+.workspace :global([class~='dark:border-zinc-800']) {
   border-color: var(--bq-hair);
 }
-.workspace :global([class*='bg-white']),
-.workspace :global([class*='dark:bg-zinc-900']) {
+.workspace :global([class~='bg-white']),
+.workspace :global([class~='dark:bg-zinc-900']),
+.workspace :global([class~='dark:bg-zinc-900/50']) {
   background: var(--bq-surface);
 }
-.workspace :global([class*='bg-zinc-50']),
-.workspace :global([class*='dark:bg-zinc-950']) {
+.workspace :global([class~='bg-zinc-50']),
+.workspace :global([class~='dark:bg-zinc-950']) {
   background: var(--bq-win-solid);
 }
-.workspace :global([class*='bg-zinc-100']),
-.workspace :global([class*='bg-zinc-800']) {
+.workspace :global([class~='bg-zinc-100']),
+.workspace :global([class~='bg-zinc-200']),
+.workspace :global([class~='dark:bg-zinc-700']),
+.workspace :global([class~='dark:bg-zinc-800']) {
   background: var(--bq-raised);
 }
-.workspace :global([class*='text-zinc-900']),
-.workspace :global([class*='text-zinc-100']) {
+.workspace :global([class~='text-zinc-900']),
+.workspace :global([class~='dark:text-zinc-100']) {
   color: var(--bq-t1);
 }
-.workspace :global([class*='text-zinc-700']),
-.workspace :global([class*='text-zinc-600']),
-.workspace :global([class*='text-zinc-300']) {
+.workspace :global([class~='text-zinc-700']),
+.workspace :global([class~='text-zinc-600']),
+.workspace :global([class~='dark:text-zinc-300']),
+.workspace :global([class~='dark:text-zinc-600']) {
   color: var(--bq-t2);
 }
-.workspace :global([class*='text-zinc-500']),
-.workspace :global([class*='text-zinc-400']) {
+.workspace :global([class~='text-zinc-500']),
+.workspace :global([class~='text-zinc-400']),
+.workspace :global([class~='text-zinc-300']),
+.workspace :global([class~='dark:text-zinc-400']),
+.workspace :global([class~='dark:text-zinc-500']) {
   color: var(--bq-t3);
-}
-.workspace :global([class*='bg-emerald-']),
-.workspace :global([class*='bg-green-']) {
-  background: var(--bq-ok-soft);
-}
-.workspace :global([class*='text-emerald-']),
-.workspace :global([class*='text-green-']) {
-  color: var(--bq-ok);
-}
-.workspace :global([class*='bg-red-']),
-.workspace :global([class*='bg-rose-']) {
-  background: var(--bq-err-soft);
-}
-.workspace :global([class*='text-red-']),
-.workspace :global([class*='text-rose-']) {
-  color: var(--bq-err);
-}
-.workspace :global([class*='bg-amber-']) {
-  background: var(--bq-warn-soft);
-}
-.workspace :global([class*='text-amber-']) {
-  color: var(--bq-warn);
-}
-.workspace :global([class*='bg-blue-']) {
-  background: var(--bq-info-soft);
-}
-.workspace :global([class*='text-blue-']) {
-  color: var(--bq-info-text);
-}
-.workspace :global([class*='bg-violet-']),
-.workspace :global([class*='bg-primary/']) {
-  background: var(--bq-agent-soft);
-}
-.workspace :global([class*='text-violet-']),
-.workspace :global([class*='text-primary']) {
-  color: var(--bq-agent-text);
 }
 .workspace :global(select),
 .workspace :global(input),
