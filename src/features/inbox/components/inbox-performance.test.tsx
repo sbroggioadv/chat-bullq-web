@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+import type { Message } from '@/features/inbox/services/inbox.service';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
@@ -5,7 +7,7 @@ import InboxPage from '@/app/(dashboard)/inbox/page';
 import { useAuthStore } from '@/stores/auth-store';
 
 const fixture = vi.hoisted(() => ({
-  listeners: new Map<string, Set<(...args: any[]) => void>>(),
+  listeners: new Map<string, Set<(...args: unknown[]) => void>>(),
   requests: [] as string[],
   confirmSend: null as null | ((value: unknown) => void),
   deferSend: false,
@@ -13,7 +15,7 @@ const fixture = vi.hoisted(() => ({
   message: { id: 'fixture-message', conversationId: 'fixture-conversation', direction: 'INBOUND', type: 'TEXT', content: { text: 'Mensagem fixture' }, externalId: null, status: 'DELIVERED', senderName: null, senderId: null, sender: null, sentAt: null, deliveredAt: null, readAt: null, createdAt: '2026-10-27T12:00:00Z' },
 }));
 vi.mock('@/lib/socket', () => {
-  const socket = { connected: true, on: (event: string, fn: (...args: any[]) => void) => { if (!fixture.listeners.has(event)) fixture.listeners.set(event, new Set()); fixture.listeners.get(event)!.add(fn); }, off: (event: string, fn: (...args: any[]) => void) => fixture.listeners.get(event)?.delete(fn), emit: vi.fn() };
+  const socket = { connected: true, on: (event: string, fn: (...args: unknown[]) => void) => { if (!fixture.listeners.has(event)) fixture.listeners.set(event, new Set()); fixture.listeners.get(event)!.add(fn); }, off: (event: string, fn: (...args: unknown[]) => void) => fixture.listeners.get(event)?.delete(fn), emit: vi.fn() };
   return { getSocket: () => socket };
 });
 vi.mock('next/navigation', () => ({ useSearchParams: () => new URLSearchParams('view=fixture-view'), useRouter: () => ({ push: vi.fn() }) }));
@@ -26,9 +28,9 @@ vi.mock('@/lib/api', () => ({ api: {
   },
   post: async (url: string) => { fixture.requests.push(`POST ${url}`); if (fixture.deferSend && url === '/messages') return new Promise((resolve) => { fixture.confirmSend = resolve; }); return { data: { data: {} } }; },
 } }));
-vi.mock('./inbox-layout', () => ({ InboxLayout: ({ list, panel }: any) => <>{list}{panel}</> }));
+vi.mock('./inbox-layout', () => ({ InboxLayout: ({ list, panel }: { list: ReactNode; panel: ReactNode }) => <>{list}{panel}</> }));
 vi.mock('./conversation-header', () => ({ ConversationHeader: () => <div>Header fixture</div> }));
-vi.mock('./chat-input', () => ({ ChatInput: ({ onSend }: any) => <button onClick={() => { void onSend("Texto otimista fixture").catch(() => undefined); }}>Enviar fixture</button>, validateFile: vi.fn() }));
+vi.mock('./chat-input', () => ({ ChatInput: ({ onSend }: { onSend: (text: string) => Promise<unknown> }) => <button onClick={() => { void onSend("Texto otimista fixture").catch(() => undefined); }}>Enviar fixture</button>, validateFile: vi.fn() }));
 vi.mock('../pending-actions/pending-actions-list', () => ({ PendingActionsList: () => null }));
 vi.mock('./agent-runs-sidebar', () => ({ AgentRunsSidebar: () => null }));
 vi.mock('./contact-workspace-panel', () => ({ ContactWorkspacePanel: () => null }));
@@ -78,11 +80,11 @@ it('mostra texto antes do POST confirmar e troca o id sem duplicar', async () =>
   fireEvent.click(screen.getByText('Enviar fixture'));
   expect(await screen.findByText('Texto otimista fixture')).toBeInTheDocument();
   expect(fixture.confirmSend).not.toBeNull();
-  expect(client.getQueryData<any>(['messages', fixture.conversation.id]).messages.some((m: any) => m.id.startsWith('pending:'))).toBe(true);
+  expect(client.getQueryData<{ messages: Message[] }>(['messages', fixture.conversation.id])!.messages.some((m: Message) => m.id.startsWith('pending:'))).toBe(true);
   await act(async () => { fixture.confirmSend!({ data: { data: { ...fixture.message, id: 'confirmed-send', direction: 'OUTBOUND', content: { text: 'Texto otimista fixture' } } } }); });
-  const messages = client.getQueryData<any>(['messages', fixture.conversation.id]).messages;
-  expect(messages.some((m: any) => m.id.startsWith('pending:'))).toBe(false);
-  expect(messages.filter((m: any) => m.id === 'confirmed-send')).toHaveLength(1);
+  const messages = client.getQueryData<{ messages: Message[] }>(['messages', fixture.conversation.id])!.messages;
+  expect(messages.some((m: Message) => m.id.startsWith('pending:'))).toBe(false);
+  expect(messages.filter((m: Message) => m.id === 'confirmed-send')).toHaveLength(1);
   fixture.deferSend = false;
   client.clear();
 });
