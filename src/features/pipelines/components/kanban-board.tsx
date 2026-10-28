@@ -119,7 +119,7 @@ export function KanbanBoard({ pipelineId }: Props) {
   if (isError) return <div role="alert" className="p-6 text-[var(--bq-t2)]">Não foi possível carregar o pipeline. <button className="bq-button" onClick={() => void refetch()}>Tentar novamente</button></div>;
   if (isLoading || !board) {
     return (
-      <div className="flex h-full items-center justify-center text-sm text-zinc-400">
+      <div className="flex h-full items-center justify-center text-sm text-[var(--bq-t3)]">
         Carregando quadro…
       </div>
     );

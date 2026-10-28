@@ -11,13 +11,28 @@ vi.mock('@/features/pipelines/services/pipelines.service', () => ({ pipelinesSer
 vi.mock('@/features/inbox/components/chat-panel', () => ({ ChatPanel: ({ conversation }: { conversation: { id: string } }) => <div>Chat {conversation.id}</div> }));
 const card: CardSummary = { id: 'card', organizationId: 'org', pipelineId: 'pipe', stageId: 'first', title: 'Negociação de teste', description: null, value: null, currency: 'BRL', status: 'OPEN', order: 0, contactId: null, conversationId: 'conv', assignedToId: null, metadata: {}, closedAt: null, closedReason: null, createdAt: '', updatedAt: '' };
 const stages: PipelineStage[] = ['first', 'won'].map((id, order) => ({ id, pipelineId: 'pipe', name: id, color: null, type: id === 'won' ? 'WON' : 'NORMAL', order, createdAt: '' }));
-function mount() {
+function mount(value: CardSummary = card) {
   const close = vi.fn(); const edit = vi.fn();
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
-  render(<QueryClientProvider client={client}><NegotiationWindow card={card} cards={{ won: [card, card] }} stages={stages} onClose={close} onEdit={edit} /></QueryClientProvider>);
+  render(<QueryClientProvider client={client}><NegotiationWindow card={value} cards={{ won: [card, card] }} stages={stages} onClose={close} onEdit={edit} /></QueryClientProvider>);
   return { close, edit };
 }
 describe('Negociação no pipeline', () => {
+  it.each([
+    [125.5, 'USD', 'US$ 125,50'],
+    [0, 'BRL', 'R$ 0,00'],
+    ['125.5', 'EUR', '€ 125,50'],
+    [125.5, 'INVALID', '125,5 INVALID'],
+    [125.5, '', '125,5 (moeda não informada)'],
+    [null, 'BRL', 'Ainda não informado'],
+    ['', 'BRL', 'Ainda não informado'],
+    ['inválido', 'BRL', 'Ainda não informado'],
+  ])('formata o valor %s na moeda %s sem presumir BRL', async (value, currency, expected) => {
+    mocks.getConversation.mockResolvedValue({ id: 'conv' });
+    mount({ ...card, value, currency });
+    expect(await screen.findByText('Chat conv')).toBeVisible();
+    expect(screen.getByText(expected)).toBeVisible();
+  });
   it('abre o chat vinculado e apresenta lacunas sem inventar marcos nem valor', async () => {
     mocks.getConversation.mockResolvedValue({ id: 'conv' });
     mount();

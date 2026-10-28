@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Button, MacWindow, Pill } from '@/components/ui/foundation';
+import { formatMoney } from '@/features/pipelines/components/money';
 import { ChatPanel } from '@/features/inbox/components/chat-panel';
 import { inboxService } from '@/features/inbox/services/inbox.service';
 import { pipelinesService, type CardSummary, type PipelineStage } from '@/features/pipelines/services/pipelines.service';
@@ -44,7 +45,7 @@ export function NegotiationWindow({ card, stages, cards, onClose, onEdit }: {
       </div>
       <aside aria-label="Negociação" className="space-y-4 rounded-xl border border-[var(--bq-hair)] bg-[var(--bq-surface)] p-3 text-[13px] text-[var(--bq-t2)]">
         <div><h2 className="font-semibold text-[var(--bq-t1)]">Negociação</h2><p className="mt-1">{card.title}</p></div>
-        <dl className="space-y-2"><div><dt className="text-xs text-[var(--bq-t3)]">Valor</dt><dd className="font-semibold text-[var(--bq-t1)]">{card.value == null ? 'Ainda não informado' : new Intl.NumberFormat('pt-BR', { style: 'currency', currency: card.currency || 'BRL' }).format(Number(card.value))}</dd></div>
+        <dl className="space-y-2"><div><dt className="text-xs text-[var(--bq-t3)]">Valor</dt><dd className="font-semibold text-[var(--bq-t1)]">{formatMoney(card.value, card.currency) ?? 'Ainda não informado'}</dd></div>
           <div><dt className="text-xs text-[var(--bq-t3)]">Responsável</dt><dd>{card.assignedTo?.name || 'Sem responsável'}</dd></div>
           <div><dt className="text-xs text-[var(--bq-t3)]">Situação</dt><dd>{card.status === 'WON' ? 'Ganho' : card.status === 'LOST' ? 'Perdido' : 'Em aberto'}</dd></div>
         </dl>
