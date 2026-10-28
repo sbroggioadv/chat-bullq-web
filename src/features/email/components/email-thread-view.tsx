@@ -382,7 +382,7 @@ export function EmailThreadView({
   return (
     <div className="flex h-full w-full min-w-0 flex-col ">
       <div className="flex flex-col gap-bq-space-sm border-b border-[var(--bq-hair)] px-bq-space-content pb-bq-space-item pt-bq-space-section  ">
-        <div className="flex items-center gap-bq-space-sm">
+        <div className="flex flex-wrap items-center gap-bq-space-sm">
           <button
             type="button"
             onClick={onBack}
@@ -409,7 +409,7 @@ export function EmailThreadView({
           <button
             type="button"
             onClick={() => openCompose(mode === "reply" ? null : "reply")}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-bq-radius-button border border-[var(--bq-hair-strong)] px-3 py-1.5 text-bq-text-row font-medium text-[var(--bq-t1)] hover:bg-[var(--bq-raised)]"
+            className="bq-button shrink-0"
           >
             <Reply className="h-3.5 w-3.5" />
             Responder
@@ -417,7 +417,7 @@ export function EmailThreadView({
           <button
             type="button"
             onClick={() => openCompose(mode === "replyAll" ? null : "replyAll")}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-2.5 py-1.5 text-xs font-medium text-[var(--bq-t2)] hover:bg-[var(--bq-surface)]    "
+            className="bq-button shrink-0"
             title="Inclui todos do To/Cc originais"
           >
             <ReplyAll className="h-3.5 w-3.5" />
@@ -426,7 +426,7 @@ export function EmailThreadView({
           <button
             type="button"
             onClick={() => openCompose(mode === "forward" ? null : "forward")}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-2.5 py-1.5 text-xs font-medium text-[var(--bq-t2)] hover:bg-[var(--bq-surface)]    "
+            className="bq-button shrink-0"
           >
             <Forward className="h-3.5 w-3.5" />
             Encaminhar
@@ -473,7 +473,7 @@ export function EmailThreadView({
               onClick={() => setLabelMenuOpen((v) => !v)}
               disabled={modifying || !userLabels.length}
               title="Aplicar marcador"
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-2.5 py-1.5 text-xs font-medium text-[var(--bq-t2)] hover:bg-[var(--bq-surface)] disabled:opacity-50    "
+              className="bq-button shrink-0 disabled:opacity-50"
             >
               <Tag className="h-3.5 w-3.5" />
               <span>Marcador</span>
@@ -545,7 +545,7 @@ export function EmailThreadView({
             onClick={handleArchive}
             disabled={archiving}
             title="Arquivar (remove da Caixa de entrada)"
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-2.5 py-1.5 text-xs font-medium text-[var(--bq-t2)] hover:bg-[var(--bq-surface)] disabled:opacity-50    "
+            className="bq-button shrink-0 disabled:opacity-50"
           >
             {archiving ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -557,7 +557,7 @@ export function EmailThreadView({
           {inboxHref && (
             <Link
               href={inboxHref}
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-2.5 py-1.5 text-xs font-medium text-[var(--bq-t2)] hover:bg-[var(--bq-surface)]    "
+              className="bq-button shrink-0"
               title="Abrir a conversa correspondente no atendimento"
             >
               <MessageSquare className="h-3.5 w-3.5" />

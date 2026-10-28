@@ -14,6 +14,8 @@ import {
   Activity,
   Sparkles,
   ArrowRight,
+  Clock3,
+  Zap,
 } from "lucide-react";
 import { Button, Pill, Switch } from "@/components/ui/foundation";
 import { toast } from "sonner";
@@ -239,7 +241,8 @@ function AutomationRow({
         />
       </div>
       {isAutoPaused && (
-        <div className="rounded-lg bg-[var(--bq-warn-soft)] p-2 text-xs text-[var(--bq-warn)]">
+        <div className="flex flex-wrap items-center gap-bq-space-sm rounded-bq-radius-button bg-[var(--bq-warn-soft)] px-bq-space-item py-bq-space-sm text-bq-text-control text-[var(--bq-warn)]">
+          <Clock3 size={12} aria-hidden="true" />
           Pausada automaticamente:{" "}
           {automation.autoPausedReason || "limite de falhas atingido"}. Reative
           para zerar o contador de falhas.
@@ -249,7 +252,10 @@ function AutomationRow({
         <span className="mr-bq-space-micro font-mono text-bq-text-phase-number font-semibold uppercase tracking-bq-tracking-label text-[var(--bq-t3)]">
           Quando
         </span>
-        <Pill tone="info">{TRIGGER_LABELS[automation.trigger]}</Pill>
+        <Pill tone="info">
+          <Zap size={12} aria-hidden="true" />
+          {TRIGGER_LABELS[automation.trigger]}
+        </Pill>
         <ArrowRight size={12} aria-hidden="true" />
         <span className="mr-bq-space-micro font-mono text-bq-text-phase-number font-semibold uppercase tracking-bq-tracking-label text-[var(--bq-t3)]">
           Se{" "}
@@ -307,7 +313,7 @@ function AutomationRow({
               );
             })}
       </div>
-      <div className="flex flex-wrap items-center gap-2 font-mono text-bq-text-metadata text-[var(--bq-t3)]">
+      <div className="flex flex-wrap items-center gap-bq-space-sm font-mono text-bq-text-metadata font-medium text-[var(--bq-t3)]">
         <span>
           {automation.runCount} execuções · {automation.successCount} OK ·{" "}
           {automation.failureCount} falhas

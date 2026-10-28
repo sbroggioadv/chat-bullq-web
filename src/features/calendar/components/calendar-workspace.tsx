@@ -1198,7 +1198,7 @@ export function CalendarWorkspace() {
                         className="flex w-full items-start gap-bq-space-item rounded-bq-radius-input px-bq-space-compact py-bq-space-control text-left hover:bg-[var(--bq-raised)]"
                         onClick={() => openEdit(ev)}
                       >
-                        <span className="w-bq-size-avatar-row shrink-0 rounded-bq-radius-button bg-[var(--bq-raised-2)] py-1 text-center font-mono text-bq-text-phase-number text-[var(--bq-t3)]">
+                        <span className="w-bq-size-avatar-row shrink-0 rounded-bq-radius-button bg-[var(--bq-raised-2)] py-bq-space-xs text-center font-mono text-bq-text-phase-number font-medium text-[var(--bq-t3)]">
                           {ev.start &&
                             new Date(ev.start)
                               .toLocaleDateString("pt-BR", { weekday: "short" })
