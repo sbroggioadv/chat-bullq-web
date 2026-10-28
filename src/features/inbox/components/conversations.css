@@ -106,3 +106,9 @@
   .bq-composer-toolbar > button[data-variant="solid"] { padding-inline: 8px; gap: 4px; font-size: 12px; }
   .bq-composer-via { padding-inline: 2px; }
 }
+/* The composer owns the focus ring; avoid a second rectangular textarea outline. */
+.bq-composer textarea:focus-visible { outline: none; }
+/* Compact header actions retain their accessible names and full menus. */
+.bq-chat-extras > div > button { width: 30px; height: 30px; padding: 0; justify-content: center; background: transparent; }
+.bq-chat-extras > div > button > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.bq-chat-extras > div > button > svg:last-child { display: none; }
