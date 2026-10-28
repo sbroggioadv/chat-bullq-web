@@ -1,11 +1,12 @@
 'use client';
 
+import { Button, SettingRow } from '@/components/ui/foundation';
+import styles from '@/features/settings/components/settings.module.css';
 import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
-import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Search, Users, MessageSquare, ExternalLink, RefreshCw, X, AlertTriangle, Mail } from 'lucide-react';
-import { contactsService, type Contact, type SyncAvatarsResult } from '@/features/contacts/services/contacts.service';
+import { Search, MessageSquare, RefreshCw, X, AlertTriangle, Mail } from 'lucide-react';
+import { contactsService, type SyncAvatarsResult } from '@/features/contacts/services/contacts.service';
 import { channelsService } from '@/features/channels/services/channels.service';
 import { useOrgId } from '@/hooks/use-org-query-key';
 import { useAuthStore } from '@/stores/auth-store';
@@ -80,105 +81,10 @@ export default function ContactsPage() {
     },
   });
 
-  return (
-    <div className="flex h-full flex-col min-h-0 min-w-0 p-6">
-      <div className="mx-auto w-full max-w-5xl shrink-0">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Contatos</h1>
-            <p className="mt-1 text-sm text-zinc-500">
-              {pagination ? `${pagination.total} contatos` : 'Carregando...'}
-            </p>
-          </div>
-          {canSync && (
-            <div className="flex shrink-0 flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => backfillMutation.mutate()}
-                disabled={backfillMutation.isPending || syncMutation.isPending}
-                className="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-900 shadow-sm transition-colors hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100 dark:hover:bg-amber-950/70"
-                title="Reescreve mensagens antigas de bot/automação que aparecem como 'Unsupported' ou 'reprocessar histórico'"
-              >
-                <RefreshCw
-                  className={`h-4 w-4 ${backfillMutation.isPending ? 'animate-spin' : ''}`}
-                />
-                {backfillMutation.isPending
-                  ? 'Reprocessando…'
-                  : 'Reprocessar mensagens de bot'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowSyncConfirm(true)}
-                disabled={syncMutation.isPending || backfillMutation.isPending}
-                className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 shadow-sm transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
-                title="Buscar fotos de perfil dos contatos via WhatsApp e salvar no BullQ"
-              >
-                <RefreshCw className={`h-4 w-4 ${syncMutation.isPending ? 'animate-spin' : ''}`} />
-                {syncMutation.isPending ? 'Sincronizando…' : 'Sincronizar fotos do WhatsApp'}
-              </button>
-            </div>
-          )}
-        </div>
-
-        <div className="mt-6 relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
-          <input
-            type="text"
-            placeholder="Buscar por nome, telefone ou email..."
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            className="w-full rounded-lg border border-zinc-200 bg-white py-2.5 pl-10 pr-4 text-sm placeholder:text-zinc-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-          />
-        </div>
-      </div>
-
-      <div className="mx-auto mt-4 flex w-full max-w-5xl min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-        {/* Header fixo da tabela */}
-        <table className="w-full table-fixed shrink-0">
-          <thead>
-            <tr className="border-b border-zinc-100 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/50">
-              <th className="w-[30%] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">Contato</th>
-              <th className="w-[20%] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">Telefone</th>
-              <th className="w-[20%] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">Canais</th>
-              <th className="w-[20%] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">Tags</th>
-              <th className="w-[10%] px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-zinc-500">Conversas</th>
-            </tr>
-          </thead>
-        </table>
-
-        {/* Corpo scrollável */}
-        <div className="flex-1 overflow-y-auto min-h-0">
-          <table className="w-full table-fixed">
-            <colgroup>
-              <col className="w-[30%]" />
-              <col className="w-[20%]" />
-              <col className="w-[20%]" />
-              <col className="w-[20%]" />
-              <col className="w-[10%]" />
-            </colgroup>
-            <tbody>
-              {isLoading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i} className="border-b border-zinc-50 dark:border-zinc-800">
-                    <td className="px-4 py-3"><div className="h-4 w-32 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700" /></td>
-                    <td className="px-4 py-3"><div className="h-4 w-24 animate-pulse rounded bg-zinc-100 dark:bg-zinc-800" /></td>
-                    <td className="px-4 py-3"><div className="h-4 w-16 animate-pulse rounded bg-zinc-100 dark:bg-zinc-800" /></td>
-                    <td className="px-4 py-3"><div className="h-4 w-20 animate-pulse rounded bg-zinc-100 dark:bg-zinc-800" /></td>
-                    <td className="px-4 py-3"><div className="h-4 w-8 animate-pulse rounded bg-zinc-100 dark:bg-zinc-800" /></td>
-                  </tr>
-                ))
-              ) : contacts.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-4 py-16 text-center">
-                    <Users className="mx-auto h-10 w-10 text-zinc-200 dark:text-zinc-700" />
-                    <p className="mt-3 text-sm text-zinc-500">Nenhum contato encontrado</p>
-                  </td>
-                </tr>
-              ) : (
-                contacts.map((contact) => (
-                  <tr key={contact.id} className="border-b border-zinc-50 transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-800/50">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3 min-w-0">
+  return <div className="space-y-5">
+    <section className={styles.block} aria-label="Contatos">
+      <div className="p-3.5 border-b border-[var(--bq-hair)]"><label className={styles.search}><Search size={14} /><input aria-label="Buscar contato" placeholder="Buscar por nome, telefone ou e-mail" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} /></label></div>
+      {isLoading ? <p role="status" className="p-4">Carregando contatos…</p> : contacts.length === 0 ? <p className="p-4 text-[var(--bq-t3)]">Nenhum contato encontrado</p> : contacts.map(contact => <div className={styles.listRow} key={contact.id}>
                         {contact.avatarUrl ? (
                           // S20 Wave 1: foto de perfil do WhatsApp quando
                           // disponivel. Fallback gracioso pra iniciais se
@@ -202,93 +108,21 @@ export default function ContactsPage() {
                         >
                           {(contact.name || '??').slice(0, 2).toUpperCase()}
                         </div>
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                            {contact.name || 'Sem nome'}
-                          </p>
-                          {contact.email && (
-                            <p className="truncate text-[11px] text-zinc-400">{contact.email}</p>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400 truncate">
-                      {contact.phone || '—'}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex flex-wrap gap-1">
-                        {contact.channels.map((ch) => {
-                          const Icon = channelIcons[ch.channel.type] || MessageSquare;
-                          return (
-                            <span key={ch.id} className="inline-flex items-center gap-1 rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] text-zinc-500 dark:bg-zinc-800">
-                              <Icon className="h-3 w-3" />
-                              <span className="truncate max-w-20">{ch.channel.name}</span>
-                            </span>
-                          );
-                        })}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex flex-wrap gap-1">
-                        {contact.tags.map((t) => (
-                          <span
-                            key={t.tag.id}
-                            className="rounded-full px-2 py-0.5 text-[10px] font-medium text-white truncate max-w-20"
-                            style={{ backgroundColor: t.tag.color }}
-                          >
-                            {t.tag.name}
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-center text-sm text-zinc-600 dark:text-zinc-400">
-                      {contact._count?.conversations || 0}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+
+        <div className={styles.rowText}><h3>{contact.name || 'Sem nome'}</h3><p>{[contact.phone,contact.email].filter(Boolean).join(' · ') || 'Telefone e e-mail não informados'} · {contact._count?.conversations || 0} conversas</p>
+          <div className="mt-1 flex flex-wrap gap-1">{contact.channels.map(ch => { const Icon=channelIcons[ch.channel.type] || MessageSquare; return <span className="bq-pill" key={ch.id}><Icon className="size-3" />{ch.channel.name}</span>; })}</div>
         </div>
-
-        {/* S20 Wave 1: modal de confirmacao do backfill de fotos. Operacao
-            cara em chamadas Zappfy — confirma antes de disparar. */}
-        {showSyncConfirm && (
-          <SyncConfirmModal
-            total={pagination?.total ?? 0}
-            isPending={syncMutation.isPending}
-            onConfirm={() => syncMutation.mutate()}
-            onCancel={() => !syncMutation.isPending && setShowSyncConfirm(false)}
-          />
-        )}
-
-        {/* Paginação fixa no rodapé */}
-        {pagination && pagination.totalPages > 1 && (
-          <div className="shrink-0 flex items-center justify-between border-t border-zinc-100 px-4 py-3 dark:border-zinc-800">
-            <p className="text-xs text-zinc-500">
-              Página {pagination.page} de {pagination.totalPages}
-            </p>
-            <div className="flex gap-1">
-              <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="rounded px-3 py-1 text-xs font-medium text-zinc-600 hover:bg-zinc-100 disabled:opacity-50 dark:text-zinc-400 dark:hover:bg-zinc-800"
-              >
-                Anterior
-              </button>
-              <button
-                onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
-                disabled={page === pagination.totalPages}
-                className="rounded px-3 py-1 text-xs font-medium text-zinc-600 hover:bg-zinc-100 disabled:opacity-50 dark:text-zinc-400 dark:hover:bg-zinc-800"
-              >
-                Próxima
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+        <div className={styles.rowActions}>{contact.tags.map(t => <span className={styles.tagChip} key={t.tag.id}><i style={{backgroundColor:t.tag.color}} />{t.tag.name}</span>)}</div>
+      </div>)}
+      {pagination && <div className={styles.listRow}><span className={styles.unavailable}>{pagination.total} contatos · Página {pagination.page} de {pagination.totalPages}</span>{pagination.totalPages > 1 && <div className={styles.rowActions}><Button onClick={() => setPage(p => Math.max(1,p-1))} disabled={page === 1}>Anterior</Button><Button onClick={() => setPage(p => Math.min(pagination.totalPages,p+1))} disabled={page === pagination.totalPages}>Próxima</Button></div>}</div>}
+    </section>
+    <section><h2 className={styles.sectionTitle}>Fotos e importação</h2><div className={styles.block}>
+      {canSync && <SettingRow title="Buscar as fotos pelo WhatsApp" description="Atualiza e salva as fotos dos contatos no BullQ."><Button onClick={() => setShowSyncConfirm(true)} disabled={syncMutation.isPending || backfillMutation.isPending}><RefreshCw size={13} />{syncMutation.isPending ? 'Sincronizando…' : 'Sincronizar'}</Button></SettingRow>}
+      <SettingRow title="Importar contatos" description="Planilha CSV com nome, telefone e e-mail. Ainda não disponível."><Button disabled>Importar</Button></SettingRow>
+      {canSync && <SettingRow title="Reprocessar mensagens de bot" description="Recupera conteúdo do histórico que aparece como não suportado."><Button onClick={() => backfillMutation.mutate()} disabled={backfillMutation.isPending || syncMutation.isPending}>{backfillMutation.isPending ? 'Reprocessando…' : 'Reprocessar'}</Button></SettingRow>}
+    </div></section>
+    {showSyncConfirm && <SyncConfirmModal total={pagination?.total ?? 0} isPending={syncMutation.isPending} onConfirm={() => syncMutation.mutate()} onCancel={() => !syncMutation.isPending && setShowSyncConfirm(false)} />}
+  </div>;
 }
 
 /**

@@ -1,12 +1,14 @@
 'use client';
 
+import { Button, SettingRow } from '@/components/ui/foundation';
+import styles from '@/features/settings/components/settings.module.css';
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, Users, Star, Pencil, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Star, Pencil, Trash2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useOrgId } from '@/hooks/use-org-query-key';
-import { segmentsService, type Segment } from '../services/segments.service';
-import { SegmentFormDialog } from './segment-form-dialog';
+import { segmentsService, type Segment } from '@/features/segments/services/segments.service';
+import { SegmentFormDialog } from '@/features/segments/components/segment-form-dialog';
 
 export function SegmentsList() {
   const orgId = useOrgId();
@@ -54,25 +56,8 @@ export function SegmentsList() {
 
   return (
     <div>
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-            Segmentos
-          </h2>
-          <p className="mt-0.5 text-sm text-zinc-500 dark:text-zinc-400">
-            Vários números que compartilham os mesmos grupos e histórico
-          </p>
-        </div>
-        <button
-          onClick={openCreate}
-          className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
-        >
-          <Plus className="h-4 w-4" />
-          Novo Segmento
-        </button>
-      </div>
-
-      <div className="mt-6 space-y-3">
+      <h2 className={styles.sectionTitle}>Segmentos{segments ? ` · ${segments.length}` : ''}</h2>
+      <div className={styles.block}>
         {isLoading ? (
           Array.from({ length: 2 }).map((_, i) => (
             <div
@@ -84,7 +69,7 @@ export function SegmentsList() {
           segments.map((seg) => (
             <div
               key={seg.id}
-              className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800"
+              className="border-b border-[var(--bq-hair)] px-3.5 py-2.5"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
@@ -143,25 +128,11 @@ export function SegmentsList() {
             </div>
           ))
         ) : (
-          <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-zinc-200 py-16 dark:border-zinc-800">
-            <Users className="h-10 w-10 text-zinc-300 dark:text-zinc-600" />
-            <p className="mt-3 text-sm font-medium text-zinc-600 dark:text-zinc-400">
-              Nenhum segmento criado
-            </p>
-            <p className="mt-1 max-w-sm text-center text-xs text-zinc-400 dark:text-zinc-500">
-              Agrupe vários números que estão nos mesmos grupos para unificar
-              conversas e histórico.
-            </p>
-            <button
-              onClick={openCreate}
-              className="mt-4 inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              Criar Segmento
-            </button>
-          </div>
+          <p className="px-3.5 py-3 text-[var(--bq-t3)]">Nenhum segmento criado.</p>
         )}
+        <SettingRow title="Novo segmento" description="Junte os números que estão nos mesmos grupos."><Button onClick={openCreate}><Plus size={13} /> Novo segmento</Button></SettingRow>
       </div>
+      <p className="mt-2 text-xs text-[var(--bq-t3)]">Sem segmento, o mesmo grupo aparece repetido para cada número do escritório.</p>
 
       <SegmentFormDialog
         open={dialogOpen}

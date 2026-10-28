@@ -1,8 +1,10 @@
 'use client';
 
+import { Button, SettingRow } from '@/components/ui/foundation';
+import styles from '@/features/settings/components/settings.module.css';
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, Trash2, KeyRound, Copy, Check, X, AlertTriangle } from 'lucide-react';
+import { Trash2, Copy, Check, X, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiKeysService, type ApiKey, type CreatedApiKey } from '@/features/settings/services/api-keys.service';
 import { useOrgId } from '@/hooks/use-org-query-key';
@@ -62,50 +64,25 @@ export default function SettingsApiKeysPage() {
   };
 
   return (
-    <div>
-      <div>
-        <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">API Keys</h2>
-        <p className="mt-0.5 text-sm text-zinc-500">
-          Chaves de acesso programático (MCP, integrações, scripts). A chave só é mostrada uma única vez na criação.
-        </p>
-      </div>
-
-      <div className="mt-6 flex items-end gap-3">
-        <div className="flex-1">
-          <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">Nome da chave</label>
-          <input
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
-            placeholder="Ex: Claude Code MCP, Backup Script, Zapier..."
-            className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
-          />
-        </div>
-        <button
-          onClick={handleCreate}
-          disabled={!newName.trim() || creating}
-          className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-        >
-          <Plus className="h-4 w-4" /> {creating ? 'Criando...' : 'Gerar chave'}
-        </button>
-      </div>
-
-      <div className="mt-6 space-y-2">
+    <div className="space-y-5">
+      <section><h2 className={styles.sectionTitle}>Nova chave</h2><div className={styles.block}>
+        <SettingRow title="Nome da chave" description="Ex.: Claude Code MCP, backup, Zapier"><div className={styles.inviteControls}>
+          <input aria-label="Nome da chave" value={newName} onChange={e => setNewName(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleCreate()} placeholder="Nome da chave" />
+          <Button variant="solid" onClick={handleCreate} disabled={!newName.trim() || creating}>{creating ? 'Criando…' : 'Gerar chave'}</Button>
+        </div></SettingRow>
+      </div></section>
+      <section><h2 className={styles.sectionTitle}>Chaves ativas{keys ? ` · ${keys.length}` : ''}</h2><div className={styles.block}>
         {isLoading ? (
           Array.from({ length: 2 }).map((_, i) => (
             <div key={i} className="h-16 animate-pulse rounded-lg border bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900" />
           ))
         ) : !keys?.length ? (
-          <div className="flex flex-col items-center py-12 text-center">
-            <KeyRound className="h-10 w-10 text-zinc-200 dark:text-zinc-700" />
-            <p className="mt-3 text-sm text-zinc-500">Nenhuma chave criada</p>
-            <p className="mt-1 text-xs text-zinc-400">Gere uma chave acima pra conectar o MCP no Claude Code</p>
-          </div>
+          <p className="p-3.5 text-[var(--bq-t3)]">Nenhuma chave criada. Gere uma chave acima para conectar o MCP.</p>
         ) : (
           keys.map((key) => (
             <div
               key={key.id}
-              className="flex items-center justify-between rounded-lg border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900"
+              className={styles.listRow}
             >
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
@@ -149,6 +126,11 @@ export default function SettingsApiKeysPage() {
         )}
       </div>
 
+      </section>
+      <section><h2 className={styles.sectionTitle}>Conectar ao Claude Code (MCP)</h2><div className={`${styles.block} p-3.5`}>
+        <pre className={styles.code}>{'claude mcp add chat-bullq -e CHAT_BULLQ_API_KEY=<sua chave> -- node /path/to/chat-bullq-mcp/dist/index.js'}</pre>
+        <p className="mt-2 text-xs text-[var(--bq-t3)]">Substitua o caminho pela instalação do MCP e use a chave exibida uma única vez ao criar.</p>
+      </div></section>
       {createdKey && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="w-full max-w-lg rounded-lg border border-zinc-200 bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-900">

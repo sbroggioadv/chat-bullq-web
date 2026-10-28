@@ -1,5 +1,7 @@
 'use client';
 
+import { Button, SettingRow } from '@/components/ui/foundation';
+import styles from '@/features/settings/components/settings.module.css';
 import { useState } from 'react';
 import { Plus, Pencil, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
@@ -80,31 +82,16 @@ export default function SettingsQuickRepliesPage() {
 
   return (
     <div>
-      <div className="mb-4 flex items-start justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-            Mensagens rápidas
-          </h2>
-          <p className="mt-0.5 text-sm text-zinc-500">
-            Atalhos privados. Digite <code>/atalho</code> no chat e pressione Enter.
-          </p>
-        </div>
-        <button
-          onClick={openCreate}
-          className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-        >
-          <Plus className="h-4 w-4" /> Novo atalho
-        </button>
-      </div>
-
+      <h2 className={styles.sectionTitle}>Atalhos · {items.length}</h2>
+      <div className={styles.block}>
       {isLoading ? (
         <div className="text-sm text-zinc-500">Carregando…</div>
       ) : items.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-zinc-300 px-4 py-8 text-center text-sm text-zinc-500 dark:border-zinc-700">
+        <div className="px-4 py-3 text-sm text-[var(--bq-t3)]">
           Nenhum atalho ainda. Clique em &quot;Novo atalho&quot; para criar.
         </div>
       ) : (
-        <ul className="divide-y divide-zinc-200 rounded-xl border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
+        <ul className="divide-y divide-[var(--bq-hair)]">
           {items.map((qr) => (
             <li key={qr.id} className="flex items-start justify-between px-4 py-3">
               <div className="min-w-0 flex-1">
@@ -121,7 +108,7 @@ export default function SettingsQuickRepliesPage() {
                     </span>
                   )}
                 </div>
-                <p className="mt-1 truncate text-xs text-zinc-500">{qr.content}</p>
+                <p className="mt-1 text-xs text-zinc-500">{qr.content}</p>
               </div>
               <div className="ml-4 flex items-center gap-1">
                 <button
@@ -146,6 +133,8 @@ export default function SettingsQuickRepliesPage() {
         </ul>
       )}
 
+      <SettingRow title="Novo atalho" description="No chat, digite / e o nome do atalho."><Button onClick={openCreate}><Plus size={13} /> Novo atalho</Button></SettingRow>
+      </div>
       {creating && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl dark:bg-zinc-900">
