@@ -2,7 +2,14 @@
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Pencil, Trash2, Activity, Zap, ArrowRight } from "lucide-react";
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Activity,
+  Sparkles,
+  ArrowRight,
+} from "lucide-react";
 import { Button, Pill, Switch } from "@/components/ui/foundation";
 import { toast } from "sonner";
 import {
@@ -62,16 +69,23 @@ export default function AutomationsPage() {
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-[14px] px-5 py-[18px] text-[13px] text-[var(--bq-t1)]">
+    <div className="flex h-full min-h-0 flex-col gap-[14px] px-5 py-[18px] text-[13px] text-[var(--bq-t1)] antialiased">
       <header className="">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div className="flex items-center gap-2">
             <div>
-              <h1 className="text-2xl font-medium tracking-tight">
+              <h1 className="text-2xl leading-[1.1] font-[family-name:var(--bq-f-display)] font-medium tracking-[-0.02em]">
                 Automações
               </h1>
-              <p className="text-xs text-[var(--bq-t3)]">
-                Quando algo acontece → execute uma sequência de ações
+              <p className="mt-[5px] text-[13px] text-[var(--bq-t3)]">
+                Quando algo acontece → executa uma sequência de ações. Regras
+                com{" "}
+                <Sparkles
+                  size={12}
+                  className="inline"
+                  aria-label="ícone de IA"
+                />{" "}
+                usam o Jarvis.
               </p>
             </div>
           </div>
@@ -99,7 +113,9 @@ export default function AutomationsPage() {
           </div>
         )}
         {!isLoading && !isError && automations.length === 0 && (
-          <EmptyState disabled={!meta} onCreate={() => setCreating(true)} />
+          <p role="status" className="py-3 text-[12.5px] text-[var(--bq-t3)]">
+            Nenhuma automação ainda. Crie uma regra em Nova automação.
+          </p>
         )}
         {!isLoading && automations.length > 0 && (
           <ul className="space-y-2">
@@ -175,7 +191,7 @@ function AutomationRow({
     "groups" in automation.conditions ? automation.conditions : null;
 
   return (
-    <li className="space-y-3 rounded-2xl border border-[var(--bq-hair)] bg-[var(--bq-surface)] p-[14px]">
+    <li className={`space-y-2.5 rounded-2xl border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-[15px] py-[13px] ${automation.enabled ? "" : "opacity-[.72]"}`}>
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
           <h2 className="text-[13.5px] font-semibold">{automation.name}</h2>
@@ -199,7 +215,7 @@ function AutomationRow({
           para zerar o contador de falhas.
         </div>
       )}
-      <div className="flex flex-wrap items-center gap-2 text-xs">
+      <div className="flex flex-wrap items-center gap-1.5 text-xs [&_.bq-pill]:h-[26px] [&_.bq-pill]:rounded-lg [&_.bq-pill]:px-[9px] [&_.bq-pill]:text-xs">
         <span className="text-[10px] font-semibold uppercase text-[var(--bq-t3)]">
           Quando
         </span>
@@ -247,7 +263,7 @@ function AutomationRow({
               </Pill>
             ))}
       </div>
-      <div className="flex flex-wrap items-center gap-2 text-[11px] text-[var(--bq-t3)]">
+      <div className="flex flex-wrap items-center gap-2 font-mono text-[11px] text-[var(--bq-t3)]">
         <span>
           {automation.runCount} execuções · {automation.successCount} OK ·{" "}
           {automation.failureCount} falhas
@@ -272,36 +288,5 @@ function AutomationRow({
         </div>
       </div>
     </li>
-  );
-}
-
-function EmptyState({
-  onCreate,
-  disabled,
-}: {
-  onCreate: () => void;
-  disabled: boolean;
-}) {
-  return (
-    <div className="rounded-2xl border-2 border-dashed border-[var(--bq-hair)] px-8 py-16 text-center ">
-      <Zap className="mx-auto h-10 w-10 text-[var(--bq-t3)]" />
-      <h3 className="mt-4 text-lg font-semibold">Nenhuma automação ainda</h3>
-      <p className="mx-auto mt-2 max-w-md text-sm text-[var(--bq-t3)]">
-        Crie regras pra reagir automaticamente a eventos. Ex:{" "}
-        <em>
-          quando tag VIP for adicionada → atribuir ao João + responder
-          boas-vindas
-        </em>
-        .
-      </p>
-      <Button
-        variant="solid"
-        disabled={disabled}
-        onClick={onCreate}
-        className="mx-auto mt-6"
-      >
-        <Plus size={14} /> Criar primeira automação
-      </Button>
-    </div>
   );
 }
