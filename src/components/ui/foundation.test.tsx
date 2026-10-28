@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { useState } from 'react';
@@ -36,5 +36,16 @@ describe('Fundação SPEC-010', () => {
     expect(screen.getByRole('button', { name: 'Maximizar janela' })).toBeDisabled();
     await userEvent.click(screen.getByRole('button', { name: 'Fechar janela' }));
     expect(close).toHaveBeenCalledOnce();
+  });
+  it('preserva o título e os controles da janela sem criar banner dentro do diálogo', () => {
+    render(<MacWindow open onClose={vi.fn()} title="Tarefas do projeto">Conteúdo</MacWindow>);
+    const dialog = screen.getByRole('dialog', { name: 'Tarefas do projeto' });
+    expect(within(dialog).getByRole('heading', { name: 'Tarefas do projeto' })).toBeVisible();
+    expect(within(dialog).queryByRole('banner')).not.toBeInTheDocument();
+    expect(within(dialog).getAllByRole('button')).toEqual([
+      within(dialog).getByRole('button', { name: 'Fechar janela' }),
+      within(dialog).getByRole('button', { name: 'Minimizar janela' }),
+      within(dialog).getByRole('button', { name: 'Maximizar janela' }),
+    ]);
   });
 });
