@@ -744,7 +744,7 @@ export default function DashboardPage() {
                   {d?.connected ? (
                     <dl className="mt-3 grid grid-cols-2 gap-2 text-[11px]">
                       <div>
-                        <dt className="text-[var(--bq-t3)]">Conversas (30d)</dt>
+                        <dt className="text-[var(--bq-t3)]">Conversas ({period}d)</dt>
                         <dd className="text-base font-semibold tabular-nums text-[var(--bq-t1)] ">
                           {d.conversationsInPeriod}
                         </dd>
