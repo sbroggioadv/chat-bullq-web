@@ -5,9 +5,11 @@ import { inboxService, type Conversation, type Message } from '@/features/inbox/
 type MessagePage = { messages: Message[]; pagination?: unknown };
 type ConversationPage = { conversations: Conversation[]; pagination: Record<string, unknown> };
 const deliveries = new WeakMap<QueryClient, Map<string, string>>();
+// List badges must also deduplicate deliveries while the chat cache is absent.
+const projectedDeliveries = new WeakMap<QueryClient, Map<string, string>>();
 
 export function upsertMessage(client: QueryClient, message: Message, temporaryId?: string) {
-  client.setQueryData<MessagePage>(['messages', message.conversationId], (old) => {
+  return client.setQueryData<MessagePage>(['messages', message.conversationId], (old) => {
     if (!old) return client.getQueryState(['messages', message.conversationId])?.fetchStatus === 'fetching' ? { messages: [message] } : old;
     const messages = old.messages.filter((m) => m.id !== temporaryId);
     const index = messages.findIndex((m) => m.id === message.id || (!!message.externalId && m.externalId === message.externalId));
@@ -27,15 +29,22 @@ export function receiveMessage(client: QueryClient, payload: { conversationId?: 
   const key = `${id}:${message.id}`;
   // Status changes have their own event; don't let duplicate room deliveries increment badges.
   if (seen.has(key)) return;
-  seen.set(key, message.id);
-  if (seen.size > 2000) seen.delete(seen.keys().next().value!);
-  upsertMessage(client, { ...message, conversationId: id });
+  const absorbed = upsertMessage(client, { ...message, conversationId: id });
+  if (absorbed) {
+    seen.set(key, message.id);
+    if (seen.size > 2000) seen.delete(seen.keys().next().value!);
+  }
+  let projected = projectedDeliveries.get(client);
+  if (!projected) { projected = new Map(); projectedDeliveries.set(client, projected); }
+  const alreadyProjected = projected.has(key);
+  projected.set(key, message.id);
+  if (projected.size > 2000) projected.delete(projected.keys().next().value!);
   const patch = (conversation: Conversation, increment = true): Conversation => {
     const latest = !conversation.lastMessageAt || message.createdAt >= conversation.lastMessageAt;
     return {
       ...conversation,
       ...(latest ? { messages: [message], lastMessageAt: message.createdAt } : {}),
-      unreadCount: activeId === id || message.direction === 'OUTBOUND' ? 0 : (conversation.unreadCount ?? 0) + (increment ? 1 : 0),
+      unreadCount: activeId === id || message.direction === 'OUTBOUND' ? 0 : (conversation.unreadCount ?? 0) + (increment && !alreadyProjected ? 1 : 0),
     };
   };
   client.setQueryData<Conversation>(['conversation', id], (old) => old ? patch(old) : old);

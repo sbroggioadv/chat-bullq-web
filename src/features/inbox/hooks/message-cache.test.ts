@@ -59,3 +59,20 @@ it('preserva a linha aberta no inbox geral sem filtros nem projeto', () => {
   expect(client.getQueryData<ConversationPages>(key)!.pages[0].conversations.map((row: Conversation) => row.id)).toEqual(['c', 'same-date']);
   client.clear();
 });
+
+it('payload sem cache não consome o id antes de absorver a entrega completa', () => {
+  const client = new QueryClient();
+  const key = ['conversations'];
+  client.setQueryData(key, { pageParams: [1], pages: [{ conversations: [{ id: 'c', unreadCount: 2 }], pagination: {} }] });
+  receiveMessage(client, { message });
+  receiveMessage(client, { message });
+  expect(client.getQueryData(['messages', 'c'])).toBeUndefined();
+  expect(client.getQueryData<ConversationPages>(key)!.pages[0].conversations[0].unreadCount).toBe(3);
+  client.setQueryData(['messages', 'c'], { messages: [], pagination: { preserved: true } });
+  const complete = { ...message, externalId: 'complete', content: { text: 'complete payload' } };
+  receiveMessage(client, { message: complete });
+  receiveMessage(client, { message: complete });
+  expect(client.getQueryData<MessagePage>(['messages', 'c'])).toEqual({ messages: [complete], pagination: { preserved: true } });
+  expect(client.getQueryData<ConversationPages>(key)!.pages[0].conversations[0].unreadCount).toBe(3);
+  client.clear();
+});
