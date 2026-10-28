@@ -45,21 +45,21 @@ export function KanbanCard({ card, onClick }: Props) {
       tabIndex={0}
       aria-label={`Abrir ${card.title}`}
       onKeyDown={e => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onClick?.(); } }}
-      className={`group relative cursor-pointer rounded-[10px] border border-[var(--bq-hair)] bg-[var(--bq-raised)] p-3 transition-colors hover:border-[var(--bq-hair-strong)] focus-visible:outline-2 focus-visible:outline-[var(--bq-accent)] ${isClosed ? 'opacity-70' : ''}`}
+      className={`group relative cursor-pointer rounded-xl border border-[var(--bq-hair)] bg-[var(--bq-raised)] px-[11px] py-2.5 transition-colors hover:border-[var(--bq-hair-strong)] focus-visible:outline-2 focus-visible:outline-[var(--bq-accent)] ${isClosed ? 'opacity-70' : ''}`}
     >
       <div className="flex items-start gap-2">
         <button
           {...attributes}
           {...listeners}
           onClick={(e) => e.stopPropagation()}
-          className="mt-0.5 cursor-grab text-[var(--bq-t3)] transition-opacity active:cursor-grabbing touch-none"
+          className="absolute right-1 top-1 cursor-grab text-[var(--bq-t3)] transition-opacity active:cursor-grabbing touch-none"
           aria-label="Arrastar"
         >
           <GripVertical className="h-3.5 w-3.5" />
         </button>
         <div className="min-w-0 flex-1">
-          {contact && <div className="mb-2 flex items-center gap-2"><Avatar src={contact.avatarUrl} initials={(contact.name || contact.phone || '?').slice(0, 2)} /><span className="truncate font-semibold text-[var(--bq-t1)]">{contact.name || contact.phone}</span></div>}
-          <p className="truncate text-sm font-semibold text-[var(--bq-t1)]">
+          {contact && <div className="mb-[7px] flex items-center gap-2 pr-1"><Avatar className="!size-[30px] shrink-0" src={contact.avatarUrl} initials={(contact.name || contact.phone || '?').slice(0, 2)} /><span className="truncate text-[12.5px] font-semibold text-[var(--bq-t1)]">{contact.name || contact.phone}</span></div>}
+          <p className="text-[12.5px] text-[var(--bq-t1)]">
             {card.title}
           </p>
           {card.description && (
@@ -72,7 +72,7 @@ export function KanbanCard({ card, onClick }: Props) {
 
       <div className="mt-2 flex items-center gap-2 text-[11px] text-[var(--bq-t3)]">
         {value && (
-          <span className="rounded-full bg-[var(--bq-ok-soft)] px-2 py-0.5 font-medium text-[var(--bq-ok)]">
+          <span className="font-mono text-[11px] font-medium text-[var(--bq-t1)]">
             {value}
           </span>
         )}

@@ -1,7 +1,7 @@
 'use client';
 
 import { useDroppable } from '@dnd-kit/core';
-import { Plus, Trophy, X as XIcon } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { currencyTotals } from '@/features/pipelines/components/money';
 import { KanbanCard } from '@/features/pipelines/components/kanban-card';
 import type {
@@ -26,62 +26,22 @@ export function KanbanColumn({ stage, cards, onAddCard, onCardClick }: Props) {
   const colors: Record<string, string> = { zinc: 'var(--bq-t3)', blue: 'var(--bq-info)', amber: 'var(--bq-warn)', green: 'var(--bq-ok)', red: 'var(--bq-err)', violet: 'var(--bq-agent)', pink: 'var(--bq-ig)' };
   const color = colors[stage.color ?? 'zinc'] ?? colors.zinc;
 
+  const background = stage.type === 'WON' ? 'var(--bq-ok-soft)' : stage.type === 'LOST' ? 'var(--bq-err-soft)' : 'var(--bq-surface)';
   return (
-    <div style={{ borderColor: color }} className="flex h-full w-[260px] shrink-0 flex-col rounded-xl border border-[var(--bq-hair)] bg-[var(--bq-surface)]">
-      <div
-        className="flex items-center justify-between gap-2 border-b border-[var(--bq-hair)] px-3 py-3"
-      >
-        <div className="flex min-w-0 items-center gap-2">
-          {stage.type === 'WON' && (
-            <Trophy className="h-3.5 w-3.5 shrink-0 text-[var(--bq-ok)]" />
-          )}
-          {stage.type === 'LOST' && (
-            <XIcon className="h-3.5 w-3.5 shrink-0 text-[var(--bq-err)]" />
-          )}
-          <span className="truncate text-[12px] font-semibold text-[var(--bq-t1)]">
-            {stage.name}
-          </span>
-          <span
-            style={{ color, backgroundColor: `color-mix(in srgb, ${color} 13%, transparent)` }}
-            className="rounded-md bg-[var(--bq-raised-2)] px-1.5 py-0.5 text-[10px] text-[var(--bq-t3)]"
-          >
-            {cards.length}
-          </span>
+    <div ref={setNodeRef} data-stage={stage.id} style={{ borderColor: `color-mix(in srgb, ${color} 22%, var(--bq-hair))`, backgroundColor: background }} className={`flex h-full min-h-0 min-w-0 flex-col rounded-2xl border ${isOver ? 'ring-2 ring-[var(--bq-accent)]' : ''}`}>
+      <div className="flex flex-col gap-0.5 px-[13px] pb-[9px] pt-[11px]">
+        <div className="flex min-w-0 items-center gap-[7px] text-[13px] font-semibold">
+          {stage.type !== 'NORMAL' && <span aria-hidden="true" className={`size-1.5 shrink-0 rounded-full ${stage.type === 'WON' ? 'bg-[var(--bq-ok)]' : 'bg-[var(--bq-err)]'}`} />}
+          <span className="truncate">{stage.name}</span>
+          <span style={{ color }} className="font-mono text-[11px] font-medium">{cards.length}</span>
         </div>
-        <button
-          type="button"
-          onClick={onAddCard}
-          className="bq-icon"
-          aria-label="Adicionar conversa"
-          title="Adicionar conversa nesta etapa"
-        >
-          <Plus className="h-3.5 w-3.5" />
-        </button>
+        <p aria-label="Total da etapa" className="font-mono text-[11px] text-[var(--bq-t3)]">{totalLabel || 'Sem valor informado'}</p>
       </div>
-
-      <div
-        ref={setNodeRef}
-        className={`flex-1 space-y-2 overflow-y-auto rounded-b-lg p-2 transition-colors ${
-          isOver
-            ? 'bg-[var(--bq-accent-soft)] ring-2 ring-[var(--bq-hair-strong)]'
-            : 'bg-transparent'
-        }`}
-      >
-        {cards.length === 0 && (
-          <p className="py-6 text-center text-[11px] text-[var(--bq-t3)]">
-            Nenhuma conversa nesta etapa.
-          </p>
-        )}
-        {cards.map((c) => (
-          <KanbanCard key={c.id} card={c} onClick={() => onCardClick(c)} />
-        ))}
-        <button className="bq-button w-full justify-center border-dashed" onClick={onAddCard}><Plus size={13} /> Adicionar conversa</button>
-        {totalLabel && (
-          <p className="pt-2 text-center text-[10px] uppercase tracking-wide text-[var(--bq-t3)]">
-            Total: {totalLabel}
-          </p>
-        )}
+      <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-[9px] pb-[9px]">
+        {cards.length === 0 && <p className="px-1 pb-2 text-[11px] text-[var(--bq-t3)]">Nenhuma conversa nesta etapa.</p>}
+        {cards.map(c => <KanbanCard key={c.id} card={c} onClick={() => onCardClick(c)} />)}
       </div>
+      <button type="button" className="mx-[9px] mb-2.5 flex items-center gap-1 rounded px-1 py-1 text-left text-xs text-[var(--bq-t3)] hover:bg-[var(--bq-raised)] hover:text-[var(--bq-t1)]" onClick={onAddCard}><Plus size={12} />Adicionar conversa</button>
     </div>
   );
 }

@@ -21,7 +21,7 @@ describe('Cores e moedas do quadro', () => {
     const cards = [card, { ...card, id: 'brl', currency: 'BRL', value: 200 }, { ...card, id: 'eur', currency: 'EUR', value: 300 }];
     expect(currencyTotals(cards)).toMatch(/US\$.*100,00.*R\$.*200,00.*€.*300,00/);
     render(<KanbanColumn stage={{ id: 'stage', name: 'Etapa' } as PipelineStage} cards={cards} onAddCard={vi.fn()} onCardClick={vi.fn()} />);
-    expect(screen.getByText(/^Total:/)).toHaveTextContent(currencyTotals(cards).replace(/\s/g, ' '));
-    expect(screen.getByText(/^Total:/)).not.toHaveTextContent('600');
+    expect(screen.getByLabelText('Total da etapa')).toHaveTextContent(currencyTotals(cards).replace(/\s/g, ' '));
+    expect(screen.getByLabelText('Total da etapa')).not.toHaveTextContent('600');
   });
 });
