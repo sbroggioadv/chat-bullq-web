@@ -2,7 +2,7 @@
 
 import { Button, SegmentedControl } from "@/components/ui/foundation";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -318,6 +318,7 @@ function DayCell({
       style={{ minHeight: compact ? 110 : 220 }}
     >
       <div
+        data-calendar-day-heading
         className={`sticky top-0 z-10 mb-2 bg-[var(--bq-win-solid)] py-1 text-[11px] font-semibold uppercase tracking-wide ${
           isToday
             ? "text-[var(--bq-t1)]"
@@ -357,6 +358,7 @@ function DayCell({
             {Array.from({ length: 24 }, (_, hour) => (
               <button
                 key={hour}
+                data-calendar-hour={hour}
                 type="button"
                 onClick={() => {
                   const slot = new Date(day);
@@ -400,7 +402,6 @@ function DayCell({
 }
 
 export function CalendarWorkspace() {
-  const gridRef = useRef<HTMLDivElement>(null);
   const qc = useQueryClient();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -469,11 +470,6 @@ export function CalendarWorkspace() {
     router.replace("/calendar");
   }, [searchParams, qc, router]);
 
-  useEffect(() => {
-    if (gridRef.current)
-      gridRef.current.scrollTop = view === "week" ? 8 * 48 : 0;
-  }, [view, statusQ.data?.connected, statusQ.data?.needsReauthForCalendar]);
-
   const eventsQ = useQuery({
     queryKey: ["calendar-events", from, to, statusQ.data?.channelId],
     queryFn: () =>
@@ -484,6 +480,23 @@ export function CalendarWorkspace() {
       }),
     enabled: !!statusQ.data?.connected && !statusQ.data?.needsReauthForCalendar,
   });
+
+  const initializeGrid = useCallback((grid: HTMLDivElement | null) => {
+    if (!grid) return;
+    if (view === "month") {
+      grid.style.removeProperty("height");
+      grid.scrollTop = 0;
+      return;
+    }
+    if (eventsQ.isPending) return;
+    const heading = grid.querySelector<HTMLElement>("[data-calendar-day-heading]");
+    const firstHour = grid.querySelector<HTMLElement>('[data-calendar-hour="8"]');
+    if (!heading || !firstHour) return;
+    // Show 08:00–20:00 below the sticky heading, retaining all 24 hours for scrolling.
+    grid.style.height = `${12 * 48 + heading.offsetHeight + 2}px`;
+    grid.scrollTop += firstHour.getBoundingClientRect().top
+      - grid.getBoundingClientRect().top - heading.offsetHeight - grid.clientTop;
+  }, [view, eventsQ.isPending]);
 
   const eventsByDay = useMemo(() => {
     const map = new Map<string, CalendarEvent[]>();
@@ -847,9 +860,12 @@ export function CalendarWorkspace() {
           Salvando no Google…
         </p>
       )}
-      <div className="grid min-h-0 flex-1 gap-[14px] xl:grid-cols-[minmax(0,1fr)_300px]">
+      <div className="grid auto-rows-max min-h-0 flex-1 gap-[14px] xl:auto-rows-auto xl:grid-cols-[minmax(0,1fr)_300px]">
         <div
-          ref={gridRef}
+          ref={initializeGrid}
+          role="region"
+          aria-label="Grade da agenda"
+          tabIndex={0}
           className="order-2 min-h-[400px] min-w-0 overflow-auto rounded-2xl border border-[var(--bq-hair)] bg-[var(--bq-surface)] xl:order-1"
         >
           <DndContext

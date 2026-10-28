@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { CalendarWorkspace } from "@/features/calendar/components/calendar-workspace";
 import { calendarService } from "@/features/calendar/services/calendar.service";
@@ -84,4 +84,31 @@ it("distingue falha de conexão de uma conta desconectada", async () => {
   expect(
     screen.queryByText("Conecte o Google para usar a Agenda."),
   ).not.toBeInTheDocument();
+});
+
+it("preserva as 24 horas e a edição dos eventos fora de 08h–20h", async () => {
+  const day = new Date();
+  day.setDate(day.getDate() - ((day.getDay() + 6) % 7));
+  const events = [6, 22].map(hour => {
+    const start = new Date(day);
+    start.setHours(hour, 0, 0, 0);
+    return {
+      id: `event-${hour}`, summary: `Evento às ${hour}h`, description: "",
+      htmlLink: null, meetLink: null, allDay: false, attendees: [],
+      start: start.toISOString(), end: new Date(start.getTime() + 3600000).toISOString(),
+    };
+  });
+  vi.mocked(calendarService.events).mockResolvedValue({ channelId: "google", events });
+  mount();
+  const grid = await screen.findByRole("region", { name: "Grade da agenda" });
+  expect(within(grid).getAllByRole("button", { name: /Criar evento em/ })).toHaveLength(7 * 24);
+  for (const event of events) {
+    await userEvent.click(await within(grid).findByTitle(event.summary));
+    expect(screen.getByRole("textbox", { name: "Título do evento" })).toHaveValue(event.summary);
+    await userEvent.click(screen.getByRole("button", { name: "Fechar edição de evento" }));
+  }
+  await userEvent.click(screen.getByRole("button", { name: "Mês", exact: true }));
+  for (const event of events) expect(within(grid).getByTitle(event.summary)).toBeVisible();
+  await userEvent.click(screen.getByRole("button", { name: "Semana", exact: true }));
+  expect(within(grid).getAllByRole("button", { name: /Criar evento em/ })).toHaveLength(7 * 24);
 });
