@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, useSyncExternalStore } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -12,6 +12,8 @@ import {
   type Edge,
   type Node,
   type NodeTypes,
+  type NodeChange,
+  type XYPosition,
 } from '@xyflow/react';
 import dagre from '@dagrejs/dagre';
 import '@xyflow/react/dist/style.css';
@@ -31,16 +33,40 @@ import {
 const NODE_WIDTH = 320;
 const NODE_HEIGHT = 260;
 
-const nodeTypes: NodeTypes = { agent: AgentNode };
+function DepartmentColumn({ data }: { data: { label: string } }) {
+  return (
+    <h3 className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[var(--bq-t3)]">
+      {data.label}
+    </h3>
+  );
+}
+
+const nodeTypes: NodeTypes = { agent: AgentNode, department: DepartmentColumn };
+
+function subscribeAppTheme(onChange: () => void) {
+  const observer = new MutationObserver(onChange);
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['class', 'data-mode'],
+  });
+  return () => observer.disconnect();
+}
+
+function getAppColorMode(): 'dark' | 'light' {
+  const root = document.documentElement;
+  return root.dataset.mode === 'dark' || root.classList.contains('dark')
+    ? 'dark'
+    : 'light';
+}
 
 /**
- * Computes top-down hierarchical positions for the agent organogram using
- * dagre. Nodes without a parent become roots; multiple roots stack
- * horizontally at depth 0. Department isn't fed into layout (would force
- * unrelated agents apart) — it's only a visual cue on each card.
+ * Dagre orders the real hierarchy within each department. Root orchestrators
+ * with a department sit above the columns, as in the approved mockup.
+ * Every unassigned agent belongs to the explicit empty-department column.
  */
-function layoutOrganogram(agents: AiAgent[]): {
+export function layoutOrganogram(agents: AiAgent[]): {
   nodes: Node<AgentNodeData>[];
+  columns: Node[];
   edges: Edge[];
 } {
   const g = new dagre.graphlib.Graph();
@@ -74,15 +100,78 @@ function layoutOrganogram(agents: AiAgent[]): {
 
   dagre.layout(g);
 
+  const roots = agents.filter(
+    (a) =>
+      a.kind === 'ORCHESTRATOR' &&
+      a.department &&
+      (!a.parentAgentId || !ids.has(a.parentAgentId)),
+  );
+  const rootIds = new Set(roots.map((a) => a.id));
+  const grouped = new Map<string | null, AiAgent[]>();
+  for (const agent of agents) {
+    if (rootIds.has(agent.id)) continue;
+    const department = agent.department || null;
+    grouped.set(department, [...(grouped.get(department) ?? []), agent]);
+  }
+  const departments = [...grouped.keys()].sort((a, b) =>
+    a === null ? 1 : b === null ? -1 : a.localeCompare(b, 'pt-BR'),
+  );
+  const columnWidth = NODE_WIDTH + 40;
+  const columnGap = 64;
+  const cardHeight = (agent: AiAgent) =>
+    NODE_HEIGHT + (agent.channels?.length ?? 0) * 24;
+  const top = roots.length ? Math.max(...roots.map(cardHeight)) + 100 : 20;
+  const positions = new Map<string, XYPosition>();
+  const width = Math.max(
+    departments.length * (columnWidth + columnGap) - columnGap,
+    roots.length * (NODE_WIDTH + columnGap) - columnGap,
+  );
+  roots.forEach((agent, index) =>
+    positions.set(agent.id, {
+      x:
+        (width - roots.length * (NODE_WIDTH + columnGap) + columnGap) / 2 +
+        index * (NODE_WIDTH + columnGap),
+      y: 20,
+    }),
+  );
+  const columns: Node[] = departments.map((department, index) => {
+    const members = grouped.get(department)!;
+    members.sort(
+      (a, b) =>
+        g.node(a.id).y - g.node(b.id).y ||
+        a.name.localeCompare(b.name, 'pt-BR'),
+    );
+    const x = index * (columnWidth + columnGap);
+    let y = top + 48;
+    for (const agent of members) {
+      positions.set(agent.id, { x: x + 20, y });
+      y += cardHeight(agent) + 36;
+    }
+    return {
+      id: `department-column:${index}`,
+      type: 'department',
+      data: { label: department ?? 'Sem departamento' },
+      position: { x, y: top },
+      style: {
+        width: columnWidth,
+        height: y - top,
+        border: '1px dashed var(--bq-hair-strong)',
+        borderRadius: 16,
+        background: 'var(--bq-surface)',
+      },
+      draggable: false,
+      selectable: false,
+      connectable: false,
+      focusable: false,
+      zIndex: -1,
+    };
+  });
+
   const nodes: Node<AgentNodeData>[] = agents.map((a) => {
-    const pos = g.node(a.id);
     return {
       id: a.id,
       type: 'agent',
-      position: {
-        x: pos.x - NODE_WIDTH / 2,
-        y: pos.y - NODE_HEIGHT / 2,
-      },
+      position: positions.get(a.id)!,
       data: {
         agent: a,
         // overwritten by AgentsList with real handlers
@@ -110,10 +199,43 @@ function layoutOrganogram(agents: AiAgent[]): {
     }
   }
 
-  return { nodes, edges };
+  return { nodes, edges, columns };
 }
 
 export function AgentsList() {
+  const colorMode = useSyncExternalStore(
+    subscribeAppTheme,
+    getAppColorMode,
+    () => 'light' as const,
+  );
+  const [nodeState, setNodeState] = useState<
+    Record<string, Partial<Pick<Node, 'position' | 'measured' | 'selected'>>>
+  >({});
+  const onNodesChange = useCallback((changes: NodeChange[]) => {
+    setNodeState((previous) => {
+      const next = { ...previous };
+      let changed = false;
+      for (const change of changes) {
+        if (change.type === 'position' && change.position) {
+          next[change.id] = { ...next[change.id], position: change.position };
+          changed = true;
+        } else if (change.type === 'dimensions' && change.dimensions) {
+          const measured = next[change.id]?.measured;
+          if (
+            measured?.width === change.dimensions.width &&
+            measured?.height === change.dimensions.height
+          )
+            continue;
+          next[change.id] = { ...next[change.id], measured: change.dimensions };
+          changed = true;
+        } else if (change.type === 'select') {
+          next[change.id] = { ...next[change.id], selected: change.selected };
+          changed = true;
+        }
+      }
+      return changed ? next : previous;
+    });
+  }, []);
   const orgId = useOrgId();
   const queryClient = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
@@ -172,17 +294,20 @@ export function AgentsList() {
     const out = layoutOrganogram(filtered);
     // inject real handlers (memoized layout doesn't know them)
     return {
-      nodes: out.nodes.map((n) => ({
-        ...n,
-        data: {
-          ...n.data,
-          onClick: openAgent,
-          onToggleActive: handleToggleActive,
-        },
-      })),
+      nodes: [
+        ...out.columns,
+        ...out.nodes.map((n) => ({
+          ...n,
+          data: {
+            ...n.data,
+            onClick: openAgent,
+            onToggleActive: handleToggleActive,
+          },
+        })),
+      ].map((node) => ({ ...node, ...nodeState[node.id] })),
       edges: out.edges,
     };
-  }, [filtered, openAgent, handleToggleActive]);
+  }, [filtered, openAgent, handleToggleActive, nodeState]);
 
   const hasAgents = (agents?.length ?? 0) > 0;
 
@@ -220,7 +345,7 @@ export function AgentsList() {
             onClick={() => setDeptFilter(null)}
             className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
               deptFilter === null
-                ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900'
+                ? 'bg-[var(--bq-agent-soft)] text-[var(--bq-agent-text)]'
                 : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
             }`}
           >
@@ -257,7 +382,9 @@ export function AgentsList() {
         ) : hasAgents ? (
           <ReactFlowProvider>
             <ReactFlow
+              colorMode={colorMode}
               nodes={nodes}
+              onNodesChange={onNodesChange}
               edges={edges}
               nodeTypes={nodeTypes}
               fitView
@@ -275,7 +402,9 @@ export function AgentsList() {
               <MiniMap
                 pannable
                 zoomable
-                nodeColor="var(--bq-agent)"
+                nodeColor={(node) =>
+                  node.type === 'department' ? 'transparent' : 'var(--bq-agent)'
+                }
                 className="!bg-white dark:!bg-zinc-900"
               />
             </ReactFlow>
