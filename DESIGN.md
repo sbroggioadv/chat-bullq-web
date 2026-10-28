@@ -1140,7 +1140,7 @@ Os tokens anteriores permanecem intactos. Coeficientes e cores abaixo estão no 
 - .nitem .sq (197): bq-group-swatch usa18×18/raio6/8.5px e av-l/av-c/av-fg. .org .sq (87) continua accent-soft/accent-text,20×20/raio6/9.5px: é outro papel, não avatar de grupo.
 - .chb (132–133): bq-channel-badge como irmão de Avatar dentro de wrapper relative; --bq-channel-color recebe var(--bq-wa/ig/mail/tg), nunca hex local.16×16, right/bottom -space-micro, halo border-focus2px win-solid, glifo9/traço2.6. O irmão evita recortar o selo no overflow-hidden de Avatar.
 - .own-btn .av-mini (1135): Avatar com bq-avatar-mockup bq-avatar-owner,26px/10.5px, branco/oklch(.5 .08 hue). Sem responsável, aplicar raised-2/t3/hair-strong e conteúdo honesto da raia.
-- Status (1619): Novo→info; Em atendimento→warn; Aguardando cliente→agent; Resolvido→ok. A raia usa apenas estados reais suportados. Não inferir semântica dos enums não mapeados.
+- Status (1618): Novo→info; Em atendimento→warn; Aguardando cliente→agent; Resolvido→ok. A raia usa apenas estados reais suportados. Não inferir semântica dos enums não mapeados.
 - IA (1130–1133): padrão agent-soft/agent-text; pausada warn-soft/warn; forçada agent/on-agent-forced (branco em ambos). on-accent muda no escuro e NÃO equivale a esse branco.
 - Canal (1611–1616): WhatsApp wa#25d366, Instagram ig#e1306c, E-mail mail#5b8def, Telegram tg#2aabee; tokens já existentes, constantes entre temas.
 - Contrato de métricas: blur-bq-contact e backdrop-blur-bq-contact=28px; backdrop-bq-contact compõe blur28px + saturate170%; z-bq-contact=20 (731). opacity-bq-dragging=.45 (875). Para aplicações CSS diretas, usar var(--bq-*) acima.
