@@ -179,7 +179,7 @@ export function KanbanBoard({ pipelineId }: Props) {
 
       {viewingCardId && (() => {
         const card = Object.values(board.cards).flat().find(c => c.id === viewingCardId);
-        return card ? <NegotiationWindow card={card} stages={board.stages}
+        return card ? <NegotiationWindow cards={board.cards} card={card} stages={board.stages}
           onClose={() => { setViewingCardId(null); qc.invalidateQueries({ queryKey: ['pipeline-board', pipelineId] }); }}
           onEdit={() => { setViewingCardId(null); setEditingCard(card); }} /> : null;
       })()}

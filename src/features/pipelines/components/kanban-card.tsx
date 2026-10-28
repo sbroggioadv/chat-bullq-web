@@ -1,8 +1,10 @@
 'use client';
 
+import { formatMoney } from '@/features/pipelines/components/money';
+import { Avatar } from '@/components/ui/avatar';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, MessageSquare, User } from 'lucide-react';
+import { GripVertical, MessageSquare } from 'lucide-react';
 import { ZappfyIcon, MetaIcon, InstagramIcon } from '@/components/ui/icons';
 import type { CardSummary } from '@/features/pipelines/services/pipelines.service';
 
@@ -10,17 +12,6 @@ const channelIconByType: Record<string, React.ElementType> = {
   WHATSAPP_ZAPPFY: ZappfyIcon,
   WHATSAPP_OFFICIAL: MetaIcon,
   INSTAGRAM: InstagramIcon,
-};
-
-const formatBRL = (v: number | string | null) => {
-  if (v === null || v === undefined || v === '') return null;
-  const n = typeof v === 'string' ? parseFloat(v) : v;
-  if (Number.isNaN(n)) return null;
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-    maximumFractionDigits: 0,
-  }).format(n);
 };
 
 interface Props {
@@ -40,7 +31,7 @@ export function KanbanCard({ card, onClick }: Props) {
     opacity: isDragging ? 0.4 : 1,
   };
 
-  const value = formatBRL(card.value);
+  const value = formatMoney(card.value, card.currency);
   const contact = card.contact;
   const assignedTo = card.assignedTo;
   const isClosed = card.status !== 'OPEN';
@@ -67,6 +58,7 @@ export function KanbanCard({ card, onClick }: Props) {
           <GripVertical className="h-3.5 w-3.5" />
         </button>
         <div className="min-w-0 flex-1">
+          {contact && <div className="mb-2 flex items-center gap-2"><Avatar src={contact.avatarUrl} initials={(contact.name || contact.phone || '?').slice(0, 2)} /><span className="truncate font-semibold text-[var(--bq-t1)]">{contact.name || contact.phone}</span></div>}
           <p className="truncate text-sm font-semibold text-[var(--bq-t1)]">
             {card.title}
           </p>
@@ -97,14 +89,7 @@ export function KanbanCard({ card, onClick }: Props) {
       </div>
 
       <div className="mt-2 flex items-center justify-between gap-2 text-[11px] text-[var(--bq-t3)]">
-        {contact ? (
-          <span className="inline-flex min-w-0 items-center gap-1 truncate">
-            <User className="h-3 w-3 shrink-0" />
-            <span className="truncate">{contact.name || contact.phone}</span>
-          </span>
-        ) : (
-          <span />
-        )}
+        <span />
         <div className="flex shrink-0 items-center gap-1">
           {card.conversation?.channel && (() => {
             const ChannelIcon =

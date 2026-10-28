@@ -14,7 +14,7 @@ const stages: PipelineStage[] = ['first', 'won'].map((id, order) => ({ id, pipel
 function mount() {
   const close = vi.fn(); const edit = vi.fn();
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
-  render(<QueryClientProvider client={client}><NegotiationWindow card={card} stages={stages} onClose={close} onEdit={edit} /></QueryClientProvider>);
+  render(<QueryClientProvider client={client}><NegotiationWindow card={card} cards={{ won: [card, card] }} stages={stages} onClose={close} onEdit={edit} /></QueryClientProvider>);
   return { close, edit };
 }
 describe('Negociação no pipeline', () => {
@@ -31,7 +31,7 @@ describe('Negociação no pipeline', () => {
     mocks.moveCard.mockResolvedValue({});
     const { close, edit } = mount();
     await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Etapa da negociação' }), 'won');
-    await waitFor(() => expect(mocks.moveCard).toHaveBeenCalledWith('card', 'won', 0));
+    await waitFor(() => expect(mocks.moveCard).toHaveBeenCalledWith('card', 'won', 2));
     await userEvent.click(screen.getByRole('button', { name: 'Editar valor e dados' }));
     expect(edit).toHaveBeenCalledOnce();
     await userEvent.keyboard('{Escape}');

@@ -9,8 +9,8 @@ import { ChatPanel } from '@/features/inbox/components/chat-panel';
 import { inboxService } from '@/features/inbox/services/inbox.service';
 import { pipelinesService, type CardSummary, type PipelineStage } from '@/features/pipelines/services/pipelines.service';
 
-export function NegotiationWindow({ card, stages, onClose, onEdit }: {
-  card: CardSummary; stages: PipelineStage[]; onClose: () => void; onEdit: () => void;
+export function NegotiationWindow({ card, stages, cards, onClose, onEdit }: {
+  cards: Record<string, CardSummary[]>; card: CardSummary; stages: PipelineStage[]; onClose: () => void; onEdit: () => void;
 }) {
   const qc = useQueryClient();
   const [saving, setSaving] = useState(false);
@@ -27,7 +27,7 @@ export function NegotiationWindow({ card, stages, onClose, onEdit }: {
   const move = async (stageId: string) => {
     setSaving(true);
     try {
-      await pipelinesService.moveCard(card.id, stageId, 0);
+      await pipelinesService.moveCard(card.id, stageId, stageId === card.stageId ? Math.max(0, (cards[stageId]?.length ?? 0) - 1) : (cards[stageId]?.length ?? 0));
       update();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Não foi possível mudar a etapa');

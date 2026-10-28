@@ -27,7 +27,7 @@ export default function PipelinesIndexPage() {
     setSaving(true);
     try {
       const p = await pipelinesService.create({ name: name.trim() });
-      toast.success(`Pipeline"${p.name}" criado com 5 etapas padrão`);
+      toast.success(`Pipeline "${p.name}" criado com 5 etapas padrão`);
       qc.invalidateQueries({ queryKey: ['pipelines'] });
       setName('');
       setCreating(false);
@@ -39,7 +39,7 @@ export default function PipelinesIndexPage() {
   };
 
   const handleDelete = async (p: Pipeline) => {
-    if (!confirm(`Excluir o pipeline"${p.name}" e todos os cards?`)) return;
+    if (!confirm(`Excluir o pipeline "${p.name}" e todos os cards?`)) return;
     try {
       await pipelinesService.remove(p.id);
       toast.success('Pipeline removido');

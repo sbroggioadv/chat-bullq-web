@@ -2,6 +2,7 @@
 
 import { useDroppable } from '@dnd-kit/core';
 import { Plus, Trophy, X as XIcon } from 'lucide-react';
+import { currencyTotals } from '@/features/pipelines/components/money';
 import { KanbanCard } from '@/features/pipelines/components/kanban-card';
 import type {
   CardSummary,
@@ -21,21 +22,12 @@ export function KanbanColumn({ stage, cards, onAddCard, onCardClick }: Props) {
     data: { type: 'stage', stage },
   });
 
-  const totalValue = cards.reduce((acc, c) => {
-    const n = typeof c.value === 'string' ? parseFloat(c.value) : c.value ?? 0;
-    return acc + (Number.isFinite(n) ? (n as number) : 0);
-  }, 0);
-  const totalLabel =
-    totalValue > 0
-      ? new Intl.NumberFormat('pt-BR', {
-          style: 'currency',
-          currency: 'BRL',
-          maximumFractionDigits: 0,
-        }).format(totalValue)
-      : null;
+  const totalLabel = cards.length ? currencyTotals(cards) : null;
+  const colors: Record<string, string> = { zinc: 'var(--bq-t3)', blue: 'var(--bq-info)', amber: 'var(--bq-warn)', green: 'var(--bq-ok)', red: 'var(--bq-err)', violet: 'var(--bq-agent)', pink: 'var(--bq-ig)' };
+  const color = colors[stage.color ?? 'zinc'] ?? colors.zinc;
 
   return (
-    <div className="flex h-full w-[260px] shrink-0 flex-col rounded-xl border border-[var(--bq-hair)] bg-[var(--bq-surface)]">
+    <div style={{ borderColor: color }} className="flex h-full w-[260px] shrink-0 flex-col rounded-xl border border-[var(--bq-hair)] bg-[var(--bq-surface)]">
       <div
         className="flex items-center justify-between gap-2 border-b border-[var(--bq-hair)] px-3 py-3"
       >
@@ -50,6 +42,7 @@ export function KanbanColumn({ stage, cards, onAddCard, onCardClick }: Props) {
             {stage.name}
           </span>
           <span
+            style={{ color, backgroundColor: `color-mix(in srgb, ${color} 13%, transparent)` }}
             className="rounded-md bg-[var(--bq-raised-2)] px-1.5 py-0.5 text-[10px] text-[var(--bq-t3)]"
           >
             {cards.length}

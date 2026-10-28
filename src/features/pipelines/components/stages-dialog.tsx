@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Button, MacWindow } from '@/components/ui/foundation';
+import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   DndContext,
@@ -18,7 +19,6 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import {
-  X,
   Plus,
   Trash2,
   GripVertical,
@@ -31,7 +31,7 @@ import {
   pipelinesService,
   type StageType,
   type PipelineStage,
-} from '../services/pipelines.service';
+} from '@/features/pipelines/services/pipelines.service';
 
 interface DraftStage {
   // Frontend-only id for dnd; if existing, also has serverId
@@ -51,24 +51,24 @@ interface Props {
 }
 
 const COLORS: Array<{ name: string; cls: string }> = [
-  { name: 'zinc', cls: 'bg-zinc-400' },
-  { name: 'blue', cls: 'bg-blue-500' },
-  { name: 'amber', cls: 'bg-amber-500' },
-  { name: 'green', cls: 'bg-green-500' },
-  { name: 'red', cls: 'bg-red-500' },
-  { name: 'violet', cls: 'bg-violet-500' },
-  { name: 'pink', cls: 'bg-pink-500' },
+  { name: 'zinc', cls: 'bg-[var(--bq-t3)]' },
+  { name: 'blue', cls: 'bg-[var(--bq-info)]' },
+  { name: 'amber', cls: 'bg-[var(--bq-warn)]' },
+  { name: 'green', cls: 'bg-[var(--bq-ok)]' },
+  { name: 'red', cls: 'bg-[var(--bq-err)]' },
+  { name: 'violet', cls: 'bg-[var(--bq-agent)]' },
+  { name: 'pink', cls: 'bg-[var(--bq-ig)]' },
 ];
 
 const TYPE_OPTIONS: Array<{
   value: StageType;
   label: string;
-  Icon: any;
+  Icon: React.ElementType;
   cls: string;
 }> = [
-  { value: 'NORMAL', label: 'Normal', Icon: Circle, cls: 'text-zinc-500' },
-  { value: 'WON', label: 'Ganho', Icon: Trophy, cls: 'text-green-600' },
-  { value: 'LOST', label: 'Perdido', Icon: XCircle, cls: 'text-red-600' },
+  { value: 'NORMAL', label: 'Normal', Icon: Circle, cls: 'text-[var(--bq-t3)]' },
+  { value: 'WON', label: 'Ganho', Icon: Trophy, cls: 'text-[var(--bq-ok)]' },
+  { value: 'LOST', label: 'Perdido', Icon: XCircle, cls: 'text-[var(--bq-err)]' },
 ];
 
 function makeKey() {
@@ -103,12 +103,12 @@ function SortableRow({
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-start gap-2 rounded-lg border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900"
+      className="flex items-start gap-2 rounded-lg border border-[var(--bq-hair-strong)] bg-[var(--bq-win-solid)] p-3  "
     >
       <button
         {...attributes}
         {...listeners}
-        className="mt-1 cursor-grab text-zinc-400 hover:text-zinc-700 active:cursor-grabbing"
+        className="mt-1 cursor-grab text-[var(--bq-t3)] hover:text-[var(--bq-t3)] active:cursor-grabbing"
         aria-label="Arrastar"
       >
         <GripVertical className="h-4 w-4" />
@@ -119,7 +119,7 @@ function SortableRow({
           value={stage.name}
           onChange={(e) => onChange({ name: e.target.value })}
           placeholder="Nome da stage"
-          className="w-full rounded-md border border-zinc-300 bg-white px-2.5 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+          className="w-full rounded-md border border-[var(--bq-hair-strong)] bg-[var(--bq-win-solid)] px-2.5 py-1.5 text-sm   "
         />
 
         <div className="flex flex-wrap items-center gap-2">
@@ -132,7 +132,7 @@ function SortableRow({
                 onClick={() => onChange({ color: c.name })}
                 className={`size-5 rounded-full ${c.cls} ${
                   stage.color === c.name
-                    ? 'ring-2 ring-zinc-900 ring-offset-1 dark:ring-white'
+                    ? 'ring-2 ring-[var(--bq-t1)] ring-offset-1 '
                     : ''
                 }`}
                 aria-label={c.name}
@@ -140,7 +140,7 @@ function SortableRow({
             ))}
           </div>
 
-          <div className="ml-1 h-4 w-px bg-zinc-200 dark:bg-zinc-700" />
+          <div className="ml-1 h-4 w-px bg-[var(--bq-raised-2)] " />
 
           {/* Type */}
           <div className="flex items-center gap-1">
@@ -153,8 +153,8 @@ function SortableRow({
                   onClick={() => onChange({ type: t.value })}
                   className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${
                     active
-                      ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900'
-                      : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300'
+                      ? 'bg-[var(--bq-solid-bg)] text-[var(--bq-solid-fg)]  '
+                      : 'bg-[var(--bq-raised-2)] text-[var(--bq-t3)] hover:bg-[var(--bq-raised-2)]  '
                   }`}
                   title={t.label}
                 >
@@ -170,7 +170,7 @@ function SortableRow({
       <button
         type="button"
         onClick={onDelete}
-        className="rounded p-1.5 text-zinc-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20"
+        className="rounded p-1.5 text-[var(--bq-t3)] hover:bg-[var(--bq-err-soft)] hover:text-[var(--bq-err)] "
         title="Excluir"
       >
         <Trash2 className="h-3.5 w-3.5" />
@@ -187,22 +187,9 @@ export function StagesDialog({
   onSaved,
 }: Props) {
   const qc = useQueryClient();
-  const [stages, setStages] = useState<DraftStage[]>([]);
+  const [stages, setStages] = useState<DraftStage[]>(() => initialStages.map(s => ({ key: s.id, serverId: s.id, name: s.name, color: s.color ?? 'zinc', type: s.type })));
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    if (open) {
-      setStages(
-        initialStages.map((s) => ({
-          key: s.id,
-          serverId: s.id,
-          name: s.name,
-          color: s.color ?? 'zinc',
-          type: s.type,
-        })),
-      );
-    }
-  }, [open, initialStages]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -249,9 +236,9 @@ export function StagesDialog({
       qc.invalidateQueries({ queryKey: ['pipeline-board', pipelineId] });
       qc.invalidateQueries({ queryKey: ['pipelines'] });
       onSaved();
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.error(
-        err?.response?.data?.message || 'Erro ao salvar stages',
+        err instanceof Error ? err.message : 'Erro ao salvar stages',
       );
     } finally {
       setSaving(false);
@@ -259,26 +246,9 @@ export function StagesDialog({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="flex h-[80vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl bg-white shadow-xl dark:bg-zinc-900">
-        <div className="flex items-center justify-between border-b border-zinc-200 px-6 py-4 dark:border-zinc-800">
-          <div>
-            <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-              Configurar stages
-            </h3>
-            <p className="mt-0.5 text-xs text-zinc-500">
-              Adicione, renomeie, reordene (drag) ou troque o tipo. Stage com
-              cards não pode ser deletada.
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="rounded p-1 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
+    <MacWindow open={open} onClose={onClose} title="Configurar etapas">
+      <div className="flex max-h-[70dvh] min-h-0 flex-col text-[var(--bq-t1)]">
+        <p className="px-6 text-xs text-[var(--bq-t3)]">Adicione, renomeie, reordene ou troque o tipo. Etapa com cards não pode ser excluída.</p>
         <div className="flex-1 overflow-y-auto px-6 py-4">
           <DndContext
             sensors={sensors}
@@ -311,35 +281,35 @@ export function StagesDialog({
           <button
             type="button"
             onClick={handleAdd}
-            className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-zinc-300 px-3 py-2 text-sm text-zinc-500 hover:border-primary hover:text-primary dark:border-zinc-700"
+            className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-[var(--bq-hair-strong)] px-3 py-2 text-sm text-[var(--bq-t3)] hover:border-[var(--bq-accent)] hover:text-[var(--bq-accent-text)] "
           >
             <Plus className="h-3.5 w-3.5" />
             Adicionar stage
           </button>
 
-          <p className="mt-4 text-[11px] text-zinc-400">
+          <p className="mt-4 text-[11px] text-[var(--bq-t3)]">
             Tipos: <strong>Normal</strong> = stage intermediária ·{' '}
             <strong>Ganho</strong> = ao arrastar pra cá, marca card como WON +
             closedAt = now · <strong>Perdido</strong> = idem com LOST.
           </p>
         </div>
 
-        <div className="flex items-center justify-end gap-2 border-t border-zinc-200 bg-zinc-50 px-6 py-3 dark:border-zinc-800 dark:bg-zinc-900/50">
-          <button
+        <div className="flex items-center justify-end gap-2 border-t border-[var(--bq-hair-strong)] bg-[var(--bq-raised-2)] px-6 py-3  ">
+          <Button
             onClick={onClose}
-            className="rounded-md px-3 py-1.5 text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            className="rounded-md px-3 py-1.5 text-sm text-[var(--bq-t3)] hover:bg-[var(--bq-raised-2)]  "
           >
             Cancelar
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={handleSave}
             disabled={saving || stages.length === 0}
-            className="rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            className="rounded-md bg-[var(--bq-accent)] px-4 py-1.5 text-sm font-medium text-[var(--bq-on-accent)] hover:bg-[var(--bq-accent-soft)] disabled:opacity-50"
           >
             {saving ? 'Salvando…' : 'Salvar stages'}
-          </button>
+          </Button>
         </div>
       </div>
-    </div>
+    </MacWindow>
   );
 }
