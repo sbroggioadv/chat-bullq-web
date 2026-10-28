@@ -789,6 +789,40 @@ mockup_support:
   bq-saturate-contact: "170%"
   bq-layer-contact: "20"
   bq-opacity-dragging: "0.45"
+  bq-ptag-fg-l-dark: "0.82"
+  bq-ptag-fg-c-dark: "0.08"
+  bq-ptag-bg-l-dark: "0.55"
+  bq-ptag-bg-c-dark: "0.08"
+  bq-ptag-bg-alpha-dark: "0.18"
+  bq-ptag-fg-l-light: "0.42"
+  bq-ptag-fg-c-light: "0.1"
+  bq-ptag-bg-l-light: "0.62"
+  bq-ptag-bg-c-light: "0.1"
+  bq-ptag-bg-alpha-light: "0.14"
+  bq-opacity-ptag-button: "0.55"
+  bq-settings-tile-profile: "oklch(0.6 0.13 255)"
+  bq-settings-tile-notifications: "oklch(0.6 0.13 25)"
+  bq-settings-tile-appearance: "oklch(0.6 0.13 250)"
+  bq-settings-tile-organization: "oklch(0.6 0.13 205)"
+  bq-settings-tile-members: "oklch(0.6 0.13 230)"
+  bq-settings-tile-channels: "oklch(0.6 0.13 150)"
+  bq-settings-tile-segments: "oklch(0.6 0.13 175)"
+  bq-settings-tile-quick-replies: "oklch(0.6 0.13 85)"
+  bq-settings-tile-tags: "oklch(0.6 0.13 310)"
+  bq-settings-tile-contacts: "oklch(0.6 0.13 40)"
+  bq-settings-tile-jarvis: "oklch(0.6 0.13 275)"
+  bq-settings-tile-incoming: "oklch(0.6 0.13 55)"
+  bq-settings-tile-watchdog: "oklch(0.6 0.13 15)"
+  bq-settings-tile-clickup: "oklch(0.6 0.13 295)"
+  bq-settings-tile-google: "oklch(0.6 0.13 230)"
+  bq-settings-tile-autentique: "oklch(0.6 0.13 160)"
+  bq-settings-tile-neutral: "oklch(0.55 0 0)"
+  bq-settings-avatar: "oklch(0.5 0.08 255)"
+  bq-on-settings-tile: "#ffffff"
+  bq-on-settings-avatar: "#ffffff"
+  bq-blur-settings-save: "18px"
+  bq-saturate-settings-save: "1.4"
+  bq-layer-settings-save: "5"
 ---
 
 ## 1. Visual Theme & Atmosphere
@@ -1147,3 +1181,69 @@ Os tokens anteriores permanecem intactos. Coeficientes e cores abaixo estão no 
 - Espaço -2px do selo = calc(-1 * var(--bq-space-micro)); anel4px do compositor = --bq-space-xs; 40% da lista de Projetos = --bq-size-40percent; colunas mínimas340px = --bq-size-email-list (mesmo valor literal), gap14px = --bq-space-section.
 
 Não são mudanças de tela: a adoção pelas raias é explícita e deve passar pelos seus próprios gates de acessibilidade. Nenhum tom foi ajustado para contraste nesta publicação.
+
+
+### Suporte literal L5/L6/L8 — SPEC-010 terceira passada
+
+Novos valores aditivos no bloco `mockup_support`, com emissão literal em `@theme static`.
+Métricas de KPI, barras, painéis e feed L6 já usam a escala publicada: mínimo158,
+label92/contador44, painel320; textos11/11.5/12/12.5/23, entrelinha1.15,
+tracking−.02em, espaços2/4/5/7/8/9/10/11/12/13/14/16 e raios4/6/11/12/14/16.
+A quebra760 usa `bq-breakpoint-pane:` ou `bq-through-pane:` (inclusivo).
+O feed respeita a cascata: `.run`944 raio11 e padding9/11; `.run`1160
+sobrescreve raio12, enquanto summary1161 tem padding10/11 e corpo1168 0/11/11.
+
+- `bq-ptag`: geometria literal M606, neutro t2/raised-2 enquanto faltar cor real.
+- Somente com hue real disponível, adicionar `bq-ptag-colored` e definir
+  `--bq-ptag-hue` no elemento. O modificador usa os coeficientes M606–607
+  conforme `data-mode`. Não há hue padrão, hash por nome de pasta nem mapa de
+  pastas coloridas. EData.EmailFolder não tem hue: o consumidor mantém neutro.
+  Não usar `mockupAvatarHue` para preencher essa lacuna. O botão interno herda cor;
+  opacidade .55 usa o token `--bq-opacity-ptag-button` (M608).
+- Tiles de Configurações usam `bg-bq-settings-tile-<item>` com
+  `text-bq-on-settings-tile`; credenciais/API usam `neutral`. Os itens e suas
+  cores são taxonomia fixa do mockup M3950–3954, não cores de dados de cliente.
+- Avatar de navegação de Configurações M1031 usa `bg-bq-settings-avatar` e
+  `text-bq-on-settings-avatar`, preservando foto real quando houver.
+- Barra de salvar M1108: `backdrop-bq-settings-save` compõe blur18px/saturate1.4;
+  `z-bq-settings-save` é5. Margem−84 já é `--bq-space-negative-84px`;
+  não reutilizar um raio como espaçamento. O resto da geometria L5 já está na escala.
+- Nenhuma tela adota essas classes nesta passada; não constitui aprovação preventiva
+  de contraste dos futuros consumidores. Cores anteriores e vidro preservados.
+
+| Token novo | Literal | Fonte mockup | Uso |
+|---|---|---|---|
+| --bq-ptag-fg-l-dark | 0.82 | 606–607 | var(--bq-ptag-fg-l-dark) |
+| --bq-ptag-fg-c-dark | 0.08 | 606–607 | var(--bq-ptag-fg-c-dark) |
+| --bq-ptag-bg-l-dark | 0.55 | 606–607 | var(--bq-ptag-bg-l-dark) |
+| --bq-ptag-bg-c-dark | 0.08 | 606–607 | var(--bq-ptag-bg-c-dark) |
+| --bq-ptag-bg-alpha-dark | 0.18 | 606–607 | var(--bq-ptag-bg-alpha-dark) |
+| --bq-ptag-fg-l-light | 0.42 | 606–607 | var(--bq-ptag-fg-l-light) |
+| --bq-ptag-fg-c-light | 0.1 | 606–607 | var(--bq-ptag-fg-c-light) |
+| --bq-ptag-bg-l-light | 0.62 | 606–607 | var(--bq-ptag-bg-l-light) |
+| --bq-ptag-bg-c-light | 0.1 | 606–607 | var(--bq-ptag-bg-c-light) |
+| --bq-ptag-bg-alpha-light | 0.14 | 606–607 | var(--bq-ptag-bg-alpha-light) |
+| --bq-opacity-ptag-button | 0.55 | 608 | var(--bq-opacity-ptag-button) |
+| --bq-settings-tile-profile | oklch(0.6 0.13 255) | 1042,3950–3954 | bg-bq-settings-tile-profile |
+| --bq-settings-tile-notifications | oklch(0.6 0.13 25) | 1042,3950–3954 | bg-bq-settings-tile-notifications |
+| --bq-settings-tile-appearance | oklch(0.6 0.13 250) | 1042,3950–3954 | bg-bq-settings-tile-appearance |
+| --bq-settings-tile-organization | oklch(0.6 0.13 205) | 1042,3950–3954 | bg-bq-settings-tile-organization |
+| --bq-settings-tile-members | oklch(0.6 0.13 230) | 1042,3950–3954 | bg-bq-settings-tile-members |
+| --bq-settings-tile-channels | oklch(0.6 0.13 150) | 1042,3950–3954 | bg-bq-settings-tile-channels |
+| --bq-settings-tile-segments | oklch(0.6 0.13 175) | 1042,3950–3954 | bg-bq-settings-tile-segments |
+| --bq-settings-tile-quick-replies | oklch(0.6 0.13 85) | 1042,3950–3954 | bg-bq-settings-tile-quick-replies |
+| --bq-settings-tile-tags | oklch(0.6 0.13 310) | 1042,3950–3954 | bg-bq-settings-tile-tags |
+| --bq-settings-tile-contacts | oklch(0.6 0.13 40) | 1042,3950–3954 | bg-bq-settings-tile-contacts |
+| --bq-settings-tile-jarvis | oklch(0.6 0.13 275) | 1042,3950–3954 | bg-bq-settings-tile-jarvis |
+| --bq-settings-tile-incoming | oklch(0.6 0.13 55) | 1042,3950–3954 | bg-bq-settings-tile-incoming |
+| --bq-settings-tile-watchdog | oklch(0.6 0.13 15) | 1042,3950–3954 | bg-bq-settings-tile-watchdog |
+| --bq-settings-tile-clickup | oklch(0.6 0.13 295) | 1042,3950–3954 | bg-bq-settings-tile-clickup |
+| --bq-settings-tile-google | oklch(0.6 0.13 230) | 1042,3950–3954 | bg-bq-settings-tile-google |
+| --bq-settings-tile-autentique | oklch(0.6 0.13 160) | 1042,3950–3954 | bg-bq-settings-tile-autentique |
+| --bq-settings-tile-neutral | oklch(0.55 0 0) | 1043 | bg-bq-settings-tile-neutral |
+| --bq-settings-avatar | oklch(0.5 0.08 255) | 1031 | bg-bq-settings-avatar |
+| --bq-on-settings-tile | #ffffff | 1042 | bg-bq-on-settings-tile |
+| --bq-on-settings-avatar | #ffffff | 1031 | bg-bq-on-settings-avatar |
+| --bq-blur-settings-save | 18px | 1108 | var(--bq-blur-settings-save) |
+| --bq-saturate-settings-save | 1.4 | 1108 | var(--bq-saturate-settings-save) |
+| --bq-layer-settings-save | 5 | 1108 | var(--bq-layer-settings-save) |

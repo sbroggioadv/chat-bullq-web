@@ -1237,3 +1237,82 @@ html[data-mode="light"] { --bq-scrim: rgb(20 24 34 / 0.22); }
 @media (max-width: 1120px) { .bq-search { display: none; } }
 @media (max-width: 860px) { .bq-crumbs .bq-org { display: none; } }
 @media (prefers-reduced-motion: reduce) { .bq-live i { animation: none; } }
+
+/* SPEC-010 L5/L8: additive literal tokens; no page consumers yet. */
+@theme static {
+  --bq-ptag-fg-l-dark: 0.82;
+  --bq-ptag-fg-c-dark: 0.08;
+  --bq-ptag-bg-l-dark: 0.55;
+  --bq-ptag-bg-c-dark: 0.08;
+  --bq-ptag-bg-alpha-dark: 0.18;
+  --bq-ptag-fg-l-light: 0.42;
+  --bq-ptag-fg-c-light: 0.1;
+  --bq-ptag-bg-l-light: 0.62;
+  --bq-ptag-bg-c-light: 0.1;
+  --bq-ptag-bg-alpha-light: 0.14;
+  --bq-opacity-ptag-button: 0.55;
+  --bq-settings-tile-profile: oklch(0.6 0.13 255);
+  --color-bq-settings-tile-profile: oklch(0.6 0.13 255);
+  --bq-settings-tile-notifications: oklch(0.6 0.13 25);
+  --color-bq-settings-tile-notifications: oklch(0.6 0.13 25);
+  --bq-settings-tile-appearance: oklch(0.6 0.13 250);
+  --color-bq-settings-tile-appearance: oklch(0.6 0.13 250);
+  --bq-settings-tile-organization: oklch(0.6 0.13 205);
+  --color-bq-settings-tile-organization: oklch(0.6 0.13 205);
+  --bq-settings-tile-members: oklch(0.6 0.13 230);
+  --color-bq-settings-tile-members: oklch(0.6 0.13 230);
+  --bq-settings-tile-channels: oklch(0.6 0.13 150);
+  --color-bq-settings-tile-channels: oklch(0.6 0.13 150);
+  --bq-settings-tile-segments: oklch(0.6 0.13 175);
+  --color-bq-settings-tile-segments: oklch(0.6 0.13 175);
+  --bq-settings-tile-quick-replies: oklch(0.6 0.13 85);
+  --color-bq-settings-tile-quick-replies: oklch(0.6 0.13 85);
+  --bq-settings-tile-tags: oklch(0.6 0.13 310);
+  --color-bq-settings-tile-tags: oklch(0.6 0.13 310);
+  --bq-settings-tile-contacts: oklch(0.6 0.13 40);
+  --color-bq-settings-tile-contacts: oklch(0.6 0.13 40);
+  --bq-settings-tile-jarvis: oklch(0.6 0.13 275);
+  --color-bq-settings-tile-jarvis: oklch(0.6 0.13 275);
+  --bq-settings-tile-incoming: oklch(0.6 0.13 55);
+  --color-bq-settings-tile-incoming: oklch(0.6 0.13 55);
+  --bq-settings-tile-watchdog: oklch(0.6 0.13 15);
+  --color-bq-settings-tile-watchdog: oklch(0.6 0.13 15);
+  --bq-settings-tile-clickup: oklch(0.6 0.13 295);
+  --color-bq-settings-tile-clickup: oklch(0.6 0.13 295);
+  --bq-settings-tile-google: oklch(0.6 0.13 230);
+  --color-bq-settings-tile-google: oklch(0.6 0.13 230);
+  --bq-settings-tile-autentique: oklch(0.6 0.13 160);
+  --color-bq-settings-tile-autentique: oklch(0.6 0.13 160);
+  --bq-settings-tile-neutral: oklch(0.55 0 0);
+  --color-bq-settings-tile-neutral: oklch(0.55 0 0);
+  --bq-settings-avatar: oklch(0.5 0.08 255);
+  --color-bq-settings-avatar: oklch(0.5 0.08 255);
+  --bq-on-settings-tile: #ffffff;
+  --color-bq-on-settings-tile: #ffffff;
+  --bq-on-settings-avatar: #ffffff;
+  --color-bq-on-settings-avatar: #ffffff;
+  --bq-blur-settings-save: 18px;
+  --blur-bq-settings-save: 18px;
+  --bq-saturate-settings-save: 1.4;
+  --bq-layer-settings-save: 5;
+}
+:root {
+  --bq-ptag-fg-l: var(--bq-ptag-fg-l-dark);
+  --bq-ptag-fg-c: var(--bq-ptag-fg-c-dark);
+  --bq-ptag-bg-l: var(--bq-ptag-bg-l-dark);
+  --bq-ptag-bg-c: var(--bq-ptag-bg-c-dark);
+  --bq-ptag-bg-alpha: var(--bq-ptag-bg-alpha-dark);
+}
+html[data-mode="light"] {
+  --bq-ptag-fg-l: var(--bq-ptag-fg-l-light);
+  --bq-ptag-fg-c: var(--bq-ptag-fg-c-light);
+  --bq-ptag-bg-l: var(--bq-ptag-bg-l-light);
+  --bq-ptag-bg-c: var(--bq-ptag-bg-c-light);
+  --bq-ptag-bg-alpha: var(--bq-ptag-bg-alpha-light);
+}
+.bq-ptag { display: inline-flex; align-items: center; gap: var(--bq-space-label); height: var(--bq-size-switch-height); padding: 0 var(--bq-space-sm); border-radius: var(--bq-radius-file); font-size: var(--bq-text-auxiliary); font-weight: var(--bq-weight-medium); color: var(--bq-t2); background: var(--bq-raised-2); white-space: nowrap; }
+/* Opt in only when the data supplies --bq-ptag-hue. No synthetic hue fallback. */
+.bq-ptag.bq-ptag-colored { color: oklch(var(--bq-ptag-fg-l) var(--bq-ptag-fg-c) var(--bq-ptag-hue)); background: oklch(var(--bq-ptag-bg-l) var(--bq-ptag-bg-c) var(--bq-ptag-hue) / var(--bq-ptag-bg-alpha)); }
+.bq-ptag button { display: inline-flex; color: inherit; opacity: var(--bq-opacity-ptag-button); }
+@utility backdrop-bq-settings-save { -webkit-backdrop-filter: blur(var(--bq-blur-settings-save)) saturate(var(--bq-saturate-settings-save)); backdrop-filter: blur(var(--bq-blur-settings-save)) saturate(var(--bq-saturate-settings-save)); }
+@utility z-bq-settings-save { z-index: var(--bq-layer-settings-save); }
