@@ -5,9 +5,6 @@ import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/re
 import { PanelLeft, X } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { InboxTree } from '@/features/inbox-views/components/inbox-tree';
-import { EmailTree } from '@/features/email/components/email-tree';
-import { PipelinesTree } from '@/features/pipelines/components/pipelines-tree';
-import { JarvisTree } from '@/features/ai-agents/components/jarvis-tree';
 import { AppTopbar } from '@/components/layout/app-topbar';
 
 const key = 'bullq2-rail-expanded';
@@ -23,7 +20,7 @@ export function AppShell({ sidebar, children }: { sidebar: ReactNode; children: 
   const expanded = useSyncExternalStore(subscribe, getSnapshot, () => false);
   const [navigationOpen, setNavigationOpen] = useState(false);
   const pathname = usePathname();
-  const navigation = pathname === '/inbox' ? <InboxTree /> : pathname === '/email' ? <EmailTree /> : pathname.startsWith('/pipelines') ? <PipelinesTree /> : pathname.startsWith('/ai-agents') ? <JarvisTree /> : null;
+  const navigation = pathname === '/inbox' ? <InboxTree /> : null;
   const toggle = () => {
     try { localStorage.setItem(key, String(!expanded)); } catch { /* Private browsing can deny storage. */ }
     window.dispatchEvent(new Event('storage'));
