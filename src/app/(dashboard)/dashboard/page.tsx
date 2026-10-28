@@ -78,12 +78,30 @@ function TrendBadge({
   );
 }
 
+function CsatTrendBadge({ value }: { value: number }) {
+  const Icon = value === 0 ? Minus : value > 0 ? TrendingUp : TrendingDown;
+  const color =
+    value === 0
+      ? "text-[var(--bq-t3)]"
+      : value > 0
+        ? "text-[var(--bq-ok)]"
+        : "text-[var(--bq-err)]";
+  const sign = value > 0 ? "+" : value < 0 ? "−" : "";
+  return (
+    <span className={`flex items-center gap-0.5 text-xs font-medium ${color}`}>
+      <Icon className="h-3 w-3" />
+      {sign}{Math.abs(value).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}/5
+    </span>
+  );
+}
+
 function HeroKpi({
   label,
   value,
   suffix,
   trend,
   trendDirection,
+  trendContent,
   accent,
   sparkline,
   sparklineSuffix,
@@ -94,6 +112,7 @@ function HeroKpi({
   suffix?: string;
   trend?: number;
   trendDirection?: TrendDirection;
+  trendContent?: React.ReactNode;
   accent: string;
   sparkline?: SparklinePoint[];
   sparklineSuffix?: string;
@@ -123,9 +142,12 @@ function HeroKpi({
             <span className="ml-0.5 text-xs text-[var(--bq-t3)]">{suffix}</span>
           )}
         </span>
-        {trend !== undefined && trendDirection && (
+        {(trendContent || (trend !== undefined && trendDirection)) && (
           <div className="flex flex-wrap items-center gap-1 font-mono text-[11px]">
-            <TrendBadge value={trend} direction={trendDirection} />
+            {trendContent ??
+              (trend !== undefined && trendDirection && (
+                <TrendBadge value={trend} direction={trendDirection} />
+              ))}
             <span className="text-[var(--bq-t3)]">vs. anterior</span>
           </div>
         )}
@@ -458,12 +480,11 @@ export default function DashboardPage() {
                 label="CSAT"
                 value={overview.csatScore ?? "—"}
                 suffix={overview.csatScore !== null ? "/5" : undefined}
-                trend={
-                  overview.csatScore !== null
-                    ? Math.round(overview.csatTrend * 10)
-                    : 0
+                trendContent={
+                  <CsatTrendBadge
+                    value={overview.csatScore !== null ? overview.csatTrend : 0}
+                  />
                 }
-                trendDirection="higher-is-better"
                 accent="var(--bq-warn)"
                 footer={
                   overview.csatResponses === 0 ? (

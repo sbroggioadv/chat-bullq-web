@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import DashboardPage from "@/app/(dashboard)/dashboard/page";
 import { dashboardService } from "@/features/dashboard/services/dashboard.service";
@@ -167,3 +167,48 @@ it("preserva detalhes, link de presas e exportação após reorganizar os painé
   download.mockRestore();
   vi.unstubAllGlobals();
 });
+
+it.each([
+  [0.2, "+0,2/5", "--bq-ok"],
+  [-0.2, "−0,2/5", "--bq-err"],
+  [0, "0/5", "--bq-t3"],
+] as const)(
+  "exibe delta CSAT %s em pontos, com sinal e cor",
+  async (delta, expected, color) => {
+    vi.mocked(dashboardService.getOverview).mockResolvedValue({
+      activeConversations: 5,
+      activeBreakdown: { pending: 1, open: 2, waiting: 1, bot: 1 },
+      stuckConversations: 2,
+      avgFirstResponseMinutes: 3,
+      avgFirstResponseTrend: -2,
+      slaCompliancePercent: 90,
+      slaTrend: 1,
+      resolutionRatePercent: 80,
+      resolutionTrend: 2,
+      fcrPercent: 80,
+      csatScore: 4,
+      csatResponses: 2,
+      csatTrend: delta,
+      totalConversations: 10,
+      conversationsTrend: 1,
+      openConversations: 2,
+      pendingConversations: 1,
+      totalMessages: 30,
+      messagesTrend: 1,
+      avgResolutionMinutes: 10,
+    });
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <DashboardPage />
+      </QueryClientProvider>,
+    );
+    const label = await screen.findByText("CSAT", { selector: "summary" });
+    const card = label.closest("details")!.parentElement!;
+    const badge = within(card).getByText(expected);
+    expect(badge).toHaveClass(`text-[var(${color})]`);
+    expect(card.textContent).not.toContain("%");
+  },
+);
