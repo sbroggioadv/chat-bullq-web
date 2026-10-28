@@ -77,7 +77,7 @@ export function ChannelsList() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
-  const connect = <Button variant="solid" onClick={() => setShowCreate(true)}><Plus size={13} />Conectar canal</Button>;
+  const connect = <Button variant="solid" onClick={() => setShowCreate(true)}><Plus className={styles.controlIcon} />Conectar canal</Button>;
   return (
     <div>
       {header ? createPortal(connect, header) : connect}
@@ -147,7 +147,7 @@ export function ChannelsList() {
         )}
       </div>
 
-      <a href="/inbox" className="bq-button mt-3">Abrir inbox</a>
+      {hasNoChannels && <a href="/inbox" className="bq-button mt-3">Abrir inbox</a>}
       <CreateChannelDialog
         open={showCreate}
         onClose={() => setShowCreate(false)}

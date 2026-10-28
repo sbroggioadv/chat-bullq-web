@@ -7,7 +7,7 @@ const { save } = vi.hoisted(() => ({ save: vi.fn().mockResolvedValue(undefined) 
 vi.mock('@/features/user-profile/hooks/use-user-profile', () => ({
   useUserProfile: () => ({ user: { id: 'test-user', name: 'Pessoa', email: 'test@example.test', avatarUrl: null }, save, isSaving: false }),
 }));
-vi.mock('@/components/ui/image-upload', () => ({ ImageUpload: () => null }));
+vi.mock('@/components/ui/image-upload', () => ({ ImageUpload: ({ placeholderIcon: Placeholder }: { placeholderIcon: React.ElementType }) => <Placeholder /> }));
 afterEach(() => { cleanup(); vi.clearAllMocks(); });
 
 describe('limite do nome do perfil', () => {
@@ -39,4 +39,14 @@ describe('limite do nome do perfil', () => {
     expect(save).not.toHaveBeenCalled();
   });
 
+});
+
+it('oferece iniciais do rascunho e título sem salto de h1 para h3', async () => {
+  const user = userEvent.setup(); render(<UserProfileForm />);
+  expect(screen.getByRole('heading', { name: 'Foto de perfil', level: 2 })).toBeVisible();
+  const name = screen.getByRole('textbox', { name: 'Nome completo' });
+  await user.clear(name); await user.type(name, 'Ana Maria Silva');
+  expect(screen.getByText('AS')).toBeInTheDocument();
+  await user.click(screen.getByRole('button', { name: 'Descartar' }));
+  expect(screen.getByText('P')).toBeInTheDocument();
 });

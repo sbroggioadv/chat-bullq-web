@@ -115,7 +115,7 @@ export function OrganizationGeneralForm() {
       {!canEdit && <p className="flex items-center gap-2 text-xs text-[var(--bq-t3)]"><Lock size={13} /> Apenas proprietário e administrador podem alterar estes dados.</p>}
       <section className={styles.block} aria-label="Dados da organização">
         <div className={styles.photoRow}>
-          <div className={styles.photoText}><h3>Logo</h3><p>PNG, JPG ou WebP, até 5 MB. Aparece no topo do menu.</p></div>
+          <div className={styles.photoText}><h2>Logo</h2><p>PNG, JPG ou WebP, até 5 MB. Aparece no topo do menu.</p></div>
           <div className={styles.avatarUpload}><ImageUpload value={logoUrl} onChange={setLogoUrl} shape="square" disabled={!canEdit} /></div>
         </div>
         <div className={styles.fieldRow}><SettingRow title="Nome do escritório"><div className={styles.fieldControl}>

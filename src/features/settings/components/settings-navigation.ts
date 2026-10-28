@@ -32,3 +32,8 @@ export const settingsGroups = [
 ];
 export const settingsItems = settingsGroups.flatMap(group => group.items);
 export const normalizeSearch = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+export function profileInitials(name?: string | null) {
+  const words = name?.trim().split(/\s+/).filter(Boolean) ?? [];
+  return words.length ? `${words[0][0]}${words.length > 1 ? words[words.length - 1][0] : ''}`.toUpperCase() : 'BQ';
+}

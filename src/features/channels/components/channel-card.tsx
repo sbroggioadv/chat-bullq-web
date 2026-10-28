@@ -1,11 +1,13 @@
 'use client';
 
 import styles from '@/features/settings/components/settings.module.css';
-import { Button } from '@/components/ui/foundation';
-import { useState } from 'react';
+import { Button, Pill } from '@/components/ui/foundation';
+import { useRef, useState } from 'react';
 import {
   MessageSquare,
-  MoreVertical,
+  MessageCircle,
+  Instagram,
+  Sparkles,
   Pencil,
   Trash2,
   Zap,
@@ -26,15 +28,14 @@ import { toast } from 'sonner';
 import type { Channel } from '@/features/channels/services/channels.service';
 import { channelsService } from '@/features/channels/services/channels.service';
 import { useChannelSync } from '@/features/channels/hooks/use-channel-sync';
-import { ZappfyIcon, MetaIcon, InstagramIcon } from '@/components/ui/icons';
 import { EditChannelDialog } from '@/features/channels/components/edit-channel-dialog';
 
-const channelTypeMap: Record<string, { label: string; icon: React.ElementType; color: string }> = {
-  WHATSAPP_ZAPPFY: { label: 'WhatsApp (Zappfy)', icon: ZappfyIcon, color: 'bg-zinc-50 dark:bg-zinc-800' },
-  WHATSAPP_OFFICIAL: { label: 'WhatsApp Official', icon: MetaIcon, color: 'bg-zinc-50 dark:bg-zinc-800' },
-  INSTAGRAM: { label: 'Instagram', icon: InstagramIcon, color: 'bg-zinc-50 dark:bg-zinc-800' },
-  GMAIL: { label: 'Gmail', icon: Mail, color: 'bg-red-50 dark:bg-red-950/30' },
-  JARVIS: { label: 'Jarvis (interno)', icon: Mail, color: 'bg-violet-50 dark:bg-violet-950/30' },
+const channelTypeMap: Record<string, { label: string; icon: React.ElementType }> = {
+  WHATSAPP_ZAPPFY: { label: 'WhatsApp (Zappfy)', icon: MessageCircle },
+  WHATSAPP_OFFICIAL: { label: 'WhatsApp Official', icon: MessageCircle },
+  INSTAGRAM: { label: 'Instagram', icon: Instagram },
+  GMAIL: { label: 'Gmail', icon: Mail },
+  JARVIS: { label: 'Jarvis (interno)', icon: Sparkles },
 };
 
 interface ChannelCardProps {
@@ -59,9 +60,33 @@ export function ChannelCard({ channel, onUpdate }: ChannelCardProps) {
       setOpeningInbox(false);
     }
   };
-  const [showMenu, setShowMenu] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [draftName, setDraftName] = useState(channel.name);
+  const [savingName, setSavingName] = useState(false);
+  const editButton = useRef<HTMLButtonElement>(null);
+  const panelId = `channel-${channel.id}-editor`;
+  const closeEditor = () => {
+    setExpanded(false);
+    setDraftName(channel.name);
+    editButton.current?.focus();
+  };
+  const saveName = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const name = draftName.trim();
+    if (!name || savingName) return;
+    if (name === channel.name) { closeEditor(); return; }
+    setSavingName(true);
+    try {
+      await channelsService.update(channel.id, { name });
+      toast.success('Nome do canal atualizado');
+      onUpdate();
+      closeEditor();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao atualizar canal');
+    } finally { setSavingName(false); }
+  };
   const [editing, setEditing] = useState(false);
-  const meta = channelTypeMap[channel.type] || { label: channel.type, icon: MessageSquare, color: 'bg-gray-500' };
+  const meta = channelTypeMap[channel.type] || { label: channel.type, icon: MessageSquare };
   const Icon = meta.icon;
   const sync = useChannelSync({ channelId: channel.id, channelType: channel.type });
 
@@ -161,34 +186,28 @@ export function ChannelCard({ channel, onUpdate }: ChannelCardProps) {
 
   return (
     <div className={styles.channelRow}>
-      <div className={`flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-lg border border-zinc-200/60 dark:border-zinc-700/60 ${meta.color}`}>
-        <Icon className="h-4 w-4" />
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <h3 className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-            {channel.name}
-          </h3>
-          <span
-            className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-              channel.isActive
-                ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                : 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400'
-            }`}
-          >
-            {channel.isActive ? 'Ativo' : 'Inativo'}
-          </span>
-          {channel.visibility === 'PRIVATE' && (
-            <span
-              title="Canal privado — só membros com permissão explícita enxergam, mesmo OWNER/ADMIN"
-              className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-            >
-              <Lock className="h-3 w-3" />
-              Privado
-            </span>
-          )}
+      <div className={styles.channelSummary}>
+        <span className={styles.channelIcon}><Icon aria-hidden /></span>
+        <div className={styles.channelText}>
+          <h3>{channel.name}</h3>
+          <p>{meta.label} · quem vê: {channel.visibility === 'PRIVATE' ? 'Membros com permissão' : 'Toda a equipe'}</p>
         </div>
-        <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">{meta.label}</p>
+        <div className={styles.rowActions}>
+          <span className={styles.channelStatus} data-active={channel.isActive}><Pill>{channel.isActive ? 'Ativo' : 'Inativo'}</Pill></span>
+          <Button aria-expanded={expanded} aria-controls={panelId} onClick={event => {
+            editButton.current = event.currentTarget;
+            if (expanded) closeEditor();
+            else { setDraftName(channel.name); setExpanded(true); }
+          }}>Editar</Button>
+        </div>
+      </div>
+      {expanded && <div id={panelId} className={styles.channelEditor} role="region" aria-label={`Editar ${channel.name}`}>
+        <form onSubmit={saveName} className={styles.channelNameForm}>
+          <label htmlFor={`${panelId}-name`}>Nome</label>
+          <input id={`${panelId}-name`} autoFocus value={draftName} disabled={savingName} onChange={event => setDraftName(event.target.value)} />
+          <Button type="submit" disabled={savingName || !draftName.trim()}>{savingName ? 'Salvando…' : 'Salvar'}</Button>
+          <Button disabled={savingName} onClick={closeEditor}>Cancelar</Button>
+        </form>
         {channel.type === 'GMAIL' && (() => {
           if (!channel.googlePermissions) return null;
           const { hasRead, hasSend, hasCalendar: hasCal } = channel.googlePermissions;
@@ -199,7 +218,7 @@ export function ChannelCard({ channel, onUpdate }: ChannelCardProps) {
           return (
             <div className="mt-1.5 flex flex-wrap gap-1">
               <span
-                className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+                className={`rounded-full px-1.5 py-0.5 text-bq-text-phase-number font-medium ${
                   badge(
                     hasRead,
                     'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300',
@@ -210,7 +229,7 @@ export function ChannelCard({ channel, onUpdate }: ChannelCardProps) {
                 Leitura {hasRead ? '✓' : '—'}
               </span>
               <span
-                className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+                className={`rounded-full px-1.5 py-0.5 text-bq-text-phase-number font-medium ${
                   badge(
                     hasSend,
                     'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300',
@@ -221,7 +240,7 @@ export function ChannelCard({ channel, onUpdate }: ChannelCardProps) {
                 Envio {hasSend ? '✓' : '—'}
               </span>
               <span
-                className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+                className={`rounded-full px-1.5 py-0.5 text-bq-text-phase-number font-medium ${
                   badge(
                     hasCal,
                     'bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300',
@@ -284,7 +303,7 @@ export function ChannelCard({ channel, onUpdate }: ChannelCardProps) {
           </div>
         )}
 
-        <details className={styles.details}><summary>Conexão e sincronização</summary><div className="flex flex-wrap items-center gap-2 pb-2">
+        <div className={styles.channelActions} aria-label="Conexão e sincronização">
           <Button
             onClick={handleTest}
             disabled={isTesting}
@@ -376,52 +395,14 @@ export function ChannelCard({ channel, onUpdate }: ChannelCardProps) {
             )}
             {channel.isActive ? 'Desativar' : 'Ativar'}
           </Button>
-        </div></details>
-      </div>
-      <div className="relative flex items-center gap-1">
-        <Button onClick={() => setEditing(true)}>Editar</Button>
-        <Button
-          aria-label={`Ações do canal ${channel.name}`}
-          aria-expanded={showMenu}
-          onClick={() => setShowMenu(!showMenu)}
-        >
-          <MoreVertical className="h-3 w-3" />
-        </Button>
-        {showMenu && (
-          <>
-            <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
-            <div className="bq-popover absolute right-0 top-full z-20 mt-1 flex flex-col items-stretch gap-1">
-              <Button
-                onClick={() => { setEditing(true); setShowMenu(false); }}
-              >
-                <Pencil className="h-3 w-3" />
-                Editar credenciais
-              </Button>
-              <Button
-                onClick={() => { handleToggleVisibility(); setShowMenu(false); }}
-              >
-                {channel.visibility === 'PRIVATE' ? (
-                  <>
-                    <Globe className="h-3 w-3" />
-                    Tornar público na org
-                  </>
-                ) : (
-                  <>
-                    <Lock className="h-3 w-3" />
-                    Tornar privado
-                  </>
-                )}
-              </Button>
-              <Button
-                onClick={() => { handleDelete(); setShowMenu(false); }}
-              >
-                <Trash2 className="h-3 w-3" />
-                Remover
-              </Button>
-            </div>
-          </>
-        )}
-      </div>
+          <Button onClick={() => setEditing(true)}><Pencil aria-hidden />Editar credenciais</Button>
+          <Button onClick={handleToggleVisibility}>
+            {channel.visibility === 'PRIVATE' ? <><Globe aria-hidden />Tornar público na org</> : <><Lock aria-hidden />Tornar privado</>}
+          </Button>
+          <Button onClick={handleDelete}><Trash2 aria-hidden />Remover</Button>
+          <a href="/inbox" className="bq-button">Abrir inbox</a>
+        </div>
+      </div>}
       <EditChannelDialog
         channel={editing ? channel : null}
         onClose={() => setEditing(false)}

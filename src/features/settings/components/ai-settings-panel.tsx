@@ -188,7 +188,7 @@ function AiSettingsEditor({ data, watchdogOnly, onDiscard }: { data: Organizatio
     <div className={styles.aiPanel}>
       {!watchdogOnly && <>
       <section className={styles.kill}>
-        <div className={styles.rowText}><h3>{aiPanicMode ? 'Toda a IA será pausada' : 'Controle de toda a IA'}</h3><p>Desliga a IA em todos os canais e pipelines. A alteração entra em vigor ao salvar.</p></div>
+        <div className={styles.rowText}><h2>{aiPanicMode ? 'Toda a IA será pausada' : 'Controle de toda a IA'}</h2><p>Desliga a IA em todos os canais e pipelines. A alteração entra em vigor ao salvar.</p></div>
         <Button className={styles.danger} role="switch" aria-label="Pausar toda a IA" aria-checked={aiPanicMode} onClick={() => setAiPanicMode(!aiPanicMode)}>{aiPanicMode ? 'Religar a IA' : 'Desligar toda a IA'}</Button>
       </section>
 
@@ -247,6 +247,7 @@ function AiSettingsEditor({ data, watchdogOnly, onDiscard }: { data: Organizatio
               <Toggle label="Atendimento 24 horas" checked={alwaysOn} onChange={setAlwaysOn} />
             </label>
             <select
+              aria-label="Fuso horário do atendimento"
               value={aiTimezone}
               onChange={(e) => setAiTimezone(e.target.value)}
               disabled={alwaysOn}

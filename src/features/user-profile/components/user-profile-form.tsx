@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { UserCircle } from 'lucide-react';
+import { profileInitials } from '@/features/settings/components/settings-navigation';
 import { ImageUpload } from '@/components/ui/image-upload';
 import { Button, SettingRow } from '@/components/ui/foundation';
 import { SettingsSaveBar } from '@/features/settings/components/settings-save-bar';
@@ -29,8 +29,8 @@ function ProfileEditor({ profile }: { profile: ReturnType<typeof useUserProfile>
   return <div className="space-y-5">
     <section className={styles.block} aria-label="Dados do perfil">
       <div className={styles.photoRow}>
-        <div className={styles.photoText}><h3>Foto de perfil</h3><p>PNG, JPG ou WebP, até 5 MB.</p></div>
-        <div className={styles.avatarUpload}><ImageUpload value={avatar} onChange={avatarUrl => setDraft(current => ({ ...current, avatarUrl }))} shape="circle" placeholderIcon={UserCircle} /></div>
+        <div className={styles.photoText}><h2>Foto de perfil</h2><p>PNG, JPG ou WebP, até 5 MB.</p></div>
+        <div className={styles.avatarUpload} data-has-image={Boolean(avatar)}><ImageUpload value={avatar} onChange={avatarUrl => setDraft(current => ({ ...current, avatarUrl }))} shape="circle" placeholderIcon={() => <span className={styles.photoInitials} aria-hidden>{profileInitials(name)}</span>} /></div>
       </div>
       <div className={styles.fieldRow}><SettingRow title="Nome completo"><div className={styles.fieldControl}><input aria-label="Nome completo" aria-invalid={Boolean(error)} aria-describedby="profile-name-help" value={name} maxLength={120} onChange={event => setDraft(current => ({ ...current, name: event.target.value }))} /><p id="profile-name-help" className={error ? styles.fieldError : 'sr-only'}>{error ?? `${name.length}/120 caracteres`}</p></div></SettingRow></div>
       <div className={styles.fieldRow}><SettingRow title="E-mail" description="Trocar o e-mail exige verificação. Fale com o suporte."><input aria-label="E-mail" type="email" value={user.email} readOnly /></SettingRow></div>

@@ -1,9 +1,9 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import SettingsLayout from '@/app/(dashboard)/settings/layout';
-import { settingsGroups, settingsItems } from '@/features/settings/components/settings-navigation';
+import { settingsGroups, settingsItems, profileInitials } from '@/features/settings/components/settings-navigation';
 vi.mock('next/navigation', () => ({ usePathname: () => '/settings/appearance/builder' }));
-vi.mock('next/link', () => ({ default: ({ children, href, ...props }: {children: React.ReactNode; href:string}) => <a href={href} {...props}>{children}</a> }));
+vi.mock('next/link', () => ({ default: ({ children, href, ...props }: {children: React.ReactNode; href:string}) => <a href={href} {...Object.fromEntries(Object.entries(props).filter(([key]) => key !== 'prefetch'))}>{children}</a> }));
 afterEach(cleanup);
 describe('navegação de Configurações', () => {
   it('preserva as treze rotas e agrupa em cinco seções', () => {
@@ -26,4 +26,16 @@ describe('navegação de Configurações', () => {
     fireEvent.change(search,{target:{value:'inexistente'}});
     expect(screen.getByRole('status')).toHaveTextContent('Nenhuma configuração encontrada');
   });
+});
+
+it.each([['  Ana Maria Silva  ', 'AS'], ['Ana', 'A'], ['', 'BQ'], ['Usuário de teste', 'UT']])('iniciais de %s preservam primeiro e último nomes', (name, initials) => {
+  expect(profileInitials(name)).toBe(initials);
+});
+it('conserva cabeçalho e navegação durante suspensão do conteúdo', () => {
+  const pending = new Promise(() => {});
+  function PendingContent(): React.ReactNode { throw pending; }
+  render(<SettingsLayout><PendingContent /></SettingsLayout>);
+  expect(screen.getByRole('heading', { name: 'Aparência', level: 1 })).toBeVisible();
+  expect(screen.getByRole('navigation', { name: 'Seções das configurações' })).toBeVisible();
+  expect(screen.getByRole('status', { name: 'Carregando página' })).toBeVisible();
 });
