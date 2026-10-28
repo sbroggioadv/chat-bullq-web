@@ -4,6 +4,12 @@ import { useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   CalendarDays,
+  Phone,
+  Copy,
+  BellOff,
+  ExternalLink,
+  Search,
+  Sparkles,
   ClipboardList,
   FolderKanban,
   Loader2,
@@ -16,7 +22,7 @@ import {
   KanbanSquare,
   type LucideIcon,
 } from 'lucide-react';
-import { Button, Pill } from '@/components/ui/foundation';
+import { Button, Pill, Switch } from '@/components/ui/foundation';
 import { PipelinePopover } from '@/features/inbox/components/pipeline-popover';
 import { pipelinesService, type ConversationCard } from '@/features/pipelines/services/pipelines.service';
 import { ClickUpPanel } from '@/features/inbox/components/clickup-panel';
@@ -33,7 +39,7 @@ import { calendarService } from '@/features/calendar/services/calendar.service';
 import { rememberRecipients } from '@/features/email/lib/recent-recipients';
 import { EmailRichEditor } from '@/features/email/components/email-rich-editor';
 
-type Tab = 'notes' | 'negotiation' | 'contact' | 'email' | 'agenda' | 'project' | 'clickup';
+type Tab = 'summary' | 'files' | 'notes' | 'negotiation' | 'contact' | 'email' | 'agenda' | 'project' | 'clickup';
 
 interface ContactWorkspacePanelProps {
   conversation: Conversation;
@@ -49,7 +55,13 @@ export function ContactWorkspacePanel({
   onClose,
 }: ContactWorkspacePanelProps) {
   const isGroup = conversation.isGroup;
-  const [tab, setTab] = useState<Tab | null>(isGroup ? 'project' : 'negotiation');
+  const [openSections, setOpenSections] = useState<Set<Tab>>(() => new Set(['summary', 'negotiation']));
+  const sectionRefs = useRef<Partial<Record<Tab, HTMLElement | null>>>({});
+  const openSection = (id: Tab) => {
+    setOpenSections(previous => new Set([...previous, id]));
+    requestAnimationFrame(() => sectionRefs.current[id]?.scrollIntoView({ block: 'nearest' }));
+  };
+  const deals = useQuery({ queryKey: ['conversation-pipelines', conversation.id], queryFn: () => pipelinesService.listByConversation(conversation.id), staleTime: 30_000 });
 
   const contact = conversation.contact;
   const contactEmail =
@@ -57,33 +69,48 @@ export function ContactWorkspacePanel({
     (contact.phone && contact.phone.includes('@') ? contact.phone : '') ||
     '';
 
-  const tabs: Array<{ id: Tab; label: string; icon: LucideIcon; show: boolean }> = [
-    { id: 'negotiation', label: 'Negociação', icon: KanbanSquare, show: true },
-    { id: 'contact', label: 'Contato', icon: User, show: true },
-    { id: 'email', label: 'E-mail', icon: Mail, show: true },
-    { id: 'agenda', label: 'Reuniões · Agenda', icon: CalendarDays, show: true },
-    { id: 'project', label: 'Projeto', icon: FolderKanban, show: true },
-    { id: 'notes', label: 'Contexto e notas', icon: ClipboardList, show: true },
-    { id: 'clickup', label: 'ClickUp', icon: ClipboardList, show: true },
+  const tabs: Array<{ id: Tab; label: string; icon: LucideIcon }> = [
+    { id: 'summary', label: 'Resumo da conversa', icon: Sparkles },
+    { id: 'negotiation', label: 'Negociação', icon: KanbanSquare },
+    { id: 'files', label: 'Anexos', icon: Paperclip },
+    { id: 'notes', label: 'Notas', icon: ClipboardList },
+    { id: 'agenda', label: 'Reuniões', icon: CalendarDays },
+    { id: 'email', label: 'E-mail', icon: Mail },
+    { id: 'clickup', label: 'ClickUp', icon: ClipboardList },
+    { id: 'project', label: 'Projeto · tarefas', icon: FolderKanban },
+    { id: 'contact', label: 'Contato', icon: User },
   ];
 
   return (
     <aside className="bq-contact-panel" aria-label="Detalhes da conversa">
-      <div className="flex items-center justify-between border-b border-[var(--bq-hair)] px-4 py-3">
-        <span className="text-xs font-semibold">Detalhes</span>
-        <Button aria-label="Fechar detalhes" onClick={onClose}><X size={14} /></Button>
+      <div className="bq-contact-heading">
+        <span>Detalhes</span>
+        <Button autoFocus aria-label="Fechar detalhes" onClick={onClose}><X size={14} /></Button>
       </div>
       <div className="bq-contact-profile text-center">
-        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--bq-raised-2)] text-lg font-semibold">{(contact.name || '?').slice(0, 2).toUpperCase()}</div>
-        <h2 className="font-semibold">{contact.name || contact.phone || 'Contato'}</h2>
-        <p className="mt-1 text-xs text-[var(--bq-t3)]">{contact.phone || 'Telefone não informado'}</p>
-        <p className="mt-1 break-all text-xs text-[var(--bq-t3)]">{contactEmail || 'E-mail não informado'}</p>
-        <div className="mt-3 flex flex-wrap justify-center gap-1"><Pill>{conversation.channel.name}</Pill>{contact.tags?.map(({tag}) => <Pill key={tag.id}>{tag.name}</Pill>)}</div>
+        <ProfileAvatar key={contact.avatarUrl} name={contact.name} url={contact.avatarUrl} />
+        <h2>{contact.name || contact.phone || 'Contato'}</h2>
+        <p>{contact.phone || 'Telefone não informado'}</p>
+        <p className="break-all">{contactEmail || 'E-mail não informado'}</p>
+        <div className="bq-contact-quick-actions">
+          {contact.phone && !contact.phone.includes('@') ? <a href={`tel:${contact.phone}`}><span><Phone size={15} /></span>Ligar</a> : <button type="button" disabled title="Telefone não informado"><span><Phone size={15} /></span>Ligar</button>}
+          <button type="button" disabled={!contact.phone} onClick={() => navigator.clipboard.writeText(contact.phone || '').then(() => toast.success('Contato copiado')).catch(() => toast.error('Não foi possível copiar'))}><span><Copy size={15} /></span>Copiar</button>
+          <button type="button" disabled title="Silenciar ainda não disponível"><span><BellOff size={15} /></span>Silenciar</button>
+          <button type="button" onClick={() => openSection('contact')}><span><ExternalLink size={15} /></span>Ficha</button>
+        </div>
+        {!!contact.tags?.length && <div className="mt-3 flex flex-wrap justify-center gap-1">{contact.tags.map(({tag}) => <Pill key={tag.id}>{tag.name}</Pill>)}</div>}
       </div>
-      {tabs.map(({id, label, icon: Icon}) => <section key={id} className="bq-contact-section">
-        <button type="button" aria-expanded={tab === id} aria-controls={`contact-section-${id}`} onClick={() => setTab(tab === id ? null : id)}><Icon size={14} />{label}<ChevronDown size={14} className={tab === id ? 'rotate-180' : ''} /></button>
-        {tab === id && <div id={`contact-section-${id}`}>
-        {tab === 'notes' && <p className="px-4 pb-4 text-xs text-[var(--bq-t3)]">Resumo de contexto e notas da conversa ainda não disponíveis.</p>}
+      <button type="button" className="bq-contact-deal" onClick={() => openSection('negotiation')}>
+        <KanbanSquare size={13} /><span>{deals.data?.[0] ? `${deals.data[0].pipeline.name} · ${deals.data[0].stage.name}` : deals.isLoading ? 'Carregando negociação…' : deals.isError ? 'Negociação indisponível' : 'Sem negociação vinculada'}</span>
+      </button>
+      <div className="bq-contact-incoming"><div><b>Entra no Incoming</b><p>Disponível após o piloto Incoming.</p></div><Switch label="Incoming ainda não disponível" checked={false} disabled onChange={() => {}} /></div>
+      <label className="bq-contact-find"><Search size={14} /><input disabled placeholder="Busca na conversa indisponível" aria-label="Busca completa na conversa ainda não disponível" /></label>
+      {tabs.map(({id: tab, label, icon: Icon}) => <section key={tab} ref={element => { sectionRefs.current[tab] = element; }} className="bq-contact-section">
+        <button type="button" aria-label={tab === 'agenda' ? 'Reuniões · Agenda' : undefined} aria-expanded={openSections.has(tab)} aria-controls={`contact-section-${tab}`} onClick={() => setOpenSections(previous => { const next = new Set(previous); if (next.has(tab)) next.delete(tab); else next.add(tab); return next; })}><Icon size={14} />{label}<ChevronDown size={14} className={openSections.has(tab) ? 'rotate-180' : ''} /></button>
+        {openSections.has(tab) && <div id={`contact-section-${tab}`}>
+        {tab === 'summary' && <div className="bq-contact-summary">Resumo de contexto ainda não disponível para esta conversa.</div>}
+        {tab === 'notes' && <p className="px-4 pb-4 text-xs text-[var(--bq-t3)]">Notas internas ainda não disponíveis.</p>}
+        {tab === 'files' && <p className="px-4 pb-4 text-xs text-[var(--bq-t3)]">Índice completo de anexos ainda não disponível. Os arquivos recebidos continuam acessíveis nas mensagens e no projeto vinculado.</p>}
         {tab === 'negotiation' && <NegotiationTab conversation={conversation} />}
         {tab === 'contact' && (
           <div className="space-y-3 p-4">
@@ -162,6 +189,12 @@ export function ContactWorkspacePanel({
       </section>)}
     </aside>
   );
+}
+
+function ProfileAvatar({ name, url }: { name: string | null; url: string | null }) {
+  const [failed, setFailed] = useState(false);
+  if (url && !failed) return <img className="bq-contact-avatar" src={url} alt={name || 'Contato'} referrerPolicy="no-referrer" onError={() => setFailed(true)} />;
+  return <div className="bq-contact-avatar">{(name || '?').split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase()}</div>;
 }
 
 function EmailComposeTab({

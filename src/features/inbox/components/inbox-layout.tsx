@@ -1,6 +1,5 @@
 'use client';
 
-import { ArrowLeft } from 'lucide-react';
 import '@/features/inbox/components/conversations.css';
 import { type ReactNode, useCallback, useRef } from 'react';
 import {
@@ -37,7 +36,7 @@ interface InboxLayoutProps {
  * (override do default da lib — que resetaria pro último `defaultSize`,
  * ou seja, o último valor persistido — comportamento errado pra nós).
  */
-export function InboxLayout({ list, panel, active = false, onBack }: InboxLayoutProps) {
+export function InboxLayout({ list, panel, active = false }: InboxLayoutProps) {
   const { width, setWidth, isResizable, isHydrating } = useInboxColumnWidth();
   const listPanelRef = useRef<PanelImperativeHandle | null>(null);
 
@@ -70,7 +69,6 @@ export function InboxLayout({ list, panel, active = false, onBack }: InboxLayout
     return <div className="bq-inbox bq-mobile-inbox h-full min-w-0">
       <div className={active ? 'hidden' : 'h-full min-w-0'}>{list}</div>
       {active && <div className="flex h-full min-w-0 flex-col">
-        <button type="button" className="bq-mobile-back" onClick={onBack}><ArrowLeft size={15} /> Conversas</button>
         <div className="relative flex min-h-0 min-w-0 flex-1">{panel}</div>
       </div>}
     </div>;

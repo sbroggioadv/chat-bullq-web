@@ -16,8 +16,11 @@ import {
   Video,
   Music,
   Contact,
+  Zap,
+  Smile,
   File as FileIcon,
 } from 'lucide-react';
+import { Popover, PopoverButton, PopoverPanel } from '@headlessui/react';
 import { toast } from 'sonner';
 import { useAudioRecorder } from '@/features/inbox/hooks/use-audio-recorder';
 import { ComposerAutocomplete, type AutocompleteItem } from '@/features/inbox/components/composer-autocomplete';
@@ -45,6 +48,7 @@ interface ChatInputProps {
   /** SPEC-003 W3: share one or more org contacts as vCards. */
   onShareContacts?: (contacts: OrgContact[]) => Promise<void>;
   disabled?: boolean;
+  channelName?: string;
 }
 
 /**
@@ -175,6 +179,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
   onSendFile,
   onShareContacts,
   disabled,
+  channelName,
 }, ref) {
   const [text, setText] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -196,6 +201,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
   const isSendingImage = isSendingAttachment;
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const recorder = useAudioRecorder();
 
@@ -577,16 +583,16 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
                 ? 'Legenda (opcional)…'
                 : canSendImage
                   ? acceptsAnyFile
-                    ? 'Digite uma mensagem ou arraste/cole um arquivo…'
+                    ? 'Escreva uma mensagem. Enter envia, Shift+Enter quebra a linha.'
                     : 'Digite uma mensagem ou cole/arraste uma imagem…'
                   : 'Digite uma mensagem...'
             }
             aria-label="Mensagem"
             rows={2}
-            className="max-h-40 min-h-[48px] w-full resize-none border-0 px-1 py-1 text-[13px] placeholder:text-[var(--bq-t3)] focus:outline-none"
+            className="max-h-[120px] min-h-[40px] w-full resize-none border-0 p-0 text-[13.5px] placeholder:text-[var(--bq-t3)] focus:outline-none"
           />
         </div>
-      <div className="flex items-center gap-1">
+      <div className="bq-composer-toolbar">
         <input
           ref={fileInputRef}
           type="file"
@@ -605,18 +611,12 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
         >
           <Paperclip className="h-5 w-5" />
         </button>
-        {canShareContact && (
-          <button
-            type="button"
-            onClick={() => setShareContactOpen(true)}
-            disabled={disabled || !!pendingAttachment}
-            className="mb-1 rounded-lg p-2 text-[var(--bq-t3)] hover:bg-[var(--bq-raised)] hover:text-[var(--bq-t2)] disabled:cursor-not-allowed disabled:opacity-40 "
-            aria-label="Compartilhar contato"
-            title="Compartilhar contato"
-          >
-            <Contact className="h-5 w-5" />
-          </button>
-        )}
+        <input ref={imageInputRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp" className="hidden" onChange={handlePickerChange} aria-hidden="true" />
+        <button type="button" aria-label="Imagem" disabled={!canSendImage || !!pendingAttachment} onClick={() => imageInputRef.current?.click()}><ImageIcon size={15} /></button>
+        <button type="button" aria-label="Resposta rápida" onClick={() => { setText(previous => previous + '/'); textareaRef.current?.focus(); }}><Zap size={15} /></button>
+        <Popover><PopoverButton className="bq-button" aria-label="Emoji"><Smile size={15} /></PopoverButton><PopoverPanel anchor="top start" className="bq-popover">
+          <div className="flex gap-1 p-2" aria-label="Inserir emoji">{['😊', '👍', '✅', '🙏', '❤️'].map(emoji => <button type="button" key={emoji} aria-label={`Inserir ${emoji}`} onClick={() => { setText(previous => previous + emoji); textareaRef.current?.focus(); }}>{emoji}</button>)}</div>
+        </PopoverPanel></Popover>
         {canRecord && !pendingAttachment && (
           <button
             onClick={recorder.start}
@@ -628,6 +628,12 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
           </button>
         )}
         <span className="flex-1" />
+        <Popover><PopoverButton className="bq-button" aria-label="Opções de envio"><span className="bq-composer-via"><span>Enviar por {channelName || 'este canal'}</span>⌄</span></PopoverButton><PopoverPanel anchor="top end" className="bq-popover">
+          <div className="flex max-w-64 flex-col gap-2 p-2 text-xs">
+            <p>Canal desta conversa: {channelName || 'atual'}. Troca de canal ainda não disponível.</p>
+            {canShareContact && <button type="button" className="bq-button" disabled={disabled || !!pendingAttachment} onClick={() => setShareContactOpen(true)}><Contact size={14} /> Compartilhar contato</button>}
+          </div>
+        </PopoverPanel></Popover>
         {pendingAttachment ? (
           <button
             onClick={handleSendAttachment}

@@ -56,6 +56,7 @@ function translateSkipReason(reason: string): string {
 interface ChatPanelProps {
   conversation: Conversation;
   onConversationUpdate: () => void;
+  onBack?: () => void;
   /** Forwarded to ConversationHeader so the agent-runs sidebar toggle
    *  shows up in the chat header. */
   onToggleAgentLogs?: () => void;
@@ -380,41 +381,10 @@ function TemplateMessage({
   );
 }
 
-function ContactAvatar({
-  name,
-  avatarUrl,
-  size = 'md',
-}: {
-  name?: string | null;
-  avatarUrl?: string | null;
-  size?: 'sm' | 'md';
-}) {
-  const [failed, setFailed] = useState(false);
-  const initials = (name || '??').slice(0, 2).toUpperCase();
-  const dim = size === 'sm' ? 'h-7 w-7 text-[10px]' : 'h-10 w-10 text-sm';
-  if (avatarUrl && !failed) {
-    return (
-      <img
-        src={avatarUrl}
-        alt={name || 'avatar'}
-        referrerPolicy="no-referrer"
-        onError={() => setFailed(true)}
-        className={`${dim} shrink-0 rounded-full bg-[var(--bq-raised-2)] object-cover `}
-      />
-    );
-  }
-  return (
-    <div
-      className={`${dim} flex shrink-0 items-center justify-center rounded-full bg-[var(--bq-raised-2)] font-semibold text-[var(--bq-t2)]  `}
-    >
-      {initials}
-    </div>
-  );
-}
-
 export function ChatPanel({
   conversation,
   onConversationUpdate,
+  onBack,
   onToggleAgentLogs,
   agentLogsOpen,
   onToggleProject,
@@ -923,6 +893,7 @@ export function ChatPanel({
       <ConversationHeader
         conversation={conversation}
         onUpdate={onConversationUpdate}
+        onBack={onBack}
         onToggleAgentLogs={onToggleAgentLogs}
         agentLogsOpen={agentLogsOpen}
         onToggleProject={onToggleProject}
@@ -943,7 +914,7 @@ export function ChatPanel({
         messages={messages}
       />
 
-      <div ref={timelineRef} className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-[var(--bq-surface)] p-4 ">
+      <div ref={timelineRef} className="bq-timeline min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-[var(--bq-surface)] ">
         {isLoading ? (
           <div className="flex h-full items-center justify-center">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
@@ -953,7 +924,7 @@ export function ChatPanel({
             Nenhuma mensagem ainda
           </div>
         ) : (
-          <div className="mx-auto max-w-2xl space-y-2">
+          <div className="space-y-2">
             {(() => {
               const reactionMap = new Map<string, string[]>();
               for (const msg of messages) {
@@ -987,7 +958,7 @@ export function ChatPanel({
                   )}
                   <div
                     id={`msg-${msg.id}`}
-                    className={`group flex items-end gap-2 ${isOutbound ? 'justify-end' : 'justify-start'}`}
+                    className={`bq-message-row group relative flex items-end gap-2 ${isOutbound ? 'justify-end' : 'justify-start'}`}
                   >
                     {/* Botão "Responder" no hover. Aparece do lado de
                         FORA da bolha — esquerda quando outbound (msg
@@ -996,7 +967,7 @@ export function ChatPanel({
                         Reactions e bolhas curtas mantêm o botão visível.
                         Mensagens já revogadas não mostram ações. */}
                     {isOutbound && !isRevoked && (
-                      <div className="flex items-center gap-1 self-center opacity-0 transition-opacity group-hover:opacity-100">
+                      <div className="bq-message-actions flex items-center gap-1 self-center opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
                         <button
                           type="button"
                           onClick={() => startReply(msg)}
@@ -1035,30 +1006,8 @@ export function ChatPanel({
                         </button>
                       </div>
                     )}
-                    {!isOutbound && (
-                      <ContactAvatar
-                        size="sm"
-                        name={
-                          conversation.isGroup && msg.senderName
-                            ? msg.senderName
-                            : conversation.contact.name
-                        }
-                        avatarUrl={
-                          conversation.isGroup ? null : conversation.contact.avatarUrl
-                        }
-                      />
-                    )}
-                    <div className="relative max-w-[75%]">
-                      {conversation.isGroup && !isOutbound && msg.senderName && (
-                        <p className="mb-0.5 ml-1 text-xs font-semibold text-primary">
-                          {msg.senderName}
-                        </p>
-                      )}
-                      {isOutbound && (msg.sender?.name || (msg.senderId && msg.senderId === user?.id && user?.name)) && (
-                        <p className="mb-0.5 mr-1 text-right text-xs font-semibold text-primary">
-                          {msg.sender?.name || user?.name}
-                        </p>
-                      )}
+                    <div className="bq-message-content relative" title={`Remetente: ${isOutbound ? msg.sender?.name || (msg.senderId === user?.id ? user?.name : msg.senderName) || 'Você' : msg.senderName || conversation.contact.name || 'Contato'}`} aria-label={`Mensagem de ${isOutbound ? msg.sender?.name || msg.senderName || 'Você' : msg.senderName || conversation.contact.name || 'Contato'}`}>
+                      {conversation.isGroup && !isOutbound && msg.senderName && <p className="bq-message-sender">{msg.senderName}</p>}
                       {msg.metadata?.replyTo?.story && (
                         <StoryReplyCard
                           story={msg.metadata.replyTo.story}
@@ -1184,6 +1133,7 @@ export function ChatPanel({
                           </div>
                         </>
                       ) : (
+                        <>
                         <div
                           className="bq-message-bubble" data-outbound={isOutbound}
                         >
@@ -1240,8 +1190,9 @@ export function ChatPanel({
                           ) : (
                             <p className="text-sm italic opacity-70">[{msg.type}]</p>
                           )}
+                        </div>
                           <div
-                            className={`mt-1 flex items-center gap-1 text-[10px] ${
+                            className={`bq-message-meta mt-1 flex items-center gap-1 text-[10px] ${
                               isOutbound ? 'justify-end opacity-70' : 'text-[var(--bq-t3)]'
                             }`}
                           >
@@ -1260,7 +1211,7 @@ export function ChatPanel({
                               </span>
                             )}
                           </div>
-                        </div>
+                        </>
                       )}
                       {reactions.length > 0 && (
                         <div className={`absolute -bottom-2 ${isOutbound ? 'right-2' : 'left-2'} flex gap-0.5`}>
@@ -1274,7 +1225,7 @@ export function ChatPanel({
                       )}
                     </div>
                     {!isOutbound && !isRevoked && (
-                      <div className="flex items-center gap-1 self-center opacity-0 transition-opacity group-hover:opacity-100">
+                      <div className="bq-message-actions flex items-center gap-1 self-center opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
                         <button
                           type="button"
                           onClick={() => startReply(msg)}
@@ -1319,6 +1270,7 @@ export function ChatPanel({
         <ReplyPreviewBar message={replyingTo} onCancel={cancelReply} />
       )}
       <ChatInput
+        channelName={conversation.channel.name}
         ref={chatInputRef}
         onSend={handleSend}
         onSendAudio={handleSendAudio}

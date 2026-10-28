@@ -152,6 +152,7 @@ export default function InboxPage() {
           <div className="bq-conversation-workspace relative flex min-h-0 min-w-0 flex-1">
             <ChatPanel
               key={activeConversation.id}
+              onBack={() => setActiveConversation(null)}
               conversation={activeConversation}
               onConversationUpdate={handleConversationUpdate}
               onToggleAgentLogs={toggleAgentLogs}

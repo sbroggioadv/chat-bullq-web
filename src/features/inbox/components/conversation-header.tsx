@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { RefreshCw, Activity, PanelRight } from 'lucide-react';
+import { RefreshCw, Activity, PanelRight, ArrowLeft } from 'lucide-react';
 import { ConversationAiToggle } from '@/features/inbox/components/conversation-ai-toggle';
 import { AssignmentPopover } from '@/features/inbox/components/assignment-popover';
 import { AgentPinPopover } from '@/features/inbox/components/agent-pin-popover';
@@ -15,6 +15,7 @@ import { useConversationAiAllowedInGroup } from '@/features/inbox/hooks/use-conv
 interface ConversationHeaderProps {
   conversation: Conversation;
   onUpdate: () => void;
+  onBack?: () => void;
   /** When provided, renders a toggle button for the agent-runs sidebar. */
   onToggleAgentLogs?: () => void;
   agentLogsOpen?: boolean;
@@ -26,6 +27,7 @@ interface ConversationHeaderProps {
 export function ConversationHeader({
   conversation,
   onUpdate,
+  onBack,
   onToggleAgentLogs,
   agentLogsOpen,
   onToggleProject,
@@ -79,9 +81,11 @@ export function ConversationHeader({
     }
   };
 
+  const statusLabel = ({ OPEN: 'Em atendimento', PENDING: 'Pendente', WAITING: 'Aguardando', CLOSED: 'Encerrada', BOT: 'Com IA' } as Record<string, string>)[conversation.status] || conversation.status;
   const aiLabel = conversation.aiEnabled === true ? 'IA forçada' : conversation.aiEnabled === false ? 'IA pausada' : 'IA · Padrão';
   return (
     <header className="bq-conversation-head">
+      {onBack && <Button className="bq-mobile-back" aria-label="Voltar para Conversas" onClick={onBack}><ArrowLeft size={16} /></Button>}
       <div className="flex min-w-0 flex-1 items-center gap-2">
         <HeaderAvatar key={conversation.contact.avatarUrl} name={conversation.contact.name} avatarUrl={conversation.contact.avatarUrl} />
         <div className="min-w-0 flex-1">
@@ -92,6 +96,7 @@ export function ConversationHeader({
         </div>
       </div>
       {conversation.channel.type !== 'JARVIS' && <div className="bq-chat-actions">
+        <span className="bq-conversation-status"><span />{statusLabel}</span>
         <FoundationPopover label={aiLabel}>
           <div className="w-64 space-y-3 p-2" aria-label="IA nesta conversa">
             <ConversationAiToggle inline conversation={conversation} disabled={isLoading}
@@ -133,6 +138,6 @@ export function ConversationHeader({
 
 function HeaderAvatar({ name, avatarUrl }: { name: string | null; avatarUrl: string | null }) {
   const [failed, setFailed] = useState(false);
-  if (avatarUrl && !failed) return <img src={avatarUrl} alt={name || 'Contato'} referrerPolicy="no-referrer" onError={() => setFailed(true)} className="h-9 w-9 shrink-0 rounded-xl object-cover" />;
-  return <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--bq-raised-2)] text-xs font-semibold text-[var(--bq-t2)]">{(name || '?').slice(0, 2).toUpperCase()}</div>;
+  if (avatarUrl && !failed) return <img src={avatarUrl} alt={name || 'Contato'} referrerPolicy="no-referrer" onError={() => setFailed(true)} className="h-9 w-9 shrink-0 rounded-full object-cover" />;
+  return <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--bq-raised-2)] text-xs font-semibold text-[var(--bq-t2)]">{(name || '?').slice(0, 2).toUpperCase()}</div>;
 }
