@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { SidebarLayout } from '@/components/ui/sidebar-layout';
-import { Navbar, NavbarSection, NavbarSpacer } from '@/components/ui/navbar';
+import { AppShell } from '@/components/layout/app-shell';
 import { AppSidebar } from '@/components/layout/app-sidebar';
 import { useAuthStore } from '@/stores/auth-store';
 import { authService } from '@/features/auth/services/auth.service';
@@ -17,7 +16,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const { user, setAuth, activeOrgId, setActiveOrg } = useAuthStore();
+  const { user, setAuth, setActiveOrg } = useAuthStore();
   const [isLoading, setIsLoading] = useState(true);
 
   usePermissionsSync();
@@ -30,7 +29,7 @@ export default function DashboardLayout({
     }
 
     if (user) {
-      setIsLoading(false);
+      void Promise.resolve().then(() => setIsLoading(false));
       return;
     }
 
@@ -61,20 +60,12 @@ export default function DashboardLayout({
   }
 
   return (
-    <SidebarLayout
-      sidebar={<AppSidebar />}
-      navbar={
-        <Navbar>
-          <NavbarSpacer />
-          <NavbarSection><></></NavbarSection>
-        </Navbar>
-      }
-    >
+    <AppShell sidebar={<AppSidebar />}>
       <div className="flex h-full flex-col">
         <ToolFailureBanner />
         <div className="flex-1 min-h-0">{children}</div>
       </div>
       <BrandOnboardingWizard />
-    </SidebarLayout>
+    </AppShell>
   );
 }
