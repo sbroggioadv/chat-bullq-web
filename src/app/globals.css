@@ -1097,6 +1097,28 @@ html[data-mode="light"] {
 @custom-variant bq-through-toolbar (@media (width <= 1120px));
 @custom-variant bq-through-nav (@media (width <= 1380px));
 
+
+/* SPEC-010 L4/L7: literal, opt-in support from the approved mockup. */
+@theme static {
+  --bq-sender-l-dark: 0.72;
+  --bq-sender-c-dark: 0.11;
+  --bq-sender-l-light: 0.5;
+  --bq-sender-c-light: 0.12;
+  --bq-owner-l: 0.5;
+  --bq-owner-c: 0.08;
+  --bq-on-channel: #ffffff;
+  --color-bq-on-channel: #ffffff;
+  --bq-on-agent-forced: #ffffff;
+  --color-bq-on-agent-forced: #ffffff;
+  --bq-on-avatar-owner: #ffffff;
+  --color-bq-on-avatar-owner: #ffffff;
+  --bq-blur-contact: 28px;
+  --blur-bq-contact: 28px;
+  --bq-saturate-contact: 170%;
+  --bq-layer-contact: 20;
+  --bq-opacity-dragging: 0.45;
+}
+
 /* Opt-in geometry for the existing Avatar; default rendering is preserved. */
 .bq-avatar-mockup { --bq-avatar-size: var(--bq-size-avatar-row); width: var(--bq-avatar-size); height: var(--bq-avatar-size); border-radius: var(--bq-radius-circle); background: oklch(var(--bq-av-l) var(--bq-av-c) var(--bq-avatar-hue, var(--bq-avatar-hue-fallback))); color: var(--bq-av-fg); font-family: var(--bq-f-ui); font-size: calc(var(--bq-avatar-size) * var(--bq-avatar-font-ratio)); font-weight: var(--bq-weight-semibold); letter-spacing: var(--bq-tracking-avatar); outline: none; }
 .bq-avatar-mockup > span { font-size: inherit; font-weight: inherit; color: inherit; }
@@ -1105,6 +1127,20 @@ html[data-mode="light"] {
 .bq-avatar-contact { --bq-avatar-size: var(--bq-size-switch-width); }
 .bq-avatar-profile { --bq-avatar-size: var(--bq-size-avatar-profile); }
 .bq-avatar-group { border-radius: var(--bq-radius-group); }
+
+
+/* Coefficients vary by theme; the hue remains data-derived (mockup L1608). */
+:root { --bq-sender-l: var(--bq-sender-l-dark); --bq-sender-c: var(--bq-sender-c-dark); }
+html[data-mode="light"] { --bq-sender-l: var(--bq-sender-l-light); --bq-sender-c: var(--bq-sender-c-light); }
+.bq-sender-mockup { color: oklch(var(--bq-sender-l) var(--bq-sender-c) var(--bq-avatar-hue, var(--bq-avatar-hue-fallback))); font-size: var(--bq-text-auxiliary); font-weight: var(--bq-weight-semibold); padding-left: var(--bq-space-xs); }
+.bq-group-swatch { display: grid; place-items: center; flex: none; width: var(--bq-size-icon); height: var(--bq-size-icon); border-radius: var(--bq-radius-badge); background: oklch(var(--bq-av-l) var(--bq-av-c) var(--bq-avatar-hue, var(--bq-avatar-hue-fallback))); color: var(--bq-av-fg); font: var(--bq-weight-semibold) var(--bq-text-file-label) var(--bq-f-ui); }
+.bq-avatar-owner { --bq-avatar-size: var(--bq-size-segment); background: oklch(var(--bq-owner-l) var(--bq-owner-c) var(--bq-avatar-hue, var(--bq-avatar-hue-fallback))); color: var(--bq-on-avatar-owner); font-size: var(--bq-text-counter); letter-spacing: var(--bq-tracking-normal); }
+/* Badge is a sibling of Avatar inside a relative wrapper: photos stay clipped. */
+.bq-channel-badge { position: absolute; right: calc(-1 * var(--bq-space-micro)); bottom: calc(-1 * var(--bq-space-micro)); width: var(--bq-size-switch-thumb); height: var(--bq-size-switch-thumb); border-radius: var(--bq-radius-circle); display: grid; place-items: center; background: var(--bq-channel-color); color: var(--bq-on-channel); box-shadow: 0 0 0 var(--bq-border-focus) var(--bq-win-solid); }
+.bq-channel-badge > svg { width: var(--bq-size-channel-glyph); height: var(--bq-size-channel-glyph); stroke-width: var(--bq-stroke-channel); }
+@utility backdrop-bq-contact { -webkit-backdrop-filter: blur(var(--bq-blur-contact)) saturate(var(--bq-saturate-contact)); backdrop-filter: blur(var(--bq-blur-contact)) saturate(var(--bq-saturate-contact)); }
+@utility z-bq-contact { z-index: var(--bq-layer-contact); }
+@utility opacity-bq-dragging { opacity: var(--bq-opacity-dragging); }
 
 /* SPEC-010 shell and additive primitives — dimensions from approved mockup. */
 .bq-wall { height: 100svh; padding: 14px 16px; color: var(--bq-t1); font: 13px/1.45 var(--bq-f-ui); background: radial-gradient(1100px 720px at 8% -12%, var(--bq-glow-1), transparent 62%), radial-gradient(900px 640px at 104% 112%, var(--bq-glow-2), transparent 60%), linear-gradient(160deg, var(--bq-wall-a), var(--bq-wall-b)); }
