@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
 /* ─────────────────────────────────────────────────────────────────
  * Theme System — bullq2 web · Sprint S17
@@ -677,10 +678,10 @@ html[data-mode="light"] { --bq-scrim: rgb(20 24 34 / 0.22); }
 .bq-setting-row p { color: var(--bq-t3); font-size: 12px; }
 .bq-skeleton { background: var(--bq-raised-2); border-radius: 9px; }
 @supports not (backdrop-filter: blur(1px)) { .bq-window, .bq-toolbar, .bq-popover, .bq-drawer, .bq-dialog-panel { background: var(--bq-win-solid); } }
-@media (max-width: 760px) {
- .bq-wall { padding: 0; } .bq-window { border-radius: 0; }
+@media (max-width: 560px) {
+ .bq-wall { padding-block: 8px; }
  .bq-window[data-expanded] .bq-rail { width: 52px; padding-inline: 0; align-items: center; }
- .bq-window[data-expanded] .bq-rail-item { width: 40px; justify-content: center; padding: 0; }
+ .bq-rail-item, .bq-window[data-expanded] .bq-rail-item { width: 36px; height: 36px; min-height: 36px; justify-content: center; padding: 0; }
  .bq-window[data-expanded] .bq-rail-label { display: none; }
  .bq-secondary, .bq-collapse { display: none; } .bq-mobile-nav { display: block; }
  .bq-toolbar { gap: 8px; padding-inline: 8px; } .bq-org > span:nth-child(2) { max-width: 90px; }
@@ -691,4 +692,4 @@ html[data-mode="light"] { --bq-scrim: rgb(20 24 34 / 0.22); }
 .bq-search input { flex: 1; min-width: 0; background: none; border: 0; color: var(--bq-t1); font: inherit; }
 .bq-search input::placeholder { color: var(--bq-t3); }
 .bq-notifications { margin-left: auto; flex: none; }
-@media (max-width: 760px) { .bq-search { display: none; } }
+@media (max-width: 1120px) { .bq-search { display: none; } }

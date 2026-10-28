@@ -80,7 +80,9 @@
     "border": "rgb(15 18 25 / 0.08)",
     "input": "rgb(15 18 25 / 0.15)",
     "ring": "#c4623f",
-    "scrim": "rgb(20 24 34 / 0.22)"
+    "scrim": "rgb(20 24 34 / 0.22)",
+    "tertiary": "#5b63e0",
+    "neutral": "#6f7684"
   },
   "dark": {
     "wall-a": "#08090c",
@@ -142,7 +144,9 @@
     "border": "rgb(255 255 255 / 0.07)",
     "input": "rgb(255 255 255 / 0.13)",
     "ring": "#e6e7eb",
-    "scrim": "rgb(0 0 0 / 0.5)"
+    "scrim": "rgb(0 0 0 / 0.5)",
+    "tertiary": "#8b93ff",
+    "neutral": "#868c98"
   },
   "fonts": {
     "sans": "-apple-system, BlinkMacSystemFont, \"SF Pro Text\", \"Geist\", \"Segoe UI\", system-ui, sans-serif",
@@ -222,6 +226,29 @@
     "window": {
       "borderRadius": "18px",
       "backgroundColor": "rgb(15 16 20 / 0.58)"
+    },
+    "button-primary-hover": {
+      "backgroundColor": "rgb(255 255 255 / 0.05)",
+      "textColor": "#f1f2f4"
+    },
+    "button-ghost": {
+      "backgroundColor": "transparent",
+      "textColor": "#f1f2f4"
+    },
+    "card": {
+      "backgroundColor": "#141519",
+      "textColor": "#f1f2f4"
+    },
+    "input-text": {
+      "backgroundColor": "rgb(255 255 255 / 0.05)",
+      "textColor": "#f1f2f4",
+      "border": "1px solid rgb(255 255 255 / 0.13)"
+    },
+    "badge-default": {
+      "backgroundColor": "rgb(255 255 255 / 0.085)",
+      "textColor": "#b8bdc7",
+      "height": "20px",
+      "borderRadius": "6px"
     }
   },
   "preview_tokens": {
@@ -444,7 +471,7 @@ Janela blur 30px saturate 160%; topo blur 24px saturate 160%; popover blur 28px 
 Usar apenas a paleta extraída. Preservar transparências. Não inventar status conectado. Não criar funcionalidades do piloto Incoming. Não remover fluxos existentes. Não alterar as telas W1. Não substituir configurações de marca persistidas. Nomear botões de ícone. Exibir foco. Respeitar movimento reduzido.
 
 ## 8. Responsive Behavior
-Em largura até 760px, trilho fixo de 52px e rótulos ocultos; navegação secundária em drawer acessível. Topo mantém organização e título, reduzindo ações. Conteúdo usa min-width zero e min-height zero. Em altura baixa o trilho rola, preservando acesso ao rodapé.
+A busca fica oculta até 1120px. Em largura até 560px, trilho fixo de 52px, itens de 36px, padding-block de 8px na parede e rótulos ocultos; navegação secundária em drawer acessível. Topo mantém organização e título, reduzindo ações. Conteúdo usa min-width zero e min-height zero. Em altura baixa o trilho rola, preservando acesso ao rodapé.
 
 ## 9. Agent Prompt Guide
 ### Quick Color Reference
@@ -462,7 +489,7 @@ Em largura até 760px, trilho fixo de 52px e rótulos ocultos; navegação secun
 2. Confira o tema claro.
 3. Preserve alpha.
 4. Teste o teclado.
-5. Teste 760px.
+5. Teste os cortes de 1120px e 560px.
 6. Preserve as telas internas.
 
 ## Fidelity Notes
