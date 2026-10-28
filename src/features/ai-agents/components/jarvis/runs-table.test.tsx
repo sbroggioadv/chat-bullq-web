@@ -57,3 +57,27 @@ it('exibe cards expansíveis sem perder dados, cache, erro e tools', () => {
   expect(screen.getByText(/7 read/)).toBeVisible();
   expect(screen.getByText(/42 tokens/)).toBeVisible();
 });
+
+it.each([
+  ['COMPLETED', 'REPLIED', 'ok'],
+  ['COMPLETED', 'DELEGATED', 'agent'],
+  ['COMPLETED', 'TRANSFERRED_TO_HUMAN', 'human'],
+  ['FAILED', 'REPLIED', 'error'],
+] as const)(
+  'preserva resultado %s/%s e metadados só no detalhe',
+  (status, finalAction, tone) => {
+    const { container } = render(
+      <RunsTable appearance="cards" runs={[{ ...run, status, finalAction }]} />,
+    );
+    const summary = container.querySelector('summary')!;
+    expect(summary.querySelector('[data-tone]')).toHaveAttribute(
+      'data-tone',
+      tone,
+    );
+    expect(summary).not.toHaveTextContent('modelo');
+    expect(summary).not.toHaveTextContent('42 tokens');
+    fireEvent.click(summary);
+    expect(screen.getByText(/modelo · 42 tokens/)).toBeVisible();
+    expect(screen.getByText(/modelo · 42 tokens/)).toHaveTextContent('$0.1000');
+  },
+);

@@ -47,7 +47,9 @@ export function RunsTable({
                 ? 'agent'
                 : run.finalAction === 'TRANSFERRED_TO_HUMAN'
                   ? 'human'
-                  : 'default';
+                  : run.status === 'COMPLETED' && run.finalAction === 'REPLIED'
+                    ? 'ok'
+                    : 'default';
           return (
             <details key={run.id} className={styles.runCard}>
               <summary>
@@ -58,11 +60,7 @@ export function RunsTable({
                   <strong>{run.agent.name}</strong>
                   <span>
                     {fmtRelative(run.startedAt)} · {fmtMs(run.durationMs)} ·{' '}
-                    {fmtUsd(Number(run.costUsd))}
-                  </span>
-                  <span>
-                    {run.modelId} · {fmtNum(run.inputTokens + run.outputTokens)}{' '}
-                    tokens · {status.label}
+                    {`US$ ${Number(run.costUsd).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                   </span>
                 </span>
                 <span className={styles.runResult} data-tone={tone}>
@@ -208,6 +206,14 @@ function RunDetail({
   const tools = run.toolCalls ?? [];
   const content = (
     <>
+      {card && (
+        <p className="text-xs text-[var(--bq-t2)]">
+          {run.modelId} · {fmtNum(run.inputTokens + run.outputTokens)} tokens ·{' '}
+          {STATUS_META[run.status].label} ·{' '}
+          {FINAL_ACTION_META[run.finalAction ?? 'NONE'].label} ·{' '}
+          {fmtUsd(Number(run.costUsd))}
+        </p>
+      )}
       {fallbackError && (
         <p className="mb-2 text-xs text-red-600 dark:text-red-400">
           <strong>Erro:</strong> {fallbackError}
@@ -260,7 +266,7 @@ function RunDetail({
     </>
   );
   return card ? (
-    <div className="px-3 pb-3">{content}</div>
+    <div className={styles.runDetail}>{content}</div>
   ) : (
     <tr className="border-b border-zinc-100 bg-zinc-50/40 dark:border-zinc-800 dark:bg-zinc-900/40">
       <td colSpan={9} className="px-6 py-3">
