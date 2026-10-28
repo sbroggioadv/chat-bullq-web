@@ -62,7 +62,7 @@ export function KanbanCard({ card, onClick, overlay = false }: { card: CardSumma
       {contact && <p className="text-bq-text-row text-[var(--bq-t1)]">{card.title}</p>}
       {card.description && <p className="line-clamp-2 text-xs text-[var(--bq-t3)]">{card.description}</p>}
       {card.closedReason && <p className="text-xs text-[var(--bq-t3)]">Motivo: {card.closedReason}</p>}
-      <div className="flex flex-wrap items-center gap-1.5 font-mono leading-[normal] text-bq-text-metadata font-medium text-[var(--bq-t3)]">
+      <div className="flex flex-wrap items-center gap-1.5 font-[family-name:var(--bq-f-mono)] leading-[normal] text-bq-text-metadata font-medium text-[var(--bq-t3)]">
         <span className="mr-auto text-[var(--bq-t1)]">{formatMoney(card.value, card.currency) || '—'}</span>
         {!contact && channel && <span title={channel.name}><ChannelIcon className="size-3" /></span>}
       </div>
