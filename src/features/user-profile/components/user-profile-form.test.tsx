@@ -1,0 +1,26 @@
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { UserProfileForm } from '@/features/user-profile/components/user-profile-form';
+
+const { save } = vi.hoisted(() => ({ save: vi.fn().mockResolvedValue(undefined) }));
+vi.mock('@/features/user-profile/hooks/use-user-profile', () => ({
+  useUserProfile: () => ({ user: { id: 'test-user', name: 'Pessoa', email: 'test@example.test', avatarUrl: null }, save, isSaving: false }),
+}));
+vi.mock('@/components/ui/image-upload', () => ({ ImageUpload: () => null }));
+afterEach(() => { cleanup(); vi.clearAllMocks(); });
+
+describe('limite do nome do perfil', () => {
+  it('limita a digitação a 120 caracteres e salva somente o nome válido', async () => {
+    const user = userEvent.setup();
+    render(<UserProfileForm />);
+    const input = screen.getByRole('textbox', { name: 'Nome completo' });
+    expect(input).toHaveAttribute('maxlength', '120');
+    await user.clear(input);
+    await user.type(input, 'N'.repeat(121));
+    expect(input).toHaveValue('N'.repeat(120));
+    expect(screen.getByText('120/120 caracteres')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Salvar', exact: true }));
+    await waitFor(() => expect(save).toHaveBeenCalledWith({ name: 'N'.repeat(120) }));
+  });
+});

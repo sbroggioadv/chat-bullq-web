@@ -646,7 +646,7 @@ Reembolso:
           </div>
         )}
       </section>
-      <p className="mt-4 text-xs text-[var(--bq-t3)]">Ritmos predefinidos, ação personalizada por caso e destinatários de alerta ainda não disponíveis. Os tempos abaixo mantêm a configuração atual.</p>
+      <p className="mt-4 text-xs text-[var(--bq-t3)]">Ritmos predefinidos, ação personalizada por caso e destinatários de alerta ainda não disponíveis. Os tempos acima mantêm a configuração atual.</p>
       </>}
       <SettingsSaveBar dirty={dirty} saving={saving} onSave={() => void handleSave()} onDiscard={onDiscard} />
     </div>
