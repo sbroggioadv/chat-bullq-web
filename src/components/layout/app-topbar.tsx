@@ -30,7 +30,7 @@ export function AppTopbar({ navigationButton }: { navigationButton?: ReactNode }
   }, []);
   const { organizations, activeOrgId, setActiveOrg } = useAuthStore();
   const org = organizations.find((item) => item.id === activeOrgId);
-  return <header className="bq-toolbar">
+  return <header className="bq-toolbar bq-app-toolbar">
     {navigationButton && <div className="bq-mobile-nav">{navigationButton}</div>}
     <div className="bq-crumbs">
     <Dropdown>
