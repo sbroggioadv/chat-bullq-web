@@ -141,24 +141,12 @@ export function MediaDocument({ message, isOutbound }: MediaProps) {
         target="_blank"
         rel="noopener noreferrer"
         download={filename}
-        className={`flex items-center gap-3 rounded-lg border px-3 py-2.5 transition-colors ${
-          isOutbound
-            ? 'border-primary-foreground/20 bg-primary-foreground/10 hover:bg-primary-foreground/15'
-            : 'border-[var(--bq-hair)] bg-[var(--bq-surface)] hover:bg-[var(--bq-raised)]   '
-        }`}
+        className="bq-message-file" data-outbound={isOutbound}
       >
-        <div
-          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-md ${
-            isOutbound
-              ? 'bg-primary-foreground/15'
-              : 'bg-[var(--bq-win-solid)] shadow-sm '
-          }`}
-        >
-          {documentIcon}
-        </div>
+        <div className="bq-file-icon">{documentIcon}</div>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium">{filename}</p>
-          <p className={`truncate text-[11px] ${isOutbound ? 'opacity-70' : 'text-[var(--bq-t2)] '}`}>
+          <p className="bq-file-title truncate">{filename}</p>
+          <p className="bq-file-meta truncate">
             {loading ? 'Preparando download…' : error ? 'Falhou — toque pra tentar de novo' : (mimeType || 'Arquivo')}
           </p>
         </div>

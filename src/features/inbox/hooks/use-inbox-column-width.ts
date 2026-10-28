@@ -25,7 +25,7 @@ export const INBOX_COL_MAX = 480;
 
 // Tailwind v4 `md:` breakpoint. Abaixo disso, devolvemos
 // `isResizable = false` e o caller renderiza layout fixo (sem panel).
-const MD_BREAKPOINT_PX = 768;
+
 
 function clamp(value: number): number {
   if (Number.isNaN(value)) return INBOX_COL_DEFAULT;
@@ -71,15 +71,19 @@ export function useInboxColumnWidth(): UseInboxColumnWidthResult {
   // initializer do useState) pra não quebrar SSR — o servidor não tem
   // window. Trade-off aceito: 1 frame com DEFAULT até o useEffect rodar.
   useEffect(() => {
-    setWidthState(readStored());
-    setIsHydrating(false);
+    const frame = requestAnimationFrame(() => {
+      setWidthState(readStored());
+      setIsHydrating(false);
+    });
+    return () => cancelAnimationFrame(frame);
   }, []);
 
   // Observa o breakpoint `md`. Usa matchMedia + listener (não resize)
   // pra evitar work em cada pixel de redimensionamento da janela.
   useEffect(() => {
     if (typeof window === 'undefined' || !window.matchMedia) return;
-    const mql = window.matchMedia(`(min-width: ${MD_BREAKPOINT_PX}px)`);
+    const breakpoint = getComputedStyle(document.documentElement).getPropertyValue("--bq-breakpoint-project").trim();
+    const mql = window.matchMedia(`(width > ${breakpoint})`);
     const apply = () => setIsResizable(mql.matches);
     apply();
     // `addEventListener('change', ...)` é o caminho moderno; Safari

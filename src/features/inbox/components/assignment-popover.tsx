@@ -2,7 +2,8 @@
 
 import { inboxErrorMessage } from '@/features/inbox/components/inbox-error';
 
-import { useState, useMemo } from 'react';
+import { mockupAvatarHue } from '@/components/ui/avatar-hue';
+import { useState, useMemo, type CSSProperties } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Popover, PopoverButton, PopoverPanel } from '@headlessui/react';
 import { ChevronDown, Search, UserPlus, X, Check, User } from 'lucide-react';
@@ -23,10 +24,12 @@ function MemberAvatar({
   name,
   avatarUrl,
   size = 24,
+  owner = false,
 }: {
   name: string | null;
   avatarUrl: string | null;
   size?: number;
+  owner?: boolean;
 }) {
   const [failed, setFailed] = useState(false);
   const initials = (name ?? '??').slice(0, 2).toUpperCase();
@@ -36,15 +39,15 @@ function MemberAvatar({
         src={avatarUrl}
         alt={name ?? ''}
         onError={() => setFailed(true)}
-        style={{ width: size, height: size }}
-        className="shrink-0 rounded-full object-cover"
+        style={owner ? {"--bq-avatar-hue": mockupAvatarHue(name || "?")} as CSSProperties : { width: size, height: size }}
+        className={`shrink-0 rounded-full object-cover ${owner ? "bq-avatar-mockup bq-avatar-owner" : ""}`}
       />
     );
   }
   return (
     <div
-      style={{ width: size, height: size }}
-      className="flex shrink-0 items-center justify-center rounded-full bg-[var(--bq-raised)] text-[10px] font-semibold text-[var(--bq-t2)] "
+      style={owner ? {"--bq-avatar-hue": mockupAvatarHue(name || "?")} as CSSProperties : { width: size, height: size }}
+      className={owner ? "bq-avatar-mockup bq-avatar-owner flex items-center justify-center" : "flex shrink-0 items-center justify-center rounded-full bg-[var(--bq-raised)] text-[10px] font-semibold text-[var(--bq-t2)]"}
     >
       {initials}
     </div>
@@ -105,6 +108,7 @@ export function AssignmentPopover({ conversation, onChanged }: Props) {
   return (
     <Popover className="relative">
       <PopoverButton
+        aria-label={`Responsável: ${currentAssignee?.user.name || "ninguém"}`}
         className="inline-flex items-center gap-1.5 rounded-md bg-[var(--bq-raised)] px-2.5 py-1.5 text-xs font-medium text-[var(--bq-t2)] hover:bg-[var(--bq-raised-2)] disabled:opacity-50   "
         disabled={busy}
       >
@@ -113,7 +117,7 @@ export function AssignmentPopover({ conversation, onChanged }: Props) {
             <MemberAvatar
               name={currentAssignee.user.name}
               avatarUrl={currentAssignee.user.avatarUrl}
-              size={18}
+              owner
             />
             <span className="max-w-[120px] truncate">
               {currentAssignee.user.name}

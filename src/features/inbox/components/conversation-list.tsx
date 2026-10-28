@@ -1,5 +1,8 @@
 'use client';
 
+import { mockupAvatarHue } from '@/components/ui/avatar-hue';
+import type { CSSProperties } from 'react';
+
 import { isAxiosError } from 'axios';
 import { SegmentedControl } from '@/components/ui/foundation';
 import { VirtualList } from '@/features/inbox/components/virtual-list';
@@ -17,7 +20,6 @@ import {
   ChevronDown,
   Inbox,
   Users,
-  User,
   FolderPlus,
   MailOpen,
   Archive,
@@ -44,7 +46,7 @@ import { channelsService } from '@/features/channels/services/channels.service';
 import { segmentsService } from '@/features/segments/services/segments.service';
 import { PHASE_LABELS, PROJECT_STATUSES } from '@/features/projects/project-fields';
 import { tagsService } from '@/features/settings/services/tags.service';
-import { ZappfyIcon, MetaIcon, InstagramIcon } from '@/components/ui/icons';
+import { InstagramIcon } from '@/components/ui/icons';
 import { useOrgId } from '@/hooks/use-org-query-key';
 import { receiveMessage } from '@/features/inbox/hooks/message-cache';
 import { useSocket } from '@/features/inbox/hooks/use-socket';
@@ -55,9 +57,9 @@ import { BulkAiPopover } from '@/features/inbox/components/bulk-ai-popover';
 import { BulkPipelinePopover } from '@/features/inbox/components/bulk-pipeline-popover';
 import { pipelinesService } from '@/features/pipelines/services/pipelines.service';
 
-function ListAvatar({ name, avatarUrl }: { name: string | null; avatarUrl: string | null }) {
+function ListAvatar({ name, avatarUrl, isGroup }: { name: string | null; avatarUrl: string | null; isGroup: boolean }) {
   const [failed, setFailed] = useState(false);
-  const initials = name?.slice(0, 2).toUpperCase() || '??';
+  const initials = (name || '?').split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase();
   if (avatarUrl && !failed) {
     return (
       <img
@@ -66,12 +68,12 @@ function ListAvatar({ name, avatarUrl }: { name: string | null; avatarUrl: strin
         // WA CDN bloqueia hotlink com Referer; BullQ /uploads não se importa.
         referrerPolicy="no-referrer"
         onError={() => setFailed(true)}
-        className="h-10 w-10 rounded-full bg-[var(--bq-raised)] object-cover "
+        className={`bq-avatar-mockup object-cover ${isGroup ? "bq-avatar-group" : ""}`}
       />
     );
   }
   return (
-    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--bq-raised)] text-[13px] font-semibold text-[var(--bq-t2)]  ">
+    <div style={{"--bq-avatar-hue": mockupAvatarHue(name || "?")} as CSSProperties} className={`bq-avatar-mockup flex items-center justify-center ${isGroup ? "bq-avatar-group" : ""}`}>
       {initials}
     </div>
   );
@@ -83,20 +85,13 @@ type ConversationTab = 'all' | 'people' | 'groups' | 'projects' | 'mentorships';
 type ScopeFilter = 'ALL' | 'MINE';
 
 const channelIcons: Record<string, React.ElementType> = {
-  WHATSAPP_ZAPPFY: ZappfyIcon,
-  WHATSAPP_OFFICIAL: MetaIcon,
+  WHATSAPP_ZAPPFY: MessageSquare,
+  WHATSAPP_OFFICIAL: MessageSquare,
   INSTAGRAM: InstagramIcon,
   GMAIL: Mail,
   JARVIS: MessageSquare,
 };
 
-const statusColors: Record<string, string> = {
-  PENDING: 'bg-[var(--bq-warn-soft)]',
-  OPEN: 'bg-[var(--bq-ok-soft)]',
-  BOT: 'bg-[var(--bq-info-soft)]',
-  WAITING: 'bg-[var(--bq-agent-soft)]',
-  CLOSED: 'bg-[var(--bq-raised-2)] ',
-};
 
 type ListFilter = 'unread' | 'archived' | 'groups';
 
@@ -876,7 +871,7 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
     <div className="flex h-full w-full min-w-0 flex-col border-r border-[var(--bq-hair)] bg-[var(--bq-win-solid)]  ">
       <div className="bq-list-heading"><h1>Conversas</h1><span className="text-[11px] font-normal text-[var(--bq-t3)]">{data?.pages[0]?.pagination.total ?? '—'}</span>{jarvisDeskConv && <button type="button" className="bq-button ml-auto" aria-label="Abrir conversa com Jarvis" title="Abrir conversa com Jarvis" onClick={() => onSelect(jarvisDeskConv)}><MessageSquare size={14} /></button>}</div>
       {/* Search + Filter */}
-      <div onClickCapture={clearTreeSelection} onChangeCapture={clearTreeSelection} className="flex items-center gap-1.5 px-3 pt-2 pb-2">
+      <div onClickCapture={clearTreeSelection} onChangeCapture={clearTreeSelection} className="bq-list-search flex items-center gap-1.5">
         <div className="group relative flex-1">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--bq-t3)] transition-colors group-focus-within:text-primary" />
           <input
@@ -1252,11 +1247,7 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
               <span
                 key={tag.id}
                 title={`Filtrando por tag: ${tag.name}`}
-                className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-medium"
-                style={{
-                  backgroundColor: `${tag.color}1f`,
-                  color: tag.color,
-                }}
+                className="bq-inbox-tag"
               >
                 <span
                   className="h-1.5 w-1.5 rounded-full"
@@ -1405,11 +1396,12 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
                       position: { x: e.clientX, y: e.clientY },
                     });
                   }}
-                  className={`bq-conversation-row group flex w-full gap-3 px-3 text-left transition-colors duration-100 [padding-block:var(--density-py-list,0.625rem)] ${
+                  data-selected={isSelected || isActive} data-unread={(conv.unreadCount ?? 0) > 0}
+                  className={`bq-conversation-row group w-full text-left transition-colors duration-100 ${
                     isSelected
-                      ? 'bg-primary/[0.06] dark:bg-primary/10'
+                      ? 'bg-[var(--bq-raised-2)]'
                       : isActive
-                        ? 'bg-primary/[0.06] dark:bg-primary/10'
+                        ? 'bg-[var(--bq-raised-2)]'
                         : 'hover:bg-[var(--bq-surface)] '
                   }`}
                 >
@@ -1425,6 +1417,7 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
                       <ListAvatar
                         name={conv.contact.name}
                         avatarUrl={conv.contact.avatarUrl}
+                        isGroup={conv.isGroup}
                       />
                     </div>
                     {/* Checkbox: aparece no hover sempre, fica visível travada
@@ -1436,7 +1429,7 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
                         e.stopPropagation();
                         toggleSelect(conv.id, index);
                       }}
-                      className={`absolute inset-0 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border-2 transition-colors ${
+                      className={`absolute inset-0 flex size-bq-size-avatar-row cursor-pointer items-center justify-center rounded-full border-2 transition-colors ${
                         isSelected
                           ? 'border-primary bg-primary text-white opacity-100'
                           : inSelectionMode
@@ -1450,99 +1443,24 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
                     {(() => {
                       const ChannelIcon = channelIcons[conv.channel.type] || MessageSquare;
                       return (
-                        <div className="absolute -bottom-0.5 -right-0.5 flex h-4.5 w-4.5 items-center justify-center rounded-full border-2 border-white bg-[var(--bq-win-solid)]  ">
-                          <ChannelIcon className="h-3 w-3 text-[var(--bq-t2)] " />
+                        <div className="bq-channel-badge" style={{ "--bq-channel-color": `var(--bq-${conv.channel.type.startsWith("WHATSAPP") ? "wa" : conv.channel.type === "INSTAGRAM" ? "ig" : conv.channel.type === "GMAIL" ? "mail" : "t3"})` } as React.CSSProperties}>
+                          <ChannelIcon />
                         </div>
                       );
                     })()}
                   </div>
-                  <div className="min-w-0 flex-1">
-                    {(() => {
-                      const unread = conv.unreadCount ?? 0;
-                      const hasUnread = unread > 0;
-                      return (
-                        <>
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-1.5 min-w-0">
-                              <span
-                                className={`truncate text-[13px] ${
-                                  hasUnread
-                                    ? 'font-bold text-[var(--bq-t1)] '
-                                    : 'font-medium ' +
-                                      (isActive || isSelected
-                                        ? 'text-[var(--bq-t1)] '
-                                        : 'text-[var(--bq-t1)] ')
-                                }`}
-                              >
-                                {conv.contact.name || conv.contact.phone || 'Desconhecido'}
-                              </span>
-                              <div className={`h-1.5 w-1.5 shrink-0 rounded-full ${statusColors[conv.status] || 'bg-[var(--bq-raised-2)]'}`} />
-                            </div>
-                            <div className="flex shrink-0 items-center gap-1.5">
-                              <span
-                                className={`text-[10px] tabular-nums ${
-                                  hasUnread
-                                    ? 'font-semibold text-[var(--bq-err)] '
-                                    : 'text-[var(--bq-t3)] '
-                                }`}
-                              >
-                                {formatTime(conv.messages?.[0]?.createdAt ?? conv.lastMessageAt)}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="mt-0.5 flex items-center justify-between gap-1.5">
-                            <p
-                              className={`truncate text-[12px] ${
-                                hasUnread
-                                  ? 'font-semibold text-[var(--bq-t2)] '
-                                  : 'text-[var(--bq-t2)] '
-                              }`}
-                            >
-                              {getLastMessagePreview(conv)}
-                            </p>
-                            {hasUnread && (
-                              <span className="ml-1 inline-flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-full bg-[var(--bq-err-soft)] px-1.5 text-[10px] font-bold leading-none text-white">
-                                {unread > 9 ? '9+' : unread}
-                              </span>
-                            )}
-                          </div>
-                        </>
-                      );
-                    })()}
-                    {(conv.tags?.length || conv.contact.tags?.length) ? (
-                      <div className="mt-1 flex flex-wrap gap-1">
-                        {conv.tags?.map((t) => (
-                          <span
-                            key={`c-${t.tag.id}`}
-                            title={`Tag na conversa: ${t.tag.name}`}
-                            className="inline-flex items-center gap-1 rounded-full px-1.5 py-px text-[10px] font-medium"
-                            style={{
-                              backgroundColor: `${t.tag.color}1f`,
-                              color: t.tag.color,
-                            }}
-                          >
-                            <span
-                              className="h-1.5 w-1.5 rounded-full"
-                              style={{ backgroundColor: t.tag.color }}
-                            />
-                            {t.tag.name}
-                          </span>
-                        ))}
-                        {conv.contact.tags?.filter((t) => !conv.tags?.some(({tag}) => tag.id === t.tag.id)).map((t) => (
-                          <span
-                            key={`ct-${t.tag.id}`}
-                            title={`Tag no contato: ${t.tag.name}`}
-                            className="inline-flex items-center gap-1 rounded-full border border-dashed px-1.5 py-px text-[10px] font-medium"
-                            style={{
-                              borderColor: `${t.tag.color}80`,
-                              color: t.tag.color,
-                            }}
-                          >
-                            {t.tag.name}
-                          </span>
-                        ))}
-                      </div>
-                    ) : null}
+                  <div className="bq-row-main">
+                    <div className="flex items-baseline gap-2">
+                      <span className="bq-row-name min-w-0 flex-1 truncate" title={conv.contact.name || conv.contact.phone || undefined}>{conv.contact.name || conv.contact.phone || 'Desconhecido'}</span>
+                      <span className="bq-row-time shrink-0">{formatTime(conv.messages?.[0]?.createdAt ?? conv.lastMessageAt)}</span>
+                      <span className="sr-only">{conv.status}</span>
+                    </div>
+                    <p className="bq-row-preview truncate">{getLastMessagePreview(conv)}</p>
+                    <div className="bq-row-foot">
+                      {[...(conv.tags ?? []), ...(conv.contact.tags?.filter(t => !conv.tags?.some(({tag}) => tag.id === t.tag.id)) ?? [])].map(({tag}) => <span key={tag.id} className="bq-inbox-tag" title={tag.name}><span className="bq-nav-dot" style={{backgroundColor: tag.color}} /><span className="truncate">{tag.name}</span></span>)}
+                      {conv.isGroup && <span className="bq-inbox-tag">Grupo</span>}
+                      {(conv.unreadCount ?? 0) > 0 && <span className="bq-unread-count" aria-label={`${conv.unreadCount} mensagens não lidas`}>{conv.unreadCount}</span>}
+                    </div>
                   </div>
                 </button>
               );

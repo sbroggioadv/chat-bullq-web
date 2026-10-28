@@ -1,5 +1,8 @@
 'use client';
 
+import { mockupAvatarHue } from '@/components/ui/avatar-hue';
+import type { CSSProperties } from 'react';
+
 import '@/features/inbox/components/conversations.css';
 
 import { isAxiosError } from 'axios';
@@ -64,6 +67,7 @@ interface ChatPanelProps {
   /** Forwarded to ConversationHeader for the Project panel toggle (groups). */
   onToggleProject?: () => void;
   projectOpen?: boolean;
+  onOpenTasks?: () => void;
 }
 
 const statusIcons: Record<string, React.ElementType> = {
@@ -389,7 +393,19 @@ export function ChatPanel({
   agentLogsOpen,
   onToggleProject,
   projectOpen,
+  onOpenTasks,
 }: ChatPanelProps) {
+  const chatRegionRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const region = chatRegionRef.current;
+    if (!region || !projectOpen) return;
+    const breakpoint = getComputedStyle(document.documentElement).getPropertyValue('--bq-breakpoint-toolbar').trim();
+    const media = window.matchMedia(`(max-width: ${breakpoint})`);
+    const apply = () => { region.inert = media.matches; };
+    apply(); media.addEventListener('change', apply);
+    return () => { region.inert = false; media.removeEventListener('change', apply); };
+  }, [projectOpen]);
+
   const queryClient = useQueryClient();
   const bottomRef = useRef<HTMLDivElement>(null);
   const timelineRef = useRef<HTMLDivElement>(null);
@@ -875,6 +891,7 @@ export function ChatPanel({
     // ChatInput pra fora do painel — quebra dramaticamente quando o pai
     // é um modal com altura fixa.
     <div
+      ref={chatRegionRef}
       className={`bq-chat-column relative flex min-h-0 min-w-0 flex-1 flex-col transition-colors ${
         isPanelDragging ? 'bg-primary/5 ring-2 ring-inset ring-primary/40' : ''
       }`}
@@ -898,6 +915,7 @@ export function ChatPanel({
         agentLogsOpen={agentLogsOpen}
         onToggleProject={onToggleProject}
         projectOpen={projectOpen}
+        onOpenTasks={onOpenTasks}
       />
 
       <PendingActionsList conversationId={conversation.id} />
@@ -914,7 +932,7 @@ export function ChatPanel({
         messages={messages}
       />
 
-      <div ref={timelineRef} className="bq-timeline min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-[var(--bq-surface)] ">
+      <div ref={timelineRef} className="bq-timeline min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden">
         {isLoading ? (
           <div className="flex h-full items-center justify-center">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
@@ -951,7 +969,7 @@ export function ChatPanel({
                   <Fragment key={msg.id}>
                   {showDateSeparator && (
                     <div className="flex justify-center pb-1 pt-3 first:pt-0">
-                      <span className="rounded-full bg-[var(--bq-raised-2)] px-3 py-1 text-[11px] font-medium text-[var(--bq-t2)] shadow-sm  ">
+                      <span className="bq-day">
                         {formatDateSeparator(msg.createdAt)}
                       </span>
                     </div>
@@ -1007,7 +1025,7 @@ export function ChatPanel({
                       </div>
                     )}
                     <div className="bq-message-content relative" title={`Remetente: ${isOutbound ? msg.sender?.name || (msg.senderId === user?.id ? user?.name : msg.senderName) || 'Você' : msg.senderName || conversation.contact.name || 'Contato'}`} aria-label={`Mensagem de ${isOutbound ? msg.sender?.name || msg.senderName || 'Você' : msg.senderName || conversation.contact.name || 'Contato'}`}>
-                      {conversation.isGroup && !isOutbound && msg.senderName && <p className="bq-message-sender">{msg.senderName}</p>}
+                      {conversation.isGroup && !isOutbound && msg.senderName && <p style={{"--bq-avatar-hue": mockupAvatarHue(msg.senderName)} as CSSProperties} className="bq-message-sender bq-sender-mockup">{msg.senderName}</p>}
                       {msg.metadata?.replyTo?.story && (
                         <StoryReplyCard
                           story={msg.metadata.replyTo.story}
@@ -1135,7 +1153,7 @@ export function ChatPanel({
                       ) : (
                         <>
                         <div
-                          className="bq-message-bubble" data-outbound={isOutbound}
+                          className={msg.type === "DOCUMENT" ? "bq-document-bubble" : "bq-message-bubble"} data-outbound={isOutbound}
                         >
                           {msg.type === 'CONTACT' ||
                           (msg.type === 'TEXT' &&
@@ -1193,7 +1211,7 @@ export function ChatPanel({
                         </div>
                           <div
                             className={`bq-message-meta mt-1 flex items-center gap-1 text-[10px] ${
-                              isOutbound ? 'justify-end opacity-70' : 'text-[var(--bq-t3)]'
+                              isOutbound ? 'justify-end' : 'text-[var(--bq-t3)]'
                             }`}
                           >
                             <span>{formatTime(msg.createdAt)}</span>

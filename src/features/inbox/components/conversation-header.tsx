@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
+import { Popover, PopoverButton, PopoverPanel } from '@headlessui/react';
+import { mockupAvatarHue } from '@/components/ui/avatar-hue';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { RefreshCw, Activity, PanelRight, ArrowLeft } from 'lucide-react';
+import { RefreshCw, Activity, PanelRight, ArrowLeft, FolderKanban, CheckCheck, RotateCcw, Sparkles, ChevronDown, MessageSquare, Mail, Instagram } from 'lucide-react';
 import { ConversationAiToggle } from '@/features/inbox/components/conversation-ai-toggle';
 import { AssignmentPopover } from '@/features/inbox/components/assignment-popover';
 import { AgentPinPopover } from '@/features/inbox/components/agent-pin-popover';
@@ -22,6 +24,7 @@ interface ConversationHeaderProps {
   /** Painel lateral Contact Workspace (Contato/E-mail/Agenda/Projeto). */
   onToggleProject?: () => void;
   projectOpen?: boolean;
+  onOpenTasks?: () => void;
 }
 
 export function ConversationHeader({
@@ -32,6 +35,7 @@ export function ConversationHeader({
   agentLogsOpen,
   onToggleProject,
   projectOpen,
+  onOpenTasks,
 }: ConversationHeaderProps) {
   const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
@@ -86,8 +90,8 @@ export function ConversationHeader({
   return (
     <header className="bq-conversation-head">
       {onBack && <Button className="bq-mobile-back" aria-label="Voltar para Conversas" onClick={onBack}><ArrowLeft size={16} /></Button>}
-      <div className="flex min-w-0 flex-1 items-center gap-2">
-        <HeaderAvatar key={conversation.contact.avatarUrl} name={conversation.contact.name} avatarUrl={conversation.contact.avatarUrl} />
+      <div className="bq-chat-identity flex min-w-0 flex-1 items-center">
+        <div className="relative shrink-0"><HeaderAvatar key={conversation.contact.avatarUrl} name={conversation.contact.name} avatarUrl={conversation.contact.avatarUrl} isGroup={conversation.isGroup} /><span className="bq-channel-badge" style={{"--bq-channel-color": `var(--bq-${conversation.channel.type.startsWith("WHATSAPP") ? "wa" : conversation.channel.type === "GMAIL" ? "mail" : conversation.channel.type === "INSTAGRAM" ? "ig" : "t3"})`} as CSSProperties}>{conversation.channel.type === "GMAIL" ? <Mail /> : conversation.channel.type === "INSTAGRAM" ? <Instagram /> : <MessageSquare />}</span></div>
         <div className="min-w-0 flex-1">
           <h2 className="truncate text-sm font-semibold" title={conversation.contact.name || conversation.contact.phone || 'Desconhecido'}>{conversation.contact.name || conversation.contact.phone || 'Desconhecido'}</h2>
           <p className="truncate text-[11px] text-[var(--bq-t3)]" title={conversation.contact.phone || undefined}>
@@ -95,9 +99,9 @@ export function ConversationHeader({
           </p>
         </div>
       </div>
-      {conversation.channel.type !== 'JARVIS' && <div className="bq-chat-actions">
-        <span className="bq-conversation-status"><span />{statusLabel}</span>
-        <FoundationPopover label={aiLabel}>
+      {conversation.channel.type !== 'JARVIS' && <div className="bq-chat-actions" data-ai={conversation.aiEnabled === true ? "forced" : conversation.aiEnabled === false ? "paused" : "default"}>
+        <span className="bq-conversation-status" data-status={conversation.status} title={statusLabel}><span />{statusLabel}</span>
+        <Popover className="relative"><PopoverButton className="bq-button" aria-label={aiLabel} title={aiLabel}><Sparkles className="size-bq-size-icon-xs shrink-0" /><span className="truncate">{aiLabel}</span><ChevronDown className="size-bq-size-icon-xs shrink-0" /></PopoverButton><PopoverPanel anchor="bottom start" className="bq-popover">
           <div className="w-64 space-y-3 p-2" aria-label="IA nesta conversa">
             <ConversationAiToggle inline conversation={conversation} disabled={isLoading}
               onChange={(next) => handleAction(() => inboxService.toggleAi(conversation.id, next), next === null ? 'IA no padrão global' : next ? 'IA forçada nesta conversa' : 'IA pausada nesta conversa')}
@@ -109,16 +113,16 @@ export function ConversationHeader({
             {conversation.isGroup && <div className="flex items-center justify-between gap-2 text-xs"><span>IA permitida no grupo<br /><small>Só responde a @ ou reply</small></span><Switch label="IA permitida nesse grupo" checked={conversation.aiAllowedInGroup} disabled={allowedMut.isPending} onChange={handleAllowedToggle} /></div>}
             <AgentPinPopover inline conversation={conversation} onChanged={onUpdate} />
           </div>
-        </FoundationPopover>
+        </PopoverPanel></Popover>
         <div className="bq-chat-extras">
           {conversation.status !== 'CLOSED' && <AssignmentPopover conversation={conversation} onChanged={onUpdate} />}
           <PipelinePopover conversation={conversation} onChanged={onUpdate} />
           {onToggleAgentLogs && <Button aria-label="Logs do agente" aria-pressed={agentLogsOpen} onClick={onToggleAgentLogs}><Activity size={14} /></Button>}
-          <Button variant="solid" disabled={isLoading} onClick={() => handleAction(() => conversation.status === 'CLOSED' ? inboxService.reopenConversation(conversation.id) : inboxService.closeConversation(conversation.id), conversation.status === 'CLOSED' ? 'Conversa reaberta' : 'Conversa encerrada')}>
-            {conversation.status === 'CLOSED' ? 'Reabrir' : 'Encerrar'}
+          <Button aria-label={conversation.status === "CLOSED" ? "Reabrir conversa" : "Encerrar conversa"} disabled={isLoading} onClick={() => handleAction(() => conversation.status === 'CLOSED' ? inboxService.reopenConversation(conversation.id) : inboxService.closeConversation(conversation.id), conversation.status === 'CLOSED' ? 'Conversa reaberta' : 'Conversa encerrada')}>
+            {conversation.status === 'CLOSED' ? <RotateCcw size={15} /> : <CheckCheck size={15} />}
           </Button>
         </div>
-        {onToggleProject && <Button aria-label={projectOpen ? 'Fechar painel do contato' : 'Abrir painel do contato'} aria-pressed={projectOpen} onClick={onToggleProject}><PanelRight size={15} /></Button>}
+        {onOpenTasks && <Button className="bq-chat-projects" aria-label="Projetos e tasks" onClick={onOpenTasks}><FolderKanban size={15} /></Button>}
         <FoundationPopover label="⋯">
           <div className="flex w-64 flex-col gap-2 p-2" aria-label="Opções da conversa">
             <div className="bq-chat-mobile-extras flex flex-col gap-2">
@@ -127,17 +131,19 @@ export function ConversationHeader({
               {onToggleAgentLogs && <Button onClick={onToggleAgentLogs}>Logs do agente</Button>}
               <Button disabled={isLoading} onClick={() => handleAction(() => conversation.status === 'CLOSED' ? inboxService.reopenConversation(conversation.id) : inboxService.closeConversation(conversation.id), conversation.status === 'CLOSED' ? 'Conversa reaberta' : 'Conversa encerrada')}>{conversation.status === 'CLOSED' ? 'Reabrir' : 'Encerrar'}</Button>
             </div>
+            {onOpenTasks && <Button onClick={onOpenTasks}>Projetos e tasks</Button>}
             <Button onClick={handleSync} disabled={isSyncing}><RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} />Sincronizar mensagens</Button>
             {emailDeepLink(conversation) && <a className="bq-button" href={emailDeepLink(conversation)!}>Abrir no E-mail</a>}
           </div>
         </FoundationPopover>
+        {onToggleProject && <Button aria-label={projectOpen ? 'Fechar painel do contato' : 'Abrir painel do contato'} aria-pressed={projectOpen} onClick={onToggleProject}><PanelRight size={15} /></Button>}
       </div>}
     </header>
   );
 }
 
-function HeaderAvatar({ name, avatarUrl }: { name: string | null; avatarUrl: string | null }) {
+function HeaderAvatar({ name, avatarUrl, isGroup }: { name: string | null; avatarUrl: string | null; isGroup: boolean }) {
   const [failed, setFailed] = useState(false);
-  if (avatarUrl && !failed) return <img src={avatarUrl} alt={name || 'Contato'} referrerPolicy="no-referrer" onError={() => setFailed(true)} className="h-9 w-9 shrink-0 rounded-full object-cover" />;
-  return <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--bq-raised-2)] text-xs font-semibold text-[var(--bq-t2)]">{(name || '?').slice(0, 2).toUpperCase()}</div>;
+  if (avatarUrl && !failed) return <img src={avatarUrl} alt={name || 'Contato'} referrerPolicy="no-referrer" onError={() => setFailed(true)} className={`bq-avatar-mockup shrink-0 object-cover ${isGroup ? "bq-avatar-group" : ""}`} />;
+  return <div style={{"--bq-avatar-hue": mockupAvatarHue(name || "?")} as CSSProperties} className={`bq-avatar-mockup flex shrink-0 items-center justify-center ${isGroup ? "bq-avatar-group" : ""}`}>{(name || '?').split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase()}</div>;
 }

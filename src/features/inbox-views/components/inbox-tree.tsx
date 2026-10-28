@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
+import { mockupAvatarHue } from '@/components/ui/avatar-hue';
+import { useState, type ReactNode, type CSSProperties } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Inbox, ChevronDown, Plus, MessageSquare, Users, Tag, User, Clock, Pencil, Trash2, type LucideIcon } from 'lucide-react';
@@ -48,7 +49,7 @@ export function InboxTree() {
   const responseView = views.find(view => view.filters.lastDirection === 'inbound');
   const groups = views.filter(view => view.filters.kind === 'GROUP');
   const holdingTag = tags.find(tag => tag.name.toLocaleLowerCase('pt-BR') === 'holding');
-  return <nav aria-label="Caixas e canais" className="space-y-4 text-[var(--bq-t2)]">
+  return <nav aria-label="Caixas e canais" className="bq-inbox-nav text-[var(--bq-t2)]">
     <NavSection title="Caixas" persist>
       <NavItem label="Todas" icon={Inbox} active={!params.get('view') && (!params.get('box') || params.get('box') === 'all') && !params.get('channel') && !params.get('tag') && !params.get('kind')} onClick={() => go({})} />
       <NavItem label="Não lidas" icon={MessageSquare} active={params.get('box') === 'unread'} onClick={() => go({ box: 'unread' })} />
@@ -58,13 +59,13 @@ export function InboxTree() {
       <NavItem label="Nova inbox" icon={Plus} onClick={() => setCreating(true)} />
     </NavSection>
     <NavSection title="Canais">
-      {channels.map(channel => <NavItem key={channel.id} label={channel.name} icon={MessageSquare} active={params.get('channel') === channel.id} onClick={() => go({ channel: channel.id })} />)}
+      {channels.map(channel => <NavItem key={channel.id} label={channel.name} icon={MessageSquare} marker={<span className="bq-nav-dot" style={{backgroundColor: `var(--bq-${channel.type.startsWith("WHATSAPP") ? "wa" : channel.type === "INSTAGRAM" ? "ig" : channel.type === "GMAIL" ? "mail" : "t3"})`}} />} active={params.get('channel') === channel.id} onClick={() => go({ channel: channel.id })} />)}
       {!channels.length && <Empty>Sem canais disponíveis.</Empty>}
     </NavSection>
     <NavSection title="Grupos">
       <NavItem label="Todos os grupos" icon={Users} active={params.get('kind') === 'groups' && !params.get('tag')} onClick={() => go({ kind: 'groups' })} />
       {saved(groups)}
-      {groupConversations.map(conversation => <NavItem key={conversation.id} label={conversation.contact.name || conversation.contact.phone || 'Grupo'} icon={Users} active={params.get('conversationId') === conversation.id} onClick={() => router.push(`/inbox?conversationId=${encodeURIComponent(conversation.id)}`)} />)}
+      {groupConversations.map(conversation => <NavItem key={conversation.id} label={conversation.contact.name || conversation.contact.phone || 'Grupo'} icon={Users} count={conversation.unreadCount} marker={<span className="bq-group-swatch" style={{"--bq-avatar-hue": mockupAvatarHue(conversation.contact.name || "?")} as CSSProperties}>{(conversation.contact.name || '?').split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase()}</span>} active={params.get('conversationId') === conversation.id} onClick={() => router.push(`/inbox?conversationId=${encodeURIComponent(conversation.id)}`)} />)}
       {groupQuery.hasNextPage && <NavItem label={groupQuery.isFetchingNextPage ? 'Carregando…' : 'Mais grupos'} icon={Plus} disabled={groupQuery.isFetchingNextPage} onClick={() => { void groupQuery.fetchNextPage(); }} />}
       {groupQuery.isError ? <Empty>Não foi possível carregar os grupos.</Empty> : groupQuery.isLoading ? <Empty>Carregando grupos…</Empty> : !groupConversations.length && <Empty>Sem grupos disponíveis.</Empty>}
     </NavSection>
@@ -73,7 +74,7 @@ export function InboxTree() {
       <Empty>Fases das holdings ainda não disponíveis nesta navegação.</Empty>
     </NavSection>
     <NavSection title="Etiquetas">
-      {tags.map(tag => <NavItem key={tag.id} label={tag.name} icon={Tag} active={params.get('tag') === tag.id} onClick={() => go({ tag: tag.id })} />)}
+      {tags.map(tag => <NavItem key={tag.id} label={tag.name} icon={Tag} marker={<span className="bq-nav-dot" style={{backgroundColor: tag.color}} />} active={params.get('tag') === tag.id} onClick={() => go({ tag: tag.id })} />)}
       {!tags.length && <Empty>Sem etiquetas cadastradas.</Empty>}
     </NavSection>
     <InboxViewDialog open={creating} view={null} onClose={() => setCreating(false)} onSaved={() => { qc.invalidateQueries({ queryKey: ['inbox-views'] }); setCreating(false); }} />
@@ -83,9 +84,9 @@ export function InboxTree() {
 
 function NavSection({ title, children, persist = false }: { title: string; children: ReactNode; persist?: boolean }) {
   const [open, setOpen] = useState(() => !persist || typeof window === 'undefined' || localStorage.getItem('inbox-tree-expanded') !== '0');
-  return <section><button type="button" className="flex w-full items-center justify-between px-2 py-2 text-[10.5px] font-medium uppercase tracking-[.08em] text-[var(--bq-t3)]" aria-expanded={open} onClick={() => { setOpen(!open); if (persist) localStorage.setItem('inbox-tree-expanded', open ? '0' : '1'); }}>{title}<ChevronDown size={12} className={open ? '' : '-rotate-90'} /></button>{open && <div>{children}</div>}</section>;
+  return <section><button type="button" className="bq-nav-heading" aria-expanded={open} onClick={() => { setOpen(!open); if (persist) localStorage.setItem('inbox-tree-expanded', open ? '0' : '1'); }}>{title}<ChevronDown size={12} className={open ? '' : '-rotate-90'} /></button>{open && <div>{children}</div>}</section>;
 }
-function NavItem({ label, icon: Icon, active, disabled, title, onClick }: { label: string; icon: LucideIcon; active?: boolean; disabled?: boolean; title?: string; onClick: () => void }) {
-  return <button type="button" title={title || label} disabled={disabled} aria-current={active ? 'page' : undefined} onClick={onClick} className={`flex min-w-0 flex-1 w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[12.5px] disabled:opacity-45 ${active ? 'bg-[var(--bq-raised-2)] text-[var(--bq-t1)]' : 'hover:bg-[var(--bq-raised)]'}`}><Icon size={14} className="shrink-0" /><span className="truncate">{label}</span></button>;
+function NavItem({ label, icon: Icon, marker, count, active, disabled, title, onClick }: { label: string; icon: LucideIcon; marker?: ReactNode; count?: number; active?: boolean; disabled?: boolean; title?: string; onClick: () => void }) {
+  return <button type="button" title={title || label} disabled={disabled} aria-current={active ? 'page' : undefined} onClick={onClick} className={`bq-nav-item disabled:opacity-45 ${active ? 'bg-[var(--bq-raised-2)] text-[var(--bq-t1)]' : 'hover:bg-[var(--bq-raised)]'}`}>{marker ?? <Icon size={14} className="shrink-0" />}<span className="truncate">{label}</span>{count != null && count > 0 && <span className="bq-nav-count">{count}</span>}</button>;
 }
 function Empty({ children }: { children: ReactNode }) { return <p className="px-2 py-1 text-[11px] leading-relaxed text-[var(--bq-t3)]">{children}</p>; }
