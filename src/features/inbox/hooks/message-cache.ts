@@ -75,14 +75,17 @@ export function receiveMessage(client: QueryClient, payload: { conversationId?: 
     }
   };
   if (known) updateRows(patch(known));
-  else void inboxService.getConversation(id).then(async (row) => {
+  else if (!alreadyProjected) void inboxService.getConversation(id).then(async (row) => {
     // A new conversation needs its contact/channel to render. Fetch only this row.
     if (queries.some(([key]) => key[2] && !findView(client, String(key[2])))) {
       const views = await inboxViewsService.list();
       client.setQueryData(['inbox-views'], views);
     }
     updateRows(patch(row, false));
-  }).catch(() => undefined);
+  }).catch(() => {
+    // Release failed projections so the next delivery can retry this row.
+    projected.delete(key);
+  });
   client.setQueriesData<Conversation>({ queryKey: ['jarvis-desk-conversation'] }, (old) => old?.id === id ? patch(old) : old);
 }
 

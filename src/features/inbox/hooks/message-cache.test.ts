@@ -1,7 +1,7 @@
 import { QueryClient, type InfiniteData } from '@tanstack/react-query';
 import { expect, it, vi } from 'vitest';
 import { receiveMessage, upsertMessage } from '@/features/inbox/hooks/message-cache';
-import type { Conversation, Message } from '@/features/inbox/services/inbox.service';
+import { inboxService, type Conversation, type Message } from '@/features/inbox/services/inbox.service';
 vi.mock('@/features/inbox/services/inbox.service', () => ({ inboxService: { getConversation: vi.fn() } }));
 type ConversationPages = InfiniteData<{ conversations: Conversation[]; pagination: Record<string, unknown> }>;
 type MessagePage = { messages: Message[]; pagination?: unknown };
@@ -17,6 +17,57 @@ it('deduplica salas e consumidores, reordena páginas e preserva metadados', () 
   expect(data.pages[0].conversations[0].unreadCount).toBe(3);
   expect(data.pageParams).toEqual([1, 2]);
   expect(client.getQueryData<MessagePage>(['messages', 'c'])!).toEqual({ messages: [message], pagination: { preserved: true } });
+  client.clear();
+});
+
+it('conversa desconhecida compartilha busca em voo e soma o badge uma vez', async () => {
+  const client = new QueryClient();
+  const key = ['conversations'];
+  const pending = Promise.withResolvers<Conversation>();
+  const getConversation = vi.mocked(inboxService.getConversation).mockReset().mockReturnValue(pending.promise);
+  client.setQueryData(key, { pageParams: [1], pages: [{ conversations: [], pagination: {} }] });
+  client.setQueryData(['conversation', 'c'], { id: 'c', unreadCount: 2 } as Conversation);
+
+  receiveMessage(client, { message });
+  receiveMessage(client, { message });
+  expect(getConversation).toHaveBeenCalledTimes(1);
+  expect(getConversation).toHaveBeenCalledWith('c');
+  expect(client.getQueryData<ConversationPages>(key)!.pages[0].conversations).toHaveLength(0);
+  expect(client.getQueryData<Conversation>(['conversation', 'c'])!.unreadCount).toBe(3);
+
+  // The HTTP response already includes the incoming message in its unread count.
+  pending.resolve({ id: 'c', unreadCount: 3, messages: [message] } as Conversation);
+  await vi.waitFor(() => expect(client.getQueryData<ConversationPages>(key)!.pages[0].conversations).toHaveLength(1));
+  receiveMessage(client, { message });
+  expect(client.getQueryData<ConversationPages>(key)!.pages[0].conversations[0].unreadCount).toBe(3);
+  expect(getConversation).toHaveBeenCalledTimes(1);
+  client.clear();
+});
+
+it('busca de conversa desconhecida que falha libera nova tentativa na entrega seguinte', async () => {
+  const client = new QueryClient();
+  const key = ['conversations'];
+  const first = Promise.withResolvers<Conversation>();
+  const retry = Promise.withResolvers<Conversation>();
+  const getConversation = vi.mocked(inboxService.getConversation).mockReset()
+    .mockReturnValueOnce(first.promise).mockReturnValue(retry.promise);
+  client.setQueryData(key, { pageParams: [1], pages: [{ conversations: [], pagination: {} }] });
+
+  receiveMessage(client, { message });
+  first.reject(new Error('fixture: unavailable'));
+  await first.promise.catch(() => undefined);
+  // Let the chained rejection handler clear the projection before redelivery.
+  await Promise.resolve();
+  receiveMessage(client, { message });
+  expect(getConversation).toHaveBeenCalledTimes(2);
+  receiveMessage(client, { message });
+  expect(getConversation).toHaveBeenCalledTimes(2);
+
+  retry.resolve({ id: 'c', unreadCount: 1, messages: [message] } as Conversation);
+  await vi.waitFor(() => expect(client.getQueryData<ConversationPages>(key)!.pages[0].conversations).toHaveLength(1));
+  receiveMessage(client, { message });
+  expect(client.getQueryData<ConversationPages>(key)!.pages[0].conversations[0].unreadCount).toBe(1);
+  expect(getConversation).toHaveBeenCalledTimes(2);
   client.clear();
 });
 it('atualiza somente o detalhe correspondente e não altera preview para evento antigo', () => {
