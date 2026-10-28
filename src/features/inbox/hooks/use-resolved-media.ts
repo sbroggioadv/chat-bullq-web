@@ -1,11 +1,13 @@
 'use client';
 
+import { useVisible } from '@/features/inbox/hooks/use-visible';
 import { useEffect, useRef, useState } from 'react';
 import { inboxService, type Message } from '../services/inbox.service';
 
-type ResolveMode = 'eager' | 'lazy';
+type ResolveMode = 'eager' | 'lazy' | 'viewport';
 
 interface UseResolvedMediaResult {
+  ref: ReturnType<typeof useVisible>['ref'];
   url: string | undefined;
   mimeType: string | undefined;
   loading: boolean;
@@ -35,6 +37,7 @@ export function useResolvedMedia(
   options: { mode?: ResolveMode } = {},
 ): UseResolvedMediaResult {
   const mode = options.mode ?? 'lazy';
+  const { ref, visible } = useVisible();
 
   const initial = pickInitialUrl(message);
   const [url, setUrl] = useState<string | undefined>(initial);
@@ -61,7 +64,7 @@ export function useResolvedMedia(
 
   const doResolve = async (force = false) => {
     if (!message.id) return;
-    if (loading) {
+    if (inflightRef.current) {
       // Coalesce concurrent calls (e.g., multiple <img>s on the same message).
       if (inflightRef.current) await inflightRef.current;
       return;
@@ -94,14 +97,15 @@ export function useResolvedMedia(
   // sparingly — for media that always renders (audio thumbnails). Most
   // components use lazy mode and call retry() on <img>/<video> error.
   useEffect(() => {
-    if (mode !== 'eager') return;
+    if (mode !== 'eager' && !(mode === 'viewport' && visible)) return;
     if (url && !looksUnplayable(url)) return;
     void doResolve(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, message.id]);
+  }, [mode, message.id, visible]);
 
   return {
-    url,
+    ref,
+    url: mode === 'viewport' && !visible ? undefined : url,
     mimeType,
     loading,
     error,

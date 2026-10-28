@@ -1,5 +1,6 @@
 'use client';
 
+import { useVisible } from '@/features/inbox/hooks/use-visible';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Play, Pause, Loader2, Sparkles, ChevronDown, Check } from 'lucide-react';
 import { Popover, PopoverButton, PopoverPanel } from '@headlessui/react';
@@ -24,6 +25,7 @@ export function AudioMessagePlayer({
   isOutbound: boolean;
   onTranscribed?: (t: TranscriptionResult) => void;
 }) {
+  const { ref: viewportRef, visible } = useVisible();
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -36,14 +38,15 @@ export function AudioMessagePlayer({
   // carries an encrypted .enc CDN link. We hit the backend to resolve (and
   // cache) a decrypted URL on first play. Outbound audios already have
   // content.mediaUrl pointing to our own upload.
-  const initialMediaUrl = message.content?.mediaUrl as string | undefined;
+  const rawUrl = message.content?.mediaUrl as string | undefined;
+  const initialMediaUrl = rawUrl && !/\.enc(\?|$)|mmg\.whatsapp\.net/i.test(rawUrl) ? rawUrl : undefined;
   const [resolvedUrl, setResolvedUrl] = useState<string | undefined>(initialMediaUrl);
   const [resolving, setResolving] = useState(false);
-  const mediaUrl = resolvedUrl;
+  const mediaUrl = visible ? resolvedUrl : undefined;
 
   useEffect(() => {
-    setResolvedUrl(message.content?.mediaUrl);
-  }, [message.content?.mediaUrl]);
+    setResolvedUrl(initialMediaUrl);
+  }, [initialMediaUrl, message.id]);
 
   const ensureResolved = async (): Promise<string | null> => {
     if (resolvedUrl) return resolvedUrl;
@@ -162,11 +165,11 @@ export function AudioMessagePlayer({
   }
 
   return (
-    <div className={`min-w-[240px] rounded-2xl px-3 py-2.5 ${colorBubble}`}>
+    <div ref={viewportRef} className={`min-w-[240px] rounded-2xl px-3 py-2.5 ${colorBubble}`}>
       <audio
         ref={audioRef}
         src={mediaUrl}
-        preload="metadata"
+        preload={visible ? "metadata" : "none"}
         onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
         onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
         onPlay={() => setPlaying(true)}

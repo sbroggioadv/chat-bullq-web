@@ -35,14 +35,13 @@ interface MediaProps {
 }
 
 export function MediaImage({ message, isOutbound }: MediaProps) {
-  // Eager: imagem aparece assim que a mensagem renderiza, sem precisar de
-  // clique pra disparar o resolve.
-  const { url, loading, error, retry } = useResolvedMedia(message, { mode: 'eager' });
+  // A resolução começa quando o placeholder entra no viewport.
+  const { ref, url, loading, error, retry } = useResolvedMedia(message, { mode: 'viewport' });
   const [zoomOpen, setZoomOpen] = useState(false);
   const caption = message.content?.caption as string | undefined;
 
   return (
-    <div>
+    <div ref={ref}>
       <div
         className={`group relative overflow-hidden rounded-lg ${
           isOutbound ? 'bg-primary-foreground/10' : 'bg-zinc-100 dark:bg-zinc-700/40'
@@ -84,11 +83,11 @@ export function MediaImage({ message, isOutbound }: MediaProps) {
 }
 
 export function MediaVideo({ message, isOutbound }: MediaProps) {
-  const { url, mimeType, loading, error, retry } = useResolvedMedia(message, { mode: 'eager' });
+  const { ref, url, mimeType, loading, error, retry } = useResolvedMedia(message, { mode: 'viewport' });
   const caption = message.content?.caption as string | undefined;
 
   return (
-    <div>
+    <div ref={ref}>
       <div
         className={`overflow-hidden rounded-lg ${
           isOutbound ? 'bg-primary-foreground/10' : 'bg-zinc-100 dark:bg-zinc-700/40'
@@ -177,27 +176,27 @@ export function MediaDocument({ message, isOutbound }: MediaProps) {
 }
 
 export function MediaSticker({ message, isOutbound }: MediaProps) {
-  const { url, loading, error, retry } = useResolvedMedia(message, { mode: 'eager' });
+  const { ref, url, loading, error, retry } = useResolvedMedia(message, { mode: 'viewport' });
 
   if (url) {
     return (
-      <img
+      <div ref={ref}><img
         src={url}
         alt="Sticker"
         className="h-32 w-32 object-contain"
         onError={() => void retry()}
         loading="lazy"
-      />
+      /></div>
     );
   }
   return (
-    <MediaSkeleton
+    <div ref={ref}><MediaSkeleton
       label={loading ? 'Carregando sticker…' : error || 'Sticker'}
       error={!!error}
       isOutbound={isOutbound}
       onRetry={() => void retry()}
       compact
-    />
+    /></div>
   );
 }
 
