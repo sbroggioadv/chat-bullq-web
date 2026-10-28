@@ -180,7 +180,7 @@
  .bq-message-file { min-width:0; }
  /* A31: preserve the existing mobile distribution until the measured 30px overflow is resolved. */
  .bq-composer-toolbar { gap:var(--bq-space-hairline); flex-wrap:nowrap; }
- .bq-composer-toolbar > button:not([data-variant="solid"]), .bq-composer-toolbar > div > button { width:var(--bq-space-page); }
+ .bq-composer-toolbar > button:not([data-variant="solid"]), .bq-composer-toolbar > div > button { width:var(--bq-size-compact-control); }
  .bq-composer-toolbar > button[data-variant="solid"] { padding-inline:var(--bq-space-sm); gap:var(--bq-space-xs); font-size:var(--bq-text-control); }
  .bq-composer-via { padding-inline:var(--bq-space-micro); }
 }
