@@ -8,7 +8,10 @@ export function useVisible() {
   useEffect(() => {
     const element = ref.current;
     if (!element) return;
-    if (typeof IntersectionObserver === 'undefined') { setVisible(true); return; }
+    if (typeof IntersectionObserver === 'undefined') {
+      const frame = requestAnimationFrame(() => setVisible(true));
+      return () => cancelAnimationFrame(frame);
+    }
     const observer = new IntersectionObserver(([entry]) => {
       if (entry.isIntersecting) { setVisible(true); observer.disconnect(); }
     }, { rootMargin: '100px' });

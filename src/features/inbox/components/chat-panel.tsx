@@ -642,7 +642,7 @@ export function ChatPanel({
 
   const handleStartForward = useCallback((msg: Message) => {
     setForwarding(msg);
-  }, []);
+  }, [setForwarding]);
 
   const handleAttachToProject = useCallback(
     async (msg: Message) => {
