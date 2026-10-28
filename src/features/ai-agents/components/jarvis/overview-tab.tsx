@@ -1,9 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import type { ReactNode } from 'react';
+import { useSocket } from '@/features/inbox/hooks/use-socket';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
-import { FoundationPopover, Pill } from '@/components/ui/foundation';
+import {
+  FoundationPopover,
+  Pill,
+  PageSkeleton,
+} from '@/components/ui/foundation';
 import { useOrgId } from '@/hooks/use-org-query-key';
 import {
   aiAgentsService,
@@ -11,11 +16,7 @@ import {
 } from '@/features/ai-agents/services/ai-agents.service';
 import styles from '@/features/ai-agents/components/agents-workspace.module.css';
 import { RunsTable } from '@/features/ai-agents/components/jarvis/runs-table';
-import {
-  fmtMs,
-  fmtNum,
-  fmtUsdShort,
-} from '@/features/ai-agents/components/jarvis/format';
+import { fmtMs, fmtNum } from '@/features/ai-agents/components/jarvis/format';
 
 const ACTIONS: Record<string, string> = {
   REPLIED: 'Respondeu',
@@ -24,56 +25,134 @@ const ACTIONS: Record<string, string> = {
   HANDED_BACK: 'Devolveu',
   CLOSED_CONVERSATION: 'Encerrou a conversa',
   NO_ACTION: 'Sem ação',
+  NONE: 'Sem ação',
 };
 const panel = styles.panel;
+const decimalUsd = (value: number) =>
+  value.toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+const usd = (value: number) => `US$ ${decimalUsd(value)}`;
+const percent = (value: number) =>
+  `${value.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`;
+const periods: Record<Period, string> = {
+  '24h': '24h',
+  '7d': '7 dias',
+  '30d': '30 dias',
+};
+const actionTone: Record<string, string> = {
+  REPLIED: 'ok',
+  DELEGATED: 'agent',
+  TRANSFERRED_TO_HUMAN: 'human',
+};
+function useOverviewStats(period: Period) {
+  const orgId = useOrgId();
+  return useQuery({
+    queryKey: ['jarvis-overview', orgId, period],
+    queryFn: () => aiAgentsService.orgStats(period),
+    refetchInterval: 10_000,
+  });
+}
+export function OverviewControls({
+  period,
+  onPeriodChange,
+}: {
+  period: Period;
+  onPeriodChange: (period: Period) => void;
+}) {
+  const { data: stats } = useOverviewStats(period);
+  return (
+    <>
+      <select
+        aria-label="Período das execuções"
+        className={`bq-button ${styles.period}`}
+        value={period}
+        onChange={(event) => onPeriodChange(event.target.value as Period)}
+      >
+        <option value="24h">24h</option>
+        <option value="7d">7 dias</option>
+        <option value="30d">30 dias</option>
+      </select>
+      <FoundationPopover label="Tokens, limites e latência">
+        <div className="max-w-xs p-3">
+          {stats ? (
+            <>
+              <p className="text-xs text-[var(--bq-t2)]">
+                {fmtNum(stats.tokens.total)} tokens ·{' '}
+                {fmtNum(stats.tokens.cacheRead)} em cache · p50{' '}
+                {fmtMs(stats.latency.p50)} · p95 {fmtMs(stats.latency.p95)}
+              </p>
+              <p className="mt-2 text-xs text-[var(--bq-t3)]">
+                Limite mensal de tokens:{' '}
+                {stats.monthlyCap.cap == null
+                  ? 'sem limite definido'
+                  : `${fmtNum(stats.monthlyCap.used)} / ${fmtNum(stats.monthlyCap.cap)}`}
+                . Limite financeiro ainda não disponível.
+              </p>
+            </>
+          ) : (
+            <p role="status">Indicadores ainda indisponíveis.</p>
+          )}
+        </div>
+      </FoundationPopover>
+    </>
+  );
+}
 
 function Bars({
   title,
   rows,
   money = false,
   embedded = false,
+  denominator,
+  children,
 }: {
   title: string;
-  rows: { label: string; value: number }[];
+  rows: { label: string; value: number; tone?: string }[];
   money?: boolean;
   embedded?: boolean;
+  denominator?: number;
+  children?: ReactNode;
 }) {
-  const max = Math.max(...rows.map((row) => row.value), 1);
+  const max = denominator ?? Math.max(...rows.map((row) => row.value), 1);
   return (
     <section className={embedded ? styles.barGroup : panel} aria-label={title}>
       <h2 className={styles.panelTitle}>{title}</h2>
-      {rows.length ? (
+      {rows.length && max > 0 ? (
         rows.map((row, i) => (
           <div key={`${row.label}-${i}`} className={styles.barRow}>
             <span className="text-[var(--bq-t2)]" title={row.label}>
               {row.label}
             </span>
-            <span className="h-2 rounded bg-[var(--bq-raised-2)]">
+            <span className={styles.barTrack}>
               <span
-                className="block h-full rounded-full bg-[var(--bq-t2)]"
+                className={styles.barFill}
+                data-tone={row.tone}
                 style={{ width: `${(row.value / max) * 100}%` }}
               />
             </span>
             <span className="tabular-nums">
-              {money ? fmtUsdShort(row.value) : fmtNum(row.value)}
+              {denominator !== undefined
+                ? percent((row.value / max) * 100)
+                : money
+                  ? decimalUsd(row.value)
+                  : fmtNum(row.value)}
             </span>
           </div>
         ))
       ) : (
         <p className="text-xs text-[var(--bq-t3)]">Sem dados no período.</p>
       )}
+      {children}
     </section>
   );
 }
 
-export function JarvisOverviewTab() {
+export function JarvisOverviewTab({ period = '30d' }: { period?: Period }) {
   const orgId = useOrgId();
-  const [period, setPeriod] = useState<Period>('30d');
-  const statsQuery = useQuery({
-    queryKey: ['jarvis-overview', orgId, period],
-    queryFn: () => aiAgentsService.orgStats(period),
-    refetchInterval: 10_000,
-  });
+  const statsQuery = useOverviewStats(period);
+  const { connected } = useSocket();
   const feed = useQuery({
     queryKey: ['jarvis-feed', orgId],
     queryFn: () => aiAgentsService.feed({ limit: 50 }),
@@ -86,12 +165,7 @@ export function JarvisOverviewTab() {
   const stats = statsQuery.data;
   const name = (id: string) =>
     agents.data?.find((agent) => agent.id === id)?.name ?? id;
-  if (statsQuery.isPending)
-    return (
-      <p className="p-6" role="status">
-        Carregando indicadores…
-      </p>
-    );
+  if (statsQuery.isPending) return <PageSkeleton />;
   if (statsQuery.isError || !stats)
     return (
       <div className="p-6" role="alert">
@@ -107,7 +181,7 @@ export function JarvisOverviewTab() {
   return (
     <div className={styles.overview}>
       {failedRate > 30 && stats.runs.total >= 5 && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--bq-hair)] bg-[var(--bq-err-soft)] p-3">
+        <div className={styles.failureAlert}>
           <p>
             <strong>Taxa de falha alta:</strong> {stats.runs.failed} de{' '}
             {stats.runs.total} execuções no período.
@@ -120,48 +194,40 @@ export function JarvisOverviewTab() {
       {stats.monthlyCap.percentUsed != null &&
         stats.monthlyCap.percentUsed >= 80 && (
           <p role="status" className="rounded-xl bg-[var(--bq-warn-soft)] p-3">
-            Limite mensal: {stats.monthlyCap.percentUsed.toFixed(1)}% dos tokens
+            Limite mensal: {percent(stats.monthlyCap.percentUsed)} dos tokens
             utilizados.
           </p>
         )}
       <div className={styles.metrics}>
         {[
           [
-            'Custo no período',
-            fmtUsdShort(stats.cost.usd),
-            `${fmtUsdShort(stats.cost.avgPerRun)} por execução`,
+            `Custo · ${periods[period]}`,
+            usd(stats.cost.usd),
+            `${usd(stats.cost.avgPerRun)} por execução`,
           ],
           [
-            'Execuções',
+            `Execuções · ${periods[period]}`,
             fmtNum(stats.runs.total),
             `${stats.runs.completed} concluídas · ${stats.runs.failed} falhas`,
           ],
           [
             'Taxa de sucesso',
-            stats.runs.successRate == null ? '—' : `${stats.runs.successRate}%`,
+            stats.runs.successRate == null
+              ? '—'
+              : percent(stats.runs.successRate),
             '',
           ],
           [
             'Passaram para humano',
             fmtNum(stats.byFinalAction.TRANSFERRED_TO_HUMAN ?? 0),
-            'No período selecionado',
+            stats.runs.total
+              ? `${percent(((stats.byFinalAction.TRANSFERRED_TO_HUMAN ?? 0) / stats.runs.total) * 100)} das execuções`
+              : 'Sem execuções no período',
           ],
         ].map(([label, value, hint]) => (
           <section key={label} className={styles.metric}>
             <div className={styles.metricLabel}>
-              <span>{label === 'Custo no período' ? 'Custo' : label}</span>
-              {label === 'Custo no período' && (
-                <select
-                  aria-label="Período das execuções"
-                  className={styles.period}
-                  value={period}
-                  onChange={(event) => setPeriod(event.target.value as Period)}
-                >
-                  <option value="24h">24h</option>
-                  <option value="7d">7 dias</option>
-                  <option value="30d">30 dias</option>
-                </select>
-              )}
+              <span>{label}</span>
             </div>
             <p className={styles.metricValue}>{value}</p>
             <p className={styles.metricHint}>{hint}</p>
@@ -170,7 +236,7 @@ export function JarvisOverviewTab() {
       </div>
       <div className={styles.overviewGrid}>
         <Bars
-          title="Custo por modelo"
+          title="Custo por modelo (US$)"
           rows={stats.byModel.map((model) => ({
             label: model.modelId,
             value: model.cost,
@@ -179,11 +245,24 @@ export function JarvisOverviewTab() {
         />
         <Bars
           title="Como as execuções terminaram"
-          rows={Object.entries(stats.byFinalAction).map(([action, value]) => ({
-            label: ACTIONS[action] ?? action,
-            value,
-          }))}
-        />
+          denominator={stats.runs.total}
+          rows={Object.entries(stats.byFinalAction)
+            .sort(([a], [b]) => {
+              const order = Object.keys(ACTIONS);
+              const rank = (key: string) =>
+                order.includes(key) ? order.indexOf(key) : order.length;
+              return rank(a) - rank(b);
+            })
+            .map(([action, value]) => ({
+              label: ACTIONS[action] ?? action,
+              value,
+              tone: actionTone[action],
+            }))}
+        >
+          <p className="text-xs text-[var(--bq-t3)]">
+            Erro: distribuição exclusiva ainda não disponível.
+          </p>
+        </Bars>
         <section className={panel} aria-label="Por agente">
           <h2 className={styles.panelTitle}>Por agente</h2>
           <div className={styles.agentRows}>
@@ -191,7 +270,7 @@ export function JarvisOverviewTab() {
               <span>Agente</span>
               <span>Execuções</span>
               <span>Sucesso</span>
-              <span>Custo</span>
+              <span aria-label="Custo em dólares americanos">Custo</span>
             </div>
             {stats.byAgent.length ? (
               stats.byAgent.map((agent) => (
@@ -209,7 +288,7 @@ export function JarvisOverviewTab() {
                   >
                     —
                   </span>
-                  <span>{fmtUsdShort(agent.cost)}</span>
+                  <span>{decimalUsd(agent.cost)}</span>
                 </Link>
               ))
             ) : (
@@ -234,6 +313,7 @@ export function JarvisOverviewTab() {
             rows={stats.handoffs.map((handoff) => ({
               label: `${name(handoff.fromAgentId)} → ${name(handoff.toAgentId)}`,
               value: handoff.count,
+              tone: 'agent',
             }))}
           />
         </section>
@@ -242,24 +322,10 @@ export function JarvisOverviewTab() {
         <div className={styles.feedHeading}>
           <div className="flex items-center gap-2">
             <h2 className={styles.panelTitle}>Últimas execuções</h2>
-            <Pill tone="agent">A cada 10 s</Pill>
+            <span className={styles.feedBadge}>
+              <Pill tone="info">{connected ? 'ao vivo' : 'A cada 10 s'}</Pill>
+            </span>
           </div>
-          <FoundationPopover label="Tokens, limites e latência">
-            <div className="max-w-xs p-3">
-              <p className="mt-3 text-xs text-[var(--bq-t2)]">
-                {fmtNum(stats.tokens.total)} tokens ·{' '}
-                {fmtNum(stats.tokens.cacheRead)} em cache · p50{' '}
-                {fmtMs(stats.latency.p50)} · p95 {fmtMs(stats.latency.p95)}
-              </p>
-              <p className="mt-2 text-xs text-[var(--bq-t3)]">
-                Limite mensal de tokens:{' '}
-                {stats.monthlyCap.cap == null
-                  ? 'sem limite definido'
-                  : `${fmtNum(stats.monthlyCap.used)} / ${fmtNum(stats.monthlyCap.cap)}`}
-                . Limite financeiro ainda não disponível.
-              </p>
-            </div>
-          </FoundationPopover>
         </div>
         {feed.isPending ? (
           <p role="status">Carregando execuções…</p>

@@ -11,10 +11,14 @@ import AiAgentsPage from '@/app/(dashboard)/ai-agents/page';
 const navigation = vi.hoisted(() => ({
   push: vi.fn(),
   params: new URLSearchParams(),
+  suspend: false,
 }));
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: navigation.push }),
-  useSearchParams: () => navigation.params,
+  useSearchParams: () => {
+    if (navigation.suspend) throw new Promise(() => {});
+    return navigation.params;
+  },
 }));
 vi.mock('@/features/ai-agents/components/agent-detail', () => ({
   AgentDetail: () => <p>Página do agente</p>,
@@ -27,6 +31,7 @@ vi.mock('@/features/ai-agents/components/agents-list', () => ({
 }));
 vi.mock('@/features/ai-agents/components/jarvis/overview-tab', () => ({
   JarvisOverviewTab: () => <p>Visão geral real</p>,
+  OverviewControls: () => <p>Controles do resumo</p>,
 }));
 vi.mock('@/features/ai-agents/components/jarvis/agent-tab', () => ({
   JarvisAgentTab: () => <p>Estatísticas individuais</p>,
@@ -48,6 +53,7 @@ vi.mock('@/features/ai-agents/components/jarvis/watchdog-tab', () => ({
 }));
 afterEach(() => {
   cleanup();
+  navigation.suspend = false;
   vi.clearAllMocks();
 });
 function open(tab: string) {
@@ -107,3 +113,32 @@ it.each(['agents', 'agent', 'scope'])(
     ).toHaveAttribute('aria-pressed', 'true');
   },
 );
+
+it('mantém um único título e ações enquanto URL/conteúdo suspendem, com esqueleto sem título', () => {
+  navigation.suspend = true;
+  open('overview');
+  expect(screen.getAllByRole('heading', { name: 'Agentes' })).toHaveLength(1);
+  expect(screen.getByRole('button', { name: 'Novo agente' })).toBeVisible();
+  expect(
+    screen.getByRole('button', { name: 'Conversar com o Jarvis' }),
+  ).toBeVisible();
+  expect(
+    screen.getByRole('status', { name: 'Carregando página' }),
+  ).toBeVisible();
+  expect(
+    within(screen.getByRole('status')).queryByRole('heading'),
+  ).not.toBeInTheDocument();
+});
+it('preserva a página individual sem o cabeçalho da visão geral', () => {
+  navigation.params = new URLSearchParams({ agentId: 'a' });
+  render(
+    <QueryClientProvider client={new QueryClient()}>
+      <AiAgentsPage />
+    </QueryClientProvider>,
+  );
+  expect(screen.getByText('Página do agente')).toBeVisible();
+  expect(
+    screen.queryByRole('heading', { name: 'Agentes' }),
+  ).not.toBeInTheDocument();
+  expect(screen.queryByText('Controles do resumo')).not.toBeInTheDocument();
+});
