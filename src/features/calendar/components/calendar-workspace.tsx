@@ -313,12 +313,12 @@ function DayCell({
     <div
       ref={setNodeRef}
       className={`min-w-0 p-2 transition-colors ${
-        isOutsideMonth ? "bg-[var(--bq-surface)] " : "bg-[var(--bq-surface)] "
+        isOutsideMonth ? "bg-[var(--bq-win-solid)] opacity-60" : "bg-[var(--bq-win-solid)]"
       } ${isOver ? "bg-[var(--bq-accent-soft)] ring-2 ring-inset ring-[var(--bq-hair-strong)]" : ""}`}
       style={{ minHeight: compact ? 110 : 220 }}
     >
       <div
-        className={`mb-2 text-[11px] font-semibold uppercase tracking-wide ${
+        className={`sticky top-0 z-10 mb-2 bg-[var(--bq-win-solid)] py-1 text-[11px] font-semibold uppercase tracking-wide ${
           isToday
             ? "text-[var(--bq-t1)]"
             : isOutsideMonth
