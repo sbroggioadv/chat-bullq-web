@@ -245,7 +245,7 @@ export function AgentsList() {
         </div>
       )}
 
-      <div className="flex-1 min-h-[640px]">
+      <div className="h-[640px] min-h-[640px] w-full shrink-0">
         {isLoading ? (
           <div className="flex h-full items-center justify-center">
             <div className="h-10 w-10 animate-pulse rounded-full bg-zinc-200 dark:bg-zinc-800" />
