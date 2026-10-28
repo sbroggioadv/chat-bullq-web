@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ReactFlow,
@@ -19,15 +20,16 @@ import { toast } from 'sonner';
 import {
   aiAgentsService,
   type AiAgent,
-  DEPARTMENT_COLORS,
-} from '../services/ai-agents.service';
+} from '@/features/ai-agents/services/ai-agents.service';
 import { useOrgId } from '@/hooks/use-org-query-key';
-import { CreateAgentDialog } from './create-agent-dialog';
-import { EditAgentDialog } from './edit-agent-dialog';
-import { AgentNode, type AgentNodeData } from './agent-node';
+import { CreateAgentDialog } from '@/features/ai-agents/components/create-agent-dialog';
+import {
+  AgentNode,
+  type AgentNodeData,
+} from '@/features/ai-agents/components/agent-node';
 
 const NODE_WIDTH = 320;
-const NODE_HEIGHT = 160;
+const NODE_HEIGHT = 260;
 
 const nodeTypes: NodeTypes = { agent: AgentNode };
 
@@ -103,7 +105,7 @@ function layoutOrganogram(agents: AiAgent[]): {
         // mesmo handle se cruzarem visualmente perto do source.
         type: 'step',
         animated: false,
-        style: { stroke: '#a1a1aa', strokeWidth: 1.5 },
+        style: { stroke: 'var(--bq-hair-strong)', strokeWidth: 1.5 },
       });
     }
   }
@@ -115,35 +117,47 @@ export function AgentsList() {
   const orgId = useOrgId();
   const queryClient = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
-  const [editing, setEditing] = useState<AiAgent | null>(null);
+  const router = useRouter();
+  const openAgent = useCallback(
+    (agent: AiAgent) =>
+      router.push(`/ai-agents?agentId=${encodeURIComponent(agent.id)}`),
+    [router],
+  );
   const [deptFilter, setDeptFilter] = useState<string | null>(null);
 
-  const { data: agents, isLoading } = useQuery({
+  const {
+    data: agents,
+    isLoading,
+    isError,
+  } = useQuery({
     queryKey: ['ai-agents', orgId],
     queryFn: () => aiAgentsService.list(),
   });
 
-  const refresh = () =>
-    queryClient.invalidateQueries({ queryKey: ['ai-agents'] });
+  const refresh = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: ['ai-agents'] }),
+    [queryClient],
+  );
 
-  const handleToggleActive = async (agent: AiAgent) => {
-    try {
-      await aiAgentsService.update(agent.id, { isActive: !agent.isActive });
-      toast.success(agent.isActive ? 'Agente desativado' : 'Agente ativado');
-      refresh();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erro ao alternar');
-    }
-  };
+  const handleToggleActive = useCallback(
+    async (agent: AiAgent) => {
+      try {
+        await aiAgentsService.update(agent.id, { isActive: !agent.isActive });
+        toast.success(agent.isActive ? 'Agente desativado' : 'Agente ativado');
+        refresh();
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : 'Erro ao alternar');
+      }
+    },
+    [refresh],
+  );
 
   // Distinct departments present, in stable order, for the filter chips.
   const departments = useMemo(() => {
     if (!agents) return [];
     return [
       ...new Set(
-        agents
-          .map((a) => a.department)
-          .filter((d): d is string => !!d),
+        agents.map((a) => a.department).filter((d): d is string => !!d),
       ),
     ].sort();
   }, [agents]);
@@ -162,14 +176,13 @@ export function AgentsList() {
         ...n,
         data: {
           ...n.data,
-          onClick: setEditing,
+          onClick: openAgent,
           onToggleActive: handleToggleActive,
         },
       })),
       edges: out.edges,
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filtered]);
+  }, [filtered, openAgent, handleToggleActive]);
 
   const hasAgents = (agents?.length ?? 0) > 0;
 
@@ -181,7 +194,8 @@ export function AgentsList() {
             Organograma de agentes
           </h2>
           <p className="mt-0.5 text-sm text-zinc-500 dark:text-zinc-400">
-            Hierarquia matricial — quem reporta a quem, agrupado por departamento
+            Hierarquia matricial — quem reporta a quem, agrupado por
+            departamento
           </p>
         </div>
         <button
@@ -193,9 +207,15 @@ export function AgentsList() {
         </button>
       </div>
 
+      <p className="mx-6 my-3 rounded-xl border border-border p-3 text-sm text-muted-foreground">
+        Prompts, canais, skills e histórico continuam como estão. Abra um agente
+        para configurar e acompanhar suas execuções.
+      </p>
       {departments.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 border-b border-zinc-200 px-6 py-3 dark:border-zinc-800">
-          <span className="text-xs font-medium text-zinc-500">Departamento:</span>
+          <span className="text-xs font-medium text-zinc-500">
+            Departamento:
+          </span>
           <button
             onClick={() => setDeptFilter(null)}
             className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
@@ -207,7 +227,6 @@ export function AgentsList() {
             Todos
           </button>
           {departments.map((d) => {
-            const c = DEPARTMENT_COLORS[d];
             const active = deptFilter === d;
             return (
               <button
@@ -215,7 +234,7 @@ export function AgentsList() {
                 onClick={() => setDeptFilter(active ? null : d)}
                 className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
                   active
-                    ? `${c?.bg ?? 'bg-zinc-200'} ${c?.text ?? 'text-zinc-900'} ring-1 ${c?.ring ?? 'ring-zinc-300'}`
+                    ? 'bg-[var(--bq-agent-soft)] text-[var(--bq-agent-text)]'
                     : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
                 }`}
               >
@@ -231,6 +250,10 @@ export function AgentsList() {
           <div className="flex h-full items-center justify-center">
             <div className="h-10 w-10 animate-pulse rounded-full bg-zinc-200 dark:bg-zinc-800" />
           </div>
+        ) : isError ? (
+          <p role="alert" className="p-6">
+            Não foi possível carregar o organograma. Tente novamente mais tarde.
+          </p>
         ) : hasAgents ? (
           <ReactFlowProvider>
             <ReactFlow
@@ -247,19 +270,12 @@ export function AgentsList() {
               edgesFocusable={false}
               className="bg-zinc-50 dark:bg-zinc-950"
             >
-              <Background gap={24} size={1} color="#e4e4e7" />
+              <Background gap={24} size={1} color="var(--bq-hair)" />
               <Controls showInteractive={false} />
               <MiniMap
                 pannable
                 zoomable
-                nodeColor={(n) => {
-                  const a = (n.data as AgentNodeData).agent;
-                  if (a.kind === 'ORCHESTRATOR') return '#6366f1';
-                  if (a.department === 'VENDAS') return '#10b981';
-                  if (a.department === 'SUPORTE') return '#3b82f6';
-                  if (a.department === 'CS') return '#8b5cf6';
-                  return '#a1a1aa';
-                }}
+                nodeColor="var(--bq-agent)"
                 className="!bg-white dark:!bg-zinc-900"
               />
             </ReactFlow>
@@ -273,7 +289,7 @@ export function AgentsList() {
               </p>
               <p className="mt-1 max-w-md text-center text-xs text-zinc-400 dark:text-zinc-500">
                 Crie um agente, dê a ele um system prompt e atribua a um canal —
-                ele passa a responder automaticamente.
+                configure os vínculos e ative quando estiver pronto.
               </p>
               <button
                 onClick={() => setShowCreate(true)}
@@ -291,11 +307,6 @@ export function AgentsList() {
         open={showCreate}
         onClose={() => setShowCreate(false)}
         onCreated={refresh}
-      />
-      <EditAgentDialog
-        agent={editing}
-        onClose={() => setEditing(null)}
-        onSaved={refresh}
       />
     </div>
   );
