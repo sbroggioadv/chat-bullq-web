@@ -9,38 +9,48 @@ interface Props<T> {
   scrollRef: RefObject<HTMLDivElement | null>;
   estimate: number;
   gap?: number;
+  initialAnchor?: 'start' | 'end';
   scrollToIndexRef?: RefObject<((index: number) => void) | null>;
 }
 
 /** Variable-height window: measured rows, stable keys and spacers preserve the scroll range. */
-export function VirtualList<T>({ items, itemKey, renderItem, scrollRef, estimate, scrollToIndexRef, gap = 0 }: Props<T>) {
+export function VirtualList<T>({ items, itemKey, renderItem, scrollRef, estimate, scrollToIndexRef, gap = 0, initialAnchor = 'start' }: Props<T>) {
   const [playingKeys, setPlayingKeys] = useState<string[]>([]);
   const sizes = useRef(new Map<string, number>());
   const [revision, setRevision] = useState(0);
-  const [viewport, setViewport] = useState({ top: 0, height: 800 });
+  const [viewport, setViewport] = useState({ top: 0, height: 800, bottomInset: 0, atEnd: initialAnchor === 'end' });
   const host = useRef<HTMLDivElement>(null);
   const offsets = useMemo(() => {
     const result = [0];
     for (const item of items) result.push(result[result.length - 1] + (sizes.current.get(itemKey(item)) ?? estimate));
     return result;
   }, [items, itemKey, estimate, revision]);
+  const total = offsets[items.length];
+  const top = viewport.atEnd ? Math.max(0, total - viewport.height + viewport.bottomInset) : viewport.top;
   useEffect(() => {
     const parent = scrollRef.current;
     if (!parent) return;
-    const update = () => setViewport({ top: Math.max(0, parent.scrollTop - ((host.current?.getBoundingClientRect().top ?? 0) - parent.getBoundingClientRect().top + parent.scrollTop)), height: parent.clientHeight || 800 });
+    const update = () => setViewport({
+      top: Math.max(0, -(host.current?.getBoundingClientRect().top ?? 0) + parent.getBoundingClientRect().top),
+      height: parent.clientHeight || 800,
+      bottomInset: parent.scrollHeight - (host.current?.offsetHeight ?? 0) - ((host.current?.getBoundingClientRect().top ?? 0) - parent.getBoundingClientRect().top + parent.scrollTop),
+      atEnd: initialAnchor === 'end' && parent.scrollHeight - parent.clientHeight - parent.scrollTop < 2,
+    });
+    if (initialAnchor === 'end') parent.scrollTop = parent.scrollHeight;
     update();
     parent.addEventListener('scroll', update, { passive: true });
     const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(update);
     observer?.observe(parent);
     return () => { parent.removeEventListener('scroll', update); observer?.disconnect(); };
-  }, [scrollRef]);
+  }, [scrollRef, initialAnchor]);
   useLayoutEffect(() => {
     if (!scrollToIndexRef) return;
     scrollToIndexRef.current = (index) => {
       const parent = scrollRef.current;
       if (!parent) return;
-      parent.scrollTop = offsets[index] ?? 0;
-      setViewport({ top: parent.scrollTop, height: parent.clientHeight || 800 });
+      const hostOffset = (host.current?.getBoundingClientRect().top ?? 0) - parent.getBoundingClientRect().top + parent.scrollTop;
+      parent.scrollTop = hostOffset + (offsets[index] ?? 0);
+      setViewport({ top: offsets[index] ?? 0, height: parent.clientHeight || 800, bottomInset: 0, atEnd: false });
     };
     return () => { scrollToIndexRef.current = null; };
   }, [offsets, scrollRef, scrollToIndexRef]);
@@ -53,10 +63,28 @@ export function VirtualList<T>({ items, itemKey, renderItem, scrollRef, estimate
   let start = 0;
   let end = items.length;
   if (virtual) {
-    while (start < items.length && offsets[start + 1] < viewport.top - 500) start++;
+    while (start < items.length && offsets[start + 1] < top - 500) start++;
     end = start;
-    while (end < items.length && offsets[end] < viewport.top + viewport.height + 500) end++;
+    while (end < items.length && offsets[end] < top + viewport.height + 500) end++;
   }
+  const anchor = useRef<{ key: string; offset: number; top: number } | null>(null);
+  useLayoutEffect(() => {
+    // Conversation lists keep their existing top-aligned behavior.
+    if (initialAnchor !== 'end') return;
+    const parent = scrollRef.current;
+    if (!parent) return;
+    const hostOffset = (host.current?.getBoundingClientRect().top ?? 0) - parent.getBoundingClientRect().top + parent.scrollTop;
+    if (viewport.atEnd) {
+      parent.scrollTop = parent.scrollHeight;
+    } else if (anchor.current && anchor.current.top === viewport.top) {
+      const index = items.findIndex((item) => itemKey(item) === anchor.current?.key);
+      if (index >= 0) parent.scrollTop = hostOffset + offsets[index] + anchor.current.offset;
+    }
+    let index = 0;
+    const currentTop = Math.max(0, parent.scrollTop - hostOffset);
+    while (index < items.length - 1 && offsets[index + 1] <= currentTop) index++;
+    anchor.current = items[index] ? { key: itemKey(items[index]), offset: currentTop - offsets[index], top: viewport.top } : null;
+  }, [items, itemKey, offsets, scrollRef, viewport, initialAnchor]);
   const indexes = new Set(Array.from({ length: end - start }, (_, offset) => start + offset));
   items.forEach((item, index) => { if (playingKeys.includes(itemKey(item))) indexes.add(index); });
   return <div ref={host} style={{ position: 'relative' }} onPlayCapture={(event) => {

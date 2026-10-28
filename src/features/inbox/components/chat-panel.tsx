@@ -1,5 +1,6 @@
 'use client';
 
+import { isAxiosError } from 'axios';
 import { VirtualList } from '@/features/inbox/components/virtual-list';
 import { Fragment, useEffect, useRef, useState, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -89,6 +90,11 @@ function EngagementWindowBanner({
   channelType: string;
   messages: Message[];
 }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(timer);
+  }, []);
   // Janela 24h é regra rígida APENAS do WhatsApp Cloud API oficial (Meta).
   // Canais Zappfy/Uazapi (WHATSAPP_ZAPPFY) não têm essa restrição — banner
   // ali confunde mais que ajuda.
@@ -100,7 +106,7 @@ function EngagementWindowBanner({
     .find((m) => m.direction === 'INBOUND');
   if (!lastInbound) return null;
 
-  const ageMs = Date.now() - new Date(lastInbound.createdAt).getTime();
+  const ageMs = now - new Date(lastInbound.createdAt).getTime();
   const ageHours = ageMs / (60 * 60 * 1000);
   if (ageHours < 24) return null;
 
@@ -307,7 +313,7 @@ function TemplateMessage({
   content,
   isOutbound,
 }: {
-  content: Record<string, any>;
+  content: Message['content'];
   isOutbound: boolean;
 }) {
   const tpl = (content?.template ?? {}) as {
@@ -450,7 +456,7 @@ export function ChatPanel({
   }, [conversation.id, emit]);
 
   useEffect(() => {
-    const unsubNew = on('message:new', (payload: any) => {
+    const unsubNew = on('message:new', (payload: { conversationId?: string; message?: Message }) => {
       const msg = payload.message;
       if (!msg) return;
       const convId = payload.conversationId ?? msg.conversationId;
@@ -461,7 +467,7 @@ export function ChatPanel({
         setAiTyping(null);
       }
     });
-    const unsubStatus = on('message:status', (payload: any) => {
+    const unsubStatus = on('message:status', (payload: { conversationId: string; messageIds?: string[]; messageId?: string; status: Message['status'] }) => {
       if (payload.conversationId !== conversation.id) return;
       const ids: string[] = payload.messageIds ?? (payload.messageId ? [payload.messageId] : []);
       if (ids.length === 0) return;
@@ -482,7 +488,7 @@ export function ChatPanel({
     // no envio de uma mensagem (messages.service.send linhas 206-223). Sem
     // este listener, a mudança de assignee só aparece no próximo refetch
     // periódico (5s) da inbox. Invalidamos a conversation aberta + lista.
-    const unsubAssigned = on('conversation:assigned', (payload: any) => {
+    const unsubAssigned = on('conversation:assigned', (payload: { conversationId?: string }) => {
       if (payload?.conversationId !== conversation.id) return;
       queryClient.invalidateQueries({ queryKey: ['conversation', conversation.id] });
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
@@ -490,7 +496,7 @@ export function ChatPanel({
     // conversation:ai-toggle — emitido quando a IA é desligada por intervenção
     // humana (messages.service.send linhas 227-237). Sem listener, o toggle
     // visual da IA fica desatualizado até o próximo refetch.
-    const unsubAiToggle = on('conversation:ai-toggle', (payload: any) => {
+    const unsubAiToggle = on('conversation:ai-toggle', (payload: { conversationId?: string }) => {
       if (payload?.conversationId !== conversation.id) return;
       queryClient.invalidateQueries({ queryKey: ['conversation', conversation.id] });
     });
@@ -507,7 +513,7 @@ export function ChatPanel({
     });
     // Watchdog/admin revogou uma mensagem — pinta a bolha como "deletada"
     // pra todo mundo que tá com a conversa aberta, sem refresh.
-    const unsubRevoked = on('message:revoked', (payload: any) => {
+    const unsubRevoked = on('message:revoked', (payload: { conversationId?: string; messageId?: string; revokedAt: string; revokedBy: string; succeededRemote: boolean }) => {
       if (payload?.conversationId !== conversation.id) return;
       if (!payload?.messageId) return;
       queryClient.setQueryData<{ messages: Message[] } | undefined>(
@@ -531,8 +537,8 @@ export function ChatPanel({
       );
     });
     // S22 — AI typing indicator
-    const unsubAiTyping = on('ai:typing', (payload: { agentId: string; agentName: string; etaMs: number }) => {
-      if ((payload as any).conversationId && (payload as any).conversationId !== conversation.id) return;
+    const unsubAiTyping = on('ai:typing', (payload: { conversationId?: string; agentId: string; agentName: string; etaMs: number }) => {
+      if (payload.conversationId && payload.conversationId !== conversation.id) return;
       setAiTyping({
         agentName: payload.agentName,
         etaMs: payload.etaMs,
@@ -600,20 +606,26 @@ export function ChatPanel({
             };
           },
         );
-      } catch (err: any) {
+      } catch (err: unknown) {
         toast.error(
-          err?.response?.data?.message ||
-            err?.message ||
-            'Erro ao deletar mensagem',
+          (isAxiosError<{ message?: string }>(err) ? err.response?.data?.message : undefined) ||
+            (err instanceof Error ? err.message : 'Erro ao deletar mensagem'),
         );
       }
     },
     [conversation.id, queryClient],
   );
 
+  const lastMessageId = messages.at(-1)?.id;
+  const previousLastMessage = useRef(lastMessageId);
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'auto' });
-  }, [messages.length, aiTyping]);
+    // VirtualList handles the initial anchor before paint. Prepending history must
+    // not send the reader back to the bottom; only a new tail or typing does.
+    if (previousLastMessage.current && previousLastMessage.current !== lastMessageId || aiTyping) {
+      bottomRef.current?.scrollIntoView({ behavior: 'auto' });
+    }
+    previousLastMessage.current = lastMessageId;
+  }, [lastMessageId, aiTyping]);
 
   // S22 — Auto-clear AI typing banner after ETA expires
   useEffect(() => {
@@ -687,7 +699,7 @@ export function ChatPanel({
   );
 
   const forwardPreview = (msg: Message): string => {
-    const c = (msg.content ?? {}) as Record<string, any>;
+    const c = (msg.content ?? {}) as Record<string, unknown>;
     if (typeof c.text === 'string' && c.text) return c.text.slice(0, 120);
     if (typeof c.caption === 'string' && c.caption) return c.caption.slice(0, 120);
     if (msg.type === 'IMAGE') return '[Imagem]';
@@ -953,7 +965,7 @@ export function ChatPanel({
                 }
               }
               const visibleMessages = messages.filter((m) => m.type !== 'REACTION');
-              return <VirtualList items={visibleMessages} itemKey={(msg) => msg.id} scrollRef={timelineRef} scrollToIndexRef={scrollToMessage} estimate={100} gap={8} renderItem={(msg, index) => {
+              return <VirtualList initialAnchor="end" items={visibleMessages} itemKey={(msg) => msg.id} scrollRef={timelineRef} scrollToIndexRef={scrollToMessage} estimate={100} gap={8} renderItem={(msg, index) => {
                 const isOutbound = msg.direction === 'OUTBOUND';
                 const StatusIcon = statusIcons[msg.status] || Clock;
                 const reactions = reactionMap.get(msg.externalId || '') || [];
@@ -1363,7 +1375,7 @@ function ReplyPreviewBar({
     message.direction === 'OUTBOUND'
       ? message.sender?.name || 'Você'
       : (message.senderName ?? 'Cliente');
-  const c = (message.content ?? {}) as Record<string, any>;
+  const c = (message.content ?? {}) as Record<string, unknown>;
   const preview =
     (typeof c.text === 'string' && c.text) ||
     (typeof c.caption === 'string' && c.caption) ||
