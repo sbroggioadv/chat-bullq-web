@@ -18,64 +18,71 @@ export function AgentList({ agents }: { agents: AgentPerformance[] }) {
   );
   return (
     <>
-      <table className={styles.table}>
-        <thead>
-          <tr>
-            <th>Agente</th>
-            <th>Ativas</th>
-            <th title="Tempo médio de primeira resposta">TMR</th>
-            <th title="Tempo médio de resolução">TMA</th>
-            <th>Taxa de resolução</th>
-          </tr>
-        </thead>
-        <tbody>
-          {sorted.map((a) => (
-            <tr key={a.agent.id}>
-              <td>
-                <div
-                  className={styles.who}
-                  style={
-                    {
-                      "--bq-avatar-hue": mockupAvatarHue(a.agent.name),
-                      "--bq-avatar-size": "var(--bq-size-compact-control)",
-                    } as CSSProperties
-                  }
-                >
-                  <Avatar
-                    initials={a.agent.name.slice(0, 2)}
-                    className="bq-avatar-mockup"
-                  />
-                  <span className="min-w-0 break-words">
-                    {a.agent.name}
-                    <small className="block text-bq-text-metadata text-[var(--bq-t3)]">
-                      {a.totalConversations} no período ·{" "}
-                      {a.closedConversations} fechadas
-                    </small>
-                  </span>
-                </div>
-              </td>
-              <td>{a.activeConversations}</td>
-              <td>
-                {a.avgFirstResponseMinutes ?? "—"}
-                {a.avgFirstResponseMinutes !== null && (
-                  <small className="block text-bq-text-mark text-[var(--bq-t3)]">
-                    min
-                  </small>
-                )}
-              </td>
-              <td>
-                {a.avgResolutionMinutes ?? "—"}
-                {a.avgResolutionMinutes !== null && (
-                  <small className="block text-bq-text-mark text-[var(--bq-t3)]">
-                    min
-                  </small>
-                )}
-              </td>
-              <td>{a.resolutionRate}%</td>
+      <div
+        className="min-w-0 overflow-x-auto"
+        role="region"
+        aria-label="Tabela de performance dos agentes"
+        tabIndex={0}
+      >
+        <table className={styles.table}>
+          <thead>
+            <tr>
+              <th>Agente</th>
+              <th>Ativas</th>
+              <th title="Tempo médio de primeira resposta">TMR</th>
+              <th title="Tempo médio de resolução">TMA</th>
+              <th>Taxa de resolução</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {sorted.map((a) => (
+              <tr key={a.agent.id}>
+                <td>
+                  <div
+                    className={styles.who}
+                    style={
+                      {
+                        "--bq-avatar-hue": mockupAvatarHue(a.agent.name),
+                        "--bq-avatar-size": "var(--bq-size-compact-control)",
+                      } as CSSProperties
+                    }
+                  >
+                    <Avatar
+                      initials={a.agent.name.slice(0, 2)}
+                      className="bq-avatar-mockup"
+                    />
+                    <span className="min-w-0 break-words">
+                      {a.agent.name}
+                      <small className="block text-bq-text-metadata text-[var(--bq-t3)]">
+                        {a.totalConversations} no período ·{" "}
+                        {a.closedConversations} fechadas
+                      </small>
+                    </span>
+                  </div>
+                </td>
+                <td>{a.activeConversations}</td>
+                <td>
+                  {a.avgFirstResponseMinutes ?? "—"}
+                  {a.avgFirstResponseMinutes !== null && (
+                    <small className="block text-bq-text-mark text-[var(--bq-t3)]">
+                      min
+                    </small>
+                  )}
+                </td>
+                <td>
+                  {a.avgResolutionMinutes ?? "—"}
+                  {a.avgResolutionMinutes !== null && (
+                    <small className="block text-bq-text-mark text-[var(--bq-t3)]">
+                      min
+                    </small>
+                  )}
+                </td>
+                <td>{a.resolutionRate}%</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       <p className="mt-bq-space-sm text-bq-text-metadata text-[var(--bq-t3)]">
         CSAT por agente ainda não disponível.
       </p>

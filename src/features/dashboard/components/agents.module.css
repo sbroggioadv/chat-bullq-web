@@ -10,13 +10,13 @@
   text-transform: uppercase;
   color: var(--bq-t3);
   padding: 0 var(--bq-space-sm) var(--bq-space-sm);
-  overflow-wrap: anywhere;
+  overflow-wrap: normal;
 }
 .table td {
   padding: var(--bq-space-sm);
   border-top: var(--bq-border-hairline) solid var(--bq-hair);
   font-variant-numeric: tabular-nums;
-  overflow-wrap: anywhere;
+  overflow-wrap: normal;
 }
 .table td:first-child,
 .table th:first-child {
@@ -31,3 +31,9 @@
 .who :global(.bq-avatar-mockup) {
   --bq-avatar-size: var(--bq-size-compact-control);
 }
+
+.table td:not(:first-child) {
+  white-space: nowrap;
+}
+
+.who :global(.bq-avatar-mockup) { --bq-avatar-size: var(--bq-size-compact-control); }
