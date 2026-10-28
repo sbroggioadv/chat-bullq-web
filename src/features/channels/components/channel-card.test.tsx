@@ -21,6 +21,8 @@ describe('permissões Google no cartão do canal', () => {
     }
     fireEvent.click(screen.getByText('Conexão e sincronização'));
     expect(screen.getByRole('button', { name: 'Reconectar Google' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Gerenciar acesso à Agenda' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^(Autorizar|Reautorizar) Agenda$/ })).not.toBeInTheDocument();
   });
   it('mostra os estados informados pela API, inclusive a negativa explícita', () => {
     render(<ChannelCard channel={{ ...channel, googlePermissions: { hasRead: true, hasSend: false, hasCalendar: true } }} onUpdate={vi.fn()} />);

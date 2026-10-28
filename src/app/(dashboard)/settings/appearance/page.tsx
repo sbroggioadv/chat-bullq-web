@@ -40,7 +40,7 @@ export default function SettingsAppearancePage() {
       <h2 id="brand-section" className={styles.sectionTitle}>Escritório · vale para todos</h2>
       <div className={styles.block}>
         <SettingRow title="Identidade visual" description="Só proprietário e administrador mudam. Escolha uma marca e salve.">{!canEditBrand && <span className="bq-pill"><Lock size={12} /> Restrito</span>}</SettingRow>
-        <details className={styles.details}><summary>Escolher marca e ver prévias</summary><div role="radiogroup" aria-label="Identidade visual da banca" aria-disabled={!canEditBrand || isUpdating} className="grid gap-3 p-3 sm:grid-cols-3">
+        <details open className={styles.details}><summary>Escolher marca e ver prévias</summary><div role="radiogroup" aria-label="Identidade visual da banca" aria-disabled={!canEditBrand || isUpdating} className="grid gap-3 p-3 sm:grid-cols-3">
           {ORG_BRANDS.map(b => <BrandPreviewCard key={b} brand={b} selected={selected === b} onSelect={next => canEditBrand && setPending(next)} disabled={!canEditBrand || isUpdating} size="md" />)}
         </div></details>
         <SettingRow title="Logo do escritório" description="Fica em Organização."><Link className="bq-button" href="/settings/general">Abrir Organização</Link></SettingRow>

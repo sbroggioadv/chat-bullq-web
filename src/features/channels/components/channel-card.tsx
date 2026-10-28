@@ -358,9 +358,11 @@ export function ChannelCard({ channel, onUpdate }: ChannelCardProps) {
                 title="Autoriza calendar.events no mesmo Google do e-mail"
               >
                 <CalendarDays className="h-3 w-3" />
-                {channel.googlePermissions?.hasCalendar
-                  ? 'Reautorizar Agenda'
-                  : 'Autorizar Agenda'}
+                {!channel.googlePermissions
+                  ? 'Gerenciar acesso à Agenda'
+                  : channel.googlePermissions.hasCalendar
+                    ? 'Reautorizar Agenda'
+                    : 'Autorizar Agenda'}
               </Button>
             </>
           )}
