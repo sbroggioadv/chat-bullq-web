@@ -1,0 +1,87 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { CalendarWorkspace } from "@/features/calendar/components/calendar-workspace";
+import { calendarService } from "@/features/calendar/services/calendar.service";
+
+vi.mock("@/features/inbox/services/inbox.service", () => ({
+  inboxService: {
+    getConversations: vi.fn(async () => ({
+      conversations: [],
+      pagination: {},
+    })),
+  },
+}));
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ replace: vi.fn() }),
+  useSearchParams: () => new URLSearchParams(),
+}));
+vi.mock("@/features/calendar/services/calendar.service", () => ({
+  calendarService: {
+    status: vi.fn(),
+    calendars: vi.fn(),
+    events: vi.fn(),
+    create: vi.fn(),
+  },
+}));
+
+beforeEach(() => {
+  vi.mocked(calendarService.status).mockResolvedValue({
+    connected: true,
+    calendarAuthorized: true,
+    channelId: "google",
+    email: "teste@example.com",
+    scopes: [],
+    needsReauthForCalendar: false,
+  });
+  vi.mocked(calendarService.calendars).mockResolvedValue({
+    channelId: "google",
+    calendars: [],
+  });
+  vi.mocked(calendarService.events).mockResolvedValue({
+    channelId: "google",
+    events: [],
+  });
+});
+
+function mount() {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(
+    <QueryClientProvider client={client}>
+      <CalendarWorkspace />
+    </QueryClientProvider>,
+  );
+}
+
+it("alterna semana/mês consultando o período correto e mantém criação acessível", async () => {
+  mount();
+  const month = await screen.findByRole("button", { name: "Mês", exact: true });
+  await userEvent.click(month);
+  expect(month).toHaveAttribute("aria-pressed", "true");
+  await waitFor(() => expect(calendarService.events).toHaveBeenCalledTimes(2));
+  const request = vi.mocked(calendarService.events).mock.calls.at(-1)?.[0];
+  expect(
+    (new Date(request!.to!).getTime() - new Date(request!.from!).getTime()) /
+      86400000,
+  ).toBeGreaterThan(40);
+  await userEvent.click(
+    screen.getByRole("button", { name: "Evento", exact: true }),
+  );
+  expect(
+    screen.getByRole("textbox", { name: "Título do evento" }),
+  ).toBeVisible();
+  expect(screen.getByRole("button", { name: "Criar no Google" })).toBeVisible();
+});
+
+it("distingue falha de conexão de uma conta desconectada", async () => {
+  vi.mocked(calendarService.status).mockRejectedValue(new Error("offline"));
+  mount();
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "Não foi possível verificar a Agenda",
+  );
+  expect(
+    screen.queryByText("Conecte o Google para usar a Agenda."),
+  ).not.toBeInTheDocument();
+});
