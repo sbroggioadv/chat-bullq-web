@@ -563,6 +563,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
 
         <div className="relative w-full min-w-0">
           <ComposerAutocomplete
+            inputRef={textareaRef}
             open={trigger.open}
             query={trigger.query}
             items={quickReplyItems}

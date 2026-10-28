@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 
 export interface AutocompleteItem {
   id: string;
@@ -9,6 +9,7 @@ export interface AutocompleteItem {
 }
 
 interface Props {
+  inputRef: RefObject<HTMLTextAreaElement | null>;
   open: boolean;
   query: string;
   items: AutocompleteItem[];
@@ -18,6 +19,7 @@ interface Props {
 }
 
 export function ComposerAutocomplete({
+  inputRef,
   open,
   query,
   items,
@@ -43,6 +45,8 @@ export function ComposerAutocomplete({
   useEffect(() => {
     if (!open) return;
     function onDocKey(e: KeyboardEvent) {
+      // O menu pertence ao compositor; não consome teclas do painel de detalhes.
+      if (e.target !== inputRef.current && !listRef.current?.contains(e.target as Node)) return;
       if (e.key === 'ArrowDown') {
         e.preventDefault();
         setSelection({ key: selectionKey, index: Math.min(filtered.length - 1, active + 1) });
@@ -62,7 +66,7 @@ export function ComposerAutocomplete({
     }
     document.addEventListener('keydown', onDocKey, true);
     return () => document.removeEventListener('keydown', onDocKey, true);
-  }, [open, filtered, active, selectionKey, onSelect, onClose]);
+  }, [open, filtered, active, selectionKey, onSelect, onClose, inputRef]);
 
   if (!open) return null;
 
