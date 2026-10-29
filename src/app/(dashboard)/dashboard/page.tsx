@@ -148,8 +148,8 @@ function CsatTrendBadge({ value }: { value: number }) {
     value === 0
       ? "text-[var(--bq-t3)]"
       : value > 0
-        ? "text-[var(--bq-ok)]"
-        : "text-[var(--bq-err)]";
+        ? "text-[var(--bq-ok-text)]"
+        : "text-[var(--bq-err-text)]";
   const sign = value > 0 ? "+" : value < 0 ? "−" : "";
   return (
     <span
@@ -1315,7 +1315,7 @@ function ReopensPanel({
                   {o.agentName ?? "sem responsável"}
                 </p>
               </div>
-              <span className="rounded bg-[var(--bq-err-soft)] px-1.5 py-0.5 text-bq-text-phase-number font-semibold text-[var(--bq-err)]  ">
+              <span className="rounded bg-[var(--bq-err-soft)] px-1.5 py-0.5 text-bq-text-phase-number font-semibold text-[var(--bq-err-text)]  ">
                 {o.reopenedCount}×
               </span>
             </div>
