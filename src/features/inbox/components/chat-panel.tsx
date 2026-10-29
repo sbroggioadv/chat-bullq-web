@@ -258,7 +258,7 @@ function MessageText({
     return <LinkPreviewCard url={onlyUrl} isOutbound={isOutbound} />;
   }
   return (
-    <p className={`whitespace-pre-wrap wrap-break-word text-sm ${className}`}>
+    <p className={`whitespace-pre-wrap wrap-break-word ${className}`}>
       {renderInlineTextWithLinks(text, isOutbound)}
     </p>
   );

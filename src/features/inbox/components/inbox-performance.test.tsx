@@ -45,6 +45,16 @@ beforeEach(() => {
 });
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
+it('herda a tipografia do balão para o texto da mensagem', async () => {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  render(<QueryClientProvider client={client}><InboxPage /></QueryClientProvider>);
+  fireEvent.click(await screen.findByText('Contato fixture'));
+  const text = await screen.findByText('Mensagem fixture');
+  expect(text.closest('p')).not.toHaveClass('text-sm');
+  expect(text.closest('p')?.closest('.bq-message-bubble')).toBeTruthy();
+  client.clear();
+});
+
 it('mede abertura e entrega duplicada em lista, página e chat reais (API fixture 20 ms)', async () => {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: 30_000 } } });
   render(<QueryClientProvider client={client}><InboxPage /></QueryClientProvider>);

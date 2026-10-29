@@ -1,6 +1,6 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { MediaImage, MediaDocument } from '@/features/inbox/components/media-bubbles';
+import { MediaImage, MediaVideo, MediaDocument } from '@/features/inbox/components/media-bubbles';
 import { AudioMessagePlayer } from '@/features/inbox/components/audio-message-player';
 import { inboxService, type Message } from '@/features/inbox/services/inbox.service';
 vi.mock('@/features/inbox/services/inbox.service', () => ({ inboxService: { resolveMediaUrl: vi.fn().mockResolvedValue({ url: 'https://fixture.invalid/image.jpg' }) } }));
@@ -12,6 +12,10 @@ beforeEach(() => {
 });
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 const message = { id: 'fixture', externalId: 'external', type: 'IMAGE', content: { mediaUrl: 'https://mmg.whatsapp.net/a.enc' } } as Message;
+it.each([MediaImage, MediaVideo, MediaDocument])('legenda de mídia herda a tipografia do balão', (Component) => {
+  render(<Component message={{ ...message, content: { ...message.content, caption: 'Legenda longa de mídia' } }} isOutbound={false} />);
+  expect(screen.getByText('Legenda longa de mídia')).not.toHaveClass('text-sm');
+});
 it('não resolve imagem fora da tela e resolve ao entrar', async () => {
   render(<MediaImage message={message} isOutbound={false} />);
   expect(inboxService.resolveMediaUrl).not.toHaveBeenCalled();

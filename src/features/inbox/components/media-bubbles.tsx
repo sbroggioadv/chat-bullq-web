@@ -73,7 +73,7 @@ export function MediaImage({ message, isOutbound }: MediaProps) {
         )}
       </div>
       {caption && (
-        <p className="mt-1.5 whitespace-pre-wrap break-words text-sm">{caption}</p>
+        <p className="mt-1.5 whitespace-pre-wrap break-words">{caption}</p>
       )}
       {zoomOpen && url && (
         <ImageLightbox url={url} alt={caption || 'Imagem'} onClose={() => setZoomOpen(false)} />
@@ -113,7 +113,7 @@ export function MediaVideo({ message, isOutbound }: MediaProps) {
         )}
       </div>
       {caption && (
-        <p className="mt-1.5 whitespace-pre-wrap break-words text-sm">{caption}</p>
+        <p className="mt-1.5 whitespace-pre-wrap break-words">{caption}</p>
       )}
     </div>
   );
@@ -163,7 +163,7 @@ export function MediaDocument({ message, isOutbound }: MediaProps) {
         )}
       </a>
       {caption && (
-        <p className="mt-1.5 whitespace-pre-wrap break-words text-sm">{caption}</p>
+        <p className="mt-1.5 whitespace-pre-wrap break-words">{caption}</p>
       )}
     </div>
   );
