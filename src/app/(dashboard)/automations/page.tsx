@@ -11,7 +11,7 @@ import {
   Funnel,
   User,
   Send,
-  Activity,
+  ListChecks,
   Sparkles,
   ArrowRight,
   Clock3,
@@ -317,10 +317,9 @@ function AutomationRow({
         <span>
           {automation.runCount} execuções · {automation.successCount} OK ·{" "}
           {automation.failureCount} falhas
-          {failureRate > 0 && ` (${failureRate}%)`}
+          {failureRate > 0 && ` (${failureRate}%)`}{" ·"}
         </span>
         <span>
-          ·{" "}
           {automation.lastRunAt ? (
             <time
               dateTime={automation.lastRunAt}
@@ -334,7 +333,7 @@ function AutomationRow({
         </span>
         <div className="ml-auto flex flex-wrap gap-2">
           <Button onClick={onViewRuns}>
-            <Activity size={14} /> Ver logs
+            <ListChecks size={14} /> Ver logs
           </Button>
           <Button onClick={onEdit}>
             <Pencil size={14} /> Editar
