@@ -1267,12 +1267,11 @@ sobrescreve raio12, enquanto summary1161 tem padding10/11 e corpo1168 0/11/11.
 
 ### Emenda 1, itens 25(b) e 26(d) — decisão do Doc em 28/10/2026
 
-- Automação pausada: `--bq-opacity-automation-paused: 0.77`, utility
-  `opacity-bq-automation-paused`. Divergência deliberada do mockup, linha 928:
-  `.72` → `.77`, porque o texto da condição no app claro passa de **4,03:1
-  para 4,53:1**, conforme a medição da sessão principal registrada no item 25(b).
-  Token literal publicado em `@theme static`; utility explícita. Sem consumidor
-  nesta passada: a L8 aplica a utility ao cartão pausado.
+- Automação pausada (item 40): `--bq-opacity-automation-paused: 0.77`
+  esmaece fundo, bordas e ícones, além do interruptor e dos fundos dos chips
+  e do aviso; texto permanece opaco nas cores da base. O fundo e a borda do
+  cartão usam composição com transparente; a opacidade não envolve o cartão
+  inteiro. O aviso usa `--bq-warn-text`.
 - `muted-foreground` e `neutral` acompanham exatamente o t3 publicado: escuro
   `#9298a2`, claro `#5f6571`. As folhas anteriores do contrato eram `#868c98`
   e `#6f7684`. `--color-muted-foreground` aponta diretamente para `--bq-t3`

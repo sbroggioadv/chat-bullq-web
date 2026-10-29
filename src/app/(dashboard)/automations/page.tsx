@@ -220,7 +220,7 @@ function AutomationRow({
 
   return (
     <li
-      className={`space-y-2.5 rounded-2xl border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-bq-space-card py-bq-space-kpi ${automation.enabled ? "" : "opacity-bq-automation-paused"}`}
+      className={`space-y-2.5 rounded-2xl border border-[var(--bq-hair)] bg-[var(--bq-surface)] px-bq-space-card py-bq-space-kpi ${automation.enabled ? "" : styles.paused}`}
     >
       <div className="flex items-start gap-bq-space-item">
         <div className="min-w-0 flex-1">
@@ -241,7 +241,7 @@ function AutomationRow({
         />
       </div>
       {isAutoPaused && (
-        <div className="flex flex-wrap items-center gap-bq-space-sm rounded-bq-radius-button bg-[var(--bq-warn-soft)] px-bq-space-item py-bq-space-sm text-bq-text-control text-[var(--bq-warn)]">
+        <div className={`${styles.warning} flex flex-wrap items-center gap-bq-space-sm rounded-bq-radius-button bg-[var(--bq-warn-soft)] px-bq-space-item py-bq-space-sm text-bq-text-control text-[var(--bq-warn-text)]`}>
           <Clock3 size={12} aria-hidden="true" />
           Pausada automaticamente:{" "}
           {automation.autoPausedReason || "limite de falhas atingido"}. Reative
@@ -270,7 +270,7 @@ function AutomationRow({
             {conditions.groups.map((group, gi) => (
               <span
                 key={gi}
-                className="inline-flex min-h-bq-size-segment items-center rounded-bq-radius-field border border-dashed border-[var(--bq-hair-strong)] bg-[var(--bq-raised)] px-bq-space-row text-[var(--bq-t2)]"
+                className={`${styles.condition} inline-flex min-h-bq-size-segment items-center rounded-bq-radius-field border border-dashed border-[var(--bq-hair-strong)] bg-[var(--bq-raised)] px-bq-space-row text-[var(--bq-t2)]`}
               >
                 {group.rules
                   .map(
@@ -282,7 +282,7 @@ function AutomationRow({
             ))}
           </div>
         ) : (
-          <span className="inline-flex min-h-bq-size-segment items-center rounded-bq-radius-field border border-dashed border-[var(--bq-hair-strong)] bg-[var(--bq-raised)] px-bq-space-row text-[var(--bq-t2)] text-[var(--bq-t2)]">
+          <span className={`${styles.condition} inline-flex min-h-bq-size-segment items-center rounded-bq-radius-field border border-dashed border-[var(--bq-hair-strong)] bg-[var(--bq-raised)] px-bq-space-row text-[var(--bq-t2)] text-[var(--bq-t2)]`}>
             Sem condições
           </span>
         )}

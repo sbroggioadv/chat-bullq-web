@@ -29,3 +29,26 @@
   flex-shrink: 0;
   stroke-width: var(--bq-stroke-icon-xs);
 }
+
+/* O texto mantém opacidade cheia; somente superfícies e ícones esmaecem. */
+.paused {
+  background-color: color-mix(in srgb, var(--bq-surface) calc(var(--bq-opacity-automation-paused) * 100%), transparent);
+  border-color: color-mix(in srgb, var(--bq-hair) calc(var(--bq-opacity-automation-paused) * 100%), transparent);
+}
+.paused svg, .paused :global(.bq-switch) {
+  opacity: var(--bq-opacity-automation-paused);
+}
+.paused .warning {
+  background-color: color-mix(in srgb, var(--bq-warn-soft) calc(var(--bq-opacity-automation-paused) * 100%), transparent);
+}
+.paused .condition, .paused :global(.bq-pill) {
+  background-color: color-mix(in srgb, var(--bq-raised) calc(var(--bq-opacity-automation-paused) * 100%), transparent);
+  border-color: color-mix(in srgb, var(--bq-hair-strong) calc(var(--bq-opacity-automation-paused) * 100%), transparent);
+}
+.paused :global(.bq-pill[data-tone="info"]) {
+  background-color: color-mix(in srgb, var(--bq-info-soft) calc(var(--bq-opacity-automation-paused) * 100%), transparent);
+  border-color: transparent;
+}
+.paused :global(.bq-button) {
+  border-color: color-mix(in srgb, var(--bq-hair-strong) calc(var(--bq-opacity-automation-paused) * 100%), transparent);
+}
