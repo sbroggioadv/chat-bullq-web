@@ -102,6 +102,7 @@ export function JarvisRunsTab() {
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <Filter className="h-4 w-4 text-zinc-400" />
           <select
+            aria-label="Período"
             value={period}
             onChange={(e) => setPeriod(e.target.value as Period | 'all')}
             className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-xs dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
@@ -112,6 +113,7 @@ export function JarvisRunsTab() {
             <option value="all">Tudo</option>
           </select>
           <select
+            aria-label="Status"
             value={status}
             onChange={(e) => setStatus(e.target.value as RunStatus | '')}
             className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-xs dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
@@ -123,6 +125,7 @@ export function JarvisRunsTab() {
             <option value="SKIPPED">Pulado</option>
           </select>
           <select
+            aria-label="Agente"
             value={agentId}
             onChange={(e) => setAgentId(e.target.value)}
             className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-xs dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
