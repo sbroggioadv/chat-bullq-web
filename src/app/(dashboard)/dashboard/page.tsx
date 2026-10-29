@@ -244,6 +244,7 @@ function HeroKpi({
                 }}
               >
                 <Tooltip
+                  itemStyle={{ color: "var(--bq-t1)" }}
                   cursor={{
                     stroke: accent,
                     strokeWidth: 1,
@@ -331,6 +332,13 @@ const tooltipStyle = {
   fontSize: "var(--bq-text-metadata)",
   padding: "var(--bq-space-compact) var(--bq-space-item)",
   color: "var(--bq-t1)",
+};
+
+const chartTickStyle = {
+  fontSize: "var(--bq-text-chart-label)",
+  fontFamily: "var(--bq-f-mono)",
+  fontWeight: 500,
+  fill: "var(--bq-t3)",
 };
 
 export default function DashboardPage() {
@@ -667,6 +675,7 @@ export default function DashboardPage() {
                   <YAxis hide />
                   <Tooltip
                     contentStyle={tooltipStyle}
+                    itemStyle={{ color: "var(--bq-t1)" }}
                     labelFormatter={(d) => (typeof d === "string" ? d : "")}
                   />
                   <Bar
@@ -816,15 +825,20 @@ export default function DashboardPage() {
                 />
                 <XAxis
                   dataKey="date"
-                  tick={{ fontSize: 10 }}
+                  tick={chartTickStyle}
                   tickFormatter={(d: string) => d.slice(5)}
                 />
-                <YAxis tick={{ fontSize: 10 }} />
+                <YAxis tick={chartTickStyle} />
                 <Tooltip
                   contentStyle={tooltipStyle}
+                  itemStyle={{ color: "var(--bq-t1)" }}
                   labelFormatter={(d) => (typeof d === "string" ? d : "")}
                 />
-                <Legend wrapperStyle={{ fontSize: 11 }} iconSize={8} />
+                <Legend
+                  wrapperStyle={{ fontSize: "var(--bq-text-auxiliary)" }}
+                  formatter={(value) => <span style={{ color: "var(--bq-t2)" }}>{value}</span>}
+                  iconSize={8}
+                />
                 <Area
                   type="monotone"
                   dataKey="inbound"
@@ -853,10 +867,11 @@ export default function DashboardPage() {
                   stroke="var(--bq-hair)"
                   vertical={false}
                 />
-                <XAxis dataKey="channelName" tick={{ fontSize: 10 }} />
-                <YAxis tick={{ fontSize: 10 }} />
+                <XAxis dataKey="channelName" tick={chartTickStyle} />
+                <YAxis tick={chartTickStyle} />
                 <Tooltip
                   contentStyle={tooltipStyle}
+                  itemStyle={{ color: "var(--bq-t1)" }}
                   cursor={{ fill: "var(--bq-raised)" }}
                 />
                 <Bar dataKey="count" radius={[4, 4, 0, 0]}>
@@ -1282,6 +1297,7 @@ function ReopensPanel({
             </defs>
             <Tooltip
               contentStyle={tooltipStyle}
+              itemStyle={{ color: "var(--bq-t1)" }}
               labelFormatter={(d) => (typeof d === "string" ? d : "")}
               formatter={(v) => [v, "reaberturas"]}
             />
