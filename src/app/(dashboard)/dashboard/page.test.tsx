@@ -181,8 +181,8 @@ it("preserva detalhes, link de presas e exportação após reorganizar os painé
 });
 
 it.each([
-  [0.2, "+0,2/5", "--bq-ok"],
-  [-0.2, "−0,2/5", "--bq-err"],
+  [0.2, "+0,2/5", "--bq-ok-text"],
+  [-0.2, "−0,2/5", "--bq-err-text"],
   [0, "0/5", "--bq-t3"],
 ] as const)(
   "exibe delta CSAT %s em pontos, com sinal e cor",

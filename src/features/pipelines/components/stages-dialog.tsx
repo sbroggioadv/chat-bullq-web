@@ -52,7 +52,7 @@ interface Props {
 }
 
 const COLORS: Array<{ name: string; cls: string }> = [
-  { name: 'zinc', cls: 'bg-[var(--bq-t3)]' },
+  { name: 'zinc', cls: 'bg-[var(--bq-t3-fill)]' },
   { name: 'blue', cls: 'bg-[var(--bq-info)]' },
   { name: 'amber', cls: 'bg-[var(--bq-warn)]' },
   { name: 'green', cls: 'bg-[var(--bq-ok)]' },

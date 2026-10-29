@@ -210,7 +210,7 @@ export function ThemePresetsSection({ canEdit }: Props) {
             </header>
 
             <p className="text-xs text-fg-muted">
-              Tem certeza que quer remover <strong className="text-fg">"{deleteTarget.name}"</strong>?
+              Tem certeza que quer remover <strong className="text-fg">&quot;{deleteTarget.name}&quot;</strong>?
               {deleteTarget.isActive && (
                 <>
                   {' '}

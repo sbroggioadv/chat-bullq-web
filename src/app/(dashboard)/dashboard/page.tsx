@@ -133,7 +133,7 @@ function TrendBadge({
 
   return (
     <span
-      className={`flex items-center gap-0.5 font-mono text-bq-text-metadata font-medium ${isPositive ? "text-[var(--bq-ok)]" : "text-[var(--bq-err)]"}`}
+      className={`flex items-center gap-0.5 font-mono text-bq-text-metadata font-medium ${isPositive ? "text-[var(--bq-ok-text)]" : "text-[var(--bq-err-text)]"}`}
     >
       <span aria-hidden="true">{value > 0 ? "▲" : "▼"}</span>
       {Math.abs(value).toLocaleString("pt-BR")}

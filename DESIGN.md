@@ -70,7 +70,7 @@ colors:
   secondary: "#ffffff"
   secondary-foreground: "#474d59"
   muted: rgb(15 18 25 / 0.018)
-  muted-foreground: "#686f7c"
+  muted-foreground: "#5f6571"
   accent-foreground: "#ffffff"
   destructive: "#cf3a3a"
   border: rgb(15 18 25 / 0.08)
@@ -78,7 +78,7 @@ colors:
   ring: "#c4623f"
   scrim: rgb(20 24 34 / 0.22)
   tertiary: "#5b63e0"
-  neutral: "#686f7c"
+  neutral: "#5f6571"
   switch-thumb-on: "#ffffff"
   on-channel: "#ffffff"
   on-agent-forced: "#ffffff"
@@ -137,7 +137,7 @@ dark:
   secondary: rgb(255 255 255 / 0.05)
   secondary-foreground: "#b8bdc7"
   muted: rgb(255 255 255 / 0.025)
-  muted-foreground: "#8b919c"
+  muted-foreground: "#9298a2"
   accent-foreground: "#0e0f12"
   destructive: "#ff7b7b"
   border: rgb(255 255 255 / 0.07)
@@ -145,7 +145,7 @@ dark:
   ring: "#e6e7eb"
   scrim: rgb(0 0 0 / 0.5)
   tertiary: "#8b93ff"
-  neutral: "#8b919c"
+  neutral: "#9298a2"
   switch-thumb-on: "#ffffff"
   on-channel: "#ffffff"
   on-agent-forced: "#0f1014"
@@ -452,7 +452,7 @@ source_tokens:
     secondary: "#ffffff"
     secondary-foreground: "#474d59"
     muted: rgb(15 18 25 / 0.018)
-    muted-foreground: "#686f7c"
+    muted-foreground: "#5f6571"
     accent-foreground: "#ffffff"
     destructive: "#cf3a3a"
     border: rgb(15 18 25 / 0.08)
@@ -520,7 +520,7 @@ source_tokens:
     secondary: rgb(255 255 255 / 0.05)
     secondary-foreground: "#b8bdc7"
     muted: rgb(255 255 255 / 0.025)
-    muted-foreground: "#8b919c"
+    muted-foreground: "#9298a2"
     accent-foreground: "#0e0f12"
     destructive: "#ff7b7b"
     border: rgb(255 255 255 / 0.07)
@@ -1274,7 +1274,7 @@ sobrescreve raio12, enquanto summary1161 tem padding10/11 e corpo1168 0/11/11.
   Token literal publicado em `@theme static`; utility explícita. Sem consumidor
   nesta passada: a L8 aplica a utility ao cartão pausado.
 - `muted-foreground` e `neutral` acompanham exatamente o t3 publicado: escuro
-  `#8b919c`, claro `#686f7c`. As folhas anteriores do contrato eram `#868c98`
+  `#9298a2`, claro `#5f6571`. As folhas anteriores do contrato eram `#868c98`
   e `#6f7684`. `--color-muted-foreground` aponta diretamente para `--bq-t3`
   em `@theme inline`, sem cadeia intermediária de aliases no bloco. O CSS
   anterior apontava para `--muted-fg` da marca; a referência direta passa a
@@ -1283,3 +1283,8 @@ sobrescreve raio12, enquanto summary1161 tem padding10/11 e corpo1168 0/11/11.
 - A varredura global do item 26(c), inclusive a eventual revisão de t3 do
   item 25(a), fica para a integração. Estes dois itens não atestam contraste
   de todos os textos ou de todos os fundos do app.
+
+
+### SPEC-010, item 38: contraste final de t3
+
+O mockup usa `#868c98` no escuro e `#6f7684` no claro. O valor anterior do app era `#8b919c` / `#686f7c`; a varredura das amostras opacas ativas exige `#9298a2` / `#5f6571`, respectivamente. O pior contraste anterior era 4,1319:1 / 3,9005:1 e a projeção é 4,5104:1 / 4,5170:1. Os predecessores na trajetória RGB8 não atingem o piso. `muted-foreground` e `neutral` acompanham t3; `--bq-t3-fill` conserva os valores anteriores no fundo da amostra de etapa. A fase de projeto usa `--bq-unread-bg`, como o contador.
