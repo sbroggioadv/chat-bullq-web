@@ -265,7 +265,7 @@ function RunDetailDrawer({ run, onClose }: { run: FeedRun; onClose: () => void }
 
   const isFailedToolCall = (tc: FeedRun['toolCalls'][number]) => {
     if (tc.error) return true;
-    const out = tc.output as Record<string, any> | null;
+    const out = tc.output as Record<string, unknown> | null;
     if (!out || typeof out !== 'object') return false;
     if (out.ok === false) return true;
     const status = Number(out.status);
