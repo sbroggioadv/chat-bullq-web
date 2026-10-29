@@ -4,6 +4,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-libra
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import InboxPage from '@/app/(dashboard)/inbox/page';
+import { ChatPanel } from './chat-panel';
 import { useAuthStore } from '@/stores/auth-store';
 
 const fixture = vi.hoisted(() => ({
@@ -104,4 +105,32 @@ it('mostra lacunas de Projetos e Mentorias sem listar uma amostra como resultado
   fireEvent.click(screen.getByRole('button', { name: 'Todas', exact: true }));
   expect(await screen.findByText('Contato fixture')).toBeTruthy();
   client.clear();
+});
+
+
+it('deixa o chat interativo a 800 px e só o torna inerte quando o detalhe cobre o chat a 390 px', async () => {
+  document.documentElement.style.setProperty('--bq-breakpoint-phone', '560px');
+  document.documentElement.style.setProperty('--bq-breakpoint-toolbar', '1120px');
+  let width = 800;
+  vi.stubGlobal('matchMedia', (query: string) => ({
+    matches: width <= Number(query.match(/([0-9]+)px/)?.[1]), media: query,
+    addEventListener: vi.fn(), removeEventListener: vi.fn(),
+  }));
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const renderChat = (open: boolean) => <QueryClientProvider client={client}><ChatPanel conversation={fixture.conversation} onConversationUpdate={vi.fn()} projectOpen={open} /></QueryClientProvider>;
+  const view = render(renderChat(true));
+  const chat = view.container.querySelector<HTMLElement>('.bq-chat-column')!;
+  expect(chat.inert).toBe(false);
+  const composer = screen.getByRole('button', { name: 'Enviar fixture' });
+  composer.focus();
+  expect(composer).toHaveFocus();
+  view.rerender(renderChat(false));
+  width = 390;
+  view.rerender(renderChat(true));
+  expect(chat.inert).toBe(true);
+  view.rerender(renderChat(false));
+  expect(chat.inert).toBe(false);
+  client.clear();
+  document.documentElement.style.removeProperty('--bq-breakpoint-phone');
+  document.documentElement.style.removeProperty('--bq-breakpoint-toolbar');
 });

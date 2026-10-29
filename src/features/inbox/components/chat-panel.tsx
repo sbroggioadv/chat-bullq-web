@@ -399,7 +399,7 @@ export function ChatPanel({
   useEffect(() => {
     const region = chatRegionRef.current;
     if (!region || !projectOpen) return;
-    const breakpoint = getComputedStyle(document.documentElement).getPropertyValue('--bq-breakpoint-toolbar').trim();
+    const breakpoint = getComputedStyle(document.documentElement).getPropertyValue('--bq-breakpoint-phone').trim();
     const media = window.matchMedia(`(max-width: ${breakpoint})`);
     const apply = () => { region.inert = media.matches; };
     apply(); media.addEventListener('change', apply);

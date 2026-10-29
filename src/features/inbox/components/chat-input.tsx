@@ -186,7 +186,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
   const [isSendingAudio, setIsSendingAudio] = useState(false);
   const [shareContactOpen, setShareContactOpen] = useState(false);
 
-  // S18/W3-Z: pendingAttachment substitui pendingImage (este vira alias quando bucket=IMAGE).
+  // S18/W3-Z: pendingAttachment reúne imagens e arquivos.
   // Set by paste/drop/picker, cleared on send/cancel.
   const [pendingAttachment, setPendingAttachment] = useState<File | null>(null);
   const [pendingPreviewUrl, setPendingPreviewUrl] = useState<string | null>(null);
@@ -194,11 +194,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
   // Drag-over visual feedback — only true while a drag is hovering the input.
   const [isDragging, setIsDragging] = useState(false);
 
-  // Aliases pra compat com call sites antigos que falavam "image" especificamente.
   const pendingBucket = pendingAttachment ? detectBucket(pendingAttachment) : null;
-  const pendingImage = pendingBucket === 'IMAGE' ? pendingAttachment : null;
-  const pendingImageUrl = pendingBucket === 'IMAGE' ? pendingPreviewUrl : null;
-  const isSendingImage = isSendingAttachment;
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -304,9 +300,6 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
       setIsSendingAttachment(false);
     }
   }, [pendingAttachment, onSendFile, onSendImage, isSendingAttachment, text, setPending]);
-
-  // Alias mantido pra compat com lugares que ainda chamam "image" diretamente.
-  const handleSendImage = handleSendAttachment;
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (trigger.open && (e.key === 'Enter' || e.key === 'Escape' || e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
