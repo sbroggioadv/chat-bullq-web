@@ -429,6 +429,10 @@ html[data-brand="C"][data-mode="dark"] {
  * Layer base — Tailwind v4 reset friendly
  * ────────────────────────────────────────────────────────────────── */
 @layer base {
+  :where(input, textarea)::placeholder {
+    color: var(--bq-t3);
+    opacity: 1;
+  }
   * {
     @apply border-border;
   }

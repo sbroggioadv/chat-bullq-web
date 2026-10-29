@@ -1288,3 +1288,8 @@ sobrescreve raio12, enquanto summary1161 tem padding10/11 e corpo1168 0/11/11.
 ### SPEC-010, item 38: contraste final de t3
 
 O mockup usa `#868c98` no escuro e `#6f7684` no claro. O valor anterior do app era `#8b919c` / `#686f7c`; a varredura das amostras opacas ativas exige `#9298a2` / `#5f6571`, respectivamente. Nos piores fundos opacos ativos da base, o mockup mede 3,8765:1 no escuro e 3,5215:1 no claro; os novos valores projetam 4,5104:1 e 4,5170:1, respectivamente. Os valores anteriores do app mediam 4,1319:1 e 3,9005:1 nesses fundos. Os predecessores na trajetória RGB8 não atingem o piso. `muted-foreground` e `neutral` acompanham t3; `--bq-t3-fill` conserva os valores anteriores no fundo da amostra de etapa. A fase de projeto usa `--bq-unread-bg`, como o contador.
+
+
+### SPEC-010, item 39(c): placeholders
+
+Na camada base, após o preflight do Tailwind, `:where(input, textarea)::placeholder` usa `color: var(--bq-t3)` e `opacity: 1`. O token é `#9298a2` no escuro e `#5f6571` no claro. A regra segue o papel `--t3` dos placeholders do mockup e substitui a mistura translúcida de 50% do preflight, que reduz o contraste; sua baixa especificidade preserva cores explícitas por classe.
