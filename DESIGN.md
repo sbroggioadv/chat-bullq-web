@@ -36,7 +36,7 @@ colors:
   hair-strong: rgb(15 18 25 / 0.15)
   t1: "#12141a"
   t2: "#474d59"
-  t3: "#686f7c"
+  t3: "#5f6571"
   accent: "#c4623f"
   accent-text: "#a94f2e"
   accent-soft: rgb(196 98 63 / 0.11)
@@ -99,7 +99,7 @@ dark:
   hair-strong: rgb(255 255 255 / 0.13)
   t1: "#f1f2f4"
   t2: "#b8bdc7"
-  t3: "#8b919c"
+  t3: "#9298a2"
   accent: "#e6e7eb"
   accent-text: "#f1f2f4"
   accent-soft: rgb(255 255 255 / 0.09)
@@ -359,7 +359,7 @@ brand_primitives:
   hair-strong: rgb(255 255 255 / 0.13)
   t1: "#f1f2f4"
   t2: "#b8bdc7"
-  t3: "#8b919c"
+  t3: "#9298a2"
   accent: "#e6e7eb"
   accent-text: "#f1f2f4"
   accent-soft: rgb(255 255 255 / 0.09)
@@ -414,7 +414,7 @@ source_tokens:
     hair-strong: rgb(15 18 25 / 0.15)
     t1: "#12141a"
     t2: "#474d59"
-    t3: "#686f7c"
+    t3: "#5f6571"
     accent: "#c4623f"
     accent-text: "#a94f2e"
     accent-soft: rgb(196 98 63 / 0.11)
@@ -475,7 +475,7 @@ source_tokens:
     hair-strong: rgb(255 255 255 / 0.13)
     t1: "#f1f2f4"
     t2: "#b8bdc7"
-    t3: "#8b919c"
+    t3: "#9298a2"
     accent: "#e6e7eb"
     accent-text: "#f1f2f4"
     accent-soft: rgb(255 255 255 / 0.09)
@@ -1287,4 +1287,4 @@ sobrescreve raio12, enquanto summary1161 tem padding10/11 e corpo1168 0/11/11.
 
 ### SPEC-010, item 38: contraste final de t3
 
-O mockup usa `#868c98` no escuro e `#6f7684` no claro. O valor anterior do app era `#8b919c` / `#686f7c`; a varredura das amostras opacas ativas exige `#9298a2` / `#5f6571`, respectivamente. O pior contraste anterior era 4,1319:1 / 3,9005:1 e a projeção é 4,5104:1 / 4,5170:1. Os predecessores na trajetória RGB8 não atingem o piso. `muted-foreground` e `neutral` acompanham t3; `--bq-t3-fill` conserva os valores anteriores no fundo da amostra de etapa. A fase de projeto usa `--bq-unread-bg`, como o contador.
+O mockup usa `#868c98` no escuro e `#6f7684` no claro. O valor anterior do app era `#8b919c` / `#686f7c`; a varredura das amostras opacas ativas exige `#9298a2` / `#5f6571`, respectivamente. Nos piores fundos opacos ativos da base, o mockup mede 3,8765:1 no escuro e 3,5215:1 no claro; os novos valores projetam 4,5104:1 e 4,5170:1, respectivamente. Os valores anteriores do app mediam 4,1319:1 e 3,9005:1 nesses fundos. Os predecessores na trajetória RGB8 não atingem o piso. `muted-foreground` e `neutral` acompanham t3; `--bq-t3-fill` conserva os valores anteriores no fundo da amostra de etapa. A fase de projeto usa `--bq-unread-bg`, como o contador.
