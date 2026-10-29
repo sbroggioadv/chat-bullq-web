@@ -434,6 +434,7 @@ html[data-brand="C"][data-mode="dark"] {
   }
   body {
     @apply bg-background text-foreground;
+    font: 13px/1.45 var(--bq-f-ui);
     transition:
       background-color 150ms ease-out,
       color 150ms ease-out,
@@ -554,9 +555,9 @@ html[data-brand="C"][data-mode="dark"] {
   --bq-ig: #e1306c;
   --bq-mail: #5b8def;
   --bq-tg: #2aabee;
-  --bq-f-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Geist", "Segoe UI", system-ui, sans-serif;
-  --bq-f-display: "Geist", -apple-system, "SF Pro Display", system-ui, sans-serif;
-  --bq-f-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --bq-f-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", var(--font-geist), "Segoe UI", system-ui, sans-serif;
+  --bq-f-display: var(--font-geist), -apple-system, "SF Pro Display", system-ui, sans-serif;
+  --bq-f-mono: var(--font-geist-mono), ui-monospace, "SF Mono", Menlo, monospace;
 }
 html[data-mode="light"] {
   --bq-wall-a: #e6e8ec;

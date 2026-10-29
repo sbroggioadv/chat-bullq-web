@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { Providers } from '@/components/providers';
 
-const inter = Inter({ subsets: ['latin'] });
+const geist = Geist({ subsets: ['latin'], weight: ['300', '400', '500', '600'], display: 'swap', adjustFontFallback: false, variable: '--font-geist' });
+const geistMono = Geist_Mono({ subsets: ['latin'], weight: ['400', '500'], display: 'swap', adjustFontFallback: false, variable: '--font-geist-mono' });
 
 export const metadata: Metadata = {
   title: 'Chat BullQ',
@@ -21,9 +22,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       data-brand="A"
       data-mode="light"
       suppressHydrationWarning
-      className="bg-background"
+      className={`bg-background ${geist.variable} ${geistMono.variable}`}
     >
-      <body className={inter.className}>
+      <body>
         <Providers>{children}</Providers>
       </body>
     </html>
