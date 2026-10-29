@@ -32,6 +32,15 @@ const run: FeedRun = {
   ],
 };
 afterEach(cleanup);
+it('mantém o nome completo acessível e disponível no título do feed', () => {
+  const longName = 'Agente com nome longo para verificar o truncamento sem perder informação';
+  const { container } = render(<RunsTable appearance="cards" runs={[{ ...run, agent: { ...run.agent, name: longName } }]} />);
+  const summary = container.querySelector('summary')!;
+  expect(summary).toHaveAccessibleName(new RegExp(longName));
+  expect(screen.getByText(longName)).toHaveAttribute('title', longName);
+  const metadata = summary.querySelector('strong + span')!;
+  expect(metadata).toHaveAttribute('title', metadata.textContent);
+});
 it('preserva tabela e detalhe para os consumidores existentes', () => {
   render(<RunsTable runs={[run]} />);
   expect(screen.getByRole('table')).toBeVisible();

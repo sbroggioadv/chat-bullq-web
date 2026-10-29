@@ -338,6 +338,11 @@
   font-size: var(--bq-text-row);
   font-weight: var(--bq-weight-semibold);
 }
+.runText strong, .runText > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .runText > span {
   font-size: var(--bq-text-auxiliary);
   color: var(--bq-t3);
@@ -349,8 +354,8 @@
   border-radius: var(--bq-radius-badge);
   background: var(--bq-raised-2);
   color: var(--bq-t2);
-  max-width: 45%;
-  overflow-wrap: anywhere;
+  flex: none;
+  white-space: nowrap;
 }
 .runResult[data-tone='agent'] {
   background: var(--bq-agent-soft);
@@ -426,11 +431,3 @@
   color: var(--bq-err);
 }
 
-/* At narrow widths, preserve the complete name before wrapping the result. */
-.runCard > summary {
-  flex-wrap: wrap;
-}
-.runText {
-  flex-basis: min-content;
-  overflow-wrap: break-word;
-}

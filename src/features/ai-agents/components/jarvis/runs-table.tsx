@@ -40,6 +40,7 @@ export function RunsTable({
         {runs.map((run) => {
           const action = FINAL_ACTION_META[run.finalAction ?? 'NONE'];
           const status = STATUS_META[run.status];
+          const metadata = `${fmtRelative(run.startedAt)} · ${fmtMs(run.durationMs)} · US$ ${Number(run.costUsd).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
           const tone =
             run.status === 'FAILED'
               ? 'error'
@@ -57,11 +58,8 @@ export function RunsTable({
                   <Bot size={14} />
                 </span>
                 <span className={styles.runText}>
-                  <strong>{run.agent.name}</strong>
-                  <span>
-                    {fmtRelative(run.startedAt)} · {fmtMs(run.durationMs)} ·{' '}
-                    {`US$ ${Number(run.costUsd).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                  </span>
+                  <strong title={run.agent.name}>{run.agent.name}</strong>
+                  <span title={metadata}>{metadata}</span>
                 </span>
                 <span className={styles.runResult} data-tone={tone}>
                   {run.status === 'FAILED' ? status.label : action.label}
