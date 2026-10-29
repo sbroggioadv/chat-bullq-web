@@ -52,13 +52,10 @@ export function BrandPreviewCard({
         style={{ backgroundColor: meta.swatchBg }}
       >
         <div>
-          <p
-            className="text-[10px] font-semibold uppercase tracking-wider"
-            style={{ color: meta.swatchPrimary, opacity: 0.65 }}
-          >
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-black">
             Tema {meta.id} · {meta.tagline}
           </p>
-          <h3 className="mt-1 text-lg font-bold" style={{ color: meta.swatchPrimary }}>
+          <h3 className="mt-1 text-lg font-bold text-black">
             {meta.name}
           </h3>
         </div>
@@ -97,7 +94,7 @@ export function BrandPreviewCard({
             />
           </div>
           <span
-            className="inline-flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
+            className="inline-flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-black"
             style={{ backgroundColor: meta.swatchAccent }}
           >
             2
