@@ -1082,12 +1082,12 @@ export function ChatPanel({
                             }}
                             className={`mb-1 block w-full rounded-md border-l-2 border-primary px-2 py-1 text-left text-xs ${
                               isOutbound
-                                ? 'bg-primary/10 text-primary-foreground/80'
+                                ? 'bg-primary/10 text-[var(--bq-t1)]'
                                 : 'bg-[var(--bq-raised)] text-[var(--bq-t2)] hover:bg-[var(--bq-raised-2)]   '
                             }`}
                           >
                             {msg.metadata.replyTo.senderName && (
-                              <p className="text-[10px] font-semibold opacity-80">
+                              <p className={`text-[10px] font-semibold ${isOutbound ? '' : 'opacity-80'}`}>
                                 {msg.metadata.replyTo.senderName}
                               </p>
                             )}

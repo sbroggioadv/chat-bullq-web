@@ -144,3 +144,16 @@ it('deixa o chat interativo a 800 px e só o torna inerte quando o detalhe cobre
   document.documentElement.style.removeProperty('--bq-breakpoint-phone');
   document.documentElement.style.removeProperty('--bq-breakpoint-toolbar');
 });
+
+it('mantém legíveis o nome e o trecho da citação em mensagem enviada', async () => {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: Infinity } } });
+  client.setQueryData(['messages', fixture.conversation.id], { messages: [{ ...fixture.message, direction: 'OUTBOUND', metadata: { replyTo: { senderName: 'Autora citada', previewText: 'Trecho citado' } } }], pagination: {} });
+  render(<QueryClientProvider client={client}><ChatPanel conversation={fixture.conversation} onConversationUpdate={vi.fn()} projectOpen={false} /></QueryClientProvider>);
+  const name = await screen.findByText('Autora citada');
+  const quote = name.closest('button')!;
+  expect(quote).toHaveClass('text-[var(--bq-t1)]');
+  expect(quote.className).not.toMatch(/text-primary-foreground|opacity-/);
+  expect(name.className).not.toMatch(/opacity-/);
+  expect(screen.getByText('Trecho citado').closest('button')).toBe(quote);
+  client.clear();
+});
