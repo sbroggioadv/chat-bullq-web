@@ -1271,8 +1271,8 @@ sobrescreve raio12, enquanto summary1161 tem padding10/11 e corpo1168 0/11/11.
   esmaece fundo, bordas e ícones, além do interruptor e dos fundos dos chips
   e do aviso; texto permanece opaco nas cores da base. O fundo e a borda do
   cartão usam composição com transparente; a opacidade não envolve o cartão
-  inteiro. O aviso usa `--bq-warn-text`; no claro, `#9a6504` → `#875804`
-  (escurecimento proporcional em RGB) para passar de 3,65:1 a 4,52:1
+  inteiro. O aviso usa `--bq-warn-text`; no claro, `#9a6504` → `#845703`
+  (escurecimento proporcional em RGB) para passar de 3,56:1 a 4,51:1
   no fundo composto mais escuro do painel de execuções, preservando contraste
   no cartão e no outro consumidor.
 - `muted-foreground` e `neutral` acompanham exatamente o t3 publicado: escuro
