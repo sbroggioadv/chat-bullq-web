@@ -1,5 +1,5 @@
-import { RouteLoading } from '@/app/(dashboard)/route-loading';
+import { PageSkeleton } from '@/components/ui/foundation';
 
 export default function Loading() {
-  return <RouteLoading />;
+  return <PageSkeleton />;
 }
