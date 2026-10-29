@@ -1175,18 +1175,18 @@ function CsatPanel({
         <Stat
           label="Score médio"
           value={data.avgScore !== null ? `${data.avgScore}/5` : "—"}
-          accent="var(--bq-warn)"
+          accent="var(--bq-warn-text)"
         />
         <Stat
           label="Respostas"
           value={String(data.totalResponses)}
-          accent="var(--bq-info)"
+          accent="var(--bq-info-text)"
           hint={`de ${data.totalRequested} pedidas`}
         />
         <Stat
           label="Taxa de resposta"
           value={data.responseRate !== null ? `${data.responseRate}%` : "—"}
-          accent="var(--bq-ok)"
+          accent="var(--bq-ok-text)"
         />
       </div>
 
@@ -1275,17 +1275,17 @@ function ReopensPanel({
         <Stat
           label="Total reaberturas"
           value={String(data.totalReopens)}
-          accent="var(--bq-err)"
+          accent="var(--bq-err-text)"
         />
         <Stat
           label="Conversas únicas"
           value={String(data.uniqueConversationsReopened)}
-          accent="var(--bq-warn)"
+          accent="var(--bq-warn-text)"
         />
         <Stat
           label="Taxa"
           value={data.reopenRate !== null ? `${data.reopenRate}%` : "—"}
-          accent="var(--bq-agent)"
+          accent="var(--bq-agent-text)"
         />
       </div>
 
