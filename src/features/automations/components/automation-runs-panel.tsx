@@ -141,11 +141,11 @@ export function AutomationRunsPanel({
             )}
           </div>
           {automation.autoPausedAt && (
-            <div className="mt-3 rounded-lg border border-[var(--bq-err-soft)] bg-[var(--bq-err-soft)] p-3 text-xs text-[var(--bq-err-text)]   ">
+            <div className="mt-3 rounded-lg border border-[var(--bq-err-soft)] bg-[var(--bq-err-soft)] p-3 text-xs text-[var(--bq-warn-text)]   ">
               <strong>Pausada automaticamente:</strong>{" "}
               {automation.autoPausedReason}
               <br />
-              <span className="text-[var(--bq-err-text)]">
+              <span className="text-[var(--bq-warn-text)]">
                 Reative pra zerar o contador de falhas.
               </span>
             </div>
