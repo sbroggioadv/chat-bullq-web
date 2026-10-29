@@ -116,7 +116,7 @@ export function EmailSafeBody({
 
   return (
     <div
-      className={`whitespace-pre-wrap break-words text-sm leading-relaxed text-[var(--bq-t2)] ${className}`}
+      className={`whitespace-pre-wrap break-words text-bq-text-body leading-bq-leading-prose text-[var(--bq-t1)] ${className}`}
     >
       {plain}
     </div>

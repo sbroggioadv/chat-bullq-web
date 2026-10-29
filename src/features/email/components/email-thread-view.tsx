@@ -391,7 +391,7 @@ export function EmailThreadView({
           >
             <ArrowLeft className="h-4 w-4" />
           </button>
-          <h2 className="min-w-0 flex-1 break-words text-bq-text-dialog-title leading-tight font-medium font-[family-name:var(--bq-f-display)] tracking-bq-tracking-heading text-[var(--bq-t1)]">
+          <h2 className="min-w-0 flex-1 break-normal text-bq-text-dialog-title leading-tight font-medium font-[family-name:var(--bq-f-display)] tracking-bq-tracking-heading text-[var(--bq-t1)]">
             {detail.subject}
           </h2>
           {userLabels
@@ -600,18 +600,16 @@ export function EmailThreadView({
                     } as CSSProperties
                   }
                 >
-                  <Avatar
-                    initials={fromLabel.slice(0, 2)}
-                    className={`bq-avatar-mockup ${styles.senderAvatar}`}
-                  />
-                  <span className="min-w-0 break-words text-bq-text-row font-semibold text-[var(--bq-t1)]">
-                    {fromLabel}
-                  </span>
-                  {m.from.name && m.from.email && (
-                    <span className="min-w-0 break-all">
-                      &lt;{m.from.email}&gt;
+                  <span className="flex min-w-0 flex-1 items-center gap-bq-space-row max-bq-breakpoint-phone:basis-full">
+                    <Avatar
+                      initials={fromLabel.slice(0, 2)}
+                      className={`bq-avatar-mockup ${styles.senderAvatar}`}
+                    />
+                    <span className="min-w-0 break-words">
+                      <b className="text-bq-text-row font-semibold text-[var(--bq-t1)]">{fromLabel}</b>
+                      {m.from.name && m.from.email && <> &lt;{m.from.email}&gt;</>}
                     </span>
-                  )}
+                  </span>
                   <time dateTime={m.date || undefined} className="ml-auto">
                     {formatLongDate(m.date)}
                   </time>
