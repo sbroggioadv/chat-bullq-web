@@ -15,6 +15,7 @@ import {
   ListChecks,
   Sparkles,
   ChevronRight,
+  Check,
   Upload,
   Users,
   Calendar,
@@ -36,6 +37,7 @@ import {
   PHASE_LABELS,
   PROJECT_STATUSES,
   hoppeTaskUrl,
+  projectPhaseState,
 } from '@/features/projects/project-fields';
 
 const inputCls =
@@ -340,7 +342,10 @@ export function ProjectDetail({ projectId, onBack, embedded = false }: { project
       <section className={cardCls}>
         <div className="flex flex-wrap items-center gap-2 text-[var(--bq-t2)] [&>h2]:text-[var(--bq-t1)]"><ListChecks size={14} /><h2 className="text-bq-text-body font-semibold">Fase em que está</h2><span className="font-[family-name:var(--bq-f-mono)] text-bq-text-auxiliary text-[var(--bq-t3)]">{phaseIndex >= 0 ? `${phaseIndex + 1}/${PROJECT_STATUSES.length}` : 'Fase não informada'}</span><button className="ml-auto text-xs text-[var(--bq-t2)]" onClick={() => setPanel('tasks')}>Ver tarefas</button></div>
         <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Fase atual do projeto">
-          {PROJECT_STATUSES.map((status, index) => <Fragment key={status}>{index > 0 && <ChevronRight size={12} className="text-[var(--bq-t3)]" />}<button key={status} type="button" aria-pressed={project.status === status} disabled={phaseMutation.isPending} onClick={() => phaseMutation.mutate(status)} className={`flex h-bq-size-avatar-pipeline items-center gap-bq-space-control rounded-bq-radius-button border pl-1.5 pr-bq-space-panel text-xs ${project.status === status ? 'border-[var(--bq-accent)] bg-[var(--bq-accent-soft)] text-[var(--bq-t1)]' : 'border-[var(--bq-hair)] text-[var(--bq-t2)] hover:border-[var(--bq-hair-strong)]'}`}><span aria-hidden="true" className={`grid size-bq-size-phase-number place-items-center rounded-bq-radius-circle font-[family-name:var(--bq-f-mono)] leading-[normal] text-bq-text-phase-number font-semibold ${project.status === status ? 'bg-[var(--bq-unread-bg)] text-[var(--bq-on-accent)]' : 'bg-[var(--bq-raised-2)]'}`}>{index + 1}</span>{PHASE_LABELS[status]}</button></Fragment>)}
+          {PROJECT_STATUSES.map((status, index) => {
+            const state = projectPhaseState(project.status, status);
+            return <Fragment key={status}>{index > 0 && <ChevronRight size={12} className="text-[var(--bq-t3)]" />}<button type="button" aria-label={`${PHASE_LABELS[status]}: ${state}`} aria-pressed={state === 'atual'} disabled={phaseMutation.isPending} onClick={() => phaseMutation.mutate(status)} className={`flex h-bq-size-avatar-pipeline items-center gap-bq-space-control rounded-bq-radius-button border pl-1.5 pr-bq-space-panel text-xs ${state === 'atual' ? 'border-[var(--bq-accent)] bg-[var(--bq-accent-soft)] text-[var(--bq-t1)]' : 'border-[var(--bq-hair)] text-[var(--bq-t2)] hover:border-[var(--bq-hair-strong)]'}`}><span aria-hidden="true" className={`grid size-bq-size-phase-number place-items-center rounded-bq-radius-circle font-[family-name:var(--bq-f-mono)] leading-[normal] text-bq-text-phase-number font-semibold ${state === 'atual' ? 'bg-[var(--bq-unread-bg)] text-[var(--bq-on-accent)]' : state === 'concluída' ? 'bg-[var(--bq-ok-soft)] text-[var(--bq-ok)]' : 'bg-[var(--bq-raised-2)]'}`}>{state === 'concluída' ? <Check size={12} /> : index + 1}</span>{PHASE_LABELS[status]}</button></Fragment>;
+          })}
         </div>
         <div data-task-progress className="flex items-center gap-2 text-bq-text-metadata text-[var(--bq-t3)]">{tasks.length ? <><progress aria-label="Progresso das tarefas" className="h-bq-size-status-dot min-w-0 flex-1 overflow-hidden rounded-bq-radius-progress [appearance:none] [&::-webkit-progress-bar]:bg-[var(--bq-raised-2)] [&::-webkit-progress-value]:bg-[var(--bq-ok)] [&::-moz-progress-bar]:bg-[var(--bq-ok)]" value={done} max={tasks.length} /><span>{done}/{tasks.length} tarefas concluídas</span></> : <span>Progresso indisponível · sem tarefas</span>}</div>
       </section>

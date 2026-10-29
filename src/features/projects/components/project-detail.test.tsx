@@ -20,6 +20,13 @@ function mount(onBack?: () => void, result: unknown = project) {
   render(<QueryClientProvider client={client}><ProjectDetail projectId="project" onBack={onBack} /></QueryClientProvider>);
 }
 describe('Projeto repaginado', () => {
+  it('mostra fases concluídas com check e mantém Paralisado pendente após Concluído', async () => {
+    mount(undefined, { ...project, status: 'DONE' });
+    const group = await screen.findByRole('group', { name: 'Fase atual do projeto' });
+    expect(within(group).getByRole('button', { name: 'A fazer: concluída' }).querySelector('svg')).toBeInTheDocument();
+    expect(within(group).getByRole('button', { name: 'Paralisado: pendente' }).querySelector('svg')).not.toBeInTheDocument();
+    expect(within(group).getByRole('button', { name: 'Concluído: atual' })).toHaveAttribute('aria-pressed', 'true');
+  });
   it('preserva edição do escopo e troca de fase sem gerar workflow fictício', async () => {
     mount();
     await userEvent.click(await screen.findByRole('button', { name: 'Editar escopo e dados' }));
@@ -30,7 +37,7 @@ describe('Projeto repaginado', () => {
     await userEvent.type(scope, 'Escopo revisado');
     await userEvent.click(screen.getByRole('button', { name: 'Salvar escopo e dados' }));
     await waitFor(() => expect(mocks.update).toHaveBeenCalledWith('project', expect.objectContaining({ description: 'Escopo revisado' })));
-    await userEvent.click(within(screen.getByRole('group', { name: 'Fase atual do projeto' })).getByRole('button', { name: 'Em execução' }));
+    await userEvent.click(within(screen.getByRole('group', { name: 'Fase atual do projeto' })).getByRole('button', { name: 'Em execução: pendente' }));
     await waitFor(() => expect(mocks.update).toHaveBeenCalledWith('project', { status: 'IN_PROGRESS' }));
     expect(screen.getByText('O fluxo deste projeto ainda não está disponível.')).toBeVisible();
     expect(screen.getByRole('link', { name: 'Abrir conversa' })).toHaveAttribute('href', '/inbox?conversationId=conv');

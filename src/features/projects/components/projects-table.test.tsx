@@ -21,8 +21,11 @@ describe('Lista de projetos compacta', () => {
     mount();
     const list = await screen.findByRole('complementary', { name: 'Lista de projetos' });
     await screen.findByText('Detalhe p1 integrado');
-    expect(within(list).getByRole('img', { name: 'Fase de Projeto Um: A fazer' })).toBeVisible();
-    expect(within(list).getByRole('img', { name: 'Fase de Projeto Dois: Em execução' })).toBeVisible();
+    expect(within(list).getByRole('group', { name: 'Fase de Projeto Um: A fazer' })).toBeVisible();
+    expect(within(list).getByRole('group', { name: 'Fase de Projeto Dois: Em execução' })).toBeVisible();
+    const phases = within(list).getByRole('group', { name: 'Fase de Projeto Dois: Em execução' });
+    expect(within(phases).getByRole('img', { name: 'A fazer: concluída' })).toHaveClass('bg-[var(--bq-ok)]');
+    expect(within(phases).getByRole('img', { name: 'Paralisado: pendente' })).toBeVisible();
     expect(within(list).queryByRole('progressbar')).not.toBeInTheDocument();
     await userEvent.click(within(list).getByRole('button', { name: /Projeto Dois/ }));
     expect(screen.getByText('Detalhe p2 integrado')).toBeVisible();

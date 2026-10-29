@@ -13,6 +13,7 @@ import {
   PROJECT_STATUSES,
   PHASE_LABELS,
   phaseLabel,
+  projectPhaseState,
 } from '@/features/projects/project-fields';
 
 const controlCls =
@@ -108,10 +109,9 @@ export function ProjectsTable() {
         </div>
         <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto px-2 pb-3">
           {isLoading ? <p role="status" className="p-3 text-sm text-[var(--bq-t3)]">Carregando projetos…</p> : isError ? <div role="alert" className="p-3 text-sm">Não foi possível carregar os projetos. <Button onClick={() => void refetch()}>Tentar novamente</Button></div> : filtered.length === 0 ? <p className="p-3 text-sm text-[var(--bq-t3)]">Nenhum projeto encontrado.</p> : filtered.map(project => {
-            const phaseIndex = PROJECT_STATUSES.findIndex(status => status === project.status);
             return <button type="button" key={project.id!} aria-pressed={activeId === project.id} onClick={() => setSelectedId(project.id!)} className={`flex w-full shrink-0 flex-col gap-bq-space-control rounded-xl p-bq-space-panel text-left hover:bg-[var(--bq-raised)] ${activeId === project.id ? 'bg-[var(--bq-raised-2)] shadow-[inset_0_0_0_var(--bq-border-hairline)_var(--bq-hair)]' : ''}`}>
               <span className="text-bq-text-body font-semibold">{project.name}</span>
-              <span role="img" aria-label={`Fase de ${project.name}: ${phaseLabel(project.status) || 'não informada'}`} className="flex w-full gap-bq-space-step">{PROJECT_STATUSES.map((status, index) => <span key={status} className={`h-1 min-w-0 flex-1 rounded-bq-radius-step ${index === phaseIndex ? 'bg-[var(--bq-accent)]' : 'bg-[var(--bq-raised-2)]'}`} />)}</span>
+              <span role="group" aria-label={`Fase de ${project.name}: ${phaseLabel(project.status) || 'não informada'}`} className="flex w-full gap-bq-space-step">{PROJECT_STATUSES.map(status => { const state = projectPhaseState(project.status, status); return <span role="img" aria-label={`${PHASE_LABELS[status]}: ${state}`} key={status} className={`h-1 min-w-0 flex-1 rounded-bq-radius-step ${state === 'atual' ? 'bg-[var(--bq-accent)]' : state === 'concluída' ? 'bg-[var(--bq-ok)]' : 'bg-[var(--bq-raised-2)]'}`} />; })}</span>
               <span className="flex justify-between gap-2 text-bq-text-auxiliary text-[var(--bq-t3)]"><span>{phaseLabel(project.status) || 'Sem fase'}</span><span>{project.responsible?.name || 'Sem responsável'}</span></span>
             </button>;
           })}

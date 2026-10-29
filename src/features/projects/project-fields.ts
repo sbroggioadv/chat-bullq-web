@@ -23,6 +23,14 @@ export const PROJECT_STATUSES = [
 
 export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
 
+export function projectPhaseState(current: string | null | undefined, phase: ProjectStatus): 'concluída' | 'atual' | 'pendente' {
+  const currentIndex = PROJECT_STATUSES.findIndex(status => status === current);
+  const phaseIndex = PROJECT_STATUSES.indexOf(phase);
+  if (currentIndex < 0) return 'pendente';
+  if (phaseIndex === currentIndex) return 'atual';
+  return phase !== 'PAUSED' && phaseIndex < currentIndex ? 'concluída' : 'pendente';
+}
+
 export const PHASE_LABELS: Record<ProjectStatus, string> = {
   TODO: 'A fazer',
   WAITING_DOCS: 'Aguardando documentos',
