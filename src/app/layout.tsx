@@ -4,7 +4,7 @@ import './globals.css';
 import { Providers } from '@/components/providers';
 
 const geist = Geist({ subsets: ['latin'], weight: ['300', '400', '500', '600'], display: 'swap', adjustFontFallback: false, variable: '--font-geist' });
-const geistMono = Geist_Mono({ subsets: ['latin'], weight: ['400', '500'], display: 'swap', adjustFontFallback: false, variable: '--font-geist-mono' });
+const geistMono = Geist_Mono({ subsets: ['latin'], display: 'swap', adjustFontFallback: false, variable: '--font-geist-mono' });
 
 export const metadata: Metadata = {
   title: 'Chat BullQ',

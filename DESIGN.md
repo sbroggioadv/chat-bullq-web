@@ -837,7 +837,7 @@ Por decisão do Doc em 28/10/2026 (SPEC-010, Emenda 1, item 23(a)), `t3` diverge
 Na mesma decisão, item 23(b), `on-agent-forced` usa `#0f1014` sobre o roxo `agent` escuro `#8b93ff` (6,99:1), em vez de branco. No claro, permanece branco sobre `#5b63e0` (4,88:1). A classe opt-in `text-bq-on-agent-forced` resolve o token conforme `data-mode`; o fundo não muda.
 
 ## 3. Typography Rules
-Interface 13px/1.45 na pilha nativa SF Pro Text/Geist. Títulos de página em Geist/SF Pro Display com peso 500; breadcrumb na fonte de UI com peso 600. Números e atalhos usam Geist Mono/SF Mono. Geist (300, 400, 500, 600) e Geist Mono (400, 500) vêm do Google Fonts pelo `next/font/google`, com `display: swap`; o Next as baixa na build e as serve localmente. As pilhas preservam a ordem e os fallbacks do mockup.
+Interface 13px/1.45 na pilha nativa SF Pro Text/Geist. Títulos de página em Geist/SF Pro Display com peso 500; breadcrumb na fonte de UI com peso 600. Números e atalhos usam Geist Mono/SF Mono. Geist (300, 400, 500, 600) e Geist Mono variável vêm do Google Fonts pelo `next/font/google`, com `display: swap`; o Next as baixa na build e as serve localmente. A interface usa os pesos 400 e 500 da Geist Mono; a fonte variável evita a falha do Turbopack com configurações de pesos fixos diferentes no mesmo aplicativo. As pilhas preservam a ordem e os fallbacks do mockup.
 
 ## 4. Components
 Botão 30px com variantes padrão, sólido e agente. Pill 20px, segmentos de 26px dentro de trilho com padding 2px. Menu de vidro com raio 12px. Sheet e janela usam Dialog do Headless UI, com foco e Escape. Janela usa controles macOS com nomes acessíveis; minimizar/maximizar são opcionais e só aparecem quando há handler. Switch usa role switch. Linha de ajustes associa texto e controle.
@@ -877,7 +877,7 @@ A busca fica oculta até 1120px. Em largura até 560px, trilho fixo de 52px, ite
 As cores e sombras são literais, sem conversão ou perda de alpha. As fontes Geist e Geist Mono são servidas localmente pelo Next, com os fallbacks do mockup. O token scrim dos diálogos é extraído dos blocos :root posteriores. Ícones Lucide substituem os SVG inline do mockup. Incoming permanece indisponível até W2. As trees legadas ficam em painel contextual para preservar as funcionalidades existentes.
 
 ## Implementation
-Next.js 16, React 19, Tailwind 4; `src/app/layout.tsx` carrega Geist e Geist Mono via `next/font/google` e fornece variáveis às pilhas `--bq-f-ui`, `--bq-f-display` e `--bq-f-mono`; configuração CSS-first em `src/app/globals.css`, sem tailwind.config separado. Não há shadcn components.json; primitivas em `src/components/ui/`, casca em `src/components/layout/`.
+Next.js 16, React 19, Tailwind 4; `src/app/layout.tsx` carrega Geist com pesos fixos e Geist Mono como fonte variável via `next/font/google`, evitando a falha do Turbopack com listas de pesos fixos diferentes, e fornece variáveis às pilhas `--bq-f-ui`, `--bq-f-display` e `--bq-f-mono`; configuração CSS-first em `src/app/globals.css`, sem tailwind.config separado. Não há shadcn components.json; primitivas em `src/components/ui/`, casca em `src/components/layout/`.
 
 | Token | Utility |
 |---|---|
