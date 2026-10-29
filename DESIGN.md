@@ -1294,4 +1294,4 @@ O mockup usa `#868c98` no escuro e `#6f7684` no claro. O valor anterior do app e
 
 ### SPEC-010, item 39(c): placeholders
 
-Na camada base, após o preflight do Tailwind, `:where(input, textarea)::placeholder` usa `color: var(--bq-t3)` e `opacity: 1`. O token é `#9298a2` no escuro e `#5f6571` no claro. A regra segue o papel `--t3` dos placeholders do mockup e substitui a mistura translúcida de 50% do preflight, que reduz o contraste; sua baixa especificidade preserva cores explícitas por classe.
+Na camada base, após o preflight do Tailwind, `:where(input, textarea)::placeholder` usa `color: var(--bq-t3)` e `opacity: 1`. O token é `#9298a2` no escuro e `#5f6571` no claro. Nas telas principais do mockup, os placeholders usam `var(--t3)`, papel seguido por esta regra. O login do mockup usa `#71717a` e fica como está nesta SPEC. A regra substitui a mistura translúcida de 50% do preflight, que reduz o contraste; sua baixa especificidade preserva cores explícitas por classe.
