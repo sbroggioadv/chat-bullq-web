@@ -60,7 +60,7 @@
 .block :global(.bq-setting-row) h3 { font-size:var(--bq-text-body); font-weight:var(--bq-weight-medium); }
 .block :global(.bq-setting-row) p { font-size:var(--bq-text-auxiliary); line-height:var(--bq-leading-body); margin-top:var(--bq-space-micro); }
 .sectionTitle { font-size:var(--bq-text-control); color:var(--bq-t2); font-weight:var(--bq-weight-semibold); margin:0 0 var(--bq-space-control) var(--bq-space-xs); }
-.danger:global(.bq-button) { color:var(--bq-err); border-color:var(--bq-err-soft); }
+.danger:global(.bq-button) { color:var(--bq-err-text); border-color:var(--bq-err-soft); }
 .fieldControl { width:var(--bq-size-menu-min); max-width:100%; flex:none; }
 .fieldRow input { width:var(--bq-size-menu-min); height:var(--bq-size-avatar-pipeline); min-width:0; padding:0 var(--bq-space-item); border:var(--bq-border-hairline) solid var(--bq-hair-strong); font-size:var(--bq-text-row); }
 .fieldControl input { width:100%; }
@@ -182,7 +182,7 @@
 .channelText h3 { font-size:var(--bq-text-body); font-weight:var(--bq-weight-medium); overflow-wrap:anywhere; }
 .channelText p { font-size:var(--bq-text-auxiliary); line-height:var(--bq-leading-body); color:var(--bq-t3); }
 .channelStatus :global(.bq-pill) { height:var(--bq-size-org-mark); padding:0 var(--bq-space-control); gap:var(--bq-space-label); border:0; border-radius:var(--bq-radius-badge); font-size:var(--bq-text-metadata); font-weight:var(--bq-weight-medium); color:var(--bq-t2); background:var(--bq-raised-2); }
-.channelStatus[data-active=true] :global(.bq-pill) { color:var(--bq-ok); background:var(--bq-ok-soft); }
+.channelStatus[data-active=true] :global(.bq-pill) { color:var(--bq-ok-text); background:var(--bq-ok-soft); }
 .channelEditor { display:flex; flex-direction:column; gap:var(--bq-space-sm); margin-top:var(--bq-space-sm); }
 .channelNameForm,.channelActions { display:flex; align-items:center; flex-wrap:wrap; gap:var(--bq-space-sm); }
 .channelNameForm input { flex:1; min-width:0; width:var(--bq-size-menu-min); height:var(--bq-size-avatar-pipeline); padding:0 var(--bq-space-item); border:var(--bq-border-hairline) solid var(--bq-hair-strong); font-size:var(--bq-text-row); }

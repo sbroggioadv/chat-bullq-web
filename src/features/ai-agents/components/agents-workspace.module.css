@@ -403,7 +403,7 @@
 }
 .runResult[data-tone='ok'] {
   background: var(--bq-ok-soft);
-  color: var(--bq-ok);
+  color: var(--bq-ok-text);
 }
 .runDetail {
   padding: 0 var(--bq-space-panel) var(--bq-space-panel);

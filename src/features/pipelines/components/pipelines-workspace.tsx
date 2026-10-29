@@ -26,7 +26,7 @@ export function PipelinesWorkspace({ pipelineId }: { pipelineId?: string }) {
   return <div className="flex h-full min-w-0 flex-col gap-bq-space-section overflow-y-auto px-5 pb-5 pt-bq-space-content text-[var(--bq-t1)]">
     <header className="flex flex-wrap items-end justify-between gap-bq-space-section">
       <div><h1 className="font-[family-name:var(--bq-f-display)] text-2xl font-medium leading-bq-leading-page tracking-bq-tracking-display">Pipelines</h1>
-        <p className="mt-bq-space-label text-bq-text-body text-[var(--bq-t3)]">Cada card é uma conversa: clique para abrir com a negociação ao lado. Arraste entre as etapas{board && <> · em aberto <b className="font-semibold text-[var(--bq-t1)]">{currencyTotals(cards.filter(c => c.status === 'OPEN'))}</b> · ganho <b className="font-semibold text-[var(--bq-ok)]">{currencyTotals(cards.filter(c => c.status === 'WON'))}</b></>}</p>
+        <p className="mt-bq-space-label text-bq-text-body text-[var(--bq-t3)]">Cada card é uma conversa: clique para abrir com a negociação ao lado. Arraste entre as etapas{board && <> · em aberto <b className="font-semibold text-[var(--bq-t1)]">{currencyTotals(cards.filter(c => c.status === 'OPEN'))}</b> · ganho <b className="font-semibold text-[var(--bq-ok-text)]">{currencyTotals(cards.filter(c => c.status === 'WON'))}</b></>}</p>
       </div>
       <div className="flex w-full min-w-0 flex-wrap items-center gap-2">
         <div className="min-w-0 max-w-full overflow-x-auto max-sm:w-full [&>div]:w-max [&>div]:flex-nowrap [&_button]:shrink-0 [&_button]:whitespace-nowrap"><SegmentedControl label="Pipeline" value={activeId ?? ''} options={options} onChange={id => router.push(`/pipelines/${id}`)} /></div>

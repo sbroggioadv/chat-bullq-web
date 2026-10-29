@@ -125,7 +125,7 @@ export function ThemePresetsSection({ canEdit }: Props) {
       )}
 
       {presets.length === 0 && !isLoading && (
-        <p className="mt-3 text-xs text-fg-subtle">
+        <p className="mt-3 text-xs text-[var(--bq-fg-subtle-text)]">
           Nenhum tema customizado ainda. Clique em <strong>Criar novo tema</strong>{' '}
           pra começar.
         </p>

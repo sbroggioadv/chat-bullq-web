@@ -420,7 +420,7 @@ Reembolso:
               reescrever sem o link inventado. Match é por sufixo: <code className="font-mono text-[10px]">bravy.co</code> autoriza
               <code className="ml-1 font-mono text-[10px]">members.bravy.co</code>. Vazia = não bloqueia (só loga aviso).
             </p>
-            <p className="mt-1 text-[11px] font-medium text-amber-600 dark:text-amber-400">
+            <p className="mt-1 text-[11px] font-medium text-[var(--bq-warn-text)] dark:text-amber-400">
               Informe os domínios autorizados para links enviados pela IA.
             </p>
             <textarea

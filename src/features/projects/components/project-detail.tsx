@@ -362,7 +362,7 @@ export function ProjectDetail({ projectId, onBack, embedded = false }: { project
                   key={a.id}
                   className="flex min-w-0 items-center gap-bq-space-item"
                 >
-                  <span data-file-icon className={`grid w-bq-size-file-width h-bq-size-file-height shrink-0 place-items-center rounded-bq-radius-file text-bq-text-file-label leading-[normal] font-bold tracking-bq-tracking-file ${/\.pdf$/i.test(a.fileName || a.label || '') ? 'bg-[var(--bq-err-soft)] text-[var(--bq-err)]' : 'bg-[var(--bq-info-soft)] text-[var(--bq-info-text)]'}`}>
+                  <span data-file-icon className={`grid w-bq-size-file-width h-bq-size-file-height shrink-0 place-items-center rounded-bq-radius-file text-bq-text-file-label leading-[normal] font-bold tracking-bq-tracking-file ${/\.pdf$/i.test(a.fileName || a.label || '') ? 'bg-[var(--bq-err-soft)] text-[var(--bq-err-text)]' : 'bg-[var(--bq-info-soft)] text-[var(--bq-info-text)]'}`}>
                     {/\.pdf$/i.test(a.fileName || a.label || '') ? 'PDF' : 'DOC'}
                   </span>
                   <div className="min-w-0 flex-1">

@@ -834,6 +834,14 @@ Os valores dos dois primeiros blocos :root do mockup estão no front matter, com
 
 Por decisão do Doc em 28/10/2026 (SPEC-010, Emenda 1, item 23(a)), `t3` diverge do mockup: no escuro, `#868c98` → `#8b919c`, de 4,30:1 para 4,59:1 sobre `#28292d`; no claro, `#6f7684` → `#686f7c`, de 4,12:1 para 4,56:1 sobre `#f3f3f4`. O item 26(d) estende esses mesmos valores a `muted-foreground` e `neutral`; os demais tokens de cinza mantêm seus valores.
 
+Exceção do item 37(d): no tema claro, o fundo exclusivo do contador de não lidas `--bq-unread-bg` troca o terracota do mockup `#c4623f` por `#b95c3b` com texto branco `#ffffff`, elevando a razão de 4,0650:1 para 4,5095:1. Na trajetória RGB8 ao preto, o patamar anterior `#b95d3b` dá 4,4759:1. No escuro o contador mantém `--bq-accent`; o token de acento original não muda.
+
+Tokens de texto dos estados (item 35): no claro, verde do mockup `#1d9a4a` → `#167639`, de 2,9040:1 para 4,5503:1 no pior fundo amostrado; vermelho `#cf3a3a` → `#bb3535`, de 3,8314:1 para 4,5050:1 no pior fundo amostrado. As razões posteriores são projeções sobre os pixels da base e dependem da medição após a mudança. No escuro os tokens de texto mantêm as cores do mockup. Os tokens de estado originais continuam disponíveis para fundos e ícones.
+
+Aviso em Configurações de IA (item 37(b)): o texto claro medido na classe Tailwind era `#e17100`, 2,9054:1 sobre `#f3f4f5`. Passa ao token de texto do aviso, `#9a6504`, 4,5005:1 projetado nesse fundo; o aviso do mockup é `#b07405`, 3,5669:1 nesse mesmo fundo. O patamar RGB8 anterior na trajetória desse aviso, `#9a6604`, não atinge o piso. O valor escuro da classe é preservado.
+
+Texto sutil de Aparência (item 37(c)): `--fg-subtle` também é usado como fundo e permanece inalterado; no texto medido, `--bq-fg-subtle-text` separa o uso: escuro `#807877` → `#837b7a`, de 4,3286:1 para 4,5138:1; claro `#7a8189` → `#6c737a`, de 3,6926:1 para 4,5019:1. Os valores e razões são da base e de projeção sobre seus fundos; a seção não possui equivalente no mockup das nove telas.
+
 Na mesma decisão, item 23(b), `on-agent-forced` usa `#0f1014` sobre o roxo `agent` escuro `#8b93ff` (6,99:1), em vez de branco. No claro, permanece branco sobre `#5b63e0` (4,88:1). A classe opt-in `text-bq-on-agent-forced` resolve o token conforme `data-mode`; o fundo não muda.
 
 ## 3. Typography Rules
