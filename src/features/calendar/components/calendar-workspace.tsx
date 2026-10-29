@@ -854,7 +854,7 @@ export function CalendarWorkspace() {
             role="region"
             aria-label="Grade da agenda"
             tabIndex={0}
-            className="min-h-0 min-w-0 overflow-auto max-[560px]:max-h-[328px]"
+            className="min-h-0 min-w-0 overflow-auto max-bq-breakpoint-phone:max-h-bq-agenda-grid-mobile-max"
           >
             <DndContext
               sensors={sensors}
@@ -863,7 +863,7 @@ export function CalendarWorkspace() {
               onDragEnd={handleDragEnd}
             >
               {view === "month" && (
-                <div className="grid min-w-[770px] grid-cols-7 gap-px border-b border-[var(--bq-hair)] bg-[var(--bq-raised)] text-center text-bq-text-phase-number font-semibold uppercase tracking-wide text-[var(--bq-t3)]   ">
+                <div className="grid min-w-bq-agenda-month-min grid-cols-7 gap-px border-b border-[var(--bq-hair)] bg-[var(--bq-raised)] text-center text-bq-text-phase-number font-semibold uppercase tracking-wide text-[var(--bq-t3)]   ">
                   {weekdayLabels.map((l) => (
                     <div key={l} className="bg-[var(--bq-surface)] py-1.5 ">
                       {l}
@@ -874,7 +874,7 @@ export function CalendarWorkspace() {
               <div
                 className={
                   view === "month"
-                    ? "grid grid-cols-7 gap-px bg-[var(--bq-hair)] min-w-[770px]"
+                    ? "grid grid-cols-7 gap-px bg-[var(--bq-hair)] min-w-bq-agenda-month-min"
                     : "grid min-w-bq-size-agenda-min grid-cols-[var(--bq-size-toolbar)_repeat(7,minmax(0,1fr))]"
                 }
               >
@@ -882,12 +882,12 @@ export function CalendarWorkspace() {
                   <>
                     <div
                       data-calendar-day-heading
-                      className="sticky top-0 z-10 border-b border-[var(--bq-hair)] bg-[var(--bq-glass-strong)] backdrop-blur-[18px]"
+                      className="sticky top-0 z-10 border-b border-[var(--bq-hair)] bg-[var(--bq-glass-strong)] backdrop-blur-bq-agenda-heading"
                     />
                     {visibleDays.map((day) => (
                       <div
                         key={`heading-${dayKey(day)}`}
-                        className="sticky top-0 z-10 border-b border-l border-[var(--bq-hair)] bg-[var(--bq-glass-strong)] px-2 pb-2 pt-bq-space-row text-bq-text-auxiliary text-[var(--bq-t3)] backdrop-blur-[18px]"
+                        className="sticky top-0 z-10 border-b border-l border-[var(--bq-hair)] bg-[var(--bq-glass-strong)] px-2 pb-2 pt-bq-space-row text-bq-text-auxiliary text-[var(--bq-t3)] backdrop-blur-bq-agenda-heading"
                       >
                         {day
                           .toLocaleDateString("pt-BR", { weekday: "short" })

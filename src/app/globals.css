@@ -610,11 +610,18 @@ html[data-mode="light"] {
   --color-bq-surface: var(--bq-win-solid);
   --color-bq-border: var(--bq-hair);
   --font-bq-ui: var(--bq-f-ui);
+  --font-mono: var(--bq-f-mono);
+  --spacing-bq-agenda-grid-mobile-max: var(--bq-agenda-grid-mobile-max);
+  --spacing-bq-agenda-month-min: var(--bq-agenda-month-min);
+  --blur-bq-agenda-heading: var(--bq-agenda-heading-blur);
 }
 
 
 /* Additive metric contract: DESIGN.md, approved mockup. No existing consumer changes. */
 @theme static {
+  --bq-agenda-grid-mobile-max: 328px;
+  --bq-agenda-month-min: 770px;
+  --bq-agenda-heading-blur: 18px;
   /* avatar-factor */
   --bq-avatar-font-ratio: 0.32;
   /* border */
