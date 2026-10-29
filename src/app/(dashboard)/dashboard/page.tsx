@@ -835,7 +835,10 @@ export default function DashboardPage() {
                   labelFormatter={(d) => (typeof d === "string" ? d : "")}
                 />
                 <Legend
-                  wrapperStyle={{ fontSize: "var(--bq-text-auxiliary)" }}
+                  wrapperStyle={{
+                    fontSize: "var(--bq-text-auxiliary)",
+                    lineHeight: "calc(var(--bq-text-metadata) * var(--bq-leading-body))",
+                  }}
                   formatter={(value) => <span style={{ color: "var(--bq-t2)" }}>{value}</span>}
                   iconSize={8}
                 />
