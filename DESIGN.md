@@ -832,7 +832,7 @@ Janela macOS de vidro sobre gradiente grafite. Fonte canônica: `docs/design/202
 ## 2. Color Palette & Roles
 Os valores dos dois primeiros blocos :root do mockup estão no front matter, com as exceções deliberadas de contraste abaixo. Transparências preservadas. `t1`, `t2`, `t3` formam a hierarquia; `agent` identifica IA, `info` informação e `ok/warn/err` estados. No CSS, todos recebem prefixo `--bq-` para coexistir com os temas legados e o editor de marca.
 
-Por decisão do Doc em 28/10/2026 (SPEC-010, Emenda 1, item 23(a)), `t3` diverge do mockup: no escuro, `#868c98` → `#8b919c`, de 4,30:1 para 4,59:1 sobre `#28292d`; no claro, `#6f7684` → `#686f7c`, de 4,12:1 para 4,56:1 sobre `#f3f3f4`. O item 26(d) estende esses mesmos valores a `muted-foreground` e `neutral`; os demais tokens de cinza mantêm seus valores.
+Registro histórico da decisão do Doc em 28/10/2026 (SPEC-010, Emenda 1, item 23(a)), posteriormente substituída pelo item 38(a): `t3` divergia do mockup: no escuro, `#868c98` → `#8b919c`, de 4,30:1 para 4,59:1 sobre `#28292d`; no claro, `#6f7684` → `#686f7c`, de 4,12:1 para 4,56:1 sobre `#f3f3f4`. À época, o item 26(d) estendeu esses valores a `muted-foreground` e `neutral`; os valores atuais e a exceção para o fundo da amostra de etapa estão no item 38(a), abaixo.
 
 Exceção do item 37(d): no tema claro, o fundo exclusivo do contador de não lidas `--bq-unread-bg` troca o terracota do mockup `#c4623f` por `#b95c3b` com texto branco `#ffffff`, elevando a razão de 4,0650:1 para 4,5095:1. Na trajetória RGB8 ao preto, o patamar anterior `#b95d3b` dá 4,4759:1. No escuro o contador mantém `--bq-accent`; o token de acento original não muda.
 
@@ -905,7 +905,7 @@ Sem geração intermediária. Para regenerar, extrair os blocos :root do mockup 
 - Títulos de página usam `--bq-f-display`, peso 500 (a lista de Conversas preserva 600, como `.lh-top h2` no mockup) e tracking -0.02em; o breadcrumb mantém 600 na fonte de UI, como `.crumbs b` do mockup. Ícones do trilho usam a geometria SVG literal do mockup, 18px e traço 1.75, em `shell-icon.tsx`.
 - Só Conversas tem navegação secundária externa (`InboxTree`). Pastas/contas do E-mail, seletor de Pipelines e abas de Agentes ficam nas páginas respectivas. A coluna de Caixas recolhe em 1380px, com acesso pelo botão de navegação da seção.
 - Organização sai do topo em 860px. A troca continua no menu do perfil do trilho, em todos os tamanhos. Em 560px, o indicador de conexão conserva a bolinha e o nome acessível, sem texto visual.
-- “Ao vivo” só aparece depois de `ready` no socket compartilhado; sem confirmação, mostra “Sem conexão”, inclusive durante a reconexão. Usa `--bq-ok`/`--bq-ok-soft` conectado e `--bq-t3`/`--bq-raised` aguardando.
+- “Ao vivo” só aparece depois de `ready` no socket compartilhado; sem confirmação, mostra “Sem conexão”, inclusive durante a reconexão. Conectado, usa `--bq-ok-text` no texto, `--bq-ok-soft` no fundo e `--bq-ok` na bolinha; aguardando, usa `--bq-t3`/`--bq-raised`.
 - Busca visível acima de 1120px: Ctrl+K e ⌘K focam o campo. O campo é somente leitura e explica no foco que a busca global ainda não está conectada; as buscas de cada tela continuam disponíveis. Nenhuma consulta fictícia.
 
 
@@ -1280,9 +1280,9 @@ sobrescreve raio12, enquanto summary1161 tem padding10/11 e corpo1168 0/11/11.
   anterior apontava para `--muted-fg` da marca; a referência direta passa a
   garantir a igualdade com t3 também no navegador. `neutral` é uma folha
   documental, sem consumidor `text-neutral` nesta base.
-- A varredura global do item 26(c), inclusive a eventual revisão de t3 do
-  item 25(a), fica para a integração. Estes dois itens não atestam contraste
-  de todos os textos ou de todos os fundos do app.
+- Registro histórico: a varredura global do item 26(c) estava prevista para a
+  integração. A revisão de t3 e as exceções 38(a)/(b) estão na seção do item
+  38 abaixo; estas medições não atestam contraste de todos os textos ou fundos.
 
 
 ### SPEC-010, item 38: contraste final de t3
