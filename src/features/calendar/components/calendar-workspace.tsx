@@ -1160,7 +1160,7 @@ export function CalendarWorkspace() {
 
           {!draft && (
             <>
-              <div className="mb-3 flex items-center gap-2">
+              <div className="relative mb-bq-space-row flex items-center gap-2">
                 <CalendarDays size={14} />
                 <h2 className="text-bq-text-body font-semibold">Próximos</h2>
                 <span className="rounded bg-[var(--bq-raised-2)] px-1 text-bq-text-metadata text-[var(--bq-t3)]">
@@ -1169,7 +1169,7 @@ export function CalendarWorkspace() {
                 <span className="flex-1" />{" "}
                 <button
                   type="button"
-                  className="bq-icon"
+                  className="bq-icon absolute right-0 top-1/2 -translate-y-1/2"
                   aria-label="Atualizar agenda"
                   onClick={() => eventsQ.refetch()}
                 >
@@ -1198,12 +1198,12 @@ export function CalendarWorkspace() {
                         className="flex w-full items-start gap-bq-space-item rounded-bq-radius-input px-bq-space-compact py-bq-space-control text-left hover:bg-[var(--bq-raised)]"
                         onClick={() => openEdit(ev)}
                       >
-                        <span className="w-bq-size-avatar-row shrink-0 rounded-bq-radius-button bg-[var(--bq-raised-2)] py-bq-space-xs text-center font-mono text-bq-text-phase-number font-medium text-[var(--bq-t3)]">
+                        <span className="w-bq-size-avatar-row shrink-0 rounded-bq-radius-button bg-[var(--bq-raised-2)] py-bq-space-xs text-center font-mono text-bq-text-phase-number leading-[normal] font-medium text-[var(--bq-t3)]">
                           {ev.start &&
                             new Date(ev.start)
                               .toLocaleDateString("pt-BR", { weekday: "short" })
                               .replace(".", "")}
-                          <b className="block font-[family-name:var(--bq-f-display)] text-bq-text-heading font-medium text-[var(--bq-t1)]">
+                          <b className="block font-[family-name:var(--bq-f-display)] text-bq-text-heading leading-[normal] font-medium text-[var(--bq-t1)]">
                             {ev.start ? new Date(ev.start).getDate() : "—"}
                           </b>
                         </span>
