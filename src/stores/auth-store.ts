@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { clearConversationDrafts } from '@/lib/conversation-drafts';
 import type { ThemeTokens } from '@/features/theme/types/brand';
 
 export type OrgBrand = 'A' | 'B' | 'C';
@@ -142,6 +143,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   logout: () => {
     localStorage.removeItem('access_token');
+    clearConversationDrafts();
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('active_org_id');
     set({ user: null, organizations: [], activeOrgId: null });

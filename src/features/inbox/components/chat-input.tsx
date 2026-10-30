@@ -24,12 +24,15 @@ import { Popover, PopoverButton, PopoverPanel } from '@headlessui/react';
 import { toast } from 'sonner';
 import { useAudioRecorder } from '@/features/inbox/hooks/use-audio-recorder';
 import { ComposerAutocomplete, type AutocompleteItem } from '@/features/inbox/components/composer-autocomplete';
+import { useConversationDraft } from '@/features/inbox/hooks/use-conversation-draft';
+import { useAuthStore } from '@/stores/auth-store';
 import { useQuickReplyTrigger } from '@/features/inbox/hooks/use-quick-reply-trigger';
 import { useQuickReplies } from '@/features/quick-replies/hooks/use-quick-replies';
 import { ShareContactDialog } from '@/features/inbox/components/share-contact-dialog';
 import type { Contact as OrgContact } from '@/features/contacts/services/contacts.service';
 
 interface ChatInputProps {
+  conversationId: string;
   onSend: (text: string) => Promise<void>;
   onSendAudio?: (blob: Blob) => Promise<void>;
   /**
@@ -173,6 +176,7 @@ function iconForBucket(bucket: FileBucket | null) {
 }
 
 export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function ChatInput({
+  conversationId,
   onSend,
   onSendAudio,
   onSendImage,
@@ -181,7 +185,13 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
   disabled,
   channelName,
 }, ref) {
-  const [text, setText] = useState('');
+  const orgId = useAuthStore((state) => state.activeOrgId);
+  const { text, setText: setDraftText, capture, sent, restoration } = useConversationDraft(orgId, conversationId);
+  const suppressRestoredTrigger = useRef(false);
+  const setText = useCallback((next: string | ((previous: string) => string)) => {
+    suppressRestoredTrigger.current = false;
+    setDraftText(next);
+  }, [setDraftText]);
   const [isSending, setIsSending] = useState(false);
   const [isSendingAudio, setIsSendingAudio] = useState(false);
   const [shareContactOpen, setShareContactOpen] = useState(false);
@@ -205,10 +215,19 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
   const { data: quickReplies = [] } = useQuickReplies();
   const trigger = useQuickReplyTrigger(textareaRef, text);
 
+  const lastRestoration = useRef(restoration);
   useEffect(() => {
-    trigger.recompute();
+    if (lastRestoration.current !== restoration) {
+      lastRestoration.current = restoration;
+      suppressRestoredTrigger.current = true;
+      trigger.close();
+      const el = textareaRef.current;
+      if (el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 160) + 'px'; el.setSelectionRange(text.length, text.length); }
+      return;
+    }
+    if (!suppressRestoredTrigger.current) trigger.recompute();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [text]);
+  }, [text, restoration]);
 
   const quickReplyItems: AutocompleteItem[] = quickReplies.map((qr) => ({
     id: qr.id,
@@ -263,17 +282,17 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
   const handleSubmit = useCallback(async () => {
     const trimmed = text.trim();
     if (!trimmed || isSending) return;
+    const snapshot = capture();
     setIsSending(true);
     try {
       await onSend(trimmed);
-      setText('');
-      if (textareaRef.current) {
+      if (sent(snapshot) && textareaRef.current) {
         textareaRef.current.style.height = 'auto';
       }
     } finally {
       setIsSending(false);
     }
-  }, [text, isSending, onSend]);
+  }, [text, isSending, onSend, capture, sent]);
 
   const handleSendAttachment = useCallback(async () => {
     if (!pendingAttachment || isSendingAttachment) return;
@@ -283,13 +302,13 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
     const bucket = detectBucket(pendingAttachment);
     const handler = onSendFile ?? (bucket === 'IMAGE' ? onSendImage : null);
     if (!handler) return;
+    const snapshot = capture();
     setIsSendingAttachment(true);
     try {
       const caption = text.trim() || undefined;
       await handler(pendingAttachment, caption);
       setPending(null);
-      setText('');
-      if (textareaRef.current) {
+      if (sent(snapshot) && textareaRef.current) {
         textareaRef.current.style.height = 'auto';
       }
     } catch (err: unknown) {
@@ -299,7 +318,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
     } finally {
       setIsSendingAttachment(false);
     }
-  }, [pendingAttachment, onSendFile, onSendImage, isSendingAttachment, text, setPending]);
+  }, [pendingAttachment, onSendFile, onSendImage, isSendingAttachment, text, setPending, capture, sent]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (trigger.open && (e.key === 'Enter' || e.key === 'Escape' || e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
@@ -571,7 +590,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
             onKeyDown={handleKeyDown}
             onInput={handleInput}
             onPaste={handlePaste}
-            onSelect={() => trigger.recompute()}
+            onSelect={() => { if (!suppressRestoredTrigger.current) trigger.recompute(); }}
             placeholder={
               pendingAttachment
                 ? 'Legenda (opcional)…'

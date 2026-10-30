@@ -1288,6 +1288,7 @@ export function ChatPanel({
         <ReplyPreviewBar message={replyingTo} onCancel={cancelReply} />
       )}
       <ChatInput
+        conversationId={conversation.id}
         channelName={conversation.channel.name}
         ref={chatInputRef}
         onSend={handleSend}
