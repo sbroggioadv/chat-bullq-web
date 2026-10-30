@@ -20,7 +20,8 @@ it('não atenua texto ativo nas mensagens e ajudas de Conversas', () => {
     }
     visit(tree);
   }
-  const rename = readFileSync(new URL('rename-conversation-dialog.tsx', import.meta.url), 'utf8');
+  const renameName = 'rename-conversation-dialog.tsx';
+  const rename = readFileSync(new URL(renameName, import.meta.url), 'utf8');
   expect(rename).not.toMatch(/hover:opacity-(?:[1-9]\d?|0)(?!\d)/);
   expect(violations).toEqual([]);
 });
