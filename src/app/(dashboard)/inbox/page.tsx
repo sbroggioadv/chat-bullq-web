@@ -200,7 +200,7 @@ export default function InboxPage() {
             <h2 className="mt-4 text-lg font-semibold text-zinc-700 dark:text-zinc-300">
               Chat BullQ
             </h2>
-            <p className="mt-1 text-sm text-zinc-400 dark:text-zinc-500">
+            <p className="mt-1 text-sm text-muted-foreground">
               Selecione uma conversa para começar
             </p>
           </div>
