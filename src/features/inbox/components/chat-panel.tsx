@@ -305,7 +305,7 @@ function TemplateButtonRow({
         return (
           <span
             key={i}
-            className={`${baseClass} cursor-default ${isOutbound ? "text-[var(--bq-t1)]" : "opacity-80"}`}
+            className={`${baseClass} cursor-default ${isOutbound ? "text-[var(--bq-t1)]" : "text-[var(--bq-t2)]"}`}
             title={btn.payload || btn.type || ''}
           >
             {label}
@@ -364,7 +364,7 @@ function TemplateMessage({
             <div className="px-3 py-2">
               {el.title && <p className="text-sm font-medium">{el.title}</p>}
               {el.subtitle && (
-                <p className={`mt-0.5 text-xs ${isOutbound ? "text-[var(--bq-t1)]" : "opacity-75"}`}>{el.subtitle}</p>
+                <p className={`mt-0.5 text-xs ${isOutbound ? "text-[var(--bq-t1)]" : "text-[var(--bq-t2)]"}`}>{el.subtitle}</p>
               )}
             </div>
           )}
@@ -379,7 +379,7 @@ function TemplateMessage({
       {buttons.length > 0 && <TemplateButtonRow buttons={buttons} isOutbound={isOutbound} />}
 
       {!headerText && elements.length === 0 && buttons.length === 0 && (
-        <p className="text-sm italic opacity-70">[Template]</p>
+        <p className={`text-sm italic ${isOutbound ? "text-[var(--bq-t1)]" : "text-[var(--bq-t3)]"}`}>[Template]</p>
       )}
     </div>
   );
@@ -1087,7 +1087,7 @@ export function ChatPanel({
                             }`}
                           >
                             {msg.metadata.replyTo.senderName && (
-                              <p className={`text-[10px] font-semibold ${isOutbound ? '' : 'opacity-80'}`}>
+                              <p className={`text-[10px] font-semibold ${isOutbound ? '' : 'text-[var(--bq-t2)]'}`}>
                                 {msg.metadata.replyTo.senderName}
                               </p>
                             )}
@@ -1116,7 +1116,7 @@ export function ChatPanel({
                             Mensagem deletada
                             {msg.revokeSucceededRemote === false ? ' (só aqui)' : ''}
                           </span>
-                          <span className={`ml-auto text-[10px] ${isOutbound ? "text-[var(--bq-t1)]" : "opacity-70"}`}>
+                          <span className={`ml-auto text-[10px] ${isOutbound ? "text-[var(--bq-t1)]" : "text-[var(--bq-t3)]"}`}>
                             {formatTime(msg.createdAt)}
                           </span>
                         </div>
@@ -1206,7 +1206,7 @@ export function ChatPanel({
                           ) : msg.type === 'TEMPLATE' ? (
                             <TemplateMessage content={msg.content} isOutbound={isOutbound} />
                           ) : (
-                            <p className="text-sm italic opacity-70">[{msg.type}]</p>
+                            <p className={`text-sm italic ${isOutbound ? "text-[var(--bq-t1)]" : "text-[var(--bq-t3)]"}`}>[{msg.type}]</p>
                           )}
                         </div>
                           <div

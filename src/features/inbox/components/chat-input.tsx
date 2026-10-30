@@ -439,7 +439,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
               <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[var(--bq-err-soft)]" />
             </span>
             <span className="font-medium tabular-nums">{formatElapsed(recorder.elapsedMs)}</span>
-            <span className="text-xs opacity-70">Gravando…</span>
+            <span className="text-xs text-[var(--bq-t3)]">Gravando…</span>
           </div>
           <button
             onClick={recorder.stop}

@@ -125,7 +125,7 @@ export function BulkAiPopover({ count, disabled, onSetOverride, onEngage }: Prop
             <Play className="mt-0.5 h-4 w-4 shrink-0 fill-current" />
             <div className="flex-1">
               <p className="font-medium">Engajar IA agora</p>
-              <p className="mt-0.5 text-[11px] leading-tight opacity-80">
+              <p className="mt-0.5 text-[11px] leading-tight text-[var(--bq-t2)]">
                 Lê o histórico de cada conversa e responde imediatamente.
               </p>
             </div>

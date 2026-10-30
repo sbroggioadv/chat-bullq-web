@@ -161,7 +161,7 @@ export function AudioMessagePlayer({
   if (!resolvedUrl && !message.externalId) {
     return (
       <div ref={viewportRef} className={`rounded-2xl px-4 py-2.5 ${colorBubble}`}>
-        <p className={`text-sm italic ${isOutbound ? "text-[var(--bq-t1)]" : "opacity-70"}`}>🎵 Áudio indisponível</p>
+        <p className={`text-sm italic ${isOutbound ? "text-[var(--bq-t1)]" : "text-[var(--bq-t3)]"}`}>🎵 Áudio indisponível</p>
       </div>
     );
   }

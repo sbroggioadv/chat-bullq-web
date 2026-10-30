@@ -187,7 +187,7 @@ export function ShareContactDialog({ open, onClose, onShare }: Props) {
           ) : filtered.length === 0 ? (
             <div className="px-3 py-10 text-center text-sm text-[var(--bq-t2)]">
               <p>Nenhum contato com nome + telefone encontrado.</p>
-              <p className="mt-2 text-xs opacity-80">
+              <p className="mt-2 text-xs text-[var(--bq-t2)]">
                 IDs tipo <code className="rounded bg-[var(--bq-raised-2)] px-1">…@lid</code> são
                 ocultados. Cadastre o nome em Contatos ou use um número com perfil.
               </p>

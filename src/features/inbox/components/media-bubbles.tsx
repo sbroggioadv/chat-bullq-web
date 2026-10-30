@@ -199,7 +199,7 @@ export function MediaLocation({ message, isOutbound }: MediaProps) {
   const lng = message.content?.longitude as number | undefined;
   const label = (message.content?.text as string | undefined) || 'Localização';
   if (typeof lat !== 'number' || typeof lng !== 'number') {
-    return <p className={`text-sm italic ${isOutbound ? "text-[var(--bq-t1)]" : "opacity-70"}`}>📍 {label}</p>;
+    return <p className={`text-sm italic ${isOutbound ? "text-[var(--bq-t1)]" : "text-[var(--bq-t3)]"}`}>📍 {label}</p>;
   }
   const url = `https://www.google.com/maps?q=${lat},${lng}`;
   return (
@@ -216,7 +216,7 @@ export function MediaLocation({ message, isOutbound }: MediaProps) {
       <MapPin className="h-4 w-4 shrink-0 opacity-70" />
       <div className="min-w-0">
         <p className="truncate font-medium">{label}</p>
-        <p className={`truncate text-[11px] tabular-nums ${isOutbound ? "text-[var(--bq-t1)]" : "opacity-70"}`}>
+        <p className={`truncate text-[11px] tabular-nums ${isOutbound ? "text-[var(--bq-t1)]" : "text-[var(--bq-t3)]"}`}>
           {lat.toFixed(5)}, {lng.toFixed(5)}
         </p>
       </div>
@@ -276,11 +276,11 @@ export function MediaContact({ message, isOutbound }: MediaProps) {
             {fullName.length > 48 ? `${fullName.slice(0, 48)}…` : fullName}
           </p>
           {phones.length === 0 ? (
-            <p className={`mt-0.5 text-xs ${isOutbound ? "text-[var(--bq-t1)]" : "opacity-60"}`}>Sem telefone no vCard</p>
+            <p className={`mt-0.5 text-xs ${isOutbound ? "text-[var(--bq-t1)]" : "text-[var(--bq-t3)]"}`}>Sem telefone no vCard</p>
           ) : (
             <ul className="mt-1 space-y-0.5">
               {phones.map((p) => (
-                <li key={p} className={`flex items-center gap-1 text-xs ${isOutbound ? "text-[var(--bq-t1)]" : "opacity-80"}`}>
+                <li key={p} className={`flex items-center gap-1 text-xs ${isOutbound ? "text-[var(--bq-t1)]" : "text-[var(--bq-t2)]"}`}>
                   <Phone className="h-3 w-3 shrink-0 opacity-60" />
                   <span className="truncate tabular-nums">{p}</span>
                   <button
