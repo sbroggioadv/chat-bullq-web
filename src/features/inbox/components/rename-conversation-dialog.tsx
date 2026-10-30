@@ -174,7 +174,7 @@ export function RenameConversationDialog({ conversation, open, onClose }: Props)
             type="button"
             onClick={handleSave}
             disabled={saving || !dirty}
-            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {saving && <Loader2 className="h-3 w-3 animate-spin" />}
             Salvar
