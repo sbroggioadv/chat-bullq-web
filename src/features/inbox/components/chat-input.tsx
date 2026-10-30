@@ -223,7 +223,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
       suppressRestoredTrigger.current = true;
       trigger.close();
       const el = textareaRef.current;
-      if (el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 160) + 'px'; el.setSelectionRange(text.length, text.length); }
+      if (el) { el.style.height = 'auto'; if (text) el.style.height = Math.min(el.scrollHeight, 160) + 'px'; el.setSelectionRange(text.length, text.length); }
       return;
     }
     if (!suppressRestoredTrigger.current) trigger.recompute();
