@@ -12,6 +12,10 @@ beforeEach(() => {
 });
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 const message = { id: 'fixture', externalId: 'external', type: 'IMAGE', content: { mediaUrl: 'https://mmg.whatsapp.net/a.enc' } } as Message;
+it.each([false, true])('nomeia o progresso do áudio em ambos os sentidos (enviado: %s)', (isOutbound) => {
+  render(<AudioMessagePlayer message={{ ...message, type: 'AUDIO' }} isOutbound={isOutbound} />);
+  expect(screen.getByRole('slider', { name: 'Progresso do áudio' })).toBeInTheDocument();
+});
 it.each([MediaImage, MediaVideo, MediaDocument])('legenda de mídia herda a tipografia do balão', (Component) => {
   render(<Component message={{ ...message, content: { ...message.content, caption: 'Legenda longa de mídia' } }} isOutbound={false} />);
   expect(screen.getByText('Legenda longa de mídia')).not.toHaveClass('text-sm');

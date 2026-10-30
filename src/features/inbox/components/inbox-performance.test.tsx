@@ -157,3 +157,13 @@ it('mantém legíveis o nome e o trecho da citação em mensagem enviada', async
   expect(screen.getByText('Trecho citado').closest('button')).toBe(quote);
   client.clear();
 });
+
+it('mantém o rótulo do anúncio recebido sem transparência', async () => {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: Infinity } } });
+  client.setQueryData(['messages', fixture.conversation.id], { messages: [{ ...fixture.message, metadata: { replyTo: { ad: { title: 'Anúncio fixture' } } } }], pagination: {} });
+  render(<QueryClientProvider client={client}><ChatPanel conversation={fixture.conversation} onConversationUpdate={vi.fn()} projectOpen={false} /></QueryClientProvider>);
+  const label = await screen.findByText('Respondeu ao anúncio');
+  expect(label).toHaveClass('text-[var(--bq-t2)]');
+  expect(label.className).not.toMatch(/opacity-/);
+  client.clear();
+});

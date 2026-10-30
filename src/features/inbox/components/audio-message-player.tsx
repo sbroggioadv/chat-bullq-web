@@ -205,6 +205,7 @@ export function AudioMessagePlayer({
             />
             <input
               type="range"
+              aria-label="Progresso do áudio"
               min={0}
               max={100}
               step={0.1}

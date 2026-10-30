@@ -1040,7 +1040,7 @@ export function ChatPanel({
                               : 'border-[var(--bq-hair)] bg-[var(--bq-surface)] text-[var(--bq-t2)]   '
                           }`}
                         >
-                          <p className={`text-[10px] uppercase tracking-wider ${isOutbound ? "text-[var(--bq-t1)]" : "opacity-70"}`}>
+                          <p className={`text-[10px] uppercase tracking-wider ${isOutbound ? "text-[var(--bq-t1)]" : "text-[var(--bq-t2)]"}`}>
                             Respondeu ao anúncio
                           </p>
                           {msg.metadata.replyTo.ad.title && (
