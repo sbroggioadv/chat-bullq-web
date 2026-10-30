@@ -11,8 +11,8 @@ import { buildThemeOverrideCss } from '../util/derived-tokens.util';
  * auth hidratar, o boot default vem do `<html data-brand="A">` setado no
  * RootLayout — entao nao tem flicker visual.
  *
- * Tambem suporta query param `?brand=A|B|C` pra preview/QA em rotas
- * publicas (mockups, landing de testes) sem precisar de auth.
+ * Também suporta o parâmetro `?brand=A|B|C` para preview e QA
+ * sem precisar de autenticação.
  *
  * Sprint S18 Wave 3: quando a org tem `themeTokens` setados, injetamos
  * um <style id="theme-tokens-override"> com CSS vars override pros 13
