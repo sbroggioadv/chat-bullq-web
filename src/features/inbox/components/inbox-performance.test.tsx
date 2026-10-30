@@ -163,7 +163,7 @@ it('mantém o rótulo do anúncio recebido sem transparência', async () => {
   client.setQueryData(['messages', fixture.conversation.id], { messages: [{ ...fixture.message, metadata: { replyTo: { ad: { title: 'Anúncio fixture' } } } }], pagination: {} });
   render(<QueryClientProvider client={client}><ChatPanel conversation={fixture.conversation} onConversationUpdate={vi.fn()} projectOpen={false} /></QueryClientProvider>);
   const label = await screen.findByText('Respondeu ao anúncio');
-  expect(label).toHaveClass('text-[var(--bq-t2)]');
+  expect(label).toHaveClass('text-[var(--bq-t3)]');
   expect(label.className).not.toMatch(/opacity-/);
   client.clear();
 });
