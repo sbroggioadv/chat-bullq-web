@@ -3,38 +3,41 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { readConversationDraft, writeConversationDraft } from '@/lib/conversation-drafts';
 
-type Session = { orgId: string | null; conversationId: string; text: string; revision: number; timer: ReturnType<typeof setTimeout> | null; mounted: boolean };
+type Session = { orgId: string | null; userId: string | null; conversationId: string; text: string; revision: number; changed: boolean; mounted: boolean };
 const revisions = new Map<string, number>();
-const identity = (s: Pick<Session, 'orgId' | 'conversationId'>) => JSON.stringify([s.orgId, s.conversationId]);
-const cancel = (s: Session) => { if (s.timer) clearTimeout(s.timer); s.timer = null; };
-const flush = (s: Session) => { cancel(s); writeConversationDraft(s.orgId, s.conversationId, s.text); };
+const identity = (s: Pick<Session, 'orgId' | 'userId' | 'conversationId'>) => JSON.stringify([s.orgId, s.userId, s.conversationId]);
 
-export function useConversationDraft(orgId: string | null, conversationId: string) {
+export function useConversationDraft(orgId: string | null, userId: string | null, conversationId: string) {
   const [text, setTextState] = useState('');
   const session = useRef<Session | null>(null);
   const [restoration, setRestoration] = useState(0);
 
   useLayoutEffect(() => {
-    const current: Session = { orgId, conversationId, text: readConversationDraft(orgId, conversationId), revision: revisions.get(JSON.stringify([orgId, conversationId])) ?? 0, timer: null, mounted: true };
+    const previous = session.current;
+    const carry = previous && previous.orgId === orgId && previous.conversationId === conversationId && !previous.userId && userId && previous.changed;
+    const restored = carry ? previous.text : readConversationDraft(orgId, userId, conversationId);
+    const current: Session = { orgId, userId, conversationId, text: restored, revision: revisions.get(JSON.stringify([orgId, userId, conversationId])) ?? 0, changed: !!carry, mounted: true };
     session.current = current;
-    // Restauração precisa ocorrer antes da pintura para não exibir a conversa anterior.
+    if (carry) {
+      current.revision++;
+      revisions.set(identity(current), current.revision);
+      writeConversationDraft(orgId, userId, conversationId, current.text);
+    }
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setTextState(current.text);
     setRestoration(n => n + 1);
-    const pagehide = () => flush(current);
-    window.addEventListener('pagehide', pagehide);
-    return () => { current.mounted = false; window.removeEventListener('pagehide', pagehide); flush(current); };
-  }, [orgId, conversationId]);
+    return () => { current.mounted = false; };
+  }, [orgId, userId, conversationId]);
 
   const setText = useCallback((value: string | ((previous: string) => string)) => {
     const current = session.current;
     if (!current) return;
+    current.changed = true;
     current.text = typeof value === 'function' ? value(current.text) : value;
     current.revision = (revisions.get(identity(current)) ?? 0) + 1;
     revisions.set(identity(current), current.revision);
     setTextState(current.text);
-    cancel(current);
-    current.timer = setTimeout(() => flush(current), 300);
+    writeConversationDraft(current.orgId, current.userId, current.conversationId, current.text);
   }, []);
   const capture = useCallback(() => {
     const current = session.current!;
@@ -43,11 +46,10 @@ export function useConversationDraft(orgId: string | null, conversationId: strin
   const sent = useCallback((snapshot: ReturnType<typeof capture>) => {
     const { current, revision, text: sentText } = snapshot;
     if (current.revision !== revision || (revisions.get(identity(current)) ?? 0) !== revision) return false;
-    if (!current.mounted && readConversationDraft(current.orgId, current.conversationId) !== sentText) return false;
-    cancel(current);
+    if (!current.mounted && readConversationDraft(current.orgId, current.userId, current.conversationId) !== sentText) return false;
     current.text = '';
     if (current.mounted && session.current === current) setTextState('');
-    writeConversationDraft(current.orgId, current.conversationId, '');
+    writeConversationDraft(current.orgId, current.userId, current.conversationId, '');
     return true;
   }, []);
   return { text, setText, capture, sent, restoration };

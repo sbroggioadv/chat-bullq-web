@@ -186,7 +186,8 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
   channelName,
 }, ref) {
   const orgId = useAuthStore((state) => state.activeOrgId);
-  const { text, setText: setDraftText, capture, sent, restoration } = useConversationDraft(orgId, conversationId);
+  const userId = useAuthStore((state) => state.user?.id ?? null);
+  const { text, setText: setDraftText, capture, sent, restoration } = useConversationDraft(orgId, userId, conversationId);
   const suppressRestoredTrigger = useRef(false);
   const setText = useCallback((next: string | ((previous: string) => string)) => {
     suppressRestoredTrigger.current = false;
