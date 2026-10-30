@@ -439,6 +439,7 @@ html[data-brand="C"][data-mode="dark"] {
   body {
     @apply bg-background text-foreground;
     font: 13px/1.45 var(--bq-f-ui);
+    -webkit-font-smoothing: antialiased;
     transition:
       background-color 150ms ease-out,
       color 150ms ease-out,

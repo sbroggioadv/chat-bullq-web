@@ -160,6 +160,7 @@ typography:
     fontSize: 13px
     fontWeight: 400
     lineHeight: 1.45
+    WebkitFontSmoothing: antialiased
   heading:
     fontFamily: '"Geist", -apple-system, "SF Pro Display", system-ui, sans-serif'
     fontSize: 15px
