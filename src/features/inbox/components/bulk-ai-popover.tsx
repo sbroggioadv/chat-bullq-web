@@ -83,7 +83,7 @@ export function BulkAiPopover({ count, disabled, onSetOverride, onEngage }: Prop
           className="absolute right-0 top-full z-30 mt-1 w-80 overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-900"
         >
           <div className="border-b border-zinc-100 px-3 py-2 dark:border-zinc-800">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--bq-t3)]">
               IA · {count} selecionada{count > 1 ? 's' : ''}
             </p>
           </div>
@@ -104,7 +104,7 @@ export function BulkAiPopover({ count, disabled, onSetOverride, onEngage }: Prop
                   <span className="font-medium text-zinc-900 dark:text-zinc-100">
                     {opt.label}
                   </span>
-                  <p className="mt-0.5 text-[11px] leading-tight text-zinc-500">
+                  <p className="mt-0.5 text-[11px] leading-tight text-[var(--bq-t3)]">
                     {opt.hint}
                   </p>
                 </div>
