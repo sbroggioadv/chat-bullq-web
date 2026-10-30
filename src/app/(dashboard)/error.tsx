@@ -10,5 +10,5 @@ export default function RouteError({ error, retry }: { error: Error & { digest?:
     console.error('Erro de renderização da tela', { digest: error.digest });
   }, [error]);
 
-  return <RouteErrorState onRetry={() => { void queryClient.invalidateQueries({ refetchType: 'all' }).finally(retry); }} />;
+  return <RouteErrorState onRetry={() => { queryClient.removeQueries({ type: 'inactive' }); retry(); }} />;
 }

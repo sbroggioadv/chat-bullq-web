@@ -19,3 +19,8 @@ it('usa claro quando o armazenamento está inacessível', () => {
   render(<GlobalError error={new Error()} retry={vi.fn()} />);
   expect(document.documentElement).toHaveAttribute('data-mode', 'light');
 });
+it('define o título do documento global', () => {
+  vi.spyOn(console, 'error').mockImplementation(() => {});
+  render(<GlobalError error={new Error()} retry={vi.fn()} />);
+  expect(document.title).toBe('Chat BullQ — erro');
+});
