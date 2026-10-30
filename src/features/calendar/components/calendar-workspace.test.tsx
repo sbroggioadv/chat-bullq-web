@@ -59,6 +59,7 @@ function mount() {
 it("alterna semana/mês consultando o período correto e mantém criação acessível", async () => {
   mount();
   const month = await screen.findByRole("button", { name: "Mês", exact: true });
+  await waitFor(() => expect(calendarService.events).toHaveBeenCalledTimes(1));
   await userEvent.click(month);
   expect(month).toHaveAttribute("aria-pressed", "true");
   await waitFor(() => expect(calendarService.events).toHaveBeenCalledTimes(2));
@@ -87,7 +88,7 @@ it("distingue falha de conexão de uma conta desconectada", async () => {
   ).not.toBeInTheDocument();
 });
 
-it("preserva as 24 horas e a edição dos eventos fora de 08h–20h", async () => {
+function setupEvents() {
   const day = new Date();
   day.setDate(day.getDate() - ((day.getDay() + 6) % 7));
   const events = [6, 22].map((hour) => {
@@ -109,11 +110,13 @@ it("preserva as 24 horas e a edição dos eventos fora de 08h–20h", async () =
     channelId: "google",
     events,
   });
+  return events;
+}
+
+it("preserva a edição dos eventos fora de 08h–20h", async () => {
+  const events = setupEvents();
   mount();
   const grid = await screen.findByRole("region", { name: "Grade da agenda" });
-  expect(
-    within(grid).getAllByRole("button", { name: /Criar evento em/ }),
-  ).toHaveLength(7 * 24);
   for (const event of events) {
     await userEvent.click(await within(grid).findByTitle(event.summary));
     expect(
@@ -123,6 +126,13 @@ it("preserva as 24 horas e a edição dos eventos fora de 08h–20h", async () =
       screen.getByRole("button", { name: "Fechar edição de evento" }),
     );
   }
+});
+
+it("preserva as 24 horas e os eventos ao alternar mês e semana", async () => {
+  const events = setupEvents();
+  mount();
+  const grid = await screen.findByRole("region", { name: "Grade da agenda" });
+  expect(within(grid).getAllByRole("button", { name: /Criar evento em/ })).toHaveLength(7 * 24);
   await userEvent.click(
     screen.getByRole("button", { name: "Mês", exact: true }),
   );
@@ -136,7 +146,7 @@ it("preserva as 24 horas e a edição dos eventos fora de 08h–20h", async () =
   ).toHaveLength(7 * 24);
 });
 
-it("usa régua única e mantém atualizar, navegação e criar pelo horário", async () => {
+it("usa régua única e mantém atualizar e navegação", async () => {
   mount();
   const grid = await screen.findByRole("region", { name: "Grade da agenda" });
   await waitFor(() => expect(calendarService.events).toHaveBeenCalled());
@@ -165,6 +175,11 @@ it("usa régua única e mantém atualizar, navegação e criar pelo horário", a
     screen.getByRole("button", { name: "Atualizar agenda" }),
   );
   await waitFor(() => expect(calendarService.events).toHaveBeenCalledTimes(4));
+});
+
+it("mantém criação pelo horário", async () => {
+  mount();
+  const grid = await screen.findByRole("region", { name: "Grade da agenda" });
   await userEvent.click(
     within(grid).getAllByRole("button", { name: /às 6 horas/ })[0],
   );

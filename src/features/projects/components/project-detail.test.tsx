@@ -42,7 +42,7 @@ describe('Projeto repaginado', () => {
     expect(screen.getByText('O fluxo deste projeto ainda não está disponível.')).toBeVisible();
     expect(screen.getByRole('link', { name: 'Abrir conversa' })).toHaveAttribute('href', '/inbox?conversationId=conv');
   });
-  it('preserva tarefas, envolvidos, documentos e envio de e-mail', async () => {
+  it('preserva tarefas', async () => {
     mount();
     await userEvent.click(await screen.findByRole('button', { name: 'Ver tarefas' }));
     await screen.findByText('Tarefa de teste');
@@ -54,7 +54,11 @@ describe('Projeto repaginado', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Remover tarefa' }));
     expect(mocks.removeTask).toHaveBeenCalledWith('project', 'task');
     await userEvent.click(screen.getByRole('button', { name: 'Fechar janela' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Incluir contato' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+  it('preserva envolvidos e documentos', async () => {
+    mount();
+    await userEvent.click(await screen.findByRole('button', { name: 'Incluir contato' }));
     await userEvent.click(await screen.findByRole('radio', { name: 'Contato encontrado' }));
     await userEvent.click(screen.getByRole('button', { name: 'Ligar contato' }));
     await waitFor(() => expect(mocks.addContact).toHaveBeenCalledWith('project', 'contact-new'));
@@ -65,7 +69,10 @@ describe('Projeto repaginado', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Remover anexo' }));
     expect(mocks.removeAttachment).toHaveBeenCalledWith('project', 'attachment');
     expect(screen.queryByRole('button', { name: 'Mais ações do projeto' })).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'E-mail do projeto' }));
+  });
+  it('preserva envio de e-mail', async () => {
+    mount();
+    await userEvent.click(await screen.findByRole('button', { name: 'E-mail do projeto' }));
     await userEvent.type(screen.getByPlaceholderText('Assunto'), 'Assunto de teste');
     await userEvent.type(screen.getByPlaceholderText('Corpo do e-mail'), 'Mensagem de teste');
     await userEvent.click(screen.getByRole('button', { name: 'Enviar e-mail' }));
