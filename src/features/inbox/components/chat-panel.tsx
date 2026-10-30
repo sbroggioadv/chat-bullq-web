@@ -189,7 +189,7 @@ function LinkPreviewCard({ url, isOutbound }: { url: string; isOutbound: boolean
         />
         <span
           className={`mt-1 block text-[10px] ${
-            isOutbound ? 'opacity-80' : 'text-[var(--bq-t3)]'
+            isOutbound ? 'text-[var(--bq-t1)]' : 'text-[var(--bq-t3)]'
           }`}
         >
           {host}
@@ -205,7 +205,7 @@ function LinkPreviewCard({ url, isOutbound }: { url: string; isOutbound: boolean
       rel="noopener noreferrer"
       className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs transition-colors ${
         isOutbound
-          ? 'border-primary-foreground/20 bg-primary-foreground/10 hover:bg-primary-foreground/15'
+          ? 'border-[var(--bq-hair)] bg-[var(--bq-raised)] hover:bg-[var(--bq-raised-2)]'
           : 'border-[var(--bq-hair)] bg-[var(--bq-surface)] hover:bg-[var(--bq-raised)]   '
       }`}
     >
@@ -233,7 +233,7 @@ function renderInlineTextWithLinks(text: string, isOutbound: boolean) {
           target="_blank"
           rel="noopener noreferrer"
           className={`underline underline-offset-2 wrap-break-word ${
-            isOutbound ? 'text-primary-foreground' : 'text-primary'
+            isOutbound ? 'text-[var(--bq-t1)]' : 'text-primary'
           }`}
         >
           {part}
@@ -292,7 +292,7 @@ function TemplateButtonRow({
         const label = btn.title || btn.url || btn.payload || 'Botão';
         const baseClass = `block rounded-md border px-3 py-1.5 text-center text-xs font-medium transition-colors ${
           isOutbound
-            ? 'border-primary-foreground/30 bg-primary-foreground/10 hover:bg-primary-foreground/20'
+            ? 'border-[var(--bq-hair)] bg-[var(--bq-raised)] hover:bg-[var(--bq-raised-2)]'
             : 'border-[var(--bq-hair)] bg-[var(--bq-surface)] text-[var(--bq-t2)] hover:bg-[var(--bq-raised)]    '
         }`;
         if (btn.url) {
@@ -305,7 +305,7 @@ function TemplateButtonRow({
         return (
           <span
             key={i}
-            className={`${baseClass} cursor-default opacity-80`}
+            className={`${baseClass} cursor-default ${isOutbound ? "text-[var(--bq-t1)]" : "opacity-80"}`}
             title={btn.payload || btn.type || ''}
           >
             {label}
@@ -342,7 +342,7 @@ function TemplateMessage({
           key={i}
           className={`overflow-hidden rounded-lg border ${
             isOutbound
-              ? 'border-primary-foreground/20 bg-primary-foreground/5'
+              ? 'border-[var(--bq-hair)] bg-[var(--bq-raised)]'
               : 'border-[var(--bq-hair)] bg-[var(--bq-surface)]  '
           }`}
         >
@@ -364,7 +364,7 @@ function TemplateMessage({
             <div className="px-3 py-2">
               {el.title && <p className="text-sm font-medium">{el.title}</p>}
               {el.subtitle && (
-                <p className="mt-0.5 text-xs opacity-75">{el.subtitle}</p>
+                <p className={`mt-0.5 text-xs ${isOutbound ? "text-[var(--bq-t1)]" : "opacity-75"}`}>{el.subtitle}</p>
               )}
             </div>
           )}
@@ -1036,11 +1036,11 @@ export function ChatPanel({
                         <div
                           className={`mb-1 rounded-xl border px-3 py-2 text-xs ${
                             isOutbound
-                              ? 'border-primary/40 bg-primary/10 text-primary-foreground/80'
+                              ? 'border-[var(--bq-hair)] bg-[var(--bq-raised)] text-[var(--bq-t1)]'
                               : 'border-[var(--bq-hair)] bg-[var(--bq-surface)] text-[var(--bq-t2)]   '
                           }`}
                         >
-                          <p className="text-[10px] uppercase tracking-wider opacity-70">
+                          <p className={`text-[10px] uppercase tracking-wider ${isOutbound ? "text-[var(--bq-t1)]" : "opacity-70"}`}>
                             Respondeu ao anúncio
                           </p>
                           {msg.metadata.replyTo.ad.title && (
@@ -1102,7 +1102,7 @@ export function ChatPanel({
                         <div
                           className={`flex items-center gap-2 rounded-2xl border border-dashed px-4 py-2.5 italic ${
                             isOutbound
-                              ? 'rounded-br-md border-primary/40 bg-primary/5 text-primary/70'
+                              ? 'rounded-br-md border-[var(--bq-hair)] bg-[var(--bq-raised)] text-[var(--bq-t1)]'
                               : 'rounded-bl-md border-[var(--bq-hair-strong)] bg-[var(--bq-surface)] text-[var(--bq-t3)]   '
                           }`}
                           title={
@@ -1116,7 +1116,7 @@ export function ChatPanel({
                             Mensagem deletada
                             {msg.revokeSucceededRemote === false ? ' (só aqui)' : ''}
                           </span>
-                          <span className="ml-auto text-[10px] opacity-70">
+                          <span className={`ml-auto text-[10px] ${isOutbound ? "text-[var(--bq-t1)]" : "opacity-70"}`}>
                             {formatTime(msg.createdAt)}
                           </span>
                         </div>

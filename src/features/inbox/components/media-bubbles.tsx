@@ -44,7 +44,7 @@ export function MediaImage({ message, isOutbound }: MediaProps) {
     <div ref={ref}>
       <div
         className={`group relative overflow-hidden rounded-lg ${
-          isOutbound ? 'bg-primary-foreground/10' : 'bg-[var(--bq-raised)] '
+          isOutbound ? 'bg-[var(--bq-raised)]' : 'bg-[var(--bq-raised)] '
         }`}
         style={{ minHeight: '120px', minWidth: '160px' }}
       >
@@ -90,7 +90,7 @@ export function MediaVideo({ message, isOutbound }: MediaProps) {
     <div ref={ref}>
       <div
         className={`overflow-hidden rounded-lg ${
-          isOutbound ? 'bg-primary-foreground/10' : 'bg-[var(--bq-raised)] '
+          isOutbound ? 'bg-[var(--bq-raised)]' : 'bg-[var(--bq-raised)] '
         }`}
       >
         {url ? (
@@ -199,7 +199,7 @@ export function MediaLocation({ message, isOutbound }: MediaProps) {
   const lng = message.content?.longitude as number | undefined;
   const label = (message.content?.text as string | undefined) || 'Localização';
   if (typeof lat !== 'number' || typeof lng !== 'number') {
-    return <p className="text-sm italic opacity-70">📍 {label}</p>;
+    return <p className={`text-sm italic ${isOutbound ? "text-[var(--bq-t1)]" : "opacity-70"}`}>📍 {label}</p>;
   }
   const url = `https://www.google.com/maps?q=${lat},${lng}`;
   return (
@@ -209,14 +209,14 @@ export function MediaLocation({ message, isOutbound }: MediaProps) {
       rel="noopener noreferrer"
       className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors ${
         isOutbound
-          ? 'border-primary-foreground/20 bg-primary-foreground/10 hover:bg-primary-foreground/15'
+          ? 'border-[var(--bq-hair)] bg-[var(--bq-raised)] hover:bg-[var(--bq-raised-2)]'
           : 'border-[var(--bq-hair)] bg-[var(--bq-surface)] hover:bg-[var(--bq-raised)]   '
       }`}
     >
       <MapPin className="h-4 w-4 shrink-0 opacity-70" />
       <div className="min-w-0">
         <p className="truncate font-medium">{label}</p>
-        <p className="truncate text-[11px] opacity-70 tabular-nums">
+        <p className={`truncate text-[11px] tabular-nums ${isOutbound ? "text-[var(--bq-t1)]" : "opacity-70"}`}>
           {lat.toFixed(5)}, {lng.toFixed(5)}
         </p>
       </div>
@@ -259,14 +259,14 @@ export function MediaContact({ message, isOutbound }: MediaProps) {
     <div
       className={`min-w-[200px] max-w-[280px] rounded-lg border px-3 py-2.5 ${
         isOutbound
-          ? 'border-primary-foreground/20 bg-primary-foreground/10'
+          ? 'border-[var(--bq-hair)] bg-[var(--bq-raised)]'
           : 'border-[var(--bq-hair)] bg-[var(--bq-surface)]  '
       }`}
     >
       <div className="flex items-start gap-2.5">
         <div
           className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
-            isOutbound ? 'bg-primary-foreground/15' : 'bg-[var(--bq-raised-2)] '
+            isOutbound ? 'bg-[var(--bq-raised-2)]' : 'bg-[var(--bq-raised-2)] '
           }`}
         >
           <UserRound className="h-5 w-5 opacity-70" />
@@ -276,11 +276,11 @@ export function MediaContact({ message, isOutbound }: MediaProps) {
             {fullName.length > 48 ? `${fullName.slice(0, 48)}…` : fullName}
           </p>
           {phones.length === 0 ? (
-            <p className="mt-0.5 text-xs opacity-60">Sem telefone no vCard</p>
+            <p className={`mt-0.5 text-xs ${isOutbound ? "text-[var(--bq-t1)]" : "opacity-60"}`}>Sem telefone no vCard</p>
           ) : (
             <ul className="mt-1 space-y-0.5">
               {phones.map((p) => (
-                <li key={p} className="flex items-center gap-1 text-xs opacity-80">
+                <li key={p} className={`flex items-center gap-1 text-xs ${isOutbound ? "text-[var(--bq-t1)]" : "opacity-80"}`}>
                   <Phone className="h-3 w-3 shrink-0 opacity-60" />
                   <span className="truncate tabular-nums">{p}</span>
                   <button
@@ -302,7 +302,7 @@ export function MediaContact({ message, isOutbound }: MediaProps) {
               target="_blank"
               rel="noopener noreferrer"
               className={`mt-2 inline-flex text-xs font-medium underline-offset-2 hover:underline ${
-                isOutbound ? 'text-primary-foreground' : 'text-primary'
+                isOutbound ? 'text-[var(--bq-t1)]' : 'text-primary'
               }`}
             >
               Abrir no WhatsApp
@@ -332,7 +332,7 @@ function MediaSkeleton({
       type="button"
       onClick={onRetry}
       className={`flex w-full items-center gap-2 ${compact ? 'px-2 py-1.5' : 'px-3 py-6'} text-xs ${
-        isOutbound ? 'text-primary-foreground/80' : 'text-[var(--bq-t2)] '
+        isOutbound ? 'text-[var(--bq-t1)]' : 'text-[var(--bq-t2)] '
       }`}
     >
       {error ? (

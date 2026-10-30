@@ -25,11 +25,11 @@ export function StoryReplyCard({
 
   const frame = `mb-1 overflow-hidden rounded-xl border ${
     isOutbound
-      ? 'border-primary/40 bg-primary/10'
+      ? 'border-[var(--bq-hair)] bg-[var(--bq-raised)]'
       : 'border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/60'
   }`;
   const labelColor = isOutbound
-    ? 'text-primary-foreground/80'
+    ? 'text-[var(--bq-t1)]'
     : 'text-zinc-500 dark:text-zinc-400';
 
   return (
@@ -48,7 +48,7 @@ export function StoryReplyCard({
           />
         </div>
       ) : (
-        <div className="mt-1 flex items-center gap-2 px-3 pb-2 text-xs text-zinc-500 dark:text-zinc-400">
+        <div className={`mt-1 flex items-center gap-2 px-3 pb-2 text-xs ${isOutbound ? "text-[var(--bq-t1)]" : "text-zinc-500 dark:text-zinc-400"}`}>
           <ImageOff className="h-3.5 w-3.5 opacity-50" />
           <span>Mídia do story não disponível (expirada)</span>
         </div>

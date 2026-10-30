@@ -82,7 +82,7 @@ export function AudioMessagePlayer({
     ? 'bg-[var(--bq-bubble-out)] text-[var(--bq-t1)] border border-[var(--bq-bubble-out-hair)]'
     : 'bg-[var(--bq-win-solid)] text-[var(--bq-t1)] shadow-sm  ';
   const colorAccent = isOutbound
-    ? 'bg-white/30'
+    ? 'bg-[var(--bq-raised-2)]'
     : 'bg-[var(--bq-raised-2)] ';
   const colorAccentFilled = isOutbound
     ? 'bg-[var(--bq-win-solid)]'
@@ -161,7 +161,7 @@ export function AudioMessagePlayer({
   if (!resolvedUrl && !message.externalId) {
     return (
       <div ref={viewportRef} className={`rounded-2xl px-4 py-2.5 ${colorBubble}`}>
-        <p className="text-sm italic opacity-70">🎵 Áudio indisponível</p>
+        <p className={`text-sm italic ${isOutbound ? "text-[var(--bq-t1)]" : "opacity-70"}`}>🎵 Áudio indisponível</p>
       </div>
     );
   }
@@ -184,7 +184,7 @@ export function AudioMessagePlayer({
           type="button"
           onClick={handleTogglePlay}
           className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-opacity ${
-            isOutbound ? 'bg-white/20 hover:bg-white/30' : 'bg-[var(--bq-raised)] hover:bg-[var(--bq-raised-2)]  '
+            isOutbound ? 'bg-[var(--bq-raised)] hover:bg-[var(--bq-raised-2)]' : 'bg-[var(--bq-raised)] hover:bg-[var(--bq-raised-2)]  '
           }`}
           aria-label={playing ? 'Pausar' : 'Reproduzir'}
         >
@@ -223,7 +223,7 @@ export function AudioMessagePlayer({
           <PopoverButton
             className={`inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[11px] font-medium outline-none transition-colors ${
               isOutbound
-                ? 'bg-white/15 hover:bg-white/25 text-[var(--bq-t1)]'
+                ? 'bg-[var(--bq-raised)] hover:bg-[var(--bq-raised-2)] text-[var(--bq-t1)]'
                 : 'bg-[var(--bq-raised)] hover:bg-[var(--bq-raised-2)] text-[var(--bq-t2)]   '
             }`}
             aria-label="Velocidade de reprodução"
@@ -264,7 +264,7 @@ export function AudioMessagePlayer({
 
       {/* Transcription area */}
       <div className={`mt-2 flex items-center gap-2 border-t pt-2 ${
-        isOutbound ? 'border-white/20' : 'border-[var(--bq-hair)] '
+        isOutbound ? 'border-[var(--bq-hair)]' : 'border-[var(--bq-hair)] '
       }`}>
         {!transcript && !transcribing && (
           <button
@@ -272,7 +272,7 @@ export function AudioMessagePlayer({
             onClick={handleTranscribe}
             className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-medium transition-colors ${
               isOutbound
-                ? 'text-[var(--bq-t1)] hover:bg-white/15'
+                ? 'text-[var(--bq-t1)] hover:bg-[var(--bq-raised)]'
                 : 'text-[var(--bq-t2)] hover:bg-[var(--bq-raised)]  '
             }`}
           >
