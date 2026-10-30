@@ -189,3 +189,36 @@ it("mantém criação pelo horário", async () => {
       .value,
   ).toContain("T06:00");
 });
+
+
+it("mantém alternância mês e semana após editar evento", async () => {
+  const [event] = setupEvents();
+  mount();
+  const grid = await screen.findByRole("region", { name: "Grade da agenda" });
+  await userEvent.click(await within(grid).findByTitle(event.summary));
+  expect(screen.getByRole("textbox", { name: "Título do evento" })).toHaveValue(event.summary);
+  await userEvent.click(screen.getByRole("button", { name: "Fechar edição de evento" }));
+  await userEvent.click(screen.getByRole("button", { name: "Mês", exact: true }));
+  expect(screen.getByRole("button", { name: "Mês", exact: true })).toHaveAttribute("aria-pressed", "true");
+  expect(within(grid).getByTitle(event.summary)).toBeVisible();
+  await userEvent.click(screen.getByRole("button", { name: "Semana", exact: true }));
+  expect(screen.getByRole("button", { name: "Semana", exact: true })).toHaveAttribute("aria-pressed", "true");
+  expect(within(grid).getAllByRole("button", { name: /Criar evento em/ })).toHaveLength(7 * 24);
+});
+
+it("cria no período navegado após atualizar agenda", async () => {
+  mount();
+  const grid = await screen.findByRole("region", { name: "Grade da agenda" });
+  await waitFor(() => expect(calendarService.events).toHaveBeenCalledTimes(1));
+  await userEvent.click(screen.getByRole("button", { name: "Próximo período" }));
+  await waitFor(() => expect(calendarService.events).toHaveBeenCalledTimes(2));
+  const from = vi.mocked(calendarService.events).mock.calls.at(-1)![0].from!;
+  await userEvent.click(screen.getByRole("button", { name: "Atualizar agenda" }));
+  await waitFor(() => expect(calendarService.events).toHaveBeenCalledTimes(3));
+  await userEvent.click(within(grid).getAllByRole("button", { name: /às 6 horas/ })[0]);
+  expect(screen.getByRole("button", { name: "Criar no Google" })).toBeVisible();
+  const start = document.querySelector<HTMLInputElement>('input[type="datetime-local"]')!.value;
+  const expected = new Date(from);
+  expected.setHours(6, 0, 0, 0);
+  expect(new Date(start).getTime()).toBe(expected.getTime());
+});

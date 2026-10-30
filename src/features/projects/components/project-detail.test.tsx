@@ -136,3 +136,22 @@ describe('Hierarquia do dossiê', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Voltar aos projetos' }));
     expect(back).toHaveBeenCalledOnce();
  });
+
+
+it('mantém contato e envio de e-mail após tarefas', async () => {
+  mount();
+  await userEvent.click(await screen.findByRole('button', { name: 'Ver tarefas' }));
+  await userEvent.click(await screen.findByRole('checkbox', { name: 'Tarefa de teste' }));
+  await waitFor(() => expect(mocks.updateTask).toHaveBeenCalledWith('project', 'task', { done: true }));
+  await userEvent.click(screen.getByRole('button', { name: 'Fechar janela' }));
+  await userEvent.click(screen.getByRole('button', { name: 'Incluir contato' }));
+  await userEvent.click(await screen.findByRole('radio', { name: 'Contato encontrado' }));
+  await userEvent.click(screen.getByRole('button', { name: 'Ligar contato' }));
+  await waitFor(() => expect(mocks.addContact).toHaveBeenCalledWith('project', 'contact-new'));
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  await userEvent.click(screen.getByRole('button', { name: 'E-mail do projeto' }));
+  await userEvent.type(screen.getByPlaceholderText('Assunto'), 'Teste');
+  await userEvent.type(screen.getByPlaceholderText('Corpo do e-mail'), 'Mensagem');
+  await userEvent.click(screen.getByRole('button', { name: 'Enviar e-mail' }));
+  await waitFor(() => expect(mocks.emailParticipants).toHaveBeenCalledWith('project', { subject: 'Teste', body: 'Mensagem', to: undefined }));
+});
