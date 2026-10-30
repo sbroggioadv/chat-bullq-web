@@ -16,7 +16,9 @@ function violationsIn(source: string, name: string): string[] {
         if (ts.isJsxText(child) && child.getText(tree).trim()) return true;
         return ts.forEachChild(child, hasText) === true;
       }
-      if (opacity && !disabledBranch && node.children.some(hasText)) {
+      const textTag = /^(p|span|li)$/.test(node.openingElement.tagName.getText(tree));
+      const hasContent = node.children.some(hasText) || (textTag && node.children.some(ts.isJsxExpression));
+      if (opacity && !disabledBranch && hasContent) {
         violations.push(`${name}:${tree.getLineAndCharacterOfPosition(node.getStart(tree)).line + 1}`);
       }
     }
@@ -35,6 +37,7 @@ function tsxFiles(dir: string): string[] {
 
 it('detecta opacidade em ancestral de texto e preserva exceções explícitas', () => {
   expect(violationsIn('<div className="opacity-70"><span>Texto ativo</span></div>', 'controle.tsx')).toHaveLength(1);
+  expect(violationsIn('<span className="opacity-70">{texto}</span>', 'controle.tsx')).toHaveLength(1);
   expect(violationsIn('<button className="disabled:opacity-50">Desabilitado</button>', 'controle.tsx')).toEqual([]);
   expect(violationsIn("<label className={disabled ? 'cursor-not-allowed opacity-40' : ''}>Desabilitado</label>", 'controle.tsx')).toEqual([]);
   expect(violationsIn('<div className="data-[closed]:opacity-0">Transição</div>', 'controle.tsx')).toEqual([]);
