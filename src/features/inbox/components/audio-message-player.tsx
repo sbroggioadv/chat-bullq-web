@@ -82,10 +82,10 @@ export function AudioMessagePlayer({
     ? 'bg-[var(--bq-bubble-out)] text-[var(--bq-t1)] border border-[var(--bq-bubble-out-hair)]'
     : 'bg-[var(--bq-win-solid)] text-[var(--bq-t1)] shadow-sm  ';
   const colorAccent = isOutbound
-    ? 'bg-[var(--bq-raised-2)]'
+    ? 'bg-[var(--bq-t2)]'
     : 'bg-[var(--bq-raised-2)] ';
   const colorAccentFilled = isOutbound
-    ? 'bg-[var(--bq-win-solid)]'
+    ? 'bg-[var(--bq-solid-fg)]'
     : 'bg-primary';
   const colorMuted = isOutbound
     ? 'text-[var(--bq-t1)]'

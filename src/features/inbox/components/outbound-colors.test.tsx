@@ -23,3 +23,9 @@ it('usa o turquesa Synq nos tokens do balão enviado escuro', () => {
   expect(dark).toContain('--bq-bubble-out: rgb(15 157 148 / 0.18)');
   expect(dark).toContain('--bq-bubble-out-hair: rgb(15 157 148 / 0.32)');
 });
+
+it('usa cores contrastantes na trilha do áudio enviado e preserva o recebido', () => {
+  const source = readFileSync('src/features/inbox/components/audio-message-player.tsx', 'utf8');
+  expect(source).toMatch(/const colorAccent = isOutbound\s*\? 'bg-\[var\(--bq-t2\)\]'\s*: 'bg-\[var\(--bq-raised-2\)\] '/);
+  expect(source).toMatch(/const colorAccentFilled = isOutbound\s*\? 'bg-\[var\(--bq-solid-fg\)\]'\s*: 'bg-primary'/);
+});
