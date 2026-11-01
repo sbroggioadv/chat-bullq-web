@@ -20,3 +20,8 @@ describe('Item atual do trilho em Configurações', () => {
     expect(container.querySelectorAll('[aria-current="page"]')).toHaveLength(1);
   });
 });
+
+it('usa Sy quando não há nome no perfil', () => {
+  render(<AppSidebar />);
+  expect(screen.getByRole('button', { name: 'Abrir perfil' })).toHaveTextContent('Sy');
+});

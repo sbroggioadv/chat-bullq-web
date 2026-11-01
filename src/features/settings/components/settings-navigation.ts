@@ -35,5 +35,5 @@ export const normalizeSearch = (value: string) => value.normalize('NFD').replace
 
 export function profileInitials(name?: string | null) {
   const words = name?.trim().split(/\s+/).filter(Boolean) ?? [];
-  return words.length ? `${words[0][0]}${words.length > 1 ? words[words.length - 1][0] : ''}`.toUpperCase() : 'BQ';
+  return words.length ? `${words[0][0]}${words.length > 1 ? words[words.length - 1][0] : ''}`.toUpperCase() : 'Sy';
 }

@@ -28,7 +28,7 @@ describe('navegação de Configurações', () => {
   });
 });
 
-it.each([['  Ana Maria Silva  ', 'AS'], ['Ana', 'A'], ['', 'BQ'], ['Usuário de teste', 'UT']])('iniciais de %s preservam primeiro e último nomes', (name, initials) => {
+it.each([['  Ana Maria Silva  ', 'AS'], ['Ana', 'A'], ['', 'Sy'], ['Usuário de teste', 'UT']])('iniciais de %s preservam primeiro e último nomes', (name, initials) => {
   expect(profileInitials(name)).toBe(initials);
 });
 it('conserva cabeçalho e navegação durante suspensão do conteúdo', () => {
