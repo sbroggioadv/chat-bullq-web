@@ -56,8 +56,8 @@ colors:
   err: "#cf3a3a"
   err-soft: rgb(207 58 58 / 0.10)
   bubble-in: "#ffffff"
-  bubble-out: rgb(196 98 63 / 0.10)
-  bubble-out-hair: rgb(196 98 63 / 0.24)
+  bubble-out: rgb(15 157 148 / 0.10)
+  bubble-out-hair: rgb(15 157 148 / 0.24)
   solid-bg: "#12141a"
   solid-fg: "#ffffff"
   av-fg: "#1d2029"
@@ -121,8 +121,8 @@ dark:
   err: "#ff7b7b"
   err-soft: rgb(255 123 123 / 0.13)
   bubble-in: rgb(255 255 255 / 0.045)
-  bubble-out: rgb(255 255 255 / 0.11)
-  bubble-out-hair: rgb(255 255 255 / 0.10)
+  bubble-out: rgb(15 157 148 / 0.18)
+  bubble-out-hair: rgb(15 157 148 / 0.32)
   solid-bg: "#f1f2f4"
   solid-fg: "#0e0f12"
   av-fg: "#f1f2f4"
@@ -382,8 +382,8 @@ brand_primitives:
   err: "#ff7b7b"
   err-soft: rgb(255 123 123 / 0.13)
   bubble-in: rgb(255 255 255 / 0.045)
-  bubble-out: rgb(255 255 255 / 0.11)
-  bubble-out-hair: rgb(255 255 255 / 0.10)
+  bubble-out: rgb(15 157 148 / 0.18)
+  bubble-out-hair: rgb(15 157 148 / 0.32)
   solid-bg: "#f1f2f4"
   solid-fg: "#0e0f12"
   av-l: "0.38"
@@ -437,8 +437,8 @@ source_tokens:
     err: "#cf3a3a"
     err-soft: rgb(207 58 58 / 0.10)
     bubble-in: "#ffffff"
-    bubble-out: rgb(196 98 63 / 0.10)
-    bubble-out-hair: rgb(196 98 63 / 0.24)
+    bubble-out: rgb(15 157 148 / 0.10)
+    bubble-out-hair: rgb(15 157 148 / 0.24)
     solid-bg: "#12141a"
     solid-fg: "#ffffff"
     av-l: "0.86"
@@ -498,8 +498,8 @@ source_tokens:
     err: "#ff7b7b"
     err-soft: rgb(255 123 123 / 0.13)
     bubble-in: rgb(255 255 255 / 0.045)
-    bubble-out: rgb(255 255 255 / 0.11)
-    bubble-out-hair: rgb(255 255 255 / 0.10)
+    bubble-out: rgb(15 157 148 / 0.18)
+    bubble-out-hair: rgb(15 157 148 / 0.32)
     solid-bg: "#f1f2f4"
     solid-fg: "#0e0f12"
     av-l: "0.38"

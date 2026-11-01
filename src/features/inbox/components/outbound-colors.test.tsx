@@ -16,3 +16,10 @@ it('usa o turquesa Synq nos tokens do balão enviado claro', () => {
   expect(light).toContain('--bq-bubble-out: rgb(15 157 148 / 0.10)');
   expect(light).toContain('--bq-bubble-out-hair: rgb(15 157 148 / 0.24)');
 });
+
+it('usa o turquesa Synq nos tokens do balão enviado escuro', () => {
+  const css = readFileSync('src/app/globals.css', 'utf8');
+  const dark = css.split(':root {')[2].split('}')[0];
+  expect(dark).toContain('--bq-bubble-out: rgb(15 157 148 / 0.18)');
+  expect(dark).toContain('--bq-bubble-out-hair: rgb(15 157 148 / 0.32)');
+});

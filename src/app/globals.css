@@ -555,8 +555,8 @@ html[data-brand="C"][data-mode="dark"] {
   --bq-err-text: #ff7b7b;
   --bq-err-soft: rgb(255 123 123 / 0.13);
   --bq-bubble-in: rgb(255 255 255 / 0.045);
-  --bq-bubble-out: rgb(255 255 255 / 0.11);
-  --bq-bubble-out-hair: rgb(255 255 255 / 0.10);
+  --bq-bubble-out: rgb(15 157 148 / 0.18);
+  --bq-bubble-out-hair: rgb(15 157 148 / 0.32);
   --bq-solid-bg: #f1f2f4;
   --bq-solid-fg: #0e0f12;
   --bq-av-l: 0.38;
