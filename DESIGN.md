@@ -21,6 +21,8 @@ consumer_contract:
   asset_rule: Não exigir ativos externos.
   accessibility_rule: Foco visível, nomes acessíveis e teclado.
 colors:
+  synq-brand: "#0F9D94"
+  synq-brand-fg: "#0e0f12"
   wall-a: "#e6e8ec"
   wall-b: "#f4f5f7"
   glow-1: rgb(217 119 87 / 0.16)
@@ -84,6 +86,8 @@ colors:
   on-agent-forced: "#ffffff"
   on-avatar-owner: "#ffffff"
 dark:
+  synq-brand: "#0F9D94"
+  synq-brand-fg: "#0e0f12"
   wall-a: "#08090c"
   wall-b: "#111318"
   glow-1: rgb(255 255 255 / 0.035)

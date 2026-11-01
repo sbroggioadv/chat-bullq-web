@@ -194,8 +194,8 @@ export default function InboxPage() {
           </div>
         ) : (
           <div className="flex flex-1 flex-col items-center justify-center bg-zinc-50 dark:bg-zinc-900/50">
-            <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-zinc-100 dark:bg-zinc-800">
-              <SynqSymbol className="h-10 w-10 text-[var(--bq-t1)]" />
+            <div className="flex h-20 w-20 items-center justify-center rounded-2xl synq-mark">
+              <SynqSymbol className="h-10 w-10" />
             </div>
             <h2 className="mt-4 text-lg font-semibold text-zinc-700 dark:text-zinc-300">
               Synq

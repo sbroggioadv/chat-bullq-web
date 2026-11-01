@@ -61,8 +61,8 @@ export function LoginForm() {
   return (
     <div className="mx-auto w-full max-w-sm space-y-8">
       <div className="space-y-2 text-center">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-primary">
-          <SynqSymbol className="h-6 w-6 text-primary-foreground" />
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl synq-mark">
+          <SynqSymbol className="h-6 w-6" />
         </div>
         <h1 className="text-2xl font-bold tracking-tight">Synq</h1>
         <p className="text-sm text-muted-foreground">
@@ -112,7 +112,7 @@ export function LoginForm() {
         <button
           type="submit"
           disabled={isLoading}
-          className="inline-flex h-10 w-full items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:pointer-events-none disabled:opacity-50"
+          className="inline-flex h-10 w-full items-center justify-center rounded-md bg-primary synq-auth-action px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:pointer-events-none disabled:opacity-50"
         >
           {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Entrar
@@ -121,7 +121,7 @@ export function LoginForm() {
 
       <p className="text-center text-sm text-muted-foreground">
         Não tem conta?{' '}
-        <Link href="/register" className="font-medium text-primary hover:underline">
+        <Link href="/register" className="font-medium text-primary synq-auth-emphasis hover:underline">
           Criar conta
         </Link>
       </p>

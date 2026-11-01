@@ -6,7 +6,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'sonner';
-import { Loader2, MessageSquare, Building2 } from 'lucide-react';
+import { Loader2, Building2 } from 'lucide-react';
+import { SynqSymbol } from '@/components/ui/synq-symbol';
 import { registerSchema, type RegisterFormData } from '../schemas/register.schema';
 import { authService } from '../services/auth.service';
 import { useAuthStore } from '@/stores/auth-store';
@@ -87,7 +88,7 @@ export function RegisterForm() {
   if (inviteLoading) {
     return (
       <div className="mx-auto flex w-full max-w-sm items-center justify-center py-16">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        <Loader2 className="h-6 w-6 animate-spin text-primary synq-auth-emphasis" />
       </div>
     );
   }
@@ -95,8 +96,8 @@ export function RegisterForm() {
   return (
     <div className="mx-auto w-full max-w-sm space-y-8">
       <div className="space-y-2 text-center">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-primary">
-          <MessageSquare className="h-6 w-6 text-primary-foreground" />
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl synq-mark">
+          <SynqSymbol className="h-6 w-6" />
         </div>
         <h1 className="text-2xl font-bold tracking-tight">
           {inviteAccepted
@@ -112,7 +113,7 @@ export function RegisterForm() {
                 ? 'Seu acesso já está liberado em:'
                 : 'Você está criando acesso para:'}
             </p>
-            <div className="inline-flex items-center gap-2 rounded-lg bg-primary/5 px-3 py-1.5 text-sm font-medium text-primary">
+            <div className="inline-flex items-center gap-2 rounded-lg bg-primary/5 synq-auth-badge px-3 py-1.5 text-sm font-medium text-primary synq-auth-emphasis">
               <Building2 className="h-4 w-4" />
               {inviteInfo.organization.name}
             </div>
@@ -132,7 +133,7 @@ export function RegisterForm() {
       {inviteAccepted ? (
         <Link
           href={inviteLoginHref}
-          className="inline-flex h-10 w-full items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+          className="inline-flex h-10 w-full items-center justify-center rounded-md bg-primary synq-auth-action px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
         >
           Entrar e configurar WhatsApp
         </Link>
@@ -220,7 +221,7 @@ export function RegisterForm() {
           <button
             type="submit"
             disabled={isLoading}
-            className="inline-flex h-10 w-full items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:pointer-events-none disabled:opacity-50"
+            className="inline-flex h-10 w-full items-center justify-center rounded-md bg-primary synq-auth-action px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:pointer-events-none disabled:opacity-50"
           >
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {inviteInfo ? 'Criar acesso' : 'Criar conta'}
@@ -233,7 +234,7 @@ export function RegisterForm() {
           Já tem conta?{' '}
           <Link
             href={inviteLoginHref}
-            className="font-medium text-primary hover:underline"
+            className="font-medium text-primary synq-auth-emphasis hover:underline"
           >
             Fazer login
           </Link>

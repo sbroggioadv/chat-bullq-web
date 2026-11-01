@@ -28,6 +28,8 @@
  * preto puro nem flash branco. Esses raws viram defaults aplicados
  * em <html> via tag <html data-brand="A" data-mode="light">. */
 :root {
+  --synq-brand: #0F9D94;
+  --synq-brand-fg: #0e0f12;
   --bg: oklch(0.97 0.003 30);
   --bg-elev: oklch(0.995 0.003 30);
   --surface: oklch(1 0 0);
@@ -1176,7 +1178,7 @@ html[data-mode="light"] { --bq-sender-l: var(--bq-sender-l-light); --bq-sender-c
 .bq-window :focus-visible, .bq-dialog :focus-visible { outline: 2px solid var(--bq-accent); outline-offset: 2px; }
 .bq-rail { background: var(--bq-glass); backdrop-filter: blur(24px) saturate(160%); width: 60px; flex: none; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 12px 0; border-right: 1px solid var(--bq-hair); overflow-y: auto; overflow-x: hidden; transition: width .18s ease; }
 .bq-brand-row { display: flex; align-items: center; gap: 11px; flex: none; }
-.bq-brand { width: 34px; height: 34px; margin-bottom: 10px; border-radius: 10px; display: grid; place-items: center; background: var(--bq-solid-bg); color: var(--bq-solid-fg); font: 600 13px var(--bq-f-display); }
+.bq-brand { width: 34px; height: 34px; margin-bottom: 10px; border-radius: 10px; display: grid; place-items: center; background: var(--synq-brand); color: var(--synq-brand-fg); font: 600 13px var(--bq-f-display); }
 .bq-rail-nav, .bq-rail-footer { display: flex; flex-direction: column; gap: 3px; align-items: center; width: 100%; }
 .bq-rail-footer { margin-top: auto; padding-top: 12px; }
 .bq-rail-item { display: flex; align-items: center; justify-content: center; gap: 11px; width: 40px; min-height: 40px; flex: none; border-radius: 11px; color: var(--bq-t3); transition: background .15s, color .15s; }
@@ -1348,3 +1350,10 @@ html[data-mode="light"] {
 @utility z-bq-settings-save { z-index: var(--bq-layer-settings-save); }
 
 @utility opacity-bq-automation-paused { opacity: var(--bq-opacity-automation-paused); }
+
+/* A identidade Synq é independente dos botões globais do produto. */
+.synq-mark { background-color: var(--synq-brand); color: var(--synq-brand-fg); }
+html[data-mode="dark"] .synq-auth-action { background-color: var(--synq-brand); color: var(--synq-brand-fg); }
+html[data-mode="dark"] .synq-auth-action:hover { background-color: color-mix(in srgb, var(--synq-brand) 90%, transparent); }
+html[data-mode="dark"] .synq-auth-emphasis { color: var(--fg); }
+html[data-mode="dark"] .synq-auth-badge { background-color: color-mix(in srgb, var(--synq-brand) 5%, transparent); }
