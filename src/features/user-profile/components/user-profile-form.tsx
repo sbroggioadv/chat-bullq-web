@@ -35,7 +35,7 @@ function ProfileEditor({ profile }: { profile: ReturnType<typeof useUserProfile>
       <div className={styles.fieldRow}><SettingRow title="Nome completo"><div className={styles.fieldControl}><input aria-label="Nome completo" aria-invalid={Boolean(error)} aria-describedby="profile-name-help" value={name} maxLength={120} onChange={event => setDraft(current => ({ ...current, name: event.target.value }))} /><p id="profile-name-help" className={error ? styles.fieldError : 'sr-only'}>{error ?? `${name.length}/120 caracteres`}</p></div></SettingRow></div>
       <div className={styles.fieldRow}><SettingRow title="E-mail" description="Trocar o e-mail exige verificação. Fale com o suporte."><input aria-label="E-mail" type="email" value={user.email} readOnly /></SettingRow></div>
     </section>
-    <section><h2 className={styles.sectionTitle}>Sessão</h2><div className={styles.block}><SettingRow title="Sair do BullQ" description="Volta para a tela de entrada."><Button className={styles.danger} onClick={logout}>Sair</Button></SettingRow></div></section>
+    <section><h2 className={styles.sectionTitle}>Sessão</h2><div className={styles.block}><SettingRow title="Sair do Synq" description="Volta para a tela de entrada."><Button className={styles.danger} onClick={logout}>Sair</Button></SettingRow></div></section>
     <SettingsSaveBar dirty={dirty} saving={isSaving} disabled={Boolean(error)} onSave={() => void handleSave()} onDiscard={() => setDraft({})} />
   </div>;
 }

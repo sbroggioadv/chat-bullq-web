@@ -7,7 +7,7 @@ const geist = Geist({ subsets: ['latin'], weight: ['300', '400', '500', '600'], 
 const geistMono = Geist_Mono({ subsets: ['latin'], display: 'swap', adjustFontFallback: false, variable: '--font-geist-mono' });
 
 export const metadata: Metadata = {
-  title: 'Chat BullQ',
+  title: 'Synq',
   description: 'Omnichannel customer service platform',
 };
 

@@ -22,5 +22,5 @@ it('usa claro quando o armazenamento está inacessível', () => {
 it('define o título do documento global', () => {
   vi.spyOn(console, 'error').mockImplementation(() => {});
   render(<GlobalError error={new Error()} retry={vi.fn()} />);
-  expect(document.title).toBe('Chat BullQ — erro');
+  expect(document.title).toBe('Synq — erro');
 });

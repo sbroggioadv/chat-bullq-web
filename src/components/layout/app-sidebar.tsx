@@ -1,5 +1,7 @@
 'use client';
 
+import { SynqSymbol } from '@/components/ui/synq-symbol';
+
 import Link from 'next/link';
 import { Avatar } from '@/components/ui/avatar';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -40,7 +42,7 @@ export function AppSidebar() {
   };
   return <aside className="bq-rail" aria-label="Menu principal">
     <a href="#main-content" className="bq-skip">Pular para o conteúdo</a>
-    <Link href="/inbox" prefetch className="bq-brand-row" aria-label="BullQ · Conversas"><span className="bq-brand">Bq</span><span className="bq-rail-label">BullQ</span></Link>
+    <Link href="/inbox" prefetch className="bq-brand-row" aria-label="Synq · Conversas"><span className="bq-brand"><SynqSymbol className="h-6 w-6" /></span><span className="bq-rail-label">Synq</span></Link>
     <nav className="bq-rail-nav" aria-label="Telas">
       <button type="button" className="bq-rail-item" disabled aria-label="Incoming · piloto previsto na W2" title="Incoming · piloto previsto na W2"><ShellIcon name="inbox" /><span className="bq-rail-label">Incoming · em breve</span></button>
       {items.map(({ href, label, icon }) => <Link key={href} href={href} prefetch className="bq-rail-item" aria-label={label} title={label} aria-current={(!pathname.startsWith('/settings') && pathname.startsWith(href) && !(href === '/inbox' && jarvisOpen)) ? 'page' : undefined}><ShellIcon name={icon} /><span className="bq-rail-label">{label}</span></Link>)}

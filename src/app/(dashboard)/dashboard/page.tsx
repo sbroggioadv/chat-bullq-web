@@ -457,7 +457,7 @@ export default function DashboardPage() {
                       );
                       const link = document.createElement("a");
                       link.href = url;
-                      link.download = `bullq-dashboard-${period}d.csv`;
+                      link.download = `synq-dashboard-${period}d.csv`;
                       link.click();
                       URL.revokeObjectURL(url);
                     }}

@@ -3,12 +3,12 @@ import { UserRound as UserCircle, Bell, Sun as Palette, Briefcase as Building2, 
 export const settingsGroups = [
   { label: 'Você', items: [
     { id: 'profile', label: 'Perfil', icon: UserCircle, tone: 'info', description: 'Como você aparece para a equipe.', keywords: 'nome foto email sair sessão login' },
-    { id: 'notifications', label: 'Notificações', icon: Bell, tone: 'error', description: 'Quando e como o BullQ chama a sua atenção.', keywords: 'push alerta sla menção não perturbe silenciar' },
+    { id: 'notifications', label: 'Notificações', icon: Bell, tone: 'error', description: 'Quando e como o Synq chama a sua atenção.', keywords: 'push alerta sla menção não perturbe silenciar' },
     { id: 'appearance', label: 'Aparência', icon: Palette, tone: 'info', description: 'O seu tema e a identidade visual do escritório.', keywords: 'tema escuro claro densidade cor vidro' },
   ]},
   { label: 'Escritório', items: [
     { id: 'general', label: 'Organização', icon: Building2, tone: 'info', description: 'Dados do escritório. Aparecem no menu e nas comunicações.', keywords: 'logo nome identificador plano workspace' },
-    { id: 'members', label: 'Membros e papéis', icon: Users, tone: 'info', description: 'Quem acessa o BullQ e o que cada um pode fazer.', keywords: 'convite equipe atendente administrador proprietário' },
+    { id: 'members', label: 'Membros e papéis', icon: Users, tone: 'info', description: 'Quem acessa o Synq e o que cada um pode fazer.', keywords: 'convite equipe atendente administrador proprietário' },
   ]},
   { label: 'Atendimento', items: [
     { id: 'channels', label: 'Canais', icon: Radio, tone: 'ok', description: 'WhatsApp, Instagram, Gmail e as demais caixas de entrada.', keywords: 'zappfy meta webhook número conectar credenciais' },

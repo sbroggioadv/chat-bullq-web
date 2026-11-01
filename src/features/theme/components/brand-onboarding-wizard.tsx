@@ -57,7 +57,7 @@ export function BrandOnboardingWizard() {
                   Escolha a identidade da sua banca
                 </DialogTitle>
                 <Description className="mt-2 text-sm leading-relaxed text-fg-muted sm:text-base">
-                  Essa decisão define como o BullQ vai aparecer para todos os membros
+                  Essa decisão define como o Synq vai aparecer para todos os membros
                   da sua organização. Você pode mudar depois em{' '}
                   <span className="font-medium text-fg">Configurações &rsaquo; Aparência</span>.
                 </Description>

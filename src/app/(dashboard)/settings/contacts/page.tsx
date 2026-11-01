@@ -48,7 +48,7 @@ export default function ContactsPage() {
       toast.success(
         `${result.enriched} foto${result.enriched === 1 ? '' : 's'} atualizada${result.enriched === 1 ? '' : 's'}`,
         {
-          description: `${result.total} contatos em ${seconds}s. ${rehosted > 0 ? `${rehosted} salvas no BullQ (não expiram). ` : ''}${result.skipped > 0 ? `${result.skipped} sem foto. ` : ''}${result.failed > 0 ? `${result.failed} erros.` : ''}`,
+          description: `${result.total} contatos em ${seconds}s. ${rehosted > 0 ? `${rehosted} salvas no Synq (não expiram). ` : ''}${result.skipped > 0 ? `${result.skipped} sem foto. ` : ''}${result.failed > 0 ? `${result.failed} erros.` : ''}`,
         },
       );
       // Invalida cache de contatos pra re-renderizar com fotos novas
@@ -117,7 +117,7 @@ export default function ContactsPage() {
       {pagination && <div className={styles.listRow}><span className={styles.unavailable}>{pagination.total} contatos · Página {pagination.page} de {pagination.totalPages}</span>{pagination.totalPages > 1 && <div className={styles.rowActions}><Button onClick={() => setPage(p => Math.max(1,p-1))} disabled={page === 1}>Anterior</Button><Button onClick={() => setPage(p => Math.min(pagination.totalPages,p+1))} disabled={page === pagination.totalPages}>Próxima</Button></div>}</div>}
     </section>
     <section><h2 className={styles.sectionTitle}>Fotos e importação</h2><div className={styles.block}>
-      {canSync && <SettingRow title="Buscar as fotos pelo WhatsApp" description="Atualiza e salva as fotos dos contatos no BullQ."><Button onClick={() => setShowSyncConfirm(true)} disabled={syncMutation.isPending || backfillMutation.isPending}><RefreshCw size={13} />{syncMutation.isPending ? 'Sincronizando…' : 'Sincronizar'}</Button></SettingRow>}
+      {canSync && <SettingRow title="Buscar as fotos pelo WhatsApp" description="Atualiza e salva as fotos dos contatos no Synq."><Button onClick={() => setShowSyncConfirm(true)} disabled={syncMutation.isPending || backfillMutation.isPending}><RefreshCw size={13} />{syncMutation.isPending ? 'Sincronizando…' : 'Sincronizar'}</Button></SettingRow>}
       <SettingRow title="Importar contatos" description="Planilha CSV com nome, telefone e e-mail. Ainda não disponível."><Button disabled>Importar</Button></SettingRow>
       {canSync && <SettingRow title="Reprocessar mensagens de bot" description="Recupera conteúdo do histórico que aparece como não suportado."><Button onClick={() => backfillMutation.mutate()} disabled={backfillMutation.isPending || syncMutation.isPending}>{backfillMutation.isPending ? 'Reprocessando…' : 'Reprocessar'}</Button></SettingRow>}
     </div></section>

@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'next/navigation';
 import { useSocket } from '@/features/inbox/hooks/use-socket';
-import { MessageSquare } from 'lucide-react';
+import { SynqSymbol } from '@/components/ui/synq-symbol';
 import { ConversationList } from '@/features/inbox/components/conversation-list';
 import { ChatPanel } from '@/features/inbox/components/chat-panel';
 import { InboxLayout } from '@/features/inbox/components/inbox-layout';
@@ -195,10 +195,10 @@ export default function InboxPage() {
         ) : (
           <div className="flex flex-1 flex-col items-center justify-center bg-zinc-50 dark:bg-zinc-900/50">
             <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-zinc-100 dark:bg-zinc-800">
-              <MessageSquare className="h-10 w-10 text-zinc-300 dark:text-zinc-600" />
+              <SynqSymbol className="h-10 w-10 text-[var(--bq-t1)]" />
             </div>
             <h2 className="mt-4 text-lg font-semibold text-zinc-700 dark:text-zinc-300">
-              Chat BullQ
+              Synq
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
               Selecione uma conversa para começar

@@ -15,7 +15,7 @@ export default function GlobalError({ error, retry }: { error: Error & { digest?
 
   return (
     <html lang="pt-BR" data-brand="A" data-mode={mode}>
-      <head><title>Chat BullQ — erro</title></head>
+      <head><title>Synq — erro</title></head>
       <body style={{ margin: 0, minHeight: '100vh', backgroundColor: mode === 'dark' ? '#141519' : '#ffffff', color: mode === 'dark' ? '#f1f2f4' : '#12141a', fontFamily: 'system-ui, sans-serif' }}>
         <RouteErrorState onRetry={retry} fullViewport />
       </body>

@@ -173,7 +173,7 @@ it("preserva detalhes, link de presas e exportação após reorganizar os painé
   expect(download).toHaveBeenCalledOnce();
   expect(download.mock.instances[0]).toHaveAttribute(
     "download",
-    "bullq-dashboard-30d.csv",
+    "synq-dashboard-30d.csv",
   );
   expect(revokeUrl).toHaveBeenCalledWith("blob:dashboard");
   download.mockRestore();
