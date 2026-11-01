@@ -1142,7 +1142,7 @@ export function ChatPanel({
                                     msg.status === 'FAILED'
                                       ? 'text-[var(--bq-err)]'
                                       : msg.status === 'READ'
-                                        ? 'text-primary'
+                                        ? 'bq-message-read text-primary'
                                         : ''
                                   }`}
                                 />
@@ -1222,7 +1222,7 @@ export function ChatPanel({
                                     msg.status === 'FAILED'
                                       ? 'text-[var(--bq-err)]'
                                       : msg.status === 'READ'
-                                        ? 'text-[var(--bq-info)]'
+                                        ? 'bq-message-read text-[var(--bq-info)]'
                                         : ''
                                   }`}
                                 />

@@ -22,6 +22,7 @@
 .bq-message-bubble { padding: var(--bq-space-row) var(--bq-space-md); border-radius: var(--bq-radius-bubble); background: var(--bq-bubble-in); color: var(--bq-t1); border: var(--bq-border-hairline) solid var(--bq-hair); font-size: var(--bq-text-message); line-height:var(--bq-leading-message); overflow-wrap: anywhere; }
 .bq-message-bubble[data-outbound="true"] { background: var(--bq-bubble-out); border-color: var(--bq-bubble-out-hair); border-top-right-radius: var(--bq-radius-tag); }
 .bq-message-bubble[data-outbound="false"] { border-top-left-radius: var(--bq-radius-tag); }
+html[data-mode="light"] .bq-inbox .bq-message-read { color: var(--bq-info-text); }
 .bq-composer { margin: var(--bq-space-xs) var(--bq-space-lg) var(--bq-space-lg); padding: var(--bq-space-item) var(--bq-space-md) var(--bq-space-sm); border-radius: var(--bq-radius-panel); background: var(--bq-raised); border: var(--bq-border-hairline) solid var(--bq-hair-strong); }
 .bq-composer:focus-within { border-color: var(--bq-accent); box-shadow: 0 0 0 var(--bq-space-xs) var(--bq-accent-soft); }
 .bq-composer textarea { background: transparent; color: var(--bq-t1); }
