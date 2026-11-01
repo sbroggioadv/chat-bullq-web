@@ -19,7 +19,7 @@ const roleLabels: Record<string, { label: string; icon: React.ElementType; color
 export default function SettingsMembersPage() {
   const queryClient = useQueryClient();
   const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteRole, setInviteRole] = useState('AGENT');
+  const [inviteRole, setInviteRole] = useState('ADMIN');
   const [inviting, setInviting] = useState(false);
 
   const orgId = useOrgId();
@@ -85,7 +85,7 @@ export default function SettingsMembersPage() {
   return (
     <div className="space-y-5">
       <section><h2 className={styles.sectionTitle}>Convidar</h2><div className={styles.block}>
-        <SettingRow title="E-mail da pessoa" description="Use Atendente para quem vai conectar e operar o próprio WhatsApp."><div className={styles.inviteControls}>
+        <SettingRow title="E-mail da pessoa" description="Use Administrador para quem vai ter o próprio espaço, com os próprios canais. Atendente só opera os canais liberados."><div className={styles.inviteControls}>
           <input aria-label="E-mail para convite" type="email" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleInvite()} placeholder="nome@escritorio.com.br" />
           <select aria-label="Papel do convidado" value={inviteRole} onChange={e => setInviteRole(e.target.value)}><option value="AGENT">Atendente</option><option value="ADMIN">Administrador</option></select>
           <Button variant="solid" onClick={handleInvite} disabled={!inviteEmail.trim() || inviting}>{inviting ? 'Convidando…' : 'Convidar'}</Button>
