@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useSearchParams } from 'next/navigation';
-import Link from 'next/link';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import { SynqSymbol } from '@/components/ui/synq-symbol';
@@ -120,10 +119,7 @@ export function LoginForm() {
       </form>
 
       <p className="text-center text-sm text-muted-foreground">
-        Não tem conta?{' '}
-        <Link href="/register" className="font-medium text-primary synq-auth-emphasis hover:underline">
-          Criar conta
-        </Link>
+        Cadastro somente por convite.
       </p>
     </div>
   );
