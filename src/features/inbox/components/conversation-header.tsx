@@ -110,7 +110,7 @@ export function ConversationHeader({
                 if (!result.engaged) throw new Error(result.reason || 'Não foi possível engajar a IA');
               }, 'IA engajada — vai responder em segundos')}
             />
-            {conversation.isGroup && <div className="flex items-center justify-between gap-2 text-xs"><span>IA permitida no grupo<br /><small>Só responde a @ ou reply</small></span><Switch label="IA permitida nesse grupo" checked={conversation.aiAllowedInGroup} disabled={allowedMut.isPending} onChange={handleAllowedToggle} /></div>}
+            {conversation.isGroup && <div className="flex items-center justify-between gap-2 text-xs"><span>IA permitida no grupo<br /><small>Responde sozinha a toda mensagem do grupo</small></span><Switch label="IA permitida nesse grupo" checked={conversation.aiAllowedInGroup} disabled={allowedMut.isPending} onChange={handleAllowedToggle} /></div>}
             <AgentPinPopover inline conversation={conversation} onChanged={onUpdate} />
           </div>
         </PopoverPanel></Popover>
