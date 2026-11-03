@@ -532,6 +532,9 @@ export function ChatPanel({
         until: Date.now() + payload.etaMs,
       });
     });
+    const unsubAiRunEnd = on('ai:run:end', (payload: { conversationId?: string }) => {
+      if (payload?.conversationId === conversation.id) setAiTyping(null);
+    });
     // S22 — AI scope-skipped indicator
     const unsubAiScopeSkip = on('ai:scope-skipped', (payload: { reason: string }) => {
       setAiSkip({ reason: payload.reason, until: Date.now() + 30_000 });
@@ -549,6 +552,7 @@ export function ChatPanel({
       unsubReconnect?.();
       unsubRevoked?.();
       unsubAiTyping?.();
+      unsubAiRunEnd?.();
       unsubAiScopeSkip?.();
       unsubAiCadenceSkip?.();
     };

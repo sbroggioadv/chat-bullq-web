@@ -167,3 +167,17 @@ it('mantém o rótulo do anúncio recebido sem transparência', async () => {
   expect(label.className).not.toMatch(/opacity-/);
   client.clear();
 });
+
+it.each(['NO_ACTION', 'REPLIED', 'FAILED'])('encerra indicador de digitação ao receber run:end %s', async (action) => {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  render(<QueryClientProvider client={client}><InboxPage /></QueryClientProvider>);
+  fireEvent.click(await screen.findByText('Contato fixture'));
+  await screen.findByText('Mensagem fixture');
+  await act(async () => { for (const fn of fixture.listeners.get('ai:typing') ?? []) fn({ conversationId: fixture.conversation.id, agentId: 'agent', agentName: 'Orquestrador', etaMs: 60000 }); });
+  expect(screen.getByLabelText(/Orquestrador.*digitando/i)).toBeInTheDocument();
+  await act(async () => { for (const fn of fixture.listeners.get('ai:run:end') ?? []) fn({ conversationId: 'outra', finalAction: action }); });
+  expect(screen.getByLabelText(/Orquestrador.*digitando/i)).toBeInTheDocument();
+  await act(async () => { for (const fn of fixture.listeners.get('ai:run:end') ?? []) fn({ conversationId: fixture.conversation.id, finalAction: action }); });
+  expect(screen.queryByLabelText(/Orquestrador.*digitando/i)).not.toBeInTheDocument();
+  client.clear();
+});
