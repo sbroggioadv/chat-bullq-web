@@ -37,10 +37,9 @@ import {
   type ClickUpWorkbenchResponse,
 } from '@/features/inbox/services/clickup-inbox.service';
 
-function translateSkipReason(reason: string): string {
+export function translateSkipReason(reason: string): string {
   const map: Record<string, string> = {
-    GROUP_NOT_WHITELISTED: 'IA não habilitada nesse grupo',
-    GROUP_NO_MENTION: 'Sem menção @ ou reply',
+    GROUP_AI_OFF: 'IA não ligada nesse grupo',
     ORG_AI_DISABLED: 'IA da org desligada',
     CONV_AI_FORCED_OFF: 'IA forçada OFF nessa conversa',
     NO_AGENT_MATCH: 'Sem agente compatível',
