@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { vi, it, expect } from 'vitest';
 import { ConversationHeader } from './conversation-header';
 import type { Conversation } from '@/features/inbox/services/inbox.service';
+import { toast } from 'sonner';
 
 const mocks = vi.hoisted(() => ({ update: vi.fn(), remove: vi.fn() }));
 vi.mock('@/features/projects/services/projects.service', () => ({ projectsService: { updateByConversation: mocks.update, removeByConversation: mocks.remove } }));
@@ -41,4 +42,42 @@ it('confirma antes de tirar a conversa do projeto', async () => {
   expect(confirm).toHaveBeenCalledWith('Tirar Conversa fictícia do projeto?');
   await waitFor(() => expect(mocks.remove).toHaveBeenCalledWith('c1'));
   confirm.mockRestore();
+});
+
+it('troca somente o tipo do projeto existente e oferece apenas o outro tipo', async () => {
+  const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+  mocks.update.mockReset().mockResolvedValue({});
+  setup({ ...conversation, project: { exists: true, kind: 'PROJECT' } } as Conversation);
+  fireEvent.click(screen.getByRole('button', { name: 'Trocar para mentoria' }));
+  await waitFor(() => expect(mocks.update).toHaveBeenCalledWith('c1', { metadata: { kind: 'MENTORSHIP' } }));
+  expect(screen.queryByRole('button', { name: 'Trocar para projeto' })).not.toBeInTheDocument();
+  confirm.mockRestore();
+});
+
+it('oferece somente projeto quando já é mentoria', () => {
+  setup({ ...conversation, project: { exists: true, kind: 'MENTORSHIP' } } as Conversation);
+  expect(screen.getByRole('button', { name: 'Trocar para projeto' })).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Trocar para mentoria' })).not.toBeInTheDocument();
+});
+
+it('avisa sobre todos os números e informa a quantidade removida para grupo', async () => {
+  const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+  const success = vi.spyOn(toast, 'success');
+  mocks.remove.mockReset().mockResolvedValue({ projectId: 'p1', removedConversations: 2 });
+  setup({ ...conversation, isGroup: true, project: { exists: true, kind: 'PROJECT' } } as Conversation);
+  fireEvent.click(screen.getByRole('button', { name: 'Tirar do projeto' }));
+  expect(confirm).toHaveBeenCalledWith('Tirar o grupo Conversa fictícia do projeto? Ele sai do projeto em todos os seus números.');
+  await waitFor(() => expect(success).toHaveBeenCalledWith('Grupo retirado do projeto (2 conversas).'));
+  confirm.mockRestore(); success.mockRestore();
+});
+
+it('mantém o aviso individual ao remover uma conversa', async () => {
+  const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+  const success = vi.spyOn(toast, 'success');
+  mocks.remove.mockReset().mockResolvedValue({ projectId: 'p1', removedConversations: 1 });
+  setup({ ...conversation, project: { exists: true, kind: 'PROJECT' } } as Conversation);
+  fireEvent.click(screen.getByRole('button', { name: 'Tirar do projeto' }));
+  expect(confirm).toHaveBeenCalledWith('Tirar Conversa fictícia do projeto?');
+  await waitFor(() => expect(success).toHaveBeenCalledWith('Conversa retirada do projeto'));
+  confirm.mockRestore(); success.mockRestore();
 });

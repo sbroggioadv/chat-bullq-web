@@ -46,14 +46,17 @@ export function ConversationHeader({
   const changeProject = async (kind: 'PROJECT' | 'MENTORSHIP' | 'REMOVE') => {
     const name = conversation.contact.name || conversation.contact.phone || 'Desconhecido';
     const type = kind === 'MENTORSHIP' ? 'mentoria' : 'projeto';
-    if (projectLock.current || !window.confirm(kind === 'REMOVE' ? `Tirar ${name} do projeto?` : `Confirmar ${name} como ${type}?`)) return;
+    const confirmation = kind === 'REMOVE'
+      ? conversation.isGroup ? `Tirar o grupo ${name} do projeto? Ele sai do projeto em todos os seus números.` : `Tirar ${name} do projeto?`
+      : `Confirmar ${name} como ${type}?`;
+    if (projectLock.current || !window.confirm(confirmation)) return;
     projectLock.current = true; setProjectBusy(true);
     try {
-      if (kind === 'REMOVE') await projectsService.removeByConversation(conversation.id);
-      else await projectsService.updateByConversation(conversation.id, { name, metadata: { kind } });
+      const removed = kind === 'REMOVE' ? await projectsService.removeByConversation(conversation.id) : undefined;
+      if (kind !== 'REMOVE') await projectsService.updateByConversation(conversation.id, { ...(!conversation.project?.exists && { name }), metadata: { kind } });
       await Promise.all([queryClient.invalidateQueries({ queryKey: ['conversations'] }), queryClient.invalidateQueries({ queryKey: ['project'] }), queryClient.invalidateQueries({ queryKey: ['project-by-conversation', conversation.id] })]);
       onUpdate();
-      toast.success(kind === 'REMOVE' ? 'Conversa retirada do projeto' : `Conversa atualizada como ${type}`);
+      toast.success(kind === 'REMOVE' ? conversation.isGroup && removed ? `Grupo retirado do projeto (${removed.removedConversations} ${removed.removedConversations === 1 ? 'conversa' : 'conversas'}).` : 'Conversa retirada do projeto' : `Conversa atualizada como ${type}`);
     } catch { toast.error('Não foi possível atualizar o projeto.'); }
     finally { projectLock.current = false; setProjectBusy(false); }
   };
@@ -148,8 +151,8 @@ export function ConversationHeader({
               {onToggleAgentLogs && <Button onClick={onToggleAgentLogs}>Logs do agente</Button>}
               <Button disabled={isLoading} onClick={() => handleAction(() => conversation.status === 'CLOSED' ? inboxService.reopenConversation(conversation.id) : inboxService.closeConversation(conversation.id), conversation.status === 'CLOSED' ? 'Conversa reaberta' : 'Conversa encerrada')}>{conversation.status === 'CLOSED' ? 'Reabrir' : 'Encerrar'}</Button>
             </div>
-            <Button disabled={projectBusy} onClick={() => changeProject('PROJECT')}>{conversation.project?.exists ? 'Trocar para projeto' : 'Subir como projeto'}</Button>
-            <Button disabled={projectBusy} onClick={() => changeProject('MENTORSHIP')}>{conversation.project?.exists ? 'Trocar para mentoria' : 'Subir como mentoria'}</Button>
+            {(!conversation.project?.exists || conversation.project.kind === 'MENTORSHIP') && <Button disabled={projectBusy} onClick={() => changeProject('PROJECT')}>{conversation.project?.exists ? 'Trocar para projeto' : 'Subir como projeto'}</Button>}
+            {(!conversation.project?.exists || conversation.project.kind !== 'MENTORSHIP') && <Button disabled={projectBusy} onClick={() => changeProject('MENTORSHIP')}>{conversation.project?.exists ? 'Trocar para mentoria' : 'Subir como mentoria'}</Button>}
             {conversation.project?.exists && <Button disabled={projectBusy} onClick={() => changeProject('REMOVE')}>Tirar do projeto</Button>}
             {onOpenTasks && <Button onClick={onOpenTasks}>Projetos e tasks</Button>}
             <Button onClick={handleSync} disabled={isSyncing}><RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} />Sincronizar mensagens</Button>

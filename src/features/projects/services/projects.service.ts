@@ -123,8 +123,9 @@ export const projectsService = {
     return data.data;
   },
 
-  async removeByConversation(conversationId: string): Promise<void> {
-    await api.delete(`/projects/by-conversation/${conversationId}`);
+  async removeByConversation(conversationId: string): Promise<{ projectId: string; removedConversations: number }> {
+    const { data } = await api.delete<{ data: { projectId: string; removedConversations: number } }>(`/projects/by-conversation/${conversationId}`);
+    return data.data;
   },
 
   async linkConversation(
