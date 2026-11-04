@@ -26,6 +26,7 @@ import {
   Layers,
   FolderKanban,
   Mail,
+  Pin,
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
@@ -51,6 +52,7 @@ import { useOrgId } from '@/hooks/use-org-query-key';
 import { receiveMessage } from '@/features/inbox/hooks/message-cache';
 import { useSocket } from '@/features/inbox/hooks/use-socket';
 import { useAuthStore } from '@/stores/auth-store';
+import { preferencesService } from '@/features/inbox/services/preferences.service';
 import { useInboxPreferences } from '@/features/inbox/hooks/use-inbox-preferences';
 import { ConversationContextMenu } from '@/features/inbox/components/conversation-context-menu';
 import { BulkAiPopover } from '@/features/inbox/components/bulk-ai-popover';
@@ -150,7 +152,6 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
   const [showGroups, setShowGroups] = useState(false);
   const [conversationTab, setConversationTab] = useState<ConversationTab | null>(null);
   const activeTab = conversationTab ?? (viewId ? null : showGroups ? 'all' : 'people');
-  const unavailableTab = activeTab === 'projects' || activeTab === 'mentorships';
   const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null);
   const [selectedSegmentId, setSelectedSegmentId] = useState<string | null>(null);
   const [selectedProjectStatus, setSelectedProjectStatus] = useState('');
@@ -400,16 +401,7 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
     scrollContainerRef.current?.scrollTo({ top: 0 });
   }, [filterKey, debouncedSearch, selectedChannelId, selectedSegmentId, scope, showGroups, tagsKey, activeTab]);
 
-  const {
-    data,
-    isLoading,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  } = useInfiniteQuery({
-    queryKey: ['conversations', orgId, viewId ?? null, filterKey, debouncedSearch, selectedChannelId, selectedSegmentId, scope, currentUserId, activeTab],
-    enabled: !unavailableTab,
-    queryFn: ({ pageParam = 1 }) => {
+  const fetchList = (pageParam: number, pins?: string[]) => {
       const params: Record<string, string> = { limit: '30', page: String(pageParam) };
       if (unreadOnly) params.unread = 'true';
       // archived: dentro de view, só passa quando user explicitamente
@@ -431,7 +423,7 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
         if (selectedProjectStatus) params.projectStatus = selectedProjectStatus;
         if (mineProjects && currentUserId)
           params.responsibleUserId = currentUserId;
-        params.groups = 'only';
+        if (activeTab !== 'projects' && activeTab !== 'mentorships') params.groups = 'only';
       } else {
         // groups: dentro de view, só override se user MARCOU "Grupos"
         // explicitamente (vira 'only' pra forçar). Fora de view, default
@@ -447,9 +439,12 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
         if (activeTab === 'groups') params.groups = 'only';
         if (activeTab === 'people') params.groups = 'exclude';
       }
-      if (activeTab === 'all' || activeTab === 'projects') {
-        if (!selectedSegmentId && !hasProjectFilter) delete params.groups;
+      if (activeTab === 'all' || activeTab === 'projects' || activeTab === 'mentorships') {
+        if (!selectedSegmentId && (!hasProjectFilter || activeTab === 'projects' || activeTab === 'mentorships')) delete params.groups;
       }
+      if (activeTab === 'projects') params.projectKind = 'ANY';
+      if (activeTab === 'mentorships') params.projectKind = 'MENTORSHIP';
+      if (pins) { params.ids = pins.join(','); params.limit = '20'; }
       if (debouncedSearch) params.search = debouncedSearch;
       if (selectedTagIds.length > 0) params.tagIds = selectedTagIds.join(',');
       if (scope === 'MINE' && currentUserId) params.assignedToId = currentUserId;
@@ -457,7 +452,17 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
         return inboxViewsService.getConversations(viewId, params);
       }
       return inboxService.getConversations(params);
-    },
+  };
+
+  const {
+    data,
+    isLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: ['conversations', orgId, viewId ?? null, filterKey, debouncedSearch, selectedChannelId, selectedSegmentId, scope, currentUserId, activeTab],
+    queryFn: ({ pageParam = 1 }) => fetchList(pageParam),
     initialPageParam: 1,
     getNextPageParam: (lastPage) => {
       const { page, totalPages } = lastPage.pagination;
@@ -468,6 +473,18 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
     refetchInterval: connected ? false : 60000,
     staleTime: 15000,
   });
+
+  const { data: userPrefs } = useQuery({ queryKey: ['user-preferences', orgId], queryFn: preferencesService.get, enabled: !!orgId, staleTime: Infinity });
+  const pins = userPrefs?.pinnedConversations ?? [];
+  const pinIds = pins.map((pin) => pin.id);
+  const { data: pinnedData } = useInfiniteQuery({
+    queryKey: ['conversations', orgId, viewId ?? null, filterKey, debouncedSearch, selectedChannelId, selectedSegmentId, scope, currentUserId, activeTab, 'pinned'],
+    queryFn: () => fetchList(1, pinIds),
+    initialPageParam: 1,
+    getNextPageParam: () => undefined,
+    enabled: !!orgId && !viewId && pinIds.length > 0,
+  });
+  useEffect(() => { if (pinIds.length) void queryClient.invalidateQueries({ queryKey: ['conversations', orgId, null, filterKey, debouncedSearch, selectedChannelId, selectedSegmentId, scope, currentUserId, activeTab, 'pinned'], exact: true }); }, [orgId, filterKey, debouncedSearch, selectedChannelId, selectedSegmentId, scope, currentUserId, activeTab, pinIds.join(',')]);
 
   const { data: jarvisDeskConv } = useQuery({
     queryKey: ['jarvis-desk-conversation', orgId],
@@ -482,7 +499,13 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
     staleTime: 30_000,
   });
 
-  const conversations = useMemo(() => unavailableTab ? [] : data?.pages.flatMap(page => page.conversations) ?? [], [data, unavailableTab]);
+  const conversations = useMemo(() => {
+    const pinned = viewId ? [] : (pinnedData?.pages.flatMap((page) => page.conversations) ?? []).filter((row) => pinIds.includes(row.id));
+    const order = new Map(pins.map((pin) => [pin.id, pin.pinnedAt]));
+    pinned.sort((a, b) => (order.get(b.id) ?? '').localeCompare(order.get(a.id) ?? ''));
+    const ids = new Set(pinned.map((row) => row.id));
+    return [...pinned, ...(data?.pages.flatMap((page) => page.conversations) ?? []).filter((row) => !ids.has(row.id))];
+  }, [data, pinnedData, userPrefs, viewId]);
 
   // Total count from the paginated response — same value across pages
   // (it's the count(where) from Postgres). Used to show "Não lidas (N)"
@@ -1348,11 +1371,7 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
 
       {/* Conversation list */}
       <div ref={scrollContainerRef} className="bq-conversation-rows min-h-0 flex-1 overflow-y-auto scrollbar-thin">
-        {unavailableTab ? (
-          <div role="status" className="px-6 py-16 text-center text-sm text-[var(--bq-t3)]">
-            {activeTab === 'projects' ? 'Conversas por projeto' : 'Conversas de mentorias'}: ainda não disponível.
-          </div>
-        ) : isLoading ? (
+        {isLoading ? (
           Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="flex gap-3 px-3 py-3">
               <div className="h-10 w-10 shrink-0 animate-pulse rounded-full bg-[var(--bq-raised)] " />
@@ -1456,6 +1475,7 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
                   <div className="bq-row-main">
                     <div className="flex items-baseline gap-2">
                       <span className="bq-row-name min-w-0 flex-1 truncate" title={conv.contact.name || conv.contact.phone || undefined}>{conv.contact.name || conv.contact.phone || 'Desconhecido'}</span>
+                      {!viewId && pinIds.includes(conv.id) && <Pin aria-label="Conversa fixada" size={14} />}
                       <span className="bq-row-time shrink-0">{formatTime(conv.messages?.[0]?.createdAt ?? conv.lastMessageAt)}</span>
                       <span className="sr-only">{conv.status}</span>
                     </div>

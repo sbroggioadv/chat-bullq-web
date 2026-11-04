@@ -44,6 +44,7 @@ export interface Project {
   status: string | null;
   metadata: Record<string, unknown>;
   exists: boolean;
+  kind?: 'PROJECT' | 'MENTORSHIP';
   conversationIds: string[];
   tasks: ProjectTask[];
   attachments: ProjectAttachment[];
@@ -120,6 +121,10 @@ export const projectsService = {
       payload,
     );
     return data.data;
+  },
+
+  async removeByConversation(conversationId: string): Promise<void> {
+    await api.delete(`/projects/by-conversation/${conversationId}`);
   },
 
   async linkConversation(

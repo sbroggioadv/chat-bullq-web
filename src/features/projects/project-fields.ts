@@ -105,6 +105,7 @@ export const PROJECT_FIELDS: ProjectFieldDef[] = [
     storage: 'column',
     options: PROJECT_STATUSES,
   },
+  { key: 'kind', label: 'Tipo', type: 'select', storage: 'metadata', options: ['PROJECT', 'MENTORSHIP'] },
   {
     key: 'observacoes',
     label: 'Observações',
@@ -120,6 +121,7 @@ export function readField(
   field: ProjectFieldDef,
 ): string {
   if (!project) return '';
+  if (field.key === 'kind') return project.kind ?? 'PROJECT';
   if (field.storage === 'metadata') {
     const v = project.metadata?.[field.key];
     return v == null ? '' : String(v);

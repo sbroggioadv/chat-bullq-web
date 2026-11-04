@@ -24,6 +24,7 @@ export interface InboxPreferences {
 
 export interface UserPreferences {
   inbox?: InboxPreferences;
+  pinnedConversations?: Array<{ id: string; pinnedAt: string }>;
   [key: string]: unknown;
 }
 
@@ -31,6 +32,11 @@ export const preferencesService = {
   async get(): Promise<UserPreferences> {
     const { data } = await api.get('/users/me/preferences');
     return data.data ?? {};
+  },
+
+  async pin(id: string, pinned: boolean): Promise<Array<{ id: string; pinnedAt: string }>> {
+    const { data } = pinned ? await api.put(`/users/me/pinned-conversations/${id}`) : await api.delete(`/users/me/pinned-conversations/${id}`);
+    return data.data;
   },
 
   async patch(patch: Partial<UserPreferences>): Promise<UserPreferences> {

@@ -113,6 +113,12 @@ export function ProjectPanel({ conversationId, onClose, mode = "all" }: ProjectP
     onError: () => toast.error('Não foi possível salvar a tarefa'),
   });
 
+  const kindMutation = useMutation({
+    mutationFn: (kind: string) => projectsService.updateByConversation(conversationId, { metadata: { kind } }),
+    onSuccess: (saved) => { onLinked(saved); },
+    onError: () => toast.error('Não foi possível atualizar o tipo do projeto'),
+  });
+
   const exists = !!project?.exists && !!project.id;
   const tasks = project?.tasks ?? [];
   const pending = tasks.filter((t) => !t.done).length;
@@ -207,19 +213,19 @@ export function ProjectPanel({ conversationId, onClose, mode = "all" }: ProjectP
               {project.attachments?.length ? project.attachments.map(file => <div key={file.id} className="text-xs">{file.url ? <a href={file.url} target="_blank" rel="noreferrer" className="underline">{file.label || file.fileName}</a> : <span>{file.label || file.fileName} · arquivo indisponível</span>}</div>) : <p className="text-xs text-[var(--bq-t3)]">Nenhum anexo. Use “Anexar ao projeto” em uma mensagem.</p>}
             </section>
             {PROJECT_FIELDS.filter(
-              (f) => f.key === 'hoppeId' || f.key === 'responsibleUserId',
+              (f) => f.key === 'hoppeId' || f.key === 'responsibleUserId' || f.key === 'kind',
             ).map((field) => (
               <FieldRow
                 key={field.key}
                 field={field}
                 value={
-                  field.key === 'hoppeId'
+                  field.key === 'kind' ? project.kind ?? 'PROJECT' : field.key === 'hoppeId'
                     ? project.hoppeId ?? ''
                     : project.responsibleUserId ?? ''
                 }
-                onChange={() => undefined}
+                onChange={(value) => { if (field.key === 'kind' && value) kindMutation.mutate(value); }}
                 members={activeMembers}
-                readOnly
+                readOnly={field.key !== 'kind' || kindMutation.isPending}
               />
             ))}
           </>
@@ -319,7 +325,7 @@ function FieldRow({
 }) {
   return (
     <div className="space-y-1.5">
-      <label className={labelCls}>{field.label}</label>
+      <label htmlFor={`project-field-${field.key}`} className={labelCls}>{field.label}</label>
       {field.type === 'textarea' ? (
         <textarea
           className={`${inputCls} min-h-[72px] resize-y`}
@@ -330,6 +336,7 @@ function FieldRow({
         />
       ) : field.type === 'select' ? (
         <select
+          id={`project-field-${field.key}`}
           className={inputCls}
           value={value}
           disabled={readOnly}
@@ -338,12 +345,13 @@ function FieldRow({
           <option value="">—</option>
           {(field.options ?? PROJECT_STATUSES).map((opt) => (
             <option key={opt} value={opt}>
-              {field.key === 'status' ? phaseLabel(opt) : opt}
+              {field.key === 'status' ? phaseLabel(opt) : field.key === 'kind' ? (opt === 'MENTORSHIP' ? 'Mentoria' : 'Projeto') : opt}
             </option>
           ))}
         </select>
       ) : field.type === 'user' ? (
         <select
+          id={`project-field-${field.key}`}
           className={inputCls}
           value={value}
           disabled={readOnly}

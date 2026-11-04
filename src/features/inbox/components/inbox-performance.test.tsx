@@ -10,6 +10,10 @@ import { useAuthStore } from '@/stores/auth-store';
 const fixture = vi.hoisted(() => ({
   listeners: new Map<string, Set<(...args: unknown[]) => void>>(),
   requests: [] as string[],
+  params: [] as Array<Record<string, string>>,
+  noView: false,
+  pins: [] as Array<{ id: string; pinnedAt: string }>,
+  rows: null as null | Array<Record<string, unknown>>,
   confirmSend: null as null | ((value: unknown) => void),
   deferSend: false,
   conversation: { id: 'fixture-conversation', organizationId: 'fixture-org', channelId: 'ch', contactId: 'ct', assignedToId: null, status: 'OPEN', protocol: null, isGroup: false, aiAllowedInGroup: false, lastMessageAt: null, createdAt: '2026-10-27T12:00:00Z', contact: { id: 'ct', name: 'Contato fixture', phone: '000', avatarUrl: null }, channel: { id: 'ch', type: 'WHATSAPP_ZAPPFY', name: 'Fixture' }, assignedTo: null, messages: [], _count: { messages: 1 } },
@@ -19,12 +23,15 @@ vi.mock('@/lib/socket', () => {
   const socket = { connected: true, on: (event: string, fn: (...args: unknown[]) => void) => { if (!fixture.listeners.has(event)) fixture.listeners.set(event, new Set()); fixture.listeners.get(event)!.add(fn); }, off: (event: string, fn: (...args: unknown[]) => void) => fixture.listeners.get(event)?.delete(fn), emit: vi.fn() };
   return { getSocket: () => socket };
 });
-vi.mock('next/navigation', () => ({ useSearchParams: () => new URLSearchParams('view=fixture-view'), useRouter: () => ({ push: vi.fn() }) }));
+vi.mock('next/navigation', () => ({ useSearchParams: () => new URLSearchParams(fixture.noView ? '' : 'view=fixture-view'), useRouter: () => ({ push: vi.fn() }) }));
 vi.mock('@/lib/api', () => ({ api: {
-  get: async (url: string) => {
+  get: async (url: string, options?: { params?: Record<string, string> }) => {
+    if (options?.params) fixture.params.push(options.params);
     fixture.requests.push(`GET ${url}`);
     await new Promise((resolve) => setTimeout(resolve, 20));
-    const value = url.endsWith('/conversations') ? { conversations: [fixture.conversation], pagination: { page: 1, totalPages: 1, total: 1 } } : url === '/messages' ? { messages: [fixture.message], pagination: {} } : url.startsWith('/conversations/') ? fixture.conversation : url === '/users/me/preferences' ? {} : [];
+    const rows = fixture.rows ?? [fixture.conversation];
+    const selected = options?.params?.ids ? rows.filter(row => options.params!.ids.split(',').includes(String(row.id))) : rows;
+    const value = url.endsWith('/conversations') ? { conversations: selected, pagination: { page: 1, totalPages: 1, total: rows.length } } : url === '/messages' ? { messages: [fixture.message], pagination: {} } : url.startsWith('/conversations/') ? fixture.conversation : url === '/users/me/preferences' ? { pinnedConversations: fixture.pins } : [];
     return { data: { data: value } };
   },
   post: async (url: string) => { fixture.requests.push(`POST ${url}`); if (fixture.deferSend && url === '/messages') return new Promise((resolve) => { fixture.confirmSend = resolve; }); return { data: { data: {} } }; },
@@ -38,6 +45,8 @@ vi.mock('./contact-workspace-panel', () => ({ ContactWorkspacePanel: () => null 
 
 beforeEach(() => {
   fixture.requests.length = 0;
+  fixture.params.length = 0;
+  fixture.noView = false; fixture.pins = []; fixture.rows = null;
   useAuthStore.setState({ activeOrgId: 'fixture-org' });
   Element.prototype.scrollIntoView = vi.fn();
   Element.prototype.scrollTo = vi.fn();
@@ -100,23 +109,35 @@ it('mostra texto antes do POST confirmar e troca o id sem duplicar', async () =>
   client.clear();
 });
 
-it('mostra lacunas de Projetos e Mentorias sem listar uma amostra como resultado completo', async () => {
+it('consulta as abas Projetos e Mentorias com os tipos corretos sem forçar grupos', async () => {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: 30_000 } } });
   render(<QueryClientProvider client={client}><InboxPage /></QueryClientProvider>);
   await screen.findByText('Contato fixture');
-  await waitFor(() => expect(client.isFetching()).toBe(0));
-  fixture.requests.length = 0;
   fireEvent.click(screen.getByRole('button', { name: 'Projetos', exact: true }));
-  expect(await screen.findByText('Conversas por projeto: ainda não disponível.')).toBeTruthy();
-  expect(screen.queryByText('Contato fixture')).toBeNull();
+  await waitFor(() => expect(fixture.params.some(p => p.projectKind === 'ANY' && !p.groups)).toBe(true));
   fireEvent.click(screen.getByRole('button', { name: 'Mentorias', exact: true }));
-  expect(await screen.findByText('Conversas de mentorias: ainda não disponível.')).toBeTruthy();
-  expect(fixture.requests.filter((request) => request.includes('/conversations'))).toEqual([]);
-  fireEvent.click(screen.getByRole('button', { name: 'Todas', exact: true }));
-  expect(await screen.findByText('Contato fixture')).toBeTruthy();
+  await waitFor(() => expect(fixture.params.some(p => p.projectKind === 'MENTORSHIP' && !p.groups)).toBe(true));
   client.clear();
 });
 
+
+
+it('fixadas usam consulta por IDs, ordem de fixação, sem repetição e com total preservado', async () => {
+  fixture.noView = true;
+  fixture.rows = [
+    { ...fixture.conversation, id: 'a', contact: { ...fixture.conversation.contact, name: 'Conversa A' } },
+    { ...fixture.conversation, id: 'b', contact: { ...fixture.conversation.contact, name: 'Conversa B' } },
+    { ...fixture.conversation, id: 'c', contact: { ...fixture.conversation.contact, name: 'Conversa C' } },
+  ];
+  fixture.pins = [{ id: 'a', pinnedAt: '2026-11-01' }, { id: 'b', pinnedAt: '2026-11-02' }];
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  render(<QueryClientProvider client={client}><InboxPage /></QueryClientProvider>);
+  await waitFor(() => expect(screen.getAllByLabelText('Conversa fixada')).toHaveLength(2));
+  expect(fixture.params.some(p => p.ids === 'a,b' && p.limit === '20')).toBe(true);
+  await waitFor(() => expect(Array.from(document.querySelectorAll('.bq-row-name')).map(node => node.textContent)).toEqual(['Conversa B', 'Conversa A', 'Conversa C']));
+  expect(document.querySelector('.bq-list-heading')?.textContent).toContain('3');
+  client.clear();
+});
 
 it('deixa o chat interativo a 800 px e só o torna inerte quando o detalhe cobre o chat a 390 px', async () => {
   document.documentElement.style.setProperty('--bq-breakpoint-phone', '560px');

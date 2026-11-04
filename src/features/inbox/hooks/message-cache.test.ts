@@ -169,3 +169,33 @@ it('combina Todas com os filtros da caixa salva sem excluir grupos', () => {
   expect(client.getQueryData<ConversationPages>(key)!.pages[0].conversations).toHaveLength(1);
   client.clear();
 });
+
+it('socket não inclui conversa não fixada na consulta de fixadas', () => {
+  const client = new QueryClient();
+  const normal = ['conversations', 'org', null, '|||ps:|mp:0|t:', '', null, null, 'ALL', 'user', 'all'];
+  const pinned = [...normal, 'pinned'];
+  const row = { id: 'c', organizationId: 'org', unreadCount: 0, contact: {}, messages: [], lastMessageAt: null } as unknown as Conversation;
+  client.setQueryData(['user-preferences', 'org'], { pinnedConversations: [{ id: 'outra', pinnedAt: '2026-11-04' }] });
+  client.setQueryData(normal, { pageParams: [1], pages: [{ conversations: [row], pagination: {} }] });
+  client.setQueryData(pinned, { pageParams: [1], pages: [{ conversations: [], pagination: {} }] });
+  receiveMessage(client, { message });
+  expect(client.getQueryData<ConversationPages>(pinned)!.pages[0].conversations).toHaveLength(0);
+});
+
+it.each([false, true])('socket inclui conversa %s com mentoria nas duas abas e exclui projeto comum de mentorias', (isGroup) => {
+  const client = new QueryClient();
+  const base = ['conversations', 'org', null, '|||ps:|mp:0|t:', '', null, null, 'ALL', 'user'];
+  const all = [...base, 'all'];
+  const projects = [...base, 'projects'];
+  const mentorships = [...base, 'mentorships'];
+  const row = { id: 'c', organizationId: 'org', isGroup, unreadCount: 0, contact: {}, messages: [], project: { exists: true, kind: 'MENTORSHIP' } } as unknown as Conversation;
+  for (const key of [all, projects, mentorships]) client.setQueryData(key, { pageParams: [1], pages: [{ conversations: key === all ? [row] : [], pagination: {} }] });
+  receiveMessage(client, { message });
+  expect(client.getQueryData<ConversationPages>(projects)!.pages[0].conversations).toHaveLength(1);
+  expect(client.getQueryData<ConversationPages>(mentorships)!.pages[0].conversations).toHaveLength(1);
+  const other = { ...row, project: { exists: true, kind: 'PROJECT' } } as Conversation;
+  const client2 = new QueryClient();
+  for (const key of [all, mentorships]) client2.setQueryData(key, { pageParams: [1], pages: [{ conversations: key === all ? [other] : [], pagination: {} }] });
+  receiveMessage(client2, { message });
+  expect(client2.getQueryData<ConversationPages>(mentorships)!.pages[0].conversations).toHaveLength(0);
+});

@@ -3,8 +3,8 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ProjectPanel } from '@/features/inbox/components/project-panel';
 
-const mocks = vi.hoisted(() => ({ get: vi.fn(), add: vi.fn(), update: vi.fn() }));
-vi.mock('@/features/projects/services/projects.service', () => ({ projectsService: { getByConversation: mocks.get, addTask: mocks.add, updateTask: mocks.update, list: vi.fn(async () => []) } }));
+const mocks = vi.hoisted(() => ({ get: vi.fn(), add: vi.fn(), update: vi.fn(), changeKind: vi.fn() }));
+vi.mock('@/features/projects/services/projects.service', () => ({ projectsService: { getByConversation: mocks.get, addTask: mocks.add, updateTask: mocks.update, updateByConversation: mocks.changeKind, list: vi.fn(async () => []) } }));
 vi.mock('@/features/settings/services/members.service', () => ({ membersService: { list: vi.fn(async () => []) } }));
 const project = { id: 'p1', exists: true, name: 'Dossiê de teste', tasks: [{ id: 't1', title: 'Conferir documentos', done: false }], attachments: [] };
 function setup(children: React.ReactNode) {
@@ -32,4 +32,15 @@ it('não permite tarefa sem projeto e indica o vínculo necessário', async () =
   expect(await screen.findByText('Vincule um projeto na seção Projeto para criar tarefas.')).toBeInTheDocument();
   expect(screen.queryByRole('textbox', { name: 'Nova tarefa do projeto' })).not.toBeInTheDocument();
   expect(mocks.add).not.toHaveBeenCalled();
+});
+
+it('exibe e altera o tipo normalizado pelo registro de campos', async () => {
+  const user = userEvent.setup();
+  mocks.get.mockResolvedValue({ ...project, kind: 'MENTORSHIP', metadata: { kind: 'PROJECT' } });
+  mocks.changeKind.mockResolvedValue({ ...project, kind: 'PROJECT' });
+  setup(<ProjectPanel conversationId="c1" onClose={() => {}} mode="profile" />);
+  const field = await screen.findByRole('combobox', { name: 'Tipo' });
+  expect(field).toHaveValue('MENTORSHIP');
+  await user.selectOptions(field, 'PROJECT');
+  expect(mocks.changeKind).toHaveBeenCalledWith('c1', { metadata: { kind: 'PROJECT' } });
 });

@@ -1,5 +1,7 @@
 'use client';
 
+import { isAxiosError } from 'axios';
+import { preferencesService, type UserPreferences } from '@/features/inbox/services/preferences.service';
 import { inboxErrorMessage } from '@/features/inbox/components/inbox-error';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -56,6 +58,22 @@ export function ConversationContextMenu({
   const [archiving, setArchiving] = useState(false);
   const [markingUnread, setMarkingUnread] = useState(false);
   const [renameOpen, setRenameOpen] = useState(false);
+  const [pinning, setPinning] = useState(false);
+  const prefs = queryClient.getQueryData<UserPreferences>(['user-preferences', orgId]);
+  const isPinned = prefs?.pinnedConversations?.some((pin) => pin.id === conversation.id) ?? false;
+  const togglePin = async () => {
+    if (pinning) return;
+    setPinning(true);
+    try {
+      const pins = await preferencesService.pin(conversation.id, !isPinned);
+      queryClient.setQueryData<UserPreferences>(['user-preferences', orgId], (old) => ({ ...old, pinnedConversations: pins }));
+      await queryClient.invalidateQueries({ queryKey: ['conversations'] });
+      onClose();
+    } catch (error) {
+      const code = isAxiosError(error) ? (error.response?.data?.code ?? error.response?.data?.message) : undefined;
+      toast.error(code === 'pin_limit_reached' ? 'Você pode fixar até 20 conversas.' : 'Não foi possível atualizar a conversa fixada.');
+    } finally { setPinning(false); }
+  };
   const isArchived = conversation.isArchived === true;
   const alreadyUnread = (conversation.unreadCount ?? 0) > 0;
 
@@ -302,6 +320,7 @@ export function ConversationContextMenu({
           <div className="px-2.5 py-1.5 text-[11px] font-medium uppercase tracking-wider text-[var(--bq-t3)] ">
             Organizar
           </div>
+          <button disabled={pinning} onClick={togglePin} className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-[13px] hover:bg-[var(--bq-surface)]">{isPinned ? 'Desafixar conversa' : 'Fixar conversa'}</button>
           <button
             onClick={() => setView('inbox-views')}
             className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-[13px] text-[var(--bq-t2)] transition-colors hover:bg-[var(--bq-surface)]  "

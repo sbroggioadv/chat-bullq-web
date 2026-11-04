@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type CSSProperties } from 'react';
+import { useRef, useState, type CSSProperties } from 'react';
 import { Popover, PopoverButton, PopoverPanel } from '@headlessui/react';
 import { mockupAvatarHue } from '@/components/ui/avatar-hue';
 import { useQueryClient } from '@tanstack/react-query';
@@ -12,6 +12,7 @@ import { AgentPinPopover } from '@/features/inbox/components/agent-pin-popover';
 import { Button, FoundationPopover, Switch } from '@/components/ui/foundation';
 import { PipelinePopover } from '@/features/inbox/components/pipeline-popover';
 import { emailDeepLink, inboxService, type Conversation } from '@/features/inbox/services/inbox.service';
+import { projectsService } from '@/features/projects/services/projects.service';
 import { useConversationAiAllowedInGroup } from '@/features/inbox/hooks/use-conversation-ai-allowed-in-group';
 
 interface ConversationHeaderProps {
@@ -40,6 +41,22 @@ export function ConversationHeader({
   const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [projectBusy, setProjectBusy] = useState(false);
+  const projectLock = useRef(false);
+  const changeProject = async (kind: 'PROJECT' | 'MENTORSHIP' | 'REMOVE') => {
+    const name = conversation.contact.name || conversation.contact.phone || 'Desconhecido';
+    const type = kind === 'MENTORSHIP' ? 'mentoria' : 'projeto';
+    if (projectLock.current || !window.confirm(kind === 'REMOVE' ? `Tirar ${name} do projeto?` : `Confirmar ${name} como ${type}?`)) return;
+    projectLock.current = true; setProjectBusy(true);
+    try {
+      if (kind === 'REMOVE') await projectsService.removeByConversation(conversation.id);
+      else await projectsService.updateByConversation(conversation.id, { name, metadata: { kind } });
+      await Promise.all([queryClient.invalidateQueries({ queryKey: ['conversations'] }), queryClient.invalidateQueries({ queryKey: ['project'] }), queryClient.invalidateQueries({ queryKey: ['project-by-conversation', conversation.id] })]);
+      onUpdate();
+      toast.success(kind === 'REMOVE' ? 'Conversa retirada do projeto' : `Conversa atualizada como ${type}`);
+    } catch { toast.error('Não foi possível atualizar o projeto.'); }
+    finally { projectLock.current = false; setProjectBusy(false); }
+  };
   const allowedMut = useConversationAiAllowedInGroup(conversation.id);
 
   const handleAllowedToggle = async (next: boolean) => {
@@ -131,6 +148,9 @@ export function ConversationHeader({
               {onToggleAgentLogs && <Button onClick={onToggleAgentLogs}>Logs do agente</Button>}
               <Button disabled={isLoading} onClick={() => handleAction(() => conversation.status === 'CLOSED' ? inboxService.reopenConversation(conversation.id) : inboxService.closeConversation(conversation.id), conversation.status === 'CLOSED' ? 'Conversa reaberta' : 'Conversa encerrada')}>{conversation.status === 'CLOSED' ? 'Reabrir' : 'Encerrar'}</Button>
             </div>
+            <Button disabled={projectBusy} onClick={() => changeProject('PROJECT')}>{conversation.project?.exists ? 'Trocar para projeto' : 'Subir como projeto'}</Button>
+            <Button disabled={projectBusy} onClick={() => changeProject('MENTORSHIP')}>{conversation.project?.exists ? 'Trocar para mentoria' : 'Subir como mentoria'}</Button>
+            {conversation.project?.exists && <Button disabled={projectBusy} onClick={() => changeProject('REMOVE')}>Tirar do projeto</Button>}
             {onOpenTasks && <Button onClick={onOpenTasks}>Projetos e tasks</Button>}
             <Button onClick={handleSync} disabled={isSyncing}><RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} />Sincronizar mensagens</Button>
             {emailDeepLink(conversation) && <a className="bq-button" href={emailDeepLink(conversation)!}>Abrir no E-mail</a>}

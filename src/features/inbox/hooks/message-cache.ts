@@ -104,7 +104,11 @@ function matchesList(client: QueryClient, key: QueryKey, row: Conversation): boo
   const userId = key[8];
   // Optional suffix keeps the original positional key compatible with saved views.
   const tab = key[9];
-  if (tab === 'mentorships') return false; // No canonical classification yet.
+  if (key[10] === 'pinned') {
+    const prefs = client.getQueryData<{ pinnedConversations?: Array<{ id: string }> }>(['user-preferences', key[1]]);
+    if (!prefs?.pinnedConversations?.some((pin) => pin.id === row.id)) return false;
+  }
+  if (tab === 'mentorships' && (!row.project?.exists || row.project.kind !== 'MENTORSHIP')) return false;
   if (tab === 'projects' && !row.project?.exists) return false;
   if ((unread === 'u' || filters?.unreadOnly) && !(row.unreadCount ?? 0)) return false;
   const archiveMode = archived === 'a' ? 'only' : filters?.archived ?? 'exclude';
@@ -118,7 +122,7 @@ function matchesList(client: QueryClient, key: QueryKey, row: Conversation): boo
     const segment = segments?.find((entry) => entry.id === key[6]);
     if (!segment) return null;
     if (!row.isGroup || !segment.members.some((member) => member.channelId === row.channelId)) return false;
-  } else if (project || mineProjects === 'mp:1') { if (!row.isGroup) return false; }
+  } else if (project || mineProjects === 'mp:1') { if (tab !== 'projects' && tab !== 'mentorships' && !row.isGroup) return false; }
   else {
     if (key[5] && row.channelId !== key[5]) return false;
     if (tab === 'people' && row.isGroup || tab === 'groups' && !row.isGroup) return false;
