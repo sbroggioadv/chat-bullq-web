@@ -24,6 +24,22 @@ beforeEach(() => {
   mocks.viewList.mockResolvedValue(page);
 });
 
+it('envia projectKind MENTORSHIP ao serviço de caixas salvas na aba Mentorias', async () => {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  render(<QueryClientProvider client={client}><ConversationList activeId={null} onSelect={() => {}} viewId="view-1" /></QueryClientProvider>);
+  await waitFor(() => expect(mocks.viewList).toHaveBeenCalled());
+  mocks.viewList.mockClear();
+
+  fireEvent.click(screen.getByRole('button', { name: 'Mentorias' }));
+
+  await waitFor(() => expect(mocks.viewList).toHaveBeenCalledWith(
+    'view-1',
+    expect.objectContaining({ projectKind: 'MENTORSHIP' }),
+  ));
+  expect(mocks.list).not.toHaveBeenCalled();
+  client.clear();
+});
+
 it.each([undefined, 'view-1'])('filtra projetos e mentorias e mantém cache separado (view=%s)', async (viewId) => {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(<QueryClientProvider client={client}><ConversationList activeId={null} onSelect={() => {}} viewId={viewId} /></QueryClientProvider>);

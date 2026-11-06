@@ -668,7 +668,7 @@ export function AgentSkillsAndTools({ agentId }: { agentId: string }) {
           })}
           {(skills ?? []).length === 0 && (
             <p className="px-2 py-3 text-center text-xs text-zinc-400">
-              Nenhuma skill cadastrada. Crie em Synq Agent &gt; Skills.
+              Nenhuma skill cadastrada. Crie em Agentes &gt; Skills.
             </p>
           )}
         </div>
