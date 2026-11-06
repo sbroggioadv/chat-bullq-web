@@ -133,6 +133,7 @@ interface ConversationListProps {
 export function ConversationList({ activeId, onSelect, viewId }: ConversationListProps) {
   const { data: savedViews = [] } = useQuery({ queryKey: ['inbox-views'], queryFn: () => inboxViewsService.list(), staleTime: 60_000 });
   const responseView = savedViews.find(view => view.filters.lastDirection === 'inbound');
+  const responseViewActive = !!responseView && viewId === responseView.id;
   const router = useRouter();
   const navigation = useSearchParams();
   const navigationKey = new URLSearchParams(Array.from(navigation.entries()).filter(([key]) => ['box', 'kind', 'channel', 'tag'].includes(key))).toString();
@@ -1230,7 +1231,7 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
 
       <div onClickCapture={clearTreeSelection} className="bq-list-chips">
         <button type="button" className="bq-button" aria-pressed={unreadOnly} onClick={() => toggleListFilter('unread')}>Não lidas</button>
-        <button type="button" className="bq-button" disabled={!responseView} title={responseView ? 'Abrir caixa de mensagens sem resposta' : 'Configure uma caixa com última mensagem recebida'} onClick={() => responseView && router.push(`/inbox?view=${responseView.id}`)}>Sem resposta</button>
+        <button type="button" className="bq-button" aria-pressed={responseViewActive} disabled={!responseView} title={responseView ? 'Abrir caixa de mensagens sem resposta' : 'Configure uma caixa com última mensagem recebida'} onClick={() => responseView && router.push(responseViewActive ? '/inbox' : `/inbox?view=${responseView.id}`)}>Sem resposta</button>
         <button type="button" className="bq-button" aria-pressed={scope === 'MINE'} disabled={!currentUserId} onClick={() => handleScopeChange(scope === 'MINE' ? 'ALL' : 'MINE')}>Minhas</button>
       </div>
 

@@ -114,7 +114,7 @@ html[data-mode="light"] .bq-inbox .bq-message-read { color: var(--bq-info-text);
 .bq-list-segments { padding:var(--bq-space-micro) var(--bq-space-section) var(--bq-space-sm); overflow:visible; }
 .bq-list-segments .bq-segments { width:var(--bq-size-100percent); }
 .bq-list-segments button { flex:1 1 0; min-width:0; padding:0 var(--bq-space-xs); font-size:var(--bq-text-auxiliary); font-weight:var(--bq-weight-medium); display:inline-flex; align-items:center; justify-content:center; gap:var(--bq-space-compact); }
-.bq-list-chips .bq-button[aria-pressed="true"] { color:var(--bq-t1); background:var(--bq-win-solid); }
+.bq-list-chips .bq-button[aria-pressed="true"] { color:var(--bq-solid-fg); background:var(--bq-solid-bg); border-color:transparent; }
 .bq-conversation-row { display:grid; grid-template-columns:var(--bq-size-avatar-row) minmax(0,1fr); gap:var(--bq-space-panel); padding:var(--bq-space-item); }
 .bq-conversation-row > :first-child { align-self:start; }
 .bq-conversation-row[data-selected="true"] { background:var(--bq-raised-2); box-shadow:inset 0 0 0 var(--bq-space-hairline) var(--bq-hair); }
