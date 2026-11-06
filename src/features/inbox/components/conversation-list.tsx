@@ -1231,7 +1231,7 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
 
       <div onClickCapture={clearTreeSelection} className="bq-list-chips">
         <button type="button" className="bq-button" aria-pressed={unreadOnly} onClick={() => toggleListFilter('unread')}>Não lidas</button>
-        <button type="button" className="bq-button" aria-pressed={responseViewActive} disabled={!responseView} title={responseView ? 'Abrir caixa de mensagens sem resposta' : 'Configure uma caixa com última mensagem recebida'} onClick={() => responseView && router.push(responseViewActive ? '/inbox' : `/inbox?view=${responseView.id}`)}>Sem resposta</button>
+        <button type="button" className="bq-button" aria-pressed={responseViewActive} disabled={!responseView} title={!responseView ? 'Configure uma caixa com última mensagem recebida' : responseViewActive ? 'Voltar para a caixa de entrada' : 'Abrir caixa de mensagens sem resposta'} onClick={() => responseView && router.push(responseViewActive ? '/inbox' : `/inbox?view=${responseView.id}`)}>Sem resposta</button>
         <button type="button" className="bq-button" aria-pressed={scope === 'MINE'} disabled={!currentUserId} onClick={() => handleScopeChange(scope === 'MINE' ? 'ALL' : 'MINE')}>Minhas</button>
       </div>
 

@@ -514,7 +514,7 @@ html[data-brand="C"][data-mode="dark"] {
   }
 }
 
-/* SPEC-010: literal mockup tokens, namespaced to preserve existing brand settings. */
+/* SPEC-010: mockup tokens, namespaced to preserve existing brand settings. Dark surface values swapped to neutral black on 2026-11-06 by Doc decision (see DESIGN.md §2). */
 :root {
   --bq-wall-a: #000000;
   --bq-wall-b: #0e0e0e;

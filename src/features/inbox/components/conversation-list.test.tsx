@@ -112,6 +112,7 @@ it('marca Sem resposta quando a caixa aberta é a de última mensagem recebida e
   mocks.views.mockResolvedValue([responseView]);
   const client = renderList('view-resp');
   await waitFor(() => expect(chip('Sem resposta')).toHaveAttribute('aria-pressed', 'true'));
+  expect(chip('Sem resposta')).toHaveAttribute('title', 'Voltar para a caixa de entrada');
   expect(chip('Não lidas')).toHaveAttribute('aria-pressed', 'false');
   expect(chip('Minhas')).toHaveAttribute('aria-pressed', 'false');
 
@@ -125,6 +126,7 @@ it.each([undefined, 'view-outra'])('não marca Sem resposta fora da caixa de úl
   const client = renderList(viewId);
   await waitFor(() => expect(chip('Sem resposta')).toBeEnabled());
   expect(chip('Sem resposta')).toHaveAttribute('aria-pressed', 'false');
+  expect(chip('Sem resposta')).toHaveAttribute('title', 'Abrir caixa de mensagens sem resposta');
 
   fireEvent.click(chip('Sem resposta'));
   expect(mocks.push).toHaveBeenCalledWith('/inbox?view=view-resp');
@@ -136,5 +138,6 @@ it('deixa Sem resposta desligado e sem navegação quando não existe a caixa', 
   await waitFor(() => expect(mocks.list).toHaveBeenCalled());
   expect(chip('Sem resposta')).toBeDisabled();
   expect(chip('Sem resposta')).toHaveAttribute('aria-pressed', 'false');
+  expect(chip('Sem resposta')).toHaveAttribute('title', 'Configure uma caixa com última mensagem recebida');
   client.clear();
 });
