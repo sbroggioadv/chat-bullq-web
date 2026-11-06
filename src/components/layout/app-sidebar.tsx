@@ -37,7 +37,7 @@ export function AppSidebar() {
     if (opening) return;
     setOpening(true);
     try { const desk = await jarvisDeskService.open(); router.push(`/inbox?conversationId=${desk.conversationId}&jarvis=1`); }
-    catch (error) { toast.error(error instanceof Error ? error.message : 'Não abriu o canal do Jarvis'); }
+    catch (error) { toast.error(error instanceof Error ? error.message : 'Não abriu o canal do Synq Agent'); }
     finally { setOpening(false); }
   };
   return <aside className="bq-rail" aria-label="Menu principal">
@@ -46,7 +46,7 @@ export function AppSidebar() {
     <nav className="bq-rail-nav" aria-label="Telas">
       <button type="button" className="bq-rail-item" disabled aria-label="Incoming · piloto previsto na W2" title="Incoming · piloto previsto na W2"><ShellIcon name="inbox" /><span className="bq-rail-label">Incoming · em breve</span></button>
       {items.map(({ href, label, icon }) => <Link key={href} href={href} prefetch className="bq-rail-item" aria-label={label} title={label} aria-current={(!pathname.startsWith('/settings') && pathname.startsWith(href) && !(href === '/inbox' && jarvisOpen)) ? 'page' : undefined}><ShellIcon name={icon} /><span className="bq-rail-label">{label}</span></Link>)}
-      <button type="button" className="bq-rail-item" onClick={openJarvis} disabled={opening} aria-current={pathname === '/inbox' && jarvisOpen ? 'page' : undefined} aria-label="Falar com o Jarvis" title="Falar com o Jarvis"><ShellIcon name="spark" /><span className="bq-rail-label">{opening ? 'Abrindo…' : 'Jarvis'}</span></button>
+      <button type="button" className="bq-rail-item" onClick={openJarvis} disabled={opening} aria-current={pathname === '/inbox' && jarvisOpen ? 'page' : undefined} aria-label="Falar com o Synq Agent" title="Falar com o Synq Agent"><ShellIcon name="spark" /><span className="bq-rail-label">{opening ? 'Abrindo…' : 'Synq Agent'}</span></button>
       <Link href="/ai-agents" prefetch className="bq-rail-item" aria-label="Agentes" title="Agentes" aria-current={pathname.startsWith('/ai-agents') ? 'page' : undefined}><ShellIcon name="bot" /><span className="bq-rail-label">Agentes</span></Link>
       <Link href="/dashboard" prefetch className="bq-rail-item" aria-label="Dashboard" title="Dashboard" aria-current={pathname === '/dashboard' ? 'page' : undefined}><ShellIcon name="grid" /><span className="bq-rail-label">Dashboard</span></Link>
     </nav>

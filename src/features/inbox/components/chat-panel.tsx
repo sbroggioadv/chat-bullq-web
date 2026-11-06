@@ -737,7 +737,7 @@ export function ChatPanel({
       }
       if (conversation.channel.type === 'JARVIS') {
         setAiTyping({
-          agentName: 'Jarvis',
+          agentName: 'Synq Agent',
           etaMs: 25_000,
           until: Date.now() + 25_000,
         });

@@ -17,8 +17,8 @@ export const settingsGroups = [
     { id: 'tags', label: 'Tags', icon: Tags, tone: 'agent', description: 'Etiquetas coloridas para organizar conversas e contatos.', keywords: 'etiquetas cores' },
     { id: 'contacts', label: 'Contatos', icon: BookUser, tone: 'warn', description: 'Todos os contatos que já falaram com o escritório.', keywords: 'lista fotos sincronizar importar' },
   ]},
-  { label: 'Jarvis e IA', items: [
-    { id: 'ai', label: 'Comportamento do Jarvis', icon: Sparkles, tone: 'agent', description: 'Quando o Jarvis atende, o que ele sabe e quanto pode gastar.', keywords: 'inteligência desligar horário contexto tokens domínios' },
+  { label: 'Synq Agent e IA', items: [
+    { id: 'ai', label: 'Comportamento do Synq Agent', icon: Sparkles, tone: 'agent', description: 'Quando o Synq Agent atende, o que ele sabe e quanto pode gastar.', keywords: 'inteligência desligar horário contexto tokens domínios' },
     { id: 'incoming', label: 'Incoming', icon: Inbox, tone: 'warn', description: 'O que vira demanda no Incoming.', keywords: 'pessoas grupos contrato documento reunião' },
     { id: 'watchdog', label: 'Conversas presas', icon: Clock, tone: 'error', description: 'Reativa conversas em que a IA travou ou ninguém respondeu.', keywords: 'watchdog abandonou reativar' },
     { id: 'ai-credentials', label: 'Credenciais de IA', icon: KeyRound, tone: 'neutral', description: 'As chaves de cada provedor de IA e quem usa qual.', keywords: 'api key provedor fugu qwen claude openai whisper embeddings' },

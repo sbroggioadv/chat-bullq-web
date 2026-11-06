@@ -109,12 +109,12 @@ function AgentsHeader({
               `/inbox?conversationId=${desk.conversationId}&jarvis=1`,
             );
           } catch {
-            toast.error('Não foi possível abrir o Jarvis');
+            toast.error('Não foi possível abrir o Synq Agent');
           }
         }}
       >
         <MessageSquare size={14} />
-        Conversar com o Jarvis
+        Conversar com o Synq Agent
       </Button>
       <Button variant="solid" onClick={onCreate}>
         <Plus size={14} />

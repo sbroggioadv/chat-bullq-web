@@ -123,7 +123,7 @@ it('mantém um único título e ações enquanto URL/conteúdo suspendem, com es
   expect(screen.getAllByRole('heading', { name: 'Agentes' })).toHaveLength(1);
   expect(screen.getByRole('button', { name: 'Novo agente' })).toBeVisible();
   expect(
-    screen.getByRole('button', { name: 'Conversar com o Jarvis' }),
+    screen.getByRole('button', { name: 'Conversar com o Synq Agent' }),
   ).toBeVisible();
   expect(
     screen.getByRole('status', { name: 'Carregando página' }),
@@ -136,7 +136,7 @@ it('mantém os dois botões e os controles reais de período no cabeçalho da vi
   open('overview');
   const header = within(screen.getByRole('banner'));
   expect(header.getByRole('heading', { level: 1, name: 'Agentes' })).toBeVisible();
-  expect(header.getByRole('button', { name: 'Conversar com o Jarvis' })).toBeVisible();
+  expect(header.getByRole('button', { name: 'Conversar com o Synq Agent' })).toBeVisible();
   expect(header.getByRole('button', { name: 'Novo agente' })).toBeVisible();
   expect(header.getByRole('button', { name: 'Tokens, limites e latência' })).toBeVisible();
   const period = header.getByRole('combobox', { name: 'Período das execuções' });
@@ -149,7 +149,7 @@ it('mantém os dois botões e os controles reais de período no cabeçalho da vi
 it('mantém as ações sem controles do resumo em outra aba', () => {
   open('skills');
   const header = within(screen.getByRole('banner'));
-  expect(header.getByRole('button', { name: 'Conversar com o Jarvis' })).toBeVisible();
+  expect(header.getByRole('button', { name: 'Conversar com o Synq Agent' })).toBeVisible();
   expect(header.getByRole('button', { name: 'Novo agente' })).toBeVisible();
   expect(header.queryByRole('combobox', { name: 'Período das execuções' })).not.toBeInTheDocument();
 });
@@ -166,5 +166,5 @@ it('preserva a página individual sem o cabeçalho da visão geral', () => {
   ).not.toBeInTheDocument();
   expect(screen.queryByRole('combobox', { name: 'Período das execuções' })).not.toBeInTheDocument();
   expect(screen.queryByRole('button', { name: 'Novo agente' })).not.toBeInTheDocument();
-  expect(screen.queryByRole('button', { name: 'Conversar com o Jarvis' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Conversar com o Synq Agent' })).not.toBeInTheDocument();
 });

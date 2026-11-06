@@ -7,7 +7,7 @@ vi.mock('next/link', () => ({ default: ({ children, href, ...props }: {children:
 afterEach(cleanup);
 describe('navegação de Configurações', () => {
   it('preserva as treze rotas e agrupa em cinco seções', () => {
-    expect(settingsGroups.map(group => group.label)).toEqual(['Você','Escritório','Atendimento','Jarvis e IA','Integrações']);
+    expect(settingsGroups.map(group => group.label)).toEqual(['Você','Escritório','Atendimento','Synq Agent e IA','Integrações']);
     for (const id of ['channels','segments','general','profile','appearance','ai','ai-credentials','members','contacts','tags','notifications','api-keys','quick-replies']) expect(settingsItems.some(item => item.id === id)).toBe(true);
   });
   it('destaca a seção nas subrotas e oferece voltar para a lista', () => {

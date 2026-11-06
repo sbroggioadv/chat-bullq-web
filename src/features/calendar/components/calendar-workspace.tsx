@@ -1226,7 +1226,7 @@ export function CalendarWorkspace() {
                 </div>
               )}
               <p className="mt-bq-space-row border-t border-[var(--bq-hair)] pt-bq-space-row text-xs text-[var(--bq-t3)]">
-                Sugestões do Jarvis e avisos na conversa ainda não disponíveis.
+                Sugestões do Synq Agent e avisos na conversa ainda não disponíveis.
               </p>
             </>
           )}

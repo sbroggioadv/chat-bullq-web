@@ -92,7 +92,7 @@ export default function AutomationsPage() {
                   className="inline"
                   aria-label="ícone de IA"
                 />{" "}
-                usam o Jarvis.
+                usam o Synq Agent.
               </p>
             </div>
           </div>

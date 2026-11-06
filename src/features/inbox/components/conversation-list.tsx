@@ -892,7 +892,7 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
     // dos nomes longos não funciona porque o flex item assume o
     // intrinsic content-width como mínimo.
     <div className="flex h-full w-full min-w-0 flex-col border-r border-[var(--bq-hair)] bg-[var(--bq-win-solid)]  ">
-      <div className="bq-list-heading"><h1>Conversas</h1><span className="text-[11px] font-normal text-[var(--bq-t3)]">{data?.pages[0]?.pagination.total ?? '—'}</span>{jarvisDeskConv && <button type="button" className="bq-button ml-auto" aria-label="Abrir conversa com Jarvis" title="Abrir conversa com Jarvis" onClick={() => onSelect(jarvisDeskConv)}><MessageSquare size={14} /></button>}</div>
+      <div className="bq-list-heading"><h1>Conversas</h1><span className="text-[11px] font-normal text-[var(--bq-t3)]">{data?.pages[0]?.pagination.total ?? '—'}</span>{jarvisDeskConv && <button type="button" className="bq-button ml-auto" aria-label="Abrir conversa com o Synq Agent" title="Abrir conversa com o Synq Agent" onClick={() => onSelect(jarvisDeskConv)}><MessageSquare size={14} /></button>}</div>
       {/* Search + Filter */}
       <div onClickCapture={clearTreeSelection} onChangeCapture={clearTreeSelection} className="bq-list-search flex items-center gap-1.5">
         <div className="group relative flex-1">
@@ -1125,8 +1125,6 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
       </div>
 
       <div onClickCapture={clearTreeSelection} className="bq-list-segments"><SegmentedControl<ConversationTab> label="Tipo de conversa" value={conversationTab ?? (showGroups ? 'all' : 'people')} onChange={(tab) => { setConversationTab(tab); clearSelection(); }} options={[{value:'all',label:'Todas'}, {value:'people',label:'Pessoas'}, {value:'groups',label:'Grupos'}, {value:'projects',label:'Projetos'}, {value:'mentorships',label:'Mentorias'}]} /></div>
-      {conversationTab === 'projects' && <p className="px-3 pb-2 text-[11px] text-[var(--bq-t3)]">Listagem completa de conversas com projeto ainda não disponível. Acesse Projetos no menu ou use os filtros de status e responsável em Todas.</p>}
-      {conversationTab === 'mentorships' && <p className="p-3 text-xs text-[var(--bq-t3)]">Classificação de mentorias ainda não disponível. Use as caixas e tags configuradas para encontrar suas conversas.</p>}
       {/* Channel selector — hidden when an inbox view is active, since the
           view already pins the channel(s) via its saved filters. Letting
           the user override here would just confuse the result. */}
@@ -1387,7 +1385,11 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
               <MessageSquare className="h-6 w-6 text-[var(--bq-t3)] " />
             </div>
             <p className="mt-3 text-[13px] font-medium text-[var(--bq-t3)] ">
-              Nenhuma conversa encontrada
+              {activeTab === 'mentorships'
+                ? 'Nenhuma conversa de mentoria. Marque o projeto da conversa como Mentoria no cabeçalho.'
+                : activeTab === 'projects'
+                  ? 'Nenhuma conversa com projeto. Vincule um projeto à conversa no cabeçalho.'
+                  : 'Nenhuma conversa encontrada'}
             </p>
             {(activeFilterCount > 0 || search) && (
               <button

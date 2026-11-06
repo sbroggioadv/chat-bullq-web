@@ -118,7 +118,7 @@ export default function InboxPage() {
         toast.error(
           err instanceof Error
             ? err.message
-            : 'Não abriu a conversa do Jarvis',
+            : 'Não abriu a conversa do Synq Agent',
         );
       });
     return () => {

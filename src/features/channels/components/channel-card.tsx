@@ -35,7 +35,7 @@ const channelTypeMap: Record<string, { label: string; icon: React.ElementType }>
   WHATSAPP_OFFICIAL: { label: 'WhatsApp Official', icon: MessageCircle },
   INSTAGRAM: { label: 'Instagram', icon: Instagram },
   GMAIL: { label: 'Gmail', icon: Mail },
-  JARVIS: { label: 'Jarvis (interno)', icon: Sparkles },
+  JARVIS: { label: 'Synq Agent (interno)', icon: Sparkles },
 };
 
 interface ChannelCardProps {
