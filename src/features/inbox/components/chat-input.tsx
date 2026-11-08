@@ -1,5 +1,6 @@
 'use client';
 
+import { SendChannelMenu } from '@/features/inbox/components/contact-panel/send-channel-menu';
 import { inboxErrorMessage } from '@/features/inbox/components/inbox-error';
 
 import { useState, useRef, useCallback, useEffect, forwardRef, useImperativeHandle } from 'react';
@@ -12,7 +13,6 @@ import {
   Loader2,
   ImageIcon,
   FileText,
-  FileArchive,
   Video,
   Music,
   Contact,
@@ -642,12 +642,9 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
           </button>
         )}
         <span className="flex-1" />
-        <Popover><PopoverButton className="bq-button" aria-label="Opções de envio"><span className="bq-composer-via"><span>Enviar por {channelName || 'este canal'}</span>⌄</span></PopoverButton><PopoverPanel anchor="top end" className="bq-popover">
-          <div className="flex max-w-64 flex-col gap-2 p-2 text-xs">
-            <p>Canal desta conversa: {channelName || 'atual'}. Troca de canal ainda não disponível.</p>
-            {canShareContact && <button type="button" className="bq-button" disabled={disabled || !!pendingAttachment} onClick={() => setShareContactOpen(true)}><Contact size={14} /> Compartilhar contato</button>}
-          </div>
-        </PopoverPanel></Popover>
+        <SendChannelMenu conversationId={conversationId} channelName={channelName} disabled={!!pendingAttachment || isSending || isSendingAttachment}>
+          {canShareContact && <button type="button" className="bq-button" disabled={disabled || !!pendingAttachment} onClick={() => setShareContactOpen(true)}><Contact size={14} /> Compartilhar contato</button>}
+        </SendChannelMenu>
         {pendingAttachment ? (
           <button
             onClick={handleSendAttachment}

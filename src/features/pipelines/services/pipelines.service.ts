@@ -103,6 +103,8 @@ export interface CreateCardInput {
 }
 
 export interface ConversationCard {
+  value?: string | number | null;
+  currency?: string;
   id: string;
   pipelineId: string;
   stageId: string;

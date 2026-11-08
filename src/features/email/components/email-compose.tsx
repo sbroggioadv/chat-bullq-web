@@ -17,14 +17,16 @@ import {
 
 export function EmailCompose({
   channelId,
+  initialTo = "",
   onClose,
   onSent,
 }: {
   channelId: string;
+  initialTo?: string;
   onClose: () => void;
   onSent: () => void;
 }) {
-  const [to, setTo] = useState("");
+  const [to, setTo] = useState(initialTo);
   const [cc, setCc] = useState("");
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
