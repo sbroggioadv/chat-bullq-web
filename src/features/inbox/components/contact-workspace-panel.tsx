@@ -9,9 +9,7 @@ import {
   CalendarDays,
   Phone,
   Copy,
-  BellOff,
   ExternalLink,
-  Search,
   Sparkles,
   ClipboardList,
   FolderKanban,
@@ -25,7 +23,7 @@ import {
   KanbanSquare,
   type LucideIcon,
 } from 'lucide-react';
-import { Button, Pill, Switch } from '@/components/ui/foundation';
+import { Button, Pill } from '@/components/ui/foundation';
 import { PipelinePopover } from '@/features/inbox/components/pipeline-popover';
 import { pipelinesService, type ConversationCard } from '@/features/pipelines/services/pipelines.service';
 import { ClickUpPanel } from '@/features/inbox/components/clickup-panel';
@@ -41,6 +39,13 @@ import {
 import { calendarService } from '@/features/calendar/services/calendar.service';
 import { rememberRecipients } from '@/features/email/lib/recent-recipients';
 import { EmailRichEditor } from '@/features/email/components/email-rich-editor';
+import { MuteButton } from '@/features/inbox/components/contact-panel/mute-button';
+import { NotesSection } from '@/features/inbox/components/contact-panel/notes-section';
+import { NegotiationJourney } from '@/features/inbox/components/contact-panel/negotiation-journey';
+import { ConversationSearch } from '@/features/inbox/components/contact-panel/conversation-search';
+import { SummarySection } from '@/features/inbox/components/contact-panel/summary-section';
+import { AttachmentsSection } from '@/features/inbox/components/contact-panel/attachments-section';
+import { MeetingsHistory } from '@/features/inbox/components/contact-panel/meetings-history';
 
 type Tab = 'tasks' | 'summary' | 'files' | 'notes' | 'negotiation' | 'contact' | 'email' | 'agenda' | 'project' | 'clickup';
 
@@ -48,6 +53,8 @@ interface ContactWorkspacePanelProps {
   conversation: Conversation;
   onClose: () => void;
   initialSection?: 'tasks';
+  /** Salta até uma mensagem da conversa (usado pela busca). Rejeita se a conversa ainda não carregou. */
+  onJumpToMessage?: (messageId: string) => Promise<void>;
 }
 
 /**
@@ -58,6 +65,7 @@ export function ContactWorkspacePanel({
   conversation,
   onClose,
   initialSection,
+  onJumpToMessage,
 }: ContactWorkspacePanelProps) {
   const isGroup = conversation.isGroup;
   const [openSections, setOpenSections] = useState<Set<Tab>>(() => new Set<Tab>(initialSection ? ['summary', 'negotiation', initialSection] : ['summary', 'negotiation']));
@@ -104,21 +112,20 @@ export function ContactWorkspacePanel({
         <div className="bq-contact-quick-actions">
           {contact.phone && !contact.phone.includes('@') ? <a href={`tel:${contact.phone}`}><span><Phone size={15} /></span>Ligar</a> : <button type="button" disabled title="Telefone não informado"><span><Phone size={15} /></span>Ligar</button>}
           <button type="button" disabled={!contact.phone && !contactEmail} onClick={() => navigator.clipboard.writeText(contact.phone || contactEmail).then(() => toast.success('Contato copiado')).catch(() => toast.error('Não foi possível copiar'))}><span><Copy size={15} /></span>Copiar</button>
-          <button type="button" disabled title="Silenciar ainda não disponível"><span><BellOff size={15} /></span>Silenciar</button>
+          <MuteButton conversation={conversation} />
           <button type="button" onClick={() => openSection('contact')}><span><ExternalLink size={15} /></span>Ficha</button>
         </div>
 
       </div>
       {deals.data?.[0] ? <DealStrip card={deals.data[0]} onClick={() => openSection('negotiation')} /> : <button type="button" className="bq-contact-deal" onClick={() => openSection('negotiation')}><KanbanSquare size={13} /><span>{deals.isLoading ? 'Carregando negociação…' : deals.isError ? 'Negociação indisponível' : 'Sem negociação vinculada'}</span></button>}
-      <div className="bq-contact-incoming"><div><b>Entra no Incoming</b><p>Disponível após o piloto Incoming.</p></div><Switch label="Incoming ainda não disponível" checked={false} disabled onChange={() => {}} /></div>
-      <label className="bq-contact-find"><Search size={14} /><input disabled placeholder="Busca na conversa indisponível" aria-label="Busca completa na conversa ainda não disponível" /></label>
+      {onJumpToMessage && <ConversationSearch conversationId={conversation.id} onJumpToMessage={onJumpToMessage} />}
       {tabs.map(({id: tab, label, icon: Icon}) => <section key={tab} ref={element => { sectionRefs.current[tab] = element; }} className="bq-contact-section">
         <button type="button" aria-label={tab === 'agenda' ? 'Reuniões · Agenda' : undefined} aria-expanded={openSections.has(tab)} aria-controls={`contact-section-${tab}`} onClick={() => setOpenSections(previous => { const next = new Set(previous); if (next.has(tab)) next.delete(tab); else next.add(tab); return next; })}><Icon size={14} />{label}{tab === "negotiation" && deals.data && <span className="bq-section-count">{deals.data.length}</span>}<ChevronDown size={14} className={openSections.has(tab) ? 'rotate-180' : ''} /></button>
         {openSections.has(tab) && <div id={`contact-section-${tab}`}>
-        {tab === 'summary' && <div className="bq-contact-summary">Resumo de contexto ainda não disponível para esta conversa.</div>}
+        {tab === 'summary' && <SummarySection conversationId={conversation.id} />}
         {tab === 'tasks' && <ProjectPanel conversationId={conversation.id} onClose={onClose} mode="tasks" />}
-        {tab === 'notes' && <p className="px-4 pb-4 text-xs text-[var(--bq-t3)]">Notas internas ainda não disponíveis.</p>}
-        {tab === 'files' && <p className="px-4 pb-4 text-xs text-[var(--bq-t3)]">Índice completo de anexos ainda não disponível. Os arquivos recebidos continuam acessíveis nas mensagens e no projeto vinculado.</p>}
+        {tab === 'notes' && <NotesSection conversationId={conversation.id} />}
+        {tab === 'files' && <AttachmentsSection conversationId={conversation.id} />}
         {tab === 'negotiation' && <NegotiationTab conversation={conversation} />}
         {tab === 'contact' && (
           <div className="space-y-3 p-4">
@@ -480,7 +487,7 @@ function AgendaTab({
         Agende no Google e guarde o link nesta conversa.
       </p>
       <label className="block text-xs">Data e hora<input type="datetime-local" value={startLocal} onChange={e => setStartLocal(e.target.value)} className="mt-1 w-full rounded-lg border border-[var(--bq-hair)] bg-[var(--bq-raised)] p-2" /></label>
-      <p className="text-[11px] text-[var(--bq-t3)]">Histórico de reuniões desta conversa ainda não disponível. Consulte a Agenda completa.</p>
+      <MeetingsHistory conversationId={conversationId} />
       <input
         aria-label="Título da reunião"
         value={summary}
@@ -581,7 +588,7 @@ function NegotiationTab({ conversation }: { conversation: Conversation }) {
   return <div className="space-y-3 px-4 pb-4 text-xs">
     {cards.isLoading ? <p>Carregando negociação…</p> : cards.isError ? <p role="alert">Não foi possível carregar a negociação.</p> : cards.data?.length ? cards.data.map(card => <NegotiationCard key={card.id} card={card} />) : <p className="text-[var(--bq-t3)]">Nenhuma negociação vinculada a esta conversa.</p>}
     <PipelinePopover conversation={conversation} />
-    <p className="text-[var(--bq-t3)]">Jornada de diagnóstico, proposta e contrato ainda não disponível aqui.</p>
+    <NegotiationJourney conversation={conversation} />
   </div>;
 }
 

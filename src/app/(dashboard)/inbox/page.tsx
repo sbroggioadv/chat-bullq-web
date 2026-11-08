@@ -2,11 +2,11 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useSocket } from '@/features/inbox/hooks/use-socket';
 import { SynqSymbol } from '@/components/ui/synq-symbol';
 import { ConversationList } from '@/features/inbox/components/conversation-list';
-import { ChatPanel } from '@/features/inbox/components/chat-panel';
+import { ChatPanel, type ChatMessageJumpHandle } from '@/features/inbox/components/chat-panel';
 import { InboxLayout } from '@/features/inbox/components/inbox-layout';
 import { AgentRunsSidebar } from '@/features/inbox/components/agent-runs-sidebar';
 import { ContactWorkspacePanel } from '@/features/inbox/components/contact-workspace-panel';
@@ -20,7 +20,19 @@ export default function InboxPage() {
   const searchParams = useSearchParams();
   const viewId = searchParams.get('view');
   const deepLinkConvId = searchParams.get('conversationId');
+  const router = useRouter();
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
+  // Ao escolher outra conversa, o ?conversationId= antigo sai da URL: senão uma troca de canal
+  // de volta para a conversa da URL apontaria para a mesma rota e nada aconteceria.
+  const selectConversation = useCallback((next: Conversation | null) => {
+    setActiveConversation(next);
+    if (deepLinkConvId && next?.id !== deepLinkConvId) {
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete('conversationId');
+      const query = params.toString();
+      router.replace(query ? `/inbox?${query}` : '/inbox', { scroll: false });
+    }
+  }, [deepLinkConvId, router, searchParams]);
   // Persisted across sessions via localStorage so each operator keeps their
   // preferred layout (some live with the sidebar open, others want the chat
   // full width). Read on mount, write whenever it flips.
@@ -35,6 +47,11 @@ export default function InboxPage() {
   const [projectPanelOpen, setProjectPanelOpen] = useState(false);
   const [detailSection, setDetailSection] = useState<'tasks' | undefined>();
   const workspaceRef = useRef<HTMLDivElement>(null);
+  const messageJumpRef = useRef<ChatMessageJumpHandle>(null);
+  const jumpToMessage = useCallback(async (messageId: string) => {
+    if (!messageJumpRef.current) throw new Error('Conversa ainda não carregada.');
+    await messageJumpRef.current.jumpToMessage(messageId);
+  }, []);
   useEffect(() => {
     if (!projectPanelOpen) return;
     const chat = workspaceRef.current?.querySelector<HTMLElement>('.bq-chat-column');
@@ -158,7 +175,7 @@ export default function InboxPage() {
       list={
         <ConversationList
           activeId={activeConversation?.id || null}
-          onSelect={setActiveConversation}
+          onSelect={selectConversation}
           viewId={viewId}
         />
       }
@@ -167,8 +184,9 @@ export default function InboxPage() {
           <div ref={workspaceRef} className="bq-conversation-workspace relative flex min-h-0 min-w-0 flex-1">
             <ChatPanel
               key={activeConversation.id}
-              onBack={() => setActiveConversation(null)}
+              onBack={() => selectConversation(null)}
               conversation={activeConversation}
+              messageJumpRef={messageJumpRef}
               onConversationUpdate={handleConversationUpdate}
               onToggleAgentLogs={toggleAgentLogs}
               agentLogsOpen={agentLogsOpen}
@@ -187,6 +205,7 @@ export default function InboxPage() {
               <ContactWorkspacePanel
                 key={`contact-ws-${activeConversation.id}-${detailSection || 'summary'}`}
                 initialSection={detailSection}
+                onJumpToMessage={jumpToMessage}
                 conversation={activeConversation}
                 onClose={toggleProjectPanel}
               />
