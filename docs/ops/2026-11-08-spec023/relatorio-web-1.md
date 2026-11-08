@@ -72,3 +72,50 @@ Componentes reais importados diretamente de src; dados sintéticos; CSS do app e
 Revisar os commits e ligar MuteButton, NotesSection e NegotiationJourney. Executar a mesma suíte após integração e smoke com API-1 real em ambiente autorizado. O setor não atribui aceite final ao aplicativo.
 
 COMPANION_COMPLETE: companion-spec023-web-1-1
+
+
+## Rodada de correção pós-QA
+
+08/11/2026 · companion-spec023-web-1-fix-1 · commit de produto `bded5a5` no branch `spec023/web-1`.
+
+### Correções
+
+- **W1-2 / F8:** o caminho padrão usa `useRouter().push('/inbox?conversationId=…')`, sem `window.location.assign`. Reutiliza o deep link que a inbox já resolve com `inboxService.getConversation` e `setActiveConversation` (`inbox/page.tsx`, efeito dependente de `deepLinkConvId`). Nenhuma edição em `inbox/page.tsx` ou `contact-workspace-panel.tsx`.
+- `ChatInput` passa o texto atual ao menu. Havendo rascunho, antes de chamar `/open` aparece: “O rascunho fica salvo nesta conversa e não será enviado nem levado para o outro canal.” A pessoa pode continuar na origem ou confirmar a troca. `useConversationDraft` permanece o mecanismo existente de gravação por organização/usuário/conversa; nenhum texto é transferido ou apagado pela troca. Gmail continua usando `EmailCompose`.
+- **W1-3:** notas e jornada incluem usuário nas chaves de consulta; o formulário de notas e menu remontam quando muda a identidade. Testes verificam troca de usuário na mesma organização, sem exibir dados ou rascunho da sessão anterior durante o carregamento.
+- **W1-4:** foco no primeiro canal habilitado ao abrir; setas, Home, End e Escape; itens indisponíveis são ignorados e Escape devolve foco ao disparador.
+- **W1-1:** contêineres com largura mínima zero e quebra de texto; removidos paddings de 16 px duplicados no workbench e no card interno do ClickUp. Na fixture, F1/Notas/Jornada usam título de 12 px/peso 600. Grade em duas colunas: silêncio/notas/jornada agrupados numa coluna e ClickUp na outra; mobile em coluna única. F1 não é esticado; removida altura vazia artificial do bloco F8.
+
+### Comandos e saídas
+
+| Comando | Saída resumida / conclusão |
+|---|---|
+| `node_modules/.bin/vitest run src/features/inbox/components/contact-panel/spec023.test.tsx --maxWorkers=2` antes da correção | **3 falhas / 20 passaram**: navegação padrão, aviso de rascunho e foco reproduzidos. Log `fix-red.log`. |
+| `node_modules/.bin/vitest run src/features/inbox/components/contact-panel/spec023.test.tsx src/features/inbox/components/chat-input.test.tsx --maxWorkers=2` | **24 passaram**, antes de acrescentar os dois controles de troca de usuário. |
+| `node_modules/.bin/vitest run --maxWorkers=2` | **71 arquivos / 379 testes passaram**, 45,63 s. Exit 0. Inclui caminho sem `onNavigate`, confirmação/cancelamento com rascunho, teclas e troca de usuário. |
+| `node_modules/.bin/tsc --noEmit` | Exit 0, sem saída. |
+| `node_modules/.bin/eslint src/features/inbox/components/chat-input.tsx src/features/inbox/components/chat-input.test.tsx src/features/inbox/components/clickup-panel.tsx src/features/inbox/components/contact-panel/{notes-section,negotiation-journey,send-channel-menu,spec023.test}.tsx` | Exit 0, **sem erros nem avisos** nos sete arquivos desta rodada. |
+| `git diff --check` | Exit 0. |
+| `node .aiox/companions/spec023-web-1/capture-fix.cjs` | 12 capturas substituídas; `documentElement.scrollWidth` = viewport em todas; nenhum card excede a viewport ou sua própria largura. |
+| `view_image` em cada um dos 12 PNGs finais | Todos abertos e conferidos visualmente: margens, recuo, títulos, grade, menu de canais e Gmail. Ferramenta de imagem deste runtime usada como equivalente à leitura de PNG solicitada. |
+
+Logs e medições desta rodada: `evidencias-web-1/fix-{red,vitest,tsc,eslint}.log` e `evidencias-web-1/fix-capture-measurements.json`, junto deste relatório e na cópia do worktree. A fixture e o script de captura permanecem em `.aiox/companions/spec023-web-1/`, fora do commit, como exigido para estado de runtime.
+
+### Capturas novas (substituídas)
+
+Diretório: `/Users/luissbroggio/AIOX-enterprise/apps/bullq2/docs/ops/2026-11-08-spec023/capturas-web-1/`.
+
+- `f1-1440.png` e `f1-390.png`.
+- `f4-1440.png` e `f4-390.png`.
+- `f7-1440.png` e `f7-390.png`.
+- `f8-1440.png` e `f8-390.png`.
+- `f8-gmail-1440.png` e `f8-gmail-390.png`.
+- `f9-1440.png` e `f9-390.png`.
+
+Em 390 px: cards entre x=20 e x=370; conteúdo de notas e ClickUp em x=36. Em 1440 px: conteúdo com recuo de 16 px em ambas as colunas (x=206 e x=746). Os três títulos têm 12 px e peso 600. Arquivo de medições inclui os valores por captura.
+
+### Limites e pendências
+
+Sem bloqueio estrutural. Sem subagentes, decisão de produto inventada ou alegação de roteamento via AskUserQuestion. Setor pronto para nova revisão independente e integração. As capturas usam CSS/componentes reais, Axios sintético e router simulado apenas na fixture Vite; o teste da navegação padrão verifica a chamada ao router Next sem callback injetado. Não foi executado smoke com Next/API real integrada nem envio real a WhatsApp/Gmail/ClickUp. Não equivale a aceite final do aplicativo. Nenhum push, deploy, migração, alteração de state/regras ou banco.
+
+COMPANION_COMPLETE: companion-spec023-web-1-fix-1

@@ -1,0 +1,804 @@
+[
+  {
+    "file": "f1-1440.png",
+    "width": 1440,
+    "scrollWidth": 1440,
+    "cards": [
+      {
+        "id": "f1",
+        "left": 190,
+        "right": 710,
+        "scroll": 520,
+        "client": 520
+      },
+      {
+        "id": "f4",
+        "left": 190,
+        "right": 710,
+        "scroll": 520,
+        "client": 520
+      },
+      {
+        "id": "f7",
+        "left": 190,
+        "right": 710,
+        "scroll": 520,
+        "client": 520
+      },
+      {
+        "id": "f9",
+        "left": 730,
+        "right": 1250,
+        "scroll": 520,
+        "client": 520
+      },
+      {
+        "id": "f8",
+        "left": 190,
+        "right": 1250,
+        "scroll": 1060,
+        "client": 1060
+      }
+    ],
+    "titles": [
+      {
+        "text": "F1 · Silenciar",
+        "size": "12px",
+        "weight": "600"
+      },
+      {
+        "text": "Notas internas",
+        "size": "12px",
+        "weight": "600"
+      },
+      {
+        "text": "Jornada da negociação",
+        "size": "12px",
+        "weight": "600"
+      },
+      {
+        "text": "F8 · Enviar por",
+        "size": "12px",
+        "weight": "600"
+      }
+    ],
+    "clickupLeft": 746,
+    "notesLeft": 206
+  },
+  {
+    "file": "f4-1440.png",
+    "width": 1440,
+    "scrollWidth": 1440,
+    "cards": [
+      {
+        "id": "f1",
+        "left": 190,
+        "right": 710,
+        "scroll": 520,
+        "client": 520
+      },
+      {
+        "id": "f4",
+        "left": 190,
+        "right": 710,
+        "scroll": 520,
+        "client": 520
+      },
+      {
+        "id": "f7",
+        "left": 190,
+        "right": 710,
+        "scroll": 520,
+        "client": 520
+      },
+      {
+        "id": "f9",
+        "left": 730,
+        "right": 1250,
+        "scroll": 520,
+        "client": 520
+      },
+      {
+        "id": "f8",
+        "left": 190,
+        "right": 1250,
+        "scroll": 1060,
+        "client": 1060
+      }
+    ],
+    "titles": [
+      {
+        "text": "F1 · Silenciar",
+        "size": "12px",
+        "weight": "600"
+      },
+      {
+        "text": "Notas internas",
+        "size": "12px",
+        "weight": "600"
+      },
+      {
+        "text": "Jornada da negociação",
+        "size": "12px",
+        "weight": "600"
+      },
+      {
+        "text": "F8 · Enviar por",
+        "size": "12px",
+        "weight": "600"
+      }
+    ],
+    "clickupLeft": 746,
+    "notesLeft": 206
+  },
+  {
+    "file": "f7-1440.png",
+    "width": 1440,
+    "scrollWidth": 1440,
+    "cards": [
+      {
+        "id": "f1",
+        "left": 190,
+        "right": 710,
+        "scroll": 520,
+        "client": 520
+      },
+      {
+        "id": "f4",
+        "left": 190,
+        "right": 710,
+        "scroll": 520,
+        "client": 520
+      },
+      {
+        "id": "f7",
+        "left": 190,
+        "right": 710,
+        "scroll": 520,
+        "client": 520
+      },
+      {
+        "id": "f9",
+        "left": 730,
+        "right": 1250,
+        "scroll": 520,
+        "client": 520
+      },
+      {
+        "id": "f8",
+        "left": 190,
+        "right": 1250,
+        "scroll": 1060,
+        "client": 1060
+      }
+    ],
+    "titles": [
+      {
+        "text": "F1 · Silenciar",
+        "size": "12px",
+        "weight": "600"
+      },
+      {
+        "text": "Notas internas",
+        "size": "12px",
+        "weight": "600"
+      },
+      {
+        "text": "Jornada da negociação",
+        "size": "12px",
+        "weight": "600"
+      },
+      {
+        "text": "F8 · Enviar por",
+        "size": "12px",
+        "weight": "600"
+      }
+    ],
+    "clickupLeft": 746,
+    "notesLeft": 206
+  },
+  {
+    "file": "f8-1440.png",
+    "width": 1440,
+    "scrollWidth": 1440,
+    "cards": [
+      {
+        "id": "f1",
+        "left": 190,
+        "right": 710,
+        "scroll": 520,
+        "client": 520
+      },
+      {
+        "id": "f4",
+        "left": 190,
+        "right": 710,
+        "scroll": 520,
+        "client": 520
+      },
+      {
+        "id": "f7",
+        "left": 190,
+        "right": 710,
+        "scroll": 520,
+        "client": 520
+      },
+      {
+        "id": "f9",
+        "left": 730,
+        "right": 1250,
+        "scroll": 520,
+        "client": 520
+      },
+      {
+        "id": "f8",
+        "left": 190,
+        "right": 1250,
+        "scroll": 1060,
+        "client": 1060
+      }
+    ],
+    "titles": [
+      {
+        "text": "F1 · Silenciar",
+        "size": "12px",
+        "weight": "600"
+      },
+      {
+        "text": "Notas internas",
+        "size": "12px",
+        "weight": "600"
+      },
+      {
+        "text": "Jornada da negociação",
+        "size": "12px",
+        "weight": "600"
+      },
+      {
+        "text": "F8 · Enviar por",
+        "size": "12px",
+        "weight": "600"
+      }
+    ],
+    "clickupLeft": 746,
+    "notesLeft": 206
+  },
+  {
+    "file": "f8-gmail-1440.png",
+    "width": 1440,
+    "scrollWidth": 1440,
+    "cards": [
+      {
+        "id": "f1",
+        "left": 190,
+        "right": 710,
+        "scroll": 520,
+        "client": 520
+      },
+      {
+        "id": "f4",
+        "left": 190,
+        "right": 710,
+        "scroll": 520,
+        "client": 520
+      },
+      {
+        "id": "f7",
+        "left": 190,
+        "right": 710,
+        "scroll": 520,
+        "client": 520
+      },
+      {
+        "id": "f9",
+        "left": 730,
+        "right": 1250,
+        "scroll": 520,
+        "client": 520
+      },
+      {
+        "id": "f8",
+        "left": 190,
+        "right": 1250,
+        "scroll": 1060,
+        "client": 1060
+      }
+    ],
+    "titles": [
+      {
+        "text": "F1 · Silenciar",
+        "size": "12px",
+        "weight": "600"
+      },
+      {
+        "text": "Notas internas",
+        "size": "12px",
+        "weight": "600"
+      },
+      {
+        "text": "Jornada da negociação",
+        "size": "12px",
+        "weight": "600"
+      },
+      {
+        "text": "F8 · Enviar por",
+        "size": "12px",
+        "weight": "600"
+      },
+      {
+        "text": "Escrever e-mail",
+        "size": "16px",
+        "weight": "400"
+      }
+    ],
+    "clickupLeft": 746,
+    "notesLeft": 206
+  },
+  {
+    "file": "f9-1440.png",
+    "width": 1440,
+    "scrollWidth": 1440,
+    "cards": [
+      {
+        "id": "f1",
+        "left": 190,
+        "right": 710,
+        "scroll": 520,
+        "client": 520
+      },
+      {
+        "id": "f4",
+        "left": 190,
+        "right": 710,
+        "scroll": 520,
+        "client": 520
+      },
+      {
+        "id": "f7",
+        "left": 190,
+        "right": 710,
+        "scroll": 520,
+        "client": 520
+      },
+      {
+        "id": "f9",
+        "left": 730,
+        "right": 1250,
+        "scroll": 520,
+        "client": 520
+      },
+      {
+        "id": "f8",
+        "left": 190,
+        "right": 1250,
+        "scroll": 1060,
+        "client": 1060
+      }
+    ],
+    "titles": [
+      {
+        "text": "F1 · Silenciar",
+        "size": "12px",
+        "weight": "600"
+      },
+      {
+        "text": "Notas internas",
+        "size": "12px",
+        "weight": "600"
+      },
+      {
+        "text": "Jornada da negociação",
+        "size": "12px",
+        "weight": "600"
+      },
+      {
+        "text": "F8 · Enviar por",
+        "size": "12px",
+        "weight": "600"
+      }
+    ],
+    "clickupLeft": 746,
+    "notesLeft": 206
+  },
+  {
+    "file": "f1-390.png",
+    "width": 390,
+    "scrollWidth": 390,
+    "cards": [
+      {
+        "id": "f1",
+        "left": 20,
+        "right": 370,
+        "scroll": 350,
+        "client": 350
+      },
+      {
+        "id": "f4",
+        "left": 20,
+        "right": 370,
+        "scroll": 350,
+        "client": 350
+      },
+      {
+        "id": "f7",
+        "left": 20,
+        "right": 370,
+        "scroll": 350,
+        "client": 350
+      },
+      {
+        "id": "f9",
+        "left": 20,
+        "right": 370,
+        "scroll": 350,
+        "client": 350
+      },
+      {
+        "id": "f8",
+        "left": 20,
+        "right": 370,
+        "scroll": 350,
+        "client": 350
+      }
+    ],
+    "titles": [
+      {
+        "text": "F1 · Silenciar",
+        "size": "12px",
+        "weight": "600"
+      },
+      {
+        "text": "Notas internas",
+        "size": "12px",
+        "weight": "600"
+      },
+      {
+        "text": "Jornada da negociação",
+        "size": "12px",
+        "weight": "600"
+      },
+      {
+        "text": "F8 · Enviar por",
+        "size": "12px",
+        "weight": "600"
+      }
+    ],
+    "clickupLeft": 36,
+    "notesLeft": 36
+  },
+  {
+    "file": "f4-390.png",
+    "width": 390,
+    "scrollWidth": 390,
+    "cards": [
+      {
+        "id": "f1",
+        "left": 20,
+        "right": 370,
+        "scroll": 350,
+        "client": 350
+      },
+      {
+        "id": "f4",
+        "left": 20,
+        "right": 370,
+        "scroll": 350,
+        "client": 350
+      },
+      {
+        "id": "f7",
+        "left": 20,
+        "right": 370,
+        "scroll": 350,
+        "client": 350
+      },
+      {
+        "id": "f9",
+        "left": 20,
+        "right": 370,
+        "scroll": 350,
+        "client": 350
+      },
+      {
+        "id": "f8",
+        "left": 20,
+        "right": 370,
+        "scroll": 350,
+        "client": 350
+      }
+    ],
+    "titles": [
+      {
+        "text": "F1 · Silenciar",
+        "size": "12px",
+        "weight": "600"
+      },
+      {
+        "text": "Notas internas",
+        "size": "12px",
+        "weight": "600"
+      },
+      {
+        "text": "Jornada da negociação",
+        "size": "12px",
+        "weight": "600"
+      },
+      {
+        "text": "F8 · Enviar por",
+        "size": "12px",
+        "weight": "600"
+      }
+    ],
+    "clickupLeft": 36,
+    "notesLeft": 36
+  },
+  {
+    "file": "f7-390.png",
+    "width": 390,
+    "scrollWidth": 390,
+    "cards": [
+      {
+        "id": "f1",
+        "left": 20,
+        "right": 370,
+        "scroll": 350,
+        "client": 350
+      },
+      {
+        "id": "f4",
+        "left": 20,
+        "right": 370,
+        "scroll": 350,
+        "client": 350
+      },
+      {
+        "id": "f7",
+        "left": 20,
+        "right": 370,
+        "scroll": 350,
+        "client": 350
+      },
+      {
+        "id": "f9",
+        "left": 20,
+        "right": 370,
+        "scroll": 350,
+        "client": 350
+      },
+      {
+        "id": "f8",
+        "left": 20,
+        "right": 370,
+        "scroll": 350,
+        "client": 350
+      }
+    ],
+    "titles": [
+      {
+        "text": "F1 · Silenciar",
+        "size": "12px",
+        "weight": "600"
+      },
+      {
+        "text": "Notas internas",
+        "size": "12px",
+        "weight": "600"
+      },
+      {
+        "text": "Jornada da negociação",
+        "size": "12px",
+        "weight": "600"
+      },
+      {
+        "text": "F8 · Enviar por",
+        "size": "12px",
+        "weight": "600"
+      }
+    ],
+    "clickupLeft": 36,
+    "notesLeft": 36
+  },
+  {
+    "file": "f8-390.png",
+    "width": 390,
+    "scrollWidth": 390,
+    "cards": [
+      {
+        "id": "f1",
+        "left": 20,
+        "right": 370,
+        "scroll": 350,
+        "client": 350
+      },
+      {
+        "id": "f4",
+        "left": 20,
+        "right": 370,
+        "scroll": 350,
+        "client": 350
+      },
+      {
+        "id": "f7",
+        "left": 20,
+        "right": 370,
+        "scroll": 350,
+        "client": 350
+      },
+      {
+        "id": "f9",
+        "left": 20,
+        "right": 370,
+        "scroll": 350,
+        "client": 350
+      },
+      {
+        "id": "f8",
+        "left": 20,
+        "right": 370,
+        "scroll": 350,
+        "client": 350
+      }
+    ],
+    "titles": [
+      {
+        "text": "F1 · Silenciar",
+        "size": "12px",
+        "weight": "600"
+      },
+      {
+        "text": "Notas internas",
+        "size": "12px",
+        "weight": "600"
+      },
+      {
+        "text": "Jornada da negociação",
+        "size": "12px",
+        "weight": "600"
+      },
+      {
+        "text": "F8 · Enviar por",
+        "size": "12px",
+        "weight": "600"
+      }
+    ],
+    "clickupLeft": 36,
+    "notesLeft": 36
+  },
+  {
+    "file": "f8-gmail-390.png",
+    "width": 390,
+    "scrollWidth": 390,
+    "cards": [
+      {
+        "id": "f1",
+        "left": 20,
+        "right": 370,
+        "scroll": 350,
+        "client": 350
+      },
+      {
+        "id": "f4",
+        "left": 20,
+        "right": 370,
+        "scroll": 350,
+        "client": 350
+      },
+      {
+        "id": "f7",
+        "left": 20,
+        "right": 370,
+        "scroll": 350,
+        "client": 350
+      },
+      {
+        "id": "f9",
+        "left": 20,
+        "right": 370,
+        "scroll": 350,
+        "client": 350
+      },
+      {
+        "id": "f8",
+        "left": 20,
+        "right": 370,
+        "scroll": 350,
+        "client": 350
+      }
+    ],
+    "titles": [
+      {
+        "text": "F1 · Silenciar",
+        "size": "12px",
+        "weight": "600"
+      },
+      {
+        "text": "Notas internas",
+        "size": "12px",
+        "weight": "600"
+      },
+      {
+        "text": "Jornada da negociação",
+        "size": "12px",
+        "weight": "600"
+      },
+      {
+        "text": "F8 · Enviar por",
+        "size": "12px",
+        "weight": "600"
+      },
+      {
+        "text": "Escrever e-mail",
+        "size": "16px",
+        "weight": "400"
+      }
+    ],
+    "clickupLeft": 36,
+    "notesLeft": 36
+  },
+  {
+    "file": "f9-390.png",
+    "width": 390,
+    "scrollWidth": 390,
+    "cards": [
+      {
+        "id": "f1",
+        "left": 20,
+        "right": 370,
+        "scroll": 350,
+        "client": 350
+      },
+      {
+        "id": "f4",
+        "left": 20,
+        "right": 370,
+        "scroll": 350,
+        "client": 350
+      },
+      {
+        "id": "f7",
+        "left": 20,
+        "right": 370,
+        "scroll": 350,
+        "client": 350
+      },
+      {
+        "id": "f9",
+        "left": 20,
+        "right": 370,
+        "scroll": 350,
+        "client": 350
+      },
+      {
+        "id": "f8",
+        "left": 20,
+        "right": 370,
+        "scroll": 350,
+        "client": 350
+      }
+    ],
+    "titles": [
+      {
+        "text": "F1 · Silenciar",
+        "size": "12px",
+        "weight": "600"
+      },
+      {
+        "text": "Notas internas",
+        "size": "12px",
+        "weight": "600"
+      },
+      {
+        "text": "Jornada da negociação",
+        "size": "12px",
+        "weight": "600"
+      },
+      {
+        "text": "F8 · Enviar por",
+        "size": "12px",
+        "weight": "600"
+      }
+    ],
+    "clickupLeft": 36,
+    "notesLeft": 36
+  }
+]
