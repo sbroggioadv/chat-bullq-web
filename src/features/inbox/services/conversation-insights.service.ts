@@ -17,7 +17,7 @@ export interface ConversationSummary {
   generatedAt: string; messageCount: number; stale: boolean;
 }
 export interface ConversationMeeting {
-  eventId: string; title: string; start: string; end: string; meetLink: string | null;
+  eventId: string | null; title: string; start: string | null; end: string | null; meetLink: string | null;
   attendees: string[]; status: string; createdAt: string;
 }
 export interface MeetingsResponse { connected: boolean; items: ConversationMeeting[] }
@@ -55,14 +55,20 @@ export const conversationInsightsService = {
     const { data } = await api.get(`/messages/${encodeURIComponent(messageId)}/media`);
     const media = data.data as { url: string; mimeType?: string };
     const url = safeExternalUrl(media.url); if (!url) throw new Error('Endereço de mídia inválido.');
+    // Same unplayable URL criteria as useResolvedMedia: never expose encrypted provider URLs.
+    if (/\.enc(\?|$)/i.test(url) || /mmg\.whatsapp\.net/i.test(url)) throw new Error('Mídia ainda indisponível. Tente novamente para solicitar uma nova resolução.');
     return { ...media, url };
   },
   async download(messageId: string, filename: string): Promise<void> {
-    const { url } = await this.resolveMedia(messageId);
-    // Media resolves to a provider/signed URL. Do not forward the API's bearer token to it.
-    const response = await fetch(url); if (!response.ok) throw new Error('Não foi possível baixar o anexo.');
-    const blobUrl = URL.createObjectURL(await response.blob());
-    const anchor = document.createElement('a'); anchor.href = blobUrl; anchor.download = filename; document.body.append(anchor); anchor.click(); anchor.remove();
-    setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+    try {
+      const { url } = await this.resolveMedia(messageId);
+      // Media resolves to a provider/signed URL. Do not forward the API's bearer token to it.
+      const response = await fetch(url); if (!response.ok) throw new Error('Não foi possível baixar o anexo.');
+      const blobUrl = URL.createObjectURL(await response.blob());
+      const anchor = document.createElement('a'); anchor.href = blobUrl; anchor.download = filename; document.body.append(anchor); anchor.click(); anchor.remove();
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+    } catch {
+      throw new Error('Não foi possível baixar o arquivo. Tente abrir pelo botão Abrir.');
+    }
   },
 };

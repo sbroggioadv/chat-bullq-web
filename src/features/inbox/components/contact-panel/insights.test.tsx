@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { ConversationSearch } from '@/features/inbox/components/contact-panel/conversation-search';
@@ -100,7 +100,7 @@ it('anexos: falha de miniatura não dispara repetição automática; download fa
   mount(<AttachmentsSection conversationId="c1" />); fireEvent.error(await screen.findByAltText('imagem.png'));
   expect(await screen.findByRole('alert')).toHaveTextContent('Não foi possível exibir a miniatura'); expect(service.resolveMedia).toHaveBeenCalledTimes(1);
   fireEvent.click(screen.getByRole('button', { name: 'Baixar imagem.png' }));
-  await waitFor(() => expect(screen.getAllByRole('alert').some(el => el.textContent?.includes('Download indisponível'))).toBe(true));
+  await waitFor(() => expect(screen.getAllByRole('alert').some(el => el.textContent?.includes('Não foi possível baixar o arquivo. Tente abrir pelo botão Abrir.'))).toBe(true));
 });
 it('anexos: paginação conserva arquivos anteriores', async () => {
   const file = { messageId: 'm1', kind: 'document' as const, fileName: null, mimeType: null, sizeBytes: null, createdAt: hit.createdAt, direction: 'INBOUND' as const, senderName: null, mediaPath: '/messages/m1/media' };
@@ -123,4 +123,55 @@ it('reuniões: uma revogação de acesso esconde o resultado já armazenado em c
   const { client } = mount(<MeetingsHistory conversationId="c1" />);
   await screen.findByText('Conteúdo restrito'); await client.invalidateQueries({ queryKey: ['conversation-insights'] });
   expect(await screen.findByRole('alert')).toHaveTextContent('Sem acesso ao canal'); expect(screen.queryByText('Conteúdo restrito')).not.toBeInTheDocument();
+});
+
+it('reuniões: preserva bolhas legadas sem classificá-las como passadas ou inventar datas', async () => {
+  const base = { eventId: null, end: null, meetLink: null, attendees: [], status: 'unknown', createdAt: hit.createdAt };
+  vi.mocked(service.meetings).mockResolvedValue({ connected: false, items: [
+    { ...base, title: 'Rótulo local', start: 'Quando: 09/11/2099 às 10h' },
+    { ...base, title: 'Sem registro', start: null },
+    { ...base, title: 'Outra sem registro', start: null },
+    { ...base, title: 'ISO sem fim', start: '2099-11-09T13:00:00Z' },
+    { ...base, title: 'Data ambígua', start: '11/09/2099' },
+  ] });
+  mount(<MeetingsHistory conversationId="legacy" />);
+  const unknown = await screen.findByRole('region', { name: 'Sem data confirmada' });
+  expect(within(unknown).getByText('Quando: 09/11/2099 às 10h')).toBeInTheDocument();
+  expect(within(unknown).getAllByText('Data não registrada')).toHaveLength(2);
+  expect(within(unknown).getByText('11/09/2099')).toBeInTheDocument();
+  expect(within(screen.getByRole('region', { name: 'Próximas' })).getByText('ISO sem fim')).toBeInTheDocument();
+  expect(screen.getAllByText('Não confirmada')).toHaveLength(5);
+  expect(screen.queryByText(/Invalid Date|1969|1970|unknown/)).not.toBeInTheDocument();
+  expect(screen.queryByRole('region', { name: 'Passadas' })).not.toBeInTheDocument();
+});
+it('anexos: resolve só o item visível e conserva a mídia ao remontar', async () => {
+  const observers: IntersectionObserverCallback[] = [];
+  vi.stubGlobal('IntersectionObserver', class {
+    constructor(callback: IntersectionObserverCallback) { observers.push(callback); }
+    observe() {} disconnect() {}
+  });
+  const file = { kind: 'image' as const, fileName: 'imagem.png', mimeType: 'image/png', sizeBytes: null, createdAt: hit.createdAt, direction: 'INBOUND' as const, senderName: null, mediaPath: '/messages/m1/media' };
+  vi.mocked(service.attachments).mockResolvedValue({ items: Array.from({ length: 50 }, (_, i) => ({ ...file, messageId: `m${i}` })), nextCursor: null });
+  vi.mocked(service.resolveMedia).mockResolvedValue({ url: 'https://example.com/image.png' });
+  try {
+    const { client, unmount } = mount(<AttachmentsSection conversationId="lazy" />);
+    await screen.findAllByText('imagem.png'); expect(service.resolveMedia).not.toHaveBeenCalled();
+    act(() => observers[0]([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver));
+    await screen.findByAltText('imagem.png'); expect(service.resolveMedia).toHaveBeenCalledExactlyOnceWith('m0');
+    unmount();
+    render(<QueryClientProvider client={client}><AttachmentsSection conversationId="lazy" /></QueryClientProvider>);
+    await screen.findByAltText('imagem.png'); expect(service.resolveMedia).toHaveBeenCalledTimes(1);
+  } finally { vi.unstubAllGlobals(); }
+});
+
+it('anexos: mídia criptografada não abre e uma retentativa resolve a URL utilizável', async () => {
+  vi.mocked(service.attachments).mockResolvedValue({ items: [{ messageId: 'encrypted', kind: 'image', fileName: 'foto.png', mimeType: 'image/png', sizeBytes: null, createdAt: hit.createdAt, direction: 'INBOUND', senderName: null, mediaPath: '/messages/encrypted/media' }], nextCursor: null });
+  vi.mocked(service.resolveMedia).mockRejectedValueOnce(new Error('Mídia ainda indisponível. Tente novamente para solicitar uma nova resolução.')).mockResolvedValueOnce({ url: 'https://example.com/decrypted.png' });
+  mount(<AttachmentsSection conversationId="enc" />);
+  expect(await screen.findByRole('alert')).toHaveTextContent('Mídia ainda indisponível');
+  expect(screen.queryByRole('link', { name: 'Abrir foto.png' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('img')).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Tentar novamente' }));
+  expect(await screen.findByAltText('foto.png')).toHaveAttribute('src', 'https://example.com/decrypted.png');
+  expect(service.resolveMedia).toHaveBeenCalledTimes(2);
 });

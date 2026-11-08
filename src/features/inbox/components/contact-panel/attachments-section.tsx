@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { useVisible } from '@/features/inbox/hooks/use-visible';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { conversationInsightsService, type AttachmentKind, type ConversationAttachment } from '@/features/inbox/services/conversation-insights.service';
 import { InsightsError, insightBody, insightButton, insightDate, useInsightsScope } from '@/features/inbox/components/contact-panel/insights-shared';
@@ -30,13 +31,14 @@ function AttachmentsContent({ conversationId }: { conversationId: string }) {
 }
 function Attachment({ item }: { item: ConversationAttachment }) {
   const filename = item.fileName || 'Anexo';
+  const { ref, visible } = useVisible();
   const [thumbnailFailed, setThumbnailFailed] = useState(false);
   const scope = useInsightsScope(); const [downloadError, setDownloadError] = useState<unknown>(null); const [downloading, setDownloading] = useState(false);
-  const media = useQuery({ queryKey: ['conversation-insights', scope, 'media', item.messageId], queryFn: () => conversationInsightsService.resolveMedia(item.messageId), retry: false });
-  return <article className="space-y-2 rounded-bq-radius-field border border-[var(--bq-hair)] bg-[var(--bq-raised)] p-3">
+  const media = useQuery({ queryKey: ['conversation-insights', scope, 'media', item.messageId], queryFn: () => conversationInsightsService.resolveMedia(item.messageId), retry: false, enabled: visible, staleTime: 60_000 });
+  return <article ref={ref} className="space-y-2 rounded-bq-radius-field border border-[var(--bq-hair)] bg-[var(--bq-raised)] p-3">
     <p className="break-all font-medium text-[var(--bq-t1)]">{filename}</p>
     <p className="text-[var(--bq-t3)]">{insightDate(item.createdAt)}{item.sizeBytes !== null ? ` · ${new Intl.NumberFormat('pt-BR').format(item.sizeBytes)} bytes` : ''}</p>
-    {media.isPending && <p role="status">Preparando anexo…</p>}
+    {media.isFetching && <p role="status">Preparando anexo…</p>}
     {media.isError && <InsightsError error={media.error} retry={() => { void media.refetch(); }} />}
     {!media.isError && media.data && <>
       {/* Native image supports provider URLs without sending API credentials. */}
@@ -46,7 +48,7 @@ function Attachment({ item }: { item: ConversationAttachment }) {
       <div className="flex flex-wrap gap-2">
         <a className={insightButton} href={media.data.url} target="_blank" rel="noopener noreferrer" aria-label={`Abrir ${filename}`}>Abrir</a>
         <button type="button" className={insightButton} disabled={downloading} aria-label={`Baixar ${filename}`} onClick={async () => {
-          setDownloadError(null); setDownloading(true); try { await conversationInsightsService.download(item.messageId, filename); } catch (error) { setDownloadError(error); } finally { setDownloading(false); }
+          setDownloadError(null); setDownloading(true); try { await conversationInsightsService.download(item.messageId, filename); } catch { setDownloadError(new Error('Não foi possível baixar o arquivo. Tente abrir pelo botão Abrir.')); } finally { setDownloading(false); }
         }}>{downloading ? 'Baixando…' : 'Baixar'}</button>
       </div>
     </>}

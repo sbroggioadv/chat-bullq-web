@@ -43,3 +43,14 @@ it('falha de download não dispara clique nem esconde erro', async () => {
   mocks.get.mockResolvedValue({ data: { data: { url: 'https://example.com/file' } } }); vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }));
   try { await expect(service.download('m1', 'arquivo')).rejects.toThrow('Não foi possível baixar'); } finally { vi.unstubAllGlobals(); }
 });
+
+it.each(['https://mmg.whatsapp.net/file.enc?x=1', 'https://example.com/file.enc'])('recusa mídia criptografada devolvida pelo resolvedor: %s', async url => {
+  mocks.get.mockResolvedValue({ data: { data: { url } } });
+  await expect(service.resolveMedia('m1')).rejects.toThrow('Mídia ainda indisponível');
+});
+it('traduz falha de rede/CORS do download', async () => {
+  mocks.get.mockResolvedValue({ data: { data: { url: 'https://example.com/file' } } });
+  vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')));
+  try { await expect(service.download('m1', 'arquivo')).rejects.toThrow('Não foi possível baixar o arquivo. Tente abrir pelo botão Abrir.'); }
+  finally { vi.unstubAllGlobals(); }
+});
