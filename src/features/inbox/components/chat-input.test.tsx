@@ -23,3 +23,5 @@ it('ajusta a altura somente quando restaura texto', () => {
   rerender(<ChatInput conversationId="c" onSend={vi.fn()} />);
   expect(field.style.height).toBe('90px');
 });
+
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));

@@ -75,14 +75,14 @@ function ClickUpWorkbench({
   }
   if (errorKind === 'not_configured') {
     return (
-      <p className="p-4 text-xs text-[var(--bq-t2)]" data-testid="clickup-state-not-configured">
+      <p className="text-xs text-[var(--bq-t2)]" data-testid="clickup-state-not-configured">
         Integração ClickUp não configurada neste ambiente.
       </p>
     );
   }
   if (errorKind === 'upstream' || resolveQ.error) {
     return (
-      <p className="p-4 text-xs text-[var(--bq-t2)]" data-testid="clickup-state-upstream">
+      <p className="text-xs text-[var(--bq-t2)]" data-testid="clickup-state-upstream">
         ClickUp indisponível no momento. Tente de novo em instantes.
       </p>
     );
@@ -96,7 +96,7 @@ function ClickUpWorkbench({
   };
 
   return (
-    <div className="space-y-3 p-4" data-testid="clickup-workbench">
+    <div className="min-w-0 break-words space-y-3" data-testid="clickup-workbench">
       {!isGroup && data.phoneShortcut ? (
         <PhoneShortcutStrip
           conversationId={conversationId}
@@ -746,7 +746,7 @@ function ClickUpCardView({
   const mutating = statusM.isPending || fieldM.isPending;
 
   return (
-    <div className="space-y-4 p-4" data-testid="clickup-state-unico">
+    <div className="min-w-0 space-y-4" data-testid="clickup-state-unico">
       <div>
         <p className={labelCls}>Card</p>
         <p className="text-sm font-medium text-[var(--bq-t1)] ">{card.nome}</p>

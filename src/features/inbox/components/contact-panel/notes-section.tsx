@@ -8,14 +8,15 @@ import { inboxErrorMessage } from '@/features/inbox/components/inbox-error';
 
 export function NotesSection({ conversationId }: { conversationId: string }) {
   const orgId = useAuthStore(s => s.activeOrgId);
-  return <Notes key={`${orgId}:${conversationId}`} conversationId={conversationId} />;
+  const userId = useAuthStore(s => s.user?.id);
+  return <Notes key={`${userId}:${orgId}:${conversationId}`} conversationId={conversationId} />;
 }
 function Notes({ conversationId }: { conversationId: string }) {
   const orgId = useAuthStore(s => s.activeOrgId);
   const userId = useAuthStore(s => s.user?.id);
   const qc = useQueryClient();
-  const key = ['conversation-notes', orgId, conversationId];
-  const notes = useQuery({ queryKey: key, queryFn: () => conversationActionsService.notes(conversationId), enabled: Boolean(orgId && conversationId), retry: false });
+  const key = ['conversation-notes', orgId, userId, conversationId];
+  const notes = useQuery({ queryKey: key, queryFn: () => conversationActionsService.notes(conversationId), enabled: Boolean(userId && orgId && conversationId), retry: false });
   const [draft, setDraft] = useState('');
   const [editing, setEditing] = useState<InternalNote | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
@@ -34,7 +35,7 @@ function Notes({ conversationId }: { conversationId: string }) {
     },
     onSuccess: () => { setDraft(''); setEditing(null); setConfirmDelete(null); qc.invalidateQueries({ queryKey: key }); },
   });
-  return <section aria-label="Notas internas" className="space-y-3 text-xs text-[var(--bq-t2)]">
+  return <section aria-label="Notas internas" className="min-w-0 break-words space-y-3 text-xs text-[var(--bq-t2)]">
     <h3 className="font-semibold text-[var(--bq-t1)]">Notas internas</h3>
     {notes.isLoading && <p role="status">Carregando notas…</p>}
     {notes.isError && <p role="alert">{inboxErrorMessage(notes.error, 'Não foi possível carregar as notas.')} <button className="bq-button" onClick={() => notes.refetch()}>Tentar novamente</button></p>}

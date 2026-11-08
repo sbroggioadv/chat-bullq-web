@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, cleanup, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { beforeEach, afterEach, describe, it, expect, vi } from 'vitest';
 import { MuteButton } from '@/features/inbox/components/contact-panel/mute-button';
@@ -9,6 +9,8 @@ import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth-store';
 import type { Conversation } from '@/features/inbox/services/inbox.service';
 vi.mock('@/lib/api', () => ({ api: { get: vi.fn(), post: vi.fn(), patch: vi.fn(), delete: vi.fn() } }));
+const { push } = vi.hoisted(() => ({ push: vi.fn() }));
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push }) }));
 const conversation = { id: 'c1', organizationId: 'o1', channelId: 'wa' } as Conversation;
 function mount(ui: React.ReactNode) {
   return render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })}>{ui}</QueryClientProvider>);
@@ -152,4 +154,68 @@ it('F8 Gmail abre compositor existente com destinatário e canal corretos', asyn
   expect(await screen.findByLabelText('Para')).toHaveValue('demonstracao@example.test');
   expect(navigate).not.toHaveBeenCalled();
   expect(api.post).toHaveBeenCalledTimes(1);
+});
+
+it('F8 usa navegação SPA no caminho de produção e avisa antes de trocar com rascunho', async () => {
+  vi.mocked(api.get).mockResolvedValue({ data: { data: [{ channelId: 'wa2', name: 'WhatsApp 2', available: true }] } });
+  vi.mocked(api.post).mockResolvedValue({ data: { data: { conversationId: 'c2' } } });
+  mount(<SendChannelMenu conversationId="c1" draftText="Ainda não enviei" />);
+  fireEvent.click(screen.getByRole('button', { name: 'Opções de envio' }));
+  fireEvent.click(await screen.findByRole('menuitem', { name: 'WhatsApp 2' }));
+  expect(await screen.findByRole('alertdialog')).toHaveTextContent('O rascunho fica salvo nesta conversa');
+  expect(api.post).not.toHaveBeenCalled();
+  expect(push).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: 'Continuar nesta conversa' }));
+  expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('menuitem', { name: 'WhatsApp 2' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Trocar de canal' }));
+  await waitFor(() => expect(push).toHaveBeenCalledWith('/inbox?conversationId=c2'));
+});
+it('F8 caminho padrão navega sem aviso quando não há rascunho', async () => {
+  vi.mocked(api.get).mockResolvedValue({ data: { data: [{ channelId: 'wa2', name: 'WhatsApp 2', available: true }] } });
+  vi.mocked(api.post).mockResolvedValue({ data: { data: { conversationId: 'c2' } } });
+  mount(<SendChannelMenu conversationId="c1" />);
+  fireEvent.click(screen.getByRole('button', { name: 'Opções de envio' }));
+  fireEvent.click(await screen.findByRole('menuitem', { name: 'WhatsApp 2' }));
+  await waitFor(() => expect(push).toHaveBeenCalledWith('/inbox?conversationId=c2'));
+  expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+});
+it('F8 move foco e navega por setas, Home, End e Escape', async () => {
+  vi.mocked(api.get).mockResolvedValue({ data: { data: [
+    { channelId: 'wa', name: 'Atual', current: true, available: true },
+    { channelId: 'a', name: 'Canal A', available: true },
+    { channelId: 'blocked', name: 'Bloqueado', available: false },
+    { channelId: 'b', name: 'Canal B', available: true },
+  ] } });
+  mount(<SendChannelMenu conversationId="c1" />);
+  const trigger = screen.getByRole('button', { name: 'Opções de envio' });
+  fireEvent.click(trigger);
+  const first = await screen.findByRole('menuitem', { name: 'Canal A' });
+  const last = screen.getByRole('menuitem', { name: 'Canal B' });
+  await waitFor(() => expect(first).toHaveFocus());
+  fireEvent.keyDown(first, { key: 'ArrowDown' }); expect(last).toHaveFocus();
+  fireEvent.keyDown(last, { key: 'ArrowUp' }); expect(first).toHaveFocus();
+  fireEvent.keyDown(first, { key: 'End' }); expect(last).toHaveFocus();
+  fireEvent.keyDown(last, { key: 'Home' }); expect(first).toHaveFocus();
+  fireEvent.keyDown(first, { key: 'Escape' }); expect(trigger).toHaveFocus();
+});
+
+it('F4 troca de usuário não reaproveita notas nem rascunho do formulário', async () => {
+  vi.mocked(api.get).mockResolvedValue({ data: { data: [{ id: 'n1', content: 'Nota da sessão anterior', authorId: 'me', authorName: 'Eu', createdAt: '2026-11-08T12:00:00Z' }] } });
+  mount(<NotesSection conversationId="c1" />);
+  expect(await screen.findByText('Nota da sessão anterior')).toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText('Nova nota interna'), { target: { value: 'Rascunho privado' } });
+  vi.mocked(api.get).mockImplementation(() => new Promise(() => {}));
+  act(() => useAuthStore.setState({ user: { id: 'other', name: 'Outro', email: 'o@e', avatarUrl: null } }));
+  expect(screen.queryByText('Nota da sessão anterior')).not.toBeInTheDocument();
+  expect(screen.getByLabelText('Nova nota interna')).toHaveValue('');
+});
+it('F7 troca de usuário não reutiliza jornada ou funil em cache', async () => {
+  vi.mocked(api.get).mockImplementation(async url => ({ data: { data: url === '/pipelines' ? [{ id: 'p', stages: [{ id: 's', name: 'Etapa privada', order: 1 }] }] : [{ id: 'card', pipelineId: 'p', pipeline: { name: 'Negociação privada' }, stageId: 's', stage: { name: 'Etapa privada' } }] } }));
+  mount(<NegotiationJourney conversation={conversation} />);
+  expect(await screen.findByText('Negociação privada')).toBeInTheDocument();
+  vi.mocked(api.get).mockImplementation(() => new Promise(() => {}));
+  act(() => useAuthStore.setState({ user: { id: 'other', name: 'Outro', email: 'o@e', avatarUrl: null } }));
+  expect(screen.queryByText('Negociação privada')).not.toBeInTheDocument();
+  expect(screen.queryByText('Etapa privada')).not.toBeInTheDocument();
 });

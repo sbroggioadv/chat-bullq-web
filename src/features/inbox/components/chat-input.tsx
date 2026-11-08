@@ -642,7 +642,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
           </button>
         )}
         <span className="flex-1" />
-        <SendChannelMenu conversationId={conversationId} channelName={channelName} disabled={!!pendingAttachment || isSending || isSendingAttachment}>
+        <SendChannelMenu draftText={text} conversationId={conversationId} channelName={channelName} disabled={!!pendingAttachment || isSending || isSendingAttachment}>
           {canShareContact && <button type="button" className="bq-button" disabled={disabled || !!pendingAttachment} onClick={() => setShareContactOpen(true)}><Contact size={14} /> Compartilhar contato</button>}
         </SendChannelMenu>
         {pendingAttachment ? (

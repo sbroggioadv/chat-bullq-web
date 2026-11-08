@@ -8,11 +8,12 @@ import { inboxErrorMessage } from '@/features/inbox/components/inbox-error';
 
 export function NegotiationJourney({ conversation }: { conversation: Conversation }) {
   const orgId = useAuthStore(s => s.activeOrgId);
-  const enabled = Boolean(orgId && orgId === conversation.organizationId);
-  const cards = useQuery({ queryKey: ['conversation-pipelines', conversation.id, orgId], queryFn: () => pipelinesService.listByConversation(conversation.id), enabled, retry: false });
-  const pipelines = useQuery({ queryKey: ['pipelines', orgId], queryFn: () => pipelinesService.list(), enabled, retry: false });
+  const userId = useAuthStore(s => s.user?.id);
+  const enabled = Boolean(userId && orgId && orgId === conversation.organizationId);
+  const cards = useQuery({ queryKey: ['conversation-pipelines', conversation.id, orgId, userId], queryFn: () => pipelinesService.listByConversation(conversation.id), enabled, retry: false });
+  const pipelines = useQuery({ queryKey: ['pipelines', orgId, userId], queryFn: () => pipelinesService.list(), enabled, retry: false });
   const error = cards.error || pipelines.error;
-  return <section aria-label="Jornada da negociação" className="space-y-3 text-xs text-[var(--bq-t2)]">
+  return <section aria-label="Jornada da negociação" className="min-w-0 break-words space-y-3 text-xs text-[var(--bq-t2)]">
     <h3 className="font-semibold text-[var(--bq-t1)]">Jornada da negociação</h3>
     {!enabled && <p role="alert">Conversa fora da organização ativa.</p>}
     {(cards.isLoading || pipelines.isLoading) && <p role="status">Carregando negociações…</p>}
