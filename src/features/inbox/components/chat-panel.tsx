@@ -34,6 +34,7 @@ import { projectsService } from '@/features/projects/services/projects.service';
 import {
   clickupInboxService,
   fanOutClipAttachment,
+  messageIncorporationKind,
   type ClickUpWorkbenchResponse,
 } from '@/features/inbox/services/clickup-inbox.service';
 
@@ -662,6 +663,7 @@ export function ChatPanel({
           attachMessage: (projectId, messageId) =>
             projectsService.attachMessage(projectId, messageId),
           messageId: msg.id,
+          kind: messageIncorporationKind(msg),
         });
         if (result.needDossierToast) {
           toast.error(
@@ -675,6 +677,13 @@ export function ChatPanel({
               ? result.clickupError.message
               : 'ClickUp: incorporar indisponível',
           );
+        }
+        if (result.incorporated) {
+          toast.success('Mensagem incorporada ao ClickUp');
+          queryClient.invalidateQueries({ queryKey: ['clickup-workbench', conversation.id] });
+        }
+        if (result.projectError) {
+          toast.error(result.projectError instanceof Error ? result.projectError.message : 'Não foi possível anexar ao dossiê');
         }
         if (result.attachedDossier) {
           toast.success('Mensagem anexada ao projeto');

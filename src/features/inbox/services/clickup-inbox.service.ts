@@ -1,4 +1,5 @@
 import { api } from '@/lib/api';
+import type { Message } from '@/features/inbox/services/inbox.service';
 
 export type ClickUpMatchStatus =
   | 'unico'
@@ -345,46 +346,65 @@ export function clipAttachPlan(bound: boolean, projectExists: boolean) {
   };
 }
 
+/** Media types supported by ClickUp's originFromMessage; text is a comment. */
+export function messageIncorporationKind(message: Pick<Message, 'type' | 'content' | 'revokedAt'>): 'comment' | 'attachment' | null {
+  if (message.revokedAt) return null;
+  if (['IMAGE', 'AUDIO', 'VIDEO', 'DOCUMENT', 'STICKER'].includes(message.type)) return 'attachment';
+  const content = message.content ?? {};
+  if (message.type === 'TEXT' || [content.text, content.body, content.caption].some(value => typeof value === 'string' && value.trim())) return 'comment';
+  return null;
+}
+
 export async function fanOutClipAttachment(opts: {
   cachedWorkbench?: ClickUpWorkbenchResponse | null;
   resolveWorkbench: () => Promise<ClickUpWorkbenchResponse>;
-  incorporate: (body: { kind: 'attachment'; messageId: string }) => Promise<unknown>;
+  incorporate: (body: { kind: 'comment' | 'attachment'; messageId: string }) => Promise<unknown>;
   getProject: () => Promise<{ exists: boolean; id?: string | null }>;
   attachMessage: (projectId: string, messageId: string) => Promise<unknown>;
   messageId: string;
+  kind?: 'comment' | 'attachment' | null;
 }): Promise<{
   calledIncorporations: boolean;
+  incorporated: boolean;
   attachedDossier: boolean;
   needDossierToast: boolean;
   clickupError?: unknown;
+  projectError?: unknown;
 }> {
   let wb = opts.cachedWorkbench ?? null;
+  let clickupError: unknown;
+  let projectError: unknown;
+  let incorporated = false;
+  let attachedDossier = false;
   if (!wb) {
-    try {
-      wb = await opts.resolveWorkbench();
-    } catch {
-      wb = null;
-    }
+    try { wb = await opts.resolveWorkbench(); }
+    catch (err) { clickupError = err; }
   }
   const bound = wb?.status === 'task_vinculada';
-  const project = await opts.getProject();
-  const projectExists = Boolean(project.exists && project.id);
-  const plan = clipAttachPlan(bound, projectExists);
-  let clickupError: unknown;
-  if (plan.callIncorporations) {
+  if (bound && opts.kind === null) {
+    clickupError = new Error('Esta mensagem não tem texto nem arquivo compatível com o ClickUp.');
+  }
+  if (bound && opts.kind !== null) {
     try {
-      await opts.incorporate({ kind: 'attachment', messageId: opts.messageId });
-    } catch (err) {
-      clickupError = err;
+      await opts.incorporate({ kind: opts.kind ?? 'attachment', messageId: opts.messageId });
+      incorporated = true;
+    } catch (err) { clickupError = err; }
+  }
+  let projectExists = false;
+  try {
+    const project = await opts.getProject();
+    projectExists = Boolean(project.exists && project.id);
+    if (projectExists && project.id) {
+      await opts.attachMessage(project.id, opts.messageId);
+      attachedDossier = true;
     }
-  }
-  if (plan.attachToDossier && project.id) {
-    await opts.attachMessage(project.id, opts.messageId);
-  }
+  } catch (err) { projectError = err; }
   return {
-    calledIncorporations: plan.callIncorporations,
-    attachedDossier: plan.attachToDossier,
-    needDossierToast: plan.toastNeedDossier,
+    calledIncorporations: bound && opts.kind !== null,
+    incorporated,
+    attachedDossier,
+    needDossierToast: !bound && !projectExists && !clickupError && !projectError,
     clickupError,
+    projectError,
   };
 }

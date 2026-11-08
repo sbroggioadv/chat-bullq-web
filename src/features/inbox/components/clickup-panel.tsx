@@ -877,8 +877,7 @@ function messageHasText(msg: Message): boolean {
 }
 
 function messageHasFile(msg: Message): boolean {
-  const content = msg.content ?? {};
-  return Boolean(content.url || content.mediaUrl || content.fileUrl);
+  return ['IMAGE', 'AUDIO', 'VIDEO', 'DOCUMENT', 'STICKER'].includes(msg.type);
 }
 
 function ClickUpIncorporate({
@@ -911,7 +910,11 @@ function ClickUpIncorporate({
   return (
     <div className="space-y-2 border-t border-[var(--bq-hair)] pt-3 " data-testid="clickup-incorporate">
       <p className={labelCls}>Incorporar na task</p>
-      {messages.length === 0 && documents.length === 0 ? (
+      {messagesQ.isLoading && <p role="status">Carregando mensagens…</p>}
+      {messagesQ.isError && <p role="alert">{messagesQ.error instanceof Error ? messagesQ.error.message : 'Não foi possível carregar mensagens.'}</p>}
+      {projectQ.isError && <p role="alert">{projectQ.error instanceof Error ? projectQ.error.message : 'Não foi possível carregar arquivos do dossiê.'}</p>}
+      {incorporateM.isError && <p role="alert">{incorporateM.error instanceof Error ? incorporateM.error.message : 'Falha ao incorporar.'}</p>}
+      {!messagesQ.isLoading && !messagesQ.isError && messages.length === 0 && documents.length === 0 ? (
         <p className="text-[11px] text-[var(--bq-t2)]">Nenhuma mensagem ou arquivo para incorporar.</p>
       ) : null}
       {messages.map((msg) => (

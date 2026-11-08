@@ -77,3 +77,36 @@ describe('AC-16b clip sem porta de dossiê', () => {
     expect(out.needDossierToast).toBe(true);
   });
 });
+
+describe('SPEC-023 F9', () => {
+  it('incorpora texto como comentário e confirma sucesso mesmo sem dossiê', async () => {
+    const incorporate = vi.fn(async () => ({ ok: true }));
+    const out = await fanOutClipAttachment({
+      cachedWorkbench: { status: 'task_vinculada', catalogShortcuts: [], canCreateLead: false },
+      resolveWorkbench: vi.fn(), incorporate,
+      getProject: async () => ({ exists: false }), attachMessage: vi.fn(), messageId: 'text-1', kind: 'comment',
+    });
+    expect(incorporate).toHaveBeenCalledWith({ kind: 'comment', messageId: 'text-1' });
+    expect(out.incorporated).toBe(true);
+  });
+  it('erro ao buscar dossiê não bloqueia ClickUp', async () => {
+    const incorporate = vi.fn(async () => ({ ok: true }));
+    const out = await fanOutClipAttachment({
+      cachedWorkbench: { status: 'task_vinculada', catalogShortcuts: [], canCreateLead: false },
+      resolveWorkbench: vi.fn(), incorporate, getProject: async () => { throw new Error('Projeto inacessível'); },
+      attachMessage: vi.fn(), messageId: 'm',
+    });
+    expect(incorporate).toHaveBeenCalled();
+    expect(out.incorporated).toBe(true);
+    expect(out.projectError).toBeInstanceOf(Error);
+  });
+  it.each(['Acesso negado', 'Canal sem acesso', 'Provedor indisponível'])('preserva erro de ClickUp: %s', async message => {
+    const out = await fanOutClipAttachment({
+      cachedWorkbench: null, resolveWorkbench: async () => { throw new Error(message); }, incorporate: vi.fn(),
+      getProject: async () => ({ exists: false }), attachMessage: vi.fn(), messageId: 'm',
+    });
+    expect(out.clickupError).toEqual(new Error(message));
+    expect(out.incorporated).toBe(false);
+    expect(out.needDossierToast).toBe(false);
+  });
+});
