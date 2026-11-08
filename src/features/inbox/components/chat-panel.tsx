@@ -1,7 +1,9 @@
 'use client';
 
 import { mockupAvatarHue } from '@/components/ui/avatar-hue';
-import type { CSSProperties } from 'react';
+import type { CSSProperties, Ref } from 'react';
+import { useMessageJump, type ChatMessageJumpHandle } from '@/features/inbox/hooks/use-message-jump';
+export type { ChatMessageJumpHandle } from '@/features/inbox/hooks/use-message-jump';
 
 import '@/features/inbox/components/conversations.css';
 
@@ -56,6 +58,8 @@ export function translateSkipReason(reason: string): string {
 }
 
 interface ChatPanelProps {
+  /** Search integration: pass a ref and call jumpToMessage(messageId). */
+  messageJumpRef?: Ref<ChatMessageJumpHandle>;
   conversation: Conversation;
   onConversationUpdate: () => void;
   onBack?: () => void;
@@ -385,6 +389,7 @@ function TemplateMessage({
 }
 
 export function ChatPanel({
+  messageJumpRef,
   conversation,
   onConversationUpdate,
   onBack,
@@ -429,7 +434,7 @@ export function ChatPanel({
     staleTime: 5000,
   });
 
-  const messages = data?.messages || [];
+  const { messages } = useMessageJump(conversation.id, data?.messages ?? [], scrollToMessage, messageJumpRef);
 
   // S22 — AI WS indicators
   const [aiTyping, setAiTyping] = useState<{ agentName: string; etaMs: number; until: number } | null>(null);
