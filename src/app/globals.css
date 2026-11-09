@@ -192,30 +192,32 @@ html[data-brand="A"][data-mode="light"] {
   --radius-xl: 0.75rem;
 }
 
+/* Dark surfaces and borders are neutral (chroma 0, same lightness) since
+ * 2026-11-06 by Doc decision; --bg matches --bq-wall-a (#000000). See DESIGN.md §2. */
 html[data-brand="A"][data-mode="dark"] {
-  --bg: oklch(0.16 0.012 250);
-  --bg-elev: oklch(0.2 0.014 250);
-  --surface: oklch(0.22 0.015 250);
-  --surface-2: oklch(0.25 0.016 250);
+  --bg: oklch(0 0 0);
+  --bg-elev: oklch(0.2 0 0);
+  --surface: oklch(0.22 0 0);
+  --surface-2: oklch(0.25 0 0);
   --fg: oklch(0.97 0.003 30);
   --fg-muted: oklch(0.72 0.01 30);
   --fg-subtle: oklch(0.58 0.01 30);
-  --border: oklch(0.3 0.015 250);
-  --border-strong: oklch(0.4 0.018 250);
+  --border: oklch(0.3 0 0);
+  --border-strong: oklch(0.4 0 0);
   --primary: oklch(0.7 0.08 250);
   --primary-hover: oklch(0.76 0.08 250);
   --primary-fg: oklch(0.14 0.012 250);
-  --secondary: oklch(0.25 0.014 250);
+  --secondary: oklch(0.25 0 0);
   --secondary-fg: oklch(0.97 0.003 30);
   --accent: oklch(0.7 0.16 35);
   --accent-hover: oklch(0.76 0.17 35);
   --accent-soft: oklch(0.32 0.06 35);
   --accent-fg: oklch(0.14 0.012 250);
-  --muted: oklch(0.25 0.012 250);
+  --muted: oklch(0.25 0 0);
   --muted-fg: oklch(0.7 0.01 30);
-  --card: oklch(0.22 0.015 250);
+  --card: oklch(0.22 0 0);
   --card-fg: oklch(0.97 0.003 30);
-  --popover: oklch(0.22 0.015 250);
+  --popover: oklch(0.22 0 0);
   --popover-fg: oklch(0.97 0.003 30);
   --ring: oklch(0.65 0.1 250);
   --success: oklch(0.7 0.14 150);
@@ -226,9 +228,9 @@ html[data-brand="A"][data-mode="dark"] {
   --danger-fg: oklch(0.97 0 0);
   --info: oklch(0.7 0.14 230);
   --info-fg: oklch(0.14 0.012 250);
-  --sidebar: oklch(0.18 0.012 250);
+  --sidebar: oklch(0.18 0 0);
   --sidebar-fg: oklch(0.97 0.003 30);
-  --sidebar-border: oklch(0.3 0.015 250);
+  --sidebar-border: oklch(0.3 0 0);
   --sidebar-accent: oklch(0.32 0.06 35);
   --sidebar-accent-fg: oklch(0.97 0.003 30);
   --radius-sm: 0.25rem;
@@ -287,16 +289,18 @@ html[data-brand="B"][data-mode="light"] {
   --radius-xl: 1rem;
 }
 
+/* Neutral dark surfaces since 2026-11-06 (see brand A). --secondary and
+ * --sidebar-accent keep the brand green tint on purpose. */
 html[data-brand="B"][data-mode="dark"] {
-  --bg: oklch(0.15 0.01 240);
-  --bg-elev: oklch(0.19 0.012 240);
-  --surface: oklch(0.21 0.013 240);
-  --surface-2: oklch(0.24 0.014 240);
+  --bg: oklch(0 0 0);
+  --bg-elev: oklch(0.19 0 0);
+  --surface: oklch(0.21 0 0);
+  --surface-2: oklch(0.24 0 0);
   --fg: oklch(0.97 0.003 240);
   --fg-muted: oklch(0.72 0.008 240);
   --fg-subtle: oklch(0.58 0.006 240);
-  --border: oklch(0.3 0.012 240);
-  --border-strong: oklch(0.4 0.014 240);
+  --border: oklch(0.3 0 0);
+  --border-strong: oklch(0.4 0 0);
   --primary: oklch(0.72 0.22 145);
   --primary-hover: oklch(0.78 0.22 145);
   --primary-fg: oklch(0.15 0.01 240);
@@ -306,11 +310,11 @@ html[data-brand="B"][data-mode="dark"] {
   --accent-hover: oklch(0.76 0.2 220);
   --accent-soft: oklch(0.3 0.06 220);
   --accent-fg: oklch(0.15 0.01 240);
-  --muted: oklch(0.24 0.012 240);
+  --muted: oklch(0.24 0 0);
   --muted-fg: oklch(0.7 0.008 240);
-  --card: oklch(0.21 0.013 240);
+  --card: oklch(0.21 0 0);
   --card-fg: oklch(0.97 0.003 240);
-  --popover: oklch(0.21 0.013 240);
+  --popover: oklch(0.21 0 0);
   --popover-fg: oklch(0.97 0.003 240);
   --ring: oklch(0.72 0.22 145);
   --success: oklch(0.75 0.18 150);
@@ -321,9 +325,9 @@ html[data-brand="B"][data-mode="dark"] {
   --danger-fg: oklch(0.97 0 0);
   --info: oklch(0.72 0.2 220);
   --info-fg: oklch(0.15 0.01 240);
-  --sidebar: oklch(0.17 0.01 240);
+  --sidebar: oklch(0.17 0 0);
   --sidebar-fg: oklch(0.97 0.003 240);
-  --sidebar-border: oklch(0.3 0.012 240);
+  --sidebar-border: oklch(0.3 0 0);
   --sidebar-accent: oklch(0.28 0.05 145);
   --sidebar-accent-fg: oklch(0.97 0.003 240);
   --radius-sm: 0.375rem;
@@ -382,8 +386,9 @@ html[data-brand="C"][data-mode="light"] {
   --radius-xl: 0.875rem;
 }
 
+/* --bg matches --bq-wall-a (#000000) since 2026-11-06 (see brand A). */
 html[data-brand="C"][data-mode="dark"] {
-  --bg: oklch(0.14 0 0);
+  --bg: oklch(0 0 0);
   --bg-elev: oklch(0.18 0 0);
   --surface: oklch(0.2 0 0);
   --surface-2: oklch(0.23 0 0);
@@ -514,16 +519,16 @@ html[data-brand="C"][data-mode="dark"] {
   }
 }
 
-/* SPEC-010: literal mockup tokens, namespaced to preserve existing brand settings. */
+/* SPEC-010: mockup tokens, namespaced to preserve existing brand settings. Dark surface values swapped to neutral black on 2026-11-06 by Doc decision (see DESIGN.md §2). */
 :root {
-  --bq-wall-a: #08090c;
-  --bq-wall-b: #111318;
+  --bq-wall-a: #000000;
+  --bq-wall-b: #0e0e0e;
   --bq-glow-1: rgb(255 255 255 / 0.035);
-  --bq-glow-2: rgb(139 147 255 / 0.07);
-  --bq-win: rgb(15 16 20 / 0.58);
-  --bq-win-solid: #141519;
-  --bq-glass: rgb(26 28 34 / 0.52);
-  --bq-glass-strong: rgb(20 21 26 / 0.86);
+  --bq-glow-2: rgb(255 255 255 / 0.07);
+  --bq-win: rgb(12 12 12 / 0.58);
+  --bq-win-solid: #111111;
+  --bq-glass: rgb(24 24 24 / 0.52);
+  --bq-glass-strong: rgb(18 18 18 / 0.86);
   --bq-surface: rgb(255 255 255 / 0.025);
   --bq-raised: rgb(255 255 255 / 0.05);
   --bq-raised-2: rgb(255 255 255 / 0.085);
@@ -537,7 +542,7 @@ html[data-brand="C"][data-mode="dark"] {
   --bq-accent: #e6e7eb;
   --bq-accent-text: #f1f2f4;
   --bq-accent-soft: rgb(255 255 255 / 0.09);
-  --bq-on-accent: #0e0f12;
+  --bq-on-accent: #0e0e0e;
   --bq-unread-bg: var(--bq-accent);
   --bq-agent: #8b93ff;
   --bq-agent-text: #a9afff;
@@ -558,7 +563,7 @@ html[data-brand="C"][data-mode="dark"] {
   --bq-bubble-out: rgb(15 157 148 / 0.18);
   --bq-bubble-out-hair: rgb(15 157 148 / 0.32);
   --bq-solid-bg: #f1f2f4;
-  --bq-solid-fg: #0e0f12;
+  --bq-solid-fg: #0e0e0e;
   --bq-av-l: 0.38;
   --bq-av-c: 0.045;
   --bq-av-fg: #f1f2f4;
@@ -1145,7 +1150,7 @@ html[data-mode="light"] {
 }
 
 /* SPEC-010 amendment 23(b): Doc-approved contrast, 2026-10-28. */
-:root { --bq-on-agent-forced: #0f1014; }
+:root { --bq-on-agent-forced: #0f0f0f; }
 html[data-mode="light"] { --bq-on-agent-forced: #ffffff; }
 @theme inline { --color-bq-on-agent-forced: var(--bq-on-agent-forced); }
 

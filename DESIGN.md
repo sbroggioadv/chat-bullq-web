@@ -88,14 +88,14 @@ colors:
 dark:
   synq-brand: "#0F9D94"
   synq-brand-fg: "#0e0f12"
-  wall-a: "#08090c"
-  wall-b: "#111318"
+  wall-a: "#000000"
+  wall-b: "#0e0e0e"
   glow-1: rgb(255 255 255 / 0.035)
-  glow-2: rgb(139 147 255 / 0.07)
-  win: rgb(15 16 20 / 0.58)
-  win-solid: "#141519"
-  glass: rgb(26 28 34 / 0.52)
-  glass-strong: rgb(20 21 26 / 0.86)
+  glow-2: rgb(255 255 255 / 0.07)
+  win: rgb(12 12 12 / 0.58)
+  win-solid: "#111111"
+  glass: rgb(24 24 24 / 0.52)
+  glass-strong: rgb(18 18 18 / 0.86)
   surface: rgb(255 255 255 / 0.025)
   raised: rgb(255 255 255 / 0.05)
   raised-2: rgb(255 255 255 / 0.085)
@@ -107,7 +107,7 @@ dark:
   accent: "#e6e7eb"
   accent-text: "#f1f2f4"
   accent-soft: rgb(255 255 255 / 0.09)
-  on-accent: "#0e0f12"
+  on-accent: "#0e0e0e"
   agent: "#8b93ff"
   agent-text: "#a9afff"
   agent-soft: rgb(139 147 255 / 0.13)
@@ -124,25 +124,25 @@ dark:
   bubble-out: rgb(15 157 148 / 0.18)
   bubble-out-hair: rgb(15 157 148 / 0.32)
   solid-bg: "#f1f2f4"
-  solid-fg: "#0e0f12"
+  solid-fg: "#0e0e0e"
   av-fg: "#f1f2f4"
   wa: "#25d366"
   ig: "#e1306c"
   mail: "#5b8def"
   tg: "#2aabee"
   primary: "#f1f2f4"
-  primary-foreground: "#0e0f12"
-  background: "#08090c"
+  primary-foreground: "#0e0e0e"
+  background: "#000000"
   foreground: "#f1f2f4"
-  card: "#141519"
+  card: "#111111"
   card-foreground: "#f1f2f4"
-  popover: rgb(20 21 26 / 0.86)
+  popover: rgb(18 18 18 / 0.86)
   popover-foreground: "#f1f2f4"
   secondary: rgb(255 255 255 / 0.05)
   secondary-foreground: "#b8bdc7"
   muted: rgb(255 255 255 / 0.025)
   muted-foreground: "#9298a2"
-  accent-foreground: "#0e0f12"
+  accent-foreground: "#0e0e0e"
   destructive: "#ff7b7b"
   border: rgb(255 255 255 / 0.07)
   input: rgb(255 255 255 / 0.13)
@@ -152,7 +152,7 @@ dark:
   neutral: "#9298a2"
   switch-thumb-on: "#ffffff"
   on-channel: "#ffffff"
-  on-agent-forced: "#0f1014"
+  on-agent-forced: "#0f0f0f"
   on-avatar-owner: "#ffffff"
 fonts:
   sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Geist", "Segoe UI", system-ui, sans-serif
@@ -300,7 +300,7 @@ elevation:
 components:
   button-primary:
     backgroundColor: "#f1f2f4"
-    textColor: "#0e0f12"
+    textColor: "#0e0e0e"
     borderRadius: 9px
     height: 30px
   button-secondary:
@@ -312,7 +312,7 @@ components:
     textColor: "#a9afff"
   nav-header:
     height: 52px
-    backgroundColor: rgb(26 28 34 / 0.52)
+    backgroundColor: rgb(24 24 24 / 0.52)
   pill:
     height: 20px
     borderRadius: 6px
@@ -321,10 +321,10 @@ components:
     borderRadius: 9px
   menu:
     borderRadius: 12px
-    backgroundColor: rgb(20 21 26 / 0.86)
+    backgroundColor: rgb(18 18 18 / 0.86)
   window:
     borderRadius: 18px
-    backgroundColor: rgb(15 16 20 / 0.58)
+    backgroundColor: rgb(12 12 12 / 0.58)
   button-primary-hover:
     backgroundColor: rgb(255 255 255 / 0.05)
     textColor: "#f1f2f4"
@@ -332,7 +332,7 @@ components:
     backgroundColor: transparent
     textColor: "#f1f2f4"
   card:
-    backgroundColor: "#141519"
+    backgroundColor: "#111111"
     textColor: "#f1f2f4"
   input-text:
     backgroundColor: rgb(255 255 255 / 0.05)
@@ -344,19 +344,19 @@ components:
     height: 20px
     borderRadius: 6px
 preview_tokens:
-  surface_bg: "#141519"
+  surface_bg: "#111111"
   surface_fg: "#f1f2f4"
   cta_bg: "#f1f2f4"
-  cta_fg: "#0e0f12"
+  cta_fg: "#0e0e0e"
 brand_primitives:
-  wall-a: "#08090c"
-  wall-b: "#111318"
+  wall-a: "#000000"
+  wall-b: "#0e0e0e"
   glow-1: rgb(255 255 255 / 0.035)
-  glow-2: rgb(139 147 255 / 0.07)
-  win: rgb(15 16 20 / 0.58)
-  win-solid: "#141519"
-  glass: rgb(26 28 34 / 0.52)
-  glass-strong: rgb(20 21 26 / 0.86)
+  glow-2: rgb(255 255 255 / 0.07)
+  win: rgb(12 12 12 / 0.58)
+  win-solid: "#111111"
+  glass: rgb(24 24 24 / 0.52)
+  glass-strong: rgb(18 18 18 / 0.86)
   surface: rgb(255 255 255 / 0.025)
   raised: rgb(255 255 255 / 0.05)
   raised-2: rgb(255 255 255 / 0.085)
@@ -368,7 +368,7 @@ brand_primitives:
   accent: "#e6e7eb"
   accent-text: "#f1f2f4"
   accent-soft: rgb(255 255 255 / 0.09)
-  on-accent: "#0e0f12"
+  on-accent: "#0e0e0e"
   agent: "#8b93ff"
   agent-text: "#a9afff"
   agent-soft: rgb(139 147 255 / 0.13)
@@ -385,7 +385,7 @@ brand_primitives:
   bubble-out: rgb(15 157 148 / 0.18)
   bubble-out-hair: rgb(15 157 148 / 0.32)
   solid-bg: "#f1f2f4"
-  solid-fg: "#0e0f12"
+  solid-fg: "#0e0e0e"
   av-l: "0.38"
   av-c: "0.045"
   av-fg: "#f1f2f4"
@@ -465,14 +465,14 @@ source_tokens:
     ring: "#c4623f"
     scrim: rgb(20 24 34 / 0.22)
   dark:
-    wall-a: "#08090c"
-    wall-b: "#111318"
+    wall-a: "#000000"
+    wall-b: "#0e0e0e"
     glow-1: rgb(255 255 255 / 0.035)
-    glow-2: rgb(139 147 255 / 0.07)
-    win: rgb(15 16 20 / 0.58)
-    win-solid: "#141519"
-    glass: rgb(26 28 34 / 0.52)
-    glass-strong: rgb(20 21 26 / 0.86)
+    glow-2: rgb(255 255 255 / 0.07)
+    win: rgb(12 12 12 / 0.58)
+    win-solid: "#111111"
+    glass: rgb(24 24 24 / 0.52)
+    glass-strong: rgb(18 18 18 / 0.86)
     surface: rgb(255 255 255 / 0.025)
     raised: rgb(255 255 255 / 0.05)
     raised-2: rgb(255 255 255 / 0.085)
@@ -484,7 +484,7 @@ source_tokens:
     accent: "#e6e7eb"
     accent-text: "#f1f2f4"
     accent-soft: rgb(255 255 255 / 0.09)
-    on-accent: "#0e0f12"
+    on-accent: "#0e0e0e"
     agent: "#8b93ff"
     agent-text: "#a9afff"
     agent-soft: rgb(139 147 255 / 0.13)
@@ -501,7 +501,7 @@ source_tokens:
     bubble-out: rgb(15 157 148 / 0.18)
     bubble-out-hair: rgb(15 157 148 / 0.32)
     solid-bg: "#f1f2f4"
-    solid-fg: "#0e0f12"
+    solid-fg: "#0e0e0e"
     av-l: "0.38"
     av-c: "0.045"
     av-fg: "#f1f2f4"
@@ -515,18 +515,18 @@ source_tokens:
     f-display: '"Geist", -apple-system, "SF Pro Display", system-ui, sans-serif'
     f-mono: '"Geist Mono", ui-monospace, "SF Mono", Menlo, monospace'
     primary: "#f1f2f4"
-    primary-foreground: "#0e0f12"
-    background: "#08090c"
+    primary-foreground: "#0e0e0e"
+    background: "#000000"
     foreground: "#f1f2f4"
-    card: "#141519"
+    card: "#111111"
     card-foreground: "#f1f2f4"
-    popover: rgb(20 21 26 / 0.86)
+    popover: rgb(18 18 18 / 0.86)
     popover-foreground: "#f1f2f4"
     secondary: rgb(255 255 255 / 0.05)
     secondary-foreground: "#b8bdc7"
     muted: rgb(255 255 255 / 0.025)
     muted-foreground: "#9298a2"
-    accent-foreground: "#0e0f12"
+    accent-foreground: "#0e0e0e"
     destructive: "#ff7b7b"
     border: rgb(255 255 255 / 0.07)
     input: rgb(255 255 255 / 0.13)
@@ -788,7 +788,7 @@ mockup_support:
   bq-owner-l: "0.5"
   bq-owner-c: "0.08"
   bq-on-channel: "#ffffff"
-  bq-on-agent-forced: "#0f1014"
+  bq-on-agent-forced: "#0f0f0f"
   bq-on-avatar-owner: "#ffffff"
   bq-blur-contact: "28px"
   bq-saturate-contact: "170%"
@@ -847,7 +847,25 @@ Aviso em Configurações de IA (item 37(b)): o texto claro medido na classe Tail
 
 Texto sutil de Aparência (item 37(c)): `--fg-subtle` também é usado como fundo e permanece inalterado; no texto medido, `--bq-fg-subtle-text` separa o uso: escuro `#807877` → `#837b7a`, de 4,3286:1 para 4,5138:1; claro `#7a8189` → `#6c737a`, de 3,6926:1 para 4,5019:1. Os valores e razões são da base e de projeção sobre seus fundos; a seção não possui equivalente no mockup das nove telas.
 
-Na mesma decisão, item 23(b), `on-agent-forced` usa `#0f1014` sobre o roxo `agent` escuro `#8b93ff` (6,99:1), em vez de branco. No claro, permanece branco sobre `#5b63e0` (4,88:1). A classe opt-in `text-bq-on-agent-forced` resolve o token conforme `data-mode`; o fundo não muda.
+Na mesma decisão, item 23(b), `on-agent-forced` usa `#0f0f0f` sobre o roxo `agent` escuro `#8b93ff` (7,04:1 desde o escuro neutro de 06/11/2026; antes 6,99:1), em vez de branco. No claro, permanece branco sobre `#5b63e0` (4,88:1). A classe opt-in `text-bq-on-agent-forced` resolve o token conforme `data-mode`; o fundo não muda.
+
+Decisão do Doc em 06/11/2026: dark neutro preto. O tema escuro deixa o grafite azulado do mockup e passa a preto e cinzas neutros (R=G=B), mantendo a ordem de luminância entre as camadas. Pares trocados no commit `edeb762`, no `:root` de `globals.css`: `--bq-wall-a` `#08090c` → `#000000`; `--bq-wall-b` `#111318` → `#0e0e0e`; `--bq-glow-2` `rgb(139 147 255 / 0.07)` → `rgb(255 255 255 / 0.07)`; `--bq-win` `rgb(15 16 20 / 0.58)` → `rgb(12 12 12 / 0.58)`; `--bq-win-solid` `#141519` → `#111111`; `--bq-glass` `rgb(26 28 34 / 0.52)` → `rgb(24 24 24 / 0.52)`; `--bq-glass-strong` `rgb(20 21 26 / 0.86)` → `rgb(18 18 18 / 0.86)`; `--bq-on-accent` `#0e0f12` → `#0e0e0e`; `--bq-solid-fg` `#0e0f12` → `#0e0e0e`; `--bq-on-agent-forced` (escuro) `#0f1014` → `#0f0f0f`. Por isso, os valores escuros desses tokens no front matter (`dark`, `brand_primitives`, `source_tokens.dark`, `mockup_support` e os espelhos em `components` e `preview_tokens`) não são mais os do mockup citado na seção 1. O tema claro, o token de marca `synq-brand-fg` (`#0e0f12`), os estados, a IA, as bolhas e o texto não mudaram. A camada de marca (`--bg`, `--card`, `--popover`, `--border`, `--sidebar` do bloco `html[data-brand][data-mode="dark"]`) ficou fora desta decisão e foi tratada na decisão seguinte, do mesmo dia.
+
+Decisão do Doc em 06/11/2026: camada de marca dark neutra. "Dark era pra ser preto, como no primeiro mockup", para o app todo. Os utilitários `bg-background`, `bg-card`, `bg-popover`, `bg-muted`, `bg-sidebar` e `border-border` não leem os tokens `--bq-*`: leem a camada de marca (`@theme inline` de `globals.css`), que no dark ainda tinha cinzas com matiz 250 (azulado). Nos blocos `html[data-brand="A|B|C"][data-mode="dark"]`, os tokens de superfície e borda passam a `oklch(L 0 0)`, com a mesma luminosidade L e croma 0. A exceção é `--bg`, que vai a `oklch(0 0 0)` = `#000000`, o mesmo preto de `--bq-wall-a`, para a janela, o login e o fundo da página ficarem no mesmo preto; com isso, `dark.background` do front matter passa a bater com o que `bg-background` desenha. Marca A (padrão; orgs sem marca herdam A):
+
+| Token (marca A, dark) | Antes | Depois |
+|---|---|---|
+| `--bg` | `oklch(0.16 0.012 250)` `#090e12` | `oklch(0 0 0)` `#000000` |
+| `--bg-elev` | `oklch(0.2 0.014 250)` `#11171c` | `oklch(0.2 0 0)` `#161616` |
+| `--surface`, `--card`, `--popover` | `oklch(0.22 0.015 250)` `#151b21` | `oklch(0.22 0 0)` `#1b1b1b` |
+| `--surface-2` | `oklch(0.25 0.016 250)` `#1c2229` | `oklch(0.25 0 0)` `#222222` |
+| `--secondary` | `oklch(0.25 0.014 250)` `#1d2228` | `oklch(0.25 0 0)` `#222222` |
+| `--muted` | `oklch(0.25 0.012 250)` `#1d2227` | `oklch(0.25 0 0)` `#222222` |
+| `--border`, `--sidebar-border` | `oklch(0.3 0.015 250)` `#282f35` | `oklch(0.3 0 0)` `#2e2e2e` |
+| `--border-strong` | `oklch(0.4 0.018 250)` `#414951` | `oklch(0.4 0 0)` `#484848` |
+| `--sidebar` | `oklch(0.18 0.012 250)` `#0e1217` | `oklch(0.18 0 0)` `#121212` |
+
+Marca B: `--bg` `oklch(0.15 0.01 240)` → `oklch(0 0 0)`; `--bg-elev` `oklch(0.19 0.012 240)` → `oklch(0.19 0 0)`; `--surface`, `--card` e `--popover` `oklch(0.21 0.013 240)` → `oklch(0.21 0 0)`; `--surface-2` `oklch(0.24 0.014 240)` → `oklch(0.24 0 0)`; `--muted` `oklch(0.24 0.012 240)` → `oklch(0.24 0 0)`; `--border` e `--sidebar-border` `oklch(0.3 0.012 240)` → `oklch(0.3 0 0)`; `--border-strong` `oklch(0.4 0.014 240)` → `oklch(0.4 0 0)`; `--sidebar` `oklch(0.17 0.01 240)` → `oklch(0.17 0 0)`. Na marca B, `--secondary` (`oklch(0.28 0.05 145)`) e `--sidebar-accent` mantêm o verde da marca: fazem par com `--secondary-fg` verde e são cor de marca, não superfície. Marca C: as superfícies já eram neutras; só `--bg` `oklch(0.14 0 0)` → `oklch(0 0 0)`. Não mudaram: tema claro, `--primary`, `--accent`, `--accent-soft`, `--sidebar-accent`, `--ring`, estados, os tokens de texto (`--fg*`, `--*-fg`) e todos os `--bq-*`. Razões de luminância na marca A, antes → depois: `card` × `bg` 1,118 → 1,219; `sidebar` × `bg` 1,032 → 1,121; `border` × `bg` 1,429 → 1,546; `border` × `card` 1,279 → 1,268; `fg` × `card` 15,86 → 15,75. Ainda diverge: `dark.card` (`#111111`) e `dark.popover` (`rgb(18 18 18 / 0.86)`) do front matter descrevem a casca SPEC-010 (`--bq-win-solid`, `--bq-glass-strong`); `bg-card` e `bg-popover` desenham `#1b1b1b`, neutro como eles, mas um degrau mais claro. Organização que salvou fundo, superfície, borda ou barra lateral própria no editor de tema continua sobrescrevendo esses tokens em runtime (`BrandThemeBridge` + `buildThemeOverrideCss`); sem essas cores salvas, vale a camada de marca. Teste: `src/app/globals-dark-neutral.test.ts`.
 
 ## 3. Typography Rules
 Interface com tamanho de 13 pixels e entrelinha 1,45 na pilha nativa SF Pro Text/Geist. Títulos de página em Geist/SF Pro Display com peso 500; breadcrumb na fonte de UI com peso 600. Números e atalhos usam Geist Mono/SF Mono. Geist (300, 400, 500, 600) e Geist Mono variável vêm do Google Fonts pelo `next/font/google`, com `display: swap`; o Next as baixa na build e as serve localmente. A interface usa os pesos 400 e 500 da Geist Mono; a fonte variável é a forma que passou nas duas datas e não muda o desenho. A falha com pesos fixos de 28/10 não se reproduziu em 29/10; sua causa permanece em aberto. A família `font-mono` do Tailwind usa `var(--bq-f-mono)`. As pilhas preservam a ordem e os fallbacks do mockup.
@@ -869,7 +887,7 @@ A busca fica oculta até 1120px. Em largura até 560px, trilho fixo de 52px, ite
 
 ## 9. Agent Prompt Guide
 ### Quick Color Reference
-- Grafite escuro: #141519; texto: #f1f2f4.
+- Grafite escuro: #111111; texto: #f1f2f4.
 - Claro: #ffffff; texto: #12141a.
 - IA escura: #8b93ff; clara: #5b63e0.
 ### Example Component Prompts
@@ -1182,7 +1200,7 @@ Os tokens anteriores permanecem intactos. Coeficientes e cores abaixo estão no 
 | --bq-owner-l | 0.5 | 1135 |
 | --bq-owner-c | 0.08 | 1135 |
 | --bq-on-channel | #ffffff | 132 |
-| --bq-on-agent-forced | escuro #0f1014; claro #ffffff | 1133; Emenda 1, 23(b) |
+| --bq-on-agent-forced | escuro #0f0f0f; claro #ffffff | 1133; Emenda 1, 23(b) |
 | --bq-on-avatar-owner | #ffffff | 1135 |
 | --bq-blur-contact | 28px | 731 |
 | --bq-saturate-contact | 170% | 731 |
@@ -1196,7 +1214,7 @@ Os tokens anteriores permanecem intactos. Coeficientes e cores abaixo estão no 
 - .chb (132–133): bq-channel-badge como irmão de Avatar dentro de wrapper relative; --bq-channel-color recebe var(--bq-wa/ig/mail/tg), nunca hex local.16×16, right/bottom -space-micro, halo border-focus2px win-solid, glifo9/traço2.6. O irmão evita recortar o selo no overflow-hidden de Avatar.
 - .own-btn .av-mini (1135): Avatar com bq-avatar-mockup bq-avatar-owner,26px/10.5px, branco/oklch(.5 .08 hue). Sem responsável, aplicar raised-2/t3/hair-strong e conteúdo honesto da raia.
 - Status (1618): Novo→info; Em atendimento→warn; Aguardando cliente→agent; Resolvido→ok. A raia usa apenas estados reais suportados. Não inferir semântica dos enums não mapeados.
-- IA (1130–1133): padrão agent-soft/agent-text; pausada warn-soft/warn; forçada agent/on-agent-forced (escuro #0f1014; claro #ffffff), conforme decisão do Doc de 28/10/2026. Usar text-bq-on-agent-forced, sem substituir por on-accent.
+- IA (1130–1133): padrão agent-soft/agent-text; pausada warn-soft/warn; forçada agent/on-agent-forced (escuro #0f0f0f; claro #ffffff), conforme decisão do Doc de 28/10/2026. Usar text-bq-on-agent-forced, sem substituir por on-accent.
 - Canal (1611–1616): WhatsApp wa#25d366, Instagram ig#e1306c, E-mail mail#5b8def, Telegram tg#2aabee; tokens já existentes, constantes entre temas.
 - Contrato de métricas: blur-bq-contact e backdrop-blur-bq-contact=28px; backdrop-bq-contact compõe blur28px + saturate170%; z-bq-contact=20 (731). opacity-bq-dragging=.45 (875). Para aplicações CSS diretas, usar var(--bq-*) acima.
 - Espaço -2px do selo = calc(-1 * var(--bq-space-micro)); anel4px do compositor = --bq-space-xs; 40% da lista de Projetos = --bq-size-40percent; colunas mínimas340px = --bq-size-email-list (mesmo valor literal), gap14px = --bq-space-section.
