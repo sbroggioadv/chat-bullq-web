@@ -40,7 +40,7 @@ export const conversationInsightsService = {
     const { data } = await api.get(`${idPath(id)}/messages/around/${encodeURIComponent(messageId)}`, { params: { limit: 40 }, signal }); return data.data;
   },
   async summary(id: string, signal?: AbortSignal): Promise<ConversationSummary | null> {
-    const { data } = await api.get(`${idPath(id)}/summary`, { signal }); return data.data;
+    const { data } = await api.get(`${idPath(id)}/summary`, { signal }); return data?.data ?? null;
   },
   async generateSummary(id: string, force = false): Promise<ConversationSummary> {
     const { data } = await api.post(`${idPath(id)}/summary`, { force }); return data.data;

@@ -13,6 +13,10 @@ it('não consulta entrada inválida', async () => {
   await expect(service.search('c1', 'a')).rejects.toThrow('dois caracteres');
   await expect(service.summary('')).rejects.toThrow('Conversa inválida'); expect(mocks.get).not.toHaveBeenCalled();
 });
+it('summary tolera corpo null e lê o resumo salvo em data', async () => {
+  mocks.get.mockResolvedValueOnce({ data: null }); await expect(service.summary('c1')).resolves.toBeNull();
+  mocks.get.mockResolvedValueOnce({ data: { data: { text: 'Resumo' } } }); await expect(service.summary('c1')).resolves.toEqual({ text: 'Resumo' });
+});
 it('lê null sem geração e envia force somente no POST', async () => {
   mocks.get.mockResolvedValue({ data: { data: null } }); await expect(service.summary('c1')).resolves.toBeNull(); expect(mocks.post).not.toHaveBeenCalled();
   mocks.post.mockResolvedValue({ data: { data: { text: 'Resumo' } } }); await service.generateSummary('c1', true); expect(mocks.post).toHaveBeenCalledWith('/conversations/c1/summary', { force: true });
