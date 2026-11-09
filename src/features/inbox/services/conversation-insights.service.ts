@@ -43,7 +43,7 @@ export const conversationInsightsService = {
     const { data } = await api.get(`${idPath(id)}/summary`, { signal }); return data?.data ?? null;
   },
   async generateSummary(id: string, force = false): Promise<ConversationSummary> {
-    const { data } = await api.post(`${idPath(id)}/summary`, { force }); return data.data;
+    const { data } = await api.post(`${idPath(id)}/summary`, { force }, { timeout: 90000 }); return data.data;
   },
   async attachments(id: string, kind: AttachmentKind | 'all' = 'all', before?: string, signal?: AbortSignal): Promise<CursorPage<ConversationAttachment>> {
     const { data } = await api.get(`${idPath(id)}/attachments`, { params: { kind, limit: 50, before }, signal }); return data.data;

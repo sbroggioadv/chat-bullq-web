@@ -19,7 +19,11 @@ it('summary tolera corpo null e lê o resumo salvo em data', async () => {
 });
 it('lê null sem geração e envia force somente no POST', async () => {
   mocks.get.mockResolvedValue({ data: { data: null } }); await expect(service.summary('c1')).resolves.toBeNull(); expect(mocks.post).not.toHaveBeenCalled();
-  mocks.post.mockResolvedValue({ data: { data: { text: 'Resumo' } } }); await service.generateSummary('c1', true); expect(mocks.post).toHaveBeenCalledWith('/conversations/c1/summary', { force: true });
+  mocks.post.mockResolvedValue({ data: { data: { text: 'Resumo' } } }); await service.generateSummary('c1', true); expect(mocks.post).toHaveBeenCalledWith('/conversations/c1/summary', { force: true }, { timeout: 90000 });
+});
+it('generateSummary usa timeout de 90000 ms no POST (geração leva ~37 s)', async () => {
+  mocks.post.mockResolvedValue({ data: { data: { text: 'Resumo' } } }); await service.generateSummary('c1');
+  expect(mocks.post).toHaveBeenCalledWith('/conversations/c1/summary', { force: false }, { timeout: 90000 });
 });
 for (const code of [403, 404, 429, 500]) it(`propaga erro ${code} sem inventar dado nem repetir geração`, async () => {
   const error = new Error(`HTTP ${code}`); mocks.get.mockRejectedValue(error); mocks.post.mockRejectedValue(error);
