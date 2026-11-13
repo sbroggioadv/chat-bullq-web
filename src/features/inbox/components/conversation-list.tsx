@@ -443,7 +443,7 @@ export function ConversationList({ activeId, onSelect, viewId }: ConversationLis
       if (activeTab === 'all' || activeTab === 'projects' || activeTab === 'mentorships') {
         if (!selectedSegmentId && (!hasProjectFilter || activeTab === 'projects' || activeTab === 'mentorships')) delete params.groups;
       }
-      if (activeTab === 'projects') params.projectKind = 'ANY';
+      if (activeTab === 'projects') params.projectKind = 'PROJECT';
       if (activeTab === 'mentorships') params.projectKind = 'MENTORSHIP';
       if (pins) { params.ids = pins.join(','); params.limit = '20'; }
       if (debouncedSearch) params.search = debouncedSearch;

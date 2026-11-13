@@ -114,7 +114,7 @@ it('consulta as abas Projetos e Mentorias com os tipos corretos sem forçar grup
   render(<QueryClientProvider client={client}><InboxPage /></QueryClientProvider>);
   await screen.findByText('Contato fixture');
   fireEvent.click(screen.getByRole('button', { name: 'Projetos', exact: true }));
-  await waitFor(() => expect(fixture.params.some(p => p.projectKind === 'ANY' && !p.groups)).toBe(true));
+  await waitFor(() => expect(fixture.params.some(p => p.projectKind === 'PROJECT' && !p.groups)).toBe(true));
   fireEvent.click(screen.getByRole('button', { name: 'Mentorias', exact: true }));
   await waitFor(() => expect(fixture.params.some(p => p.projectKind === 'MENTORSHIP' && !p.groups)).toBe(true));
   client.clear();
