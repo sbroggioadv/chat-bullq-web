@@ -51,7 +51,7 @@ it.each([undefined, 'view-1'])('filtra projetos e mentorias e mantém cache sepa
   await waitFor(() => expect(list).toHaveBeenCalled());
   expect(params()).not.toHaveProperty('projectKind');
   fireEvent.click(screen.getByRole('button', { name: 'Projetos' }));
-  await waitFor(() => expect(params()).toMatchObject({ projectKind: 'ANY' }));
+  await waitFor(() => expect(params()).toMatchObject({ projectKind: 'PROJECT' }));
   expect(params()).not.toHaveProperty('groups');
   expect(await screen.findByText('Nenhuma conversa com projeto. Vincule um projeto à conversa no cabeçalho.')).toBeVisible();
   fireEvent.click(screen.getByRole('button', { name: 'Mentorias' }));
