@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useVisible } from '@/features/inbox/hooks/use-visible';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { conversationInsightsService, type AttachmentKind, type AttachmentOrigin, type ConversationAttachment } from '@/features/inbox/services/conversation-insights.service';
@@ -12,8 +12,13 @@ export function AttachmentsSection({ conversationId }: { conversationId: string 
 function AttachmentsContent({ conversationId }: { conversationId: string }) {
   const scope = useInsightsScope(); const [kind, setKind] = useState<AttachmentKind | 'all'>('all');
   const [q, setQ] = useState('');
+  const [debouncedQ, setDebouncedQ] = useState('');
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQ(q), 300);
+    return () => clearTimeout(timer);
+  }, [q]);
   const [origin, setOrigin] = useState<AttachmentOrigin | 'all'>('all');
-  const filters = { ...(q.trim() ? { q: q.trim() } : {}), ...(origin !== 'all' ? { origin } : {}) };
+  const filters = { ...(debouncedQ.trim() ? { q: debouncedQ.trim() } : {}), ...(origin !== 'all' ? { origin } : {}) };
   const files = useInfiniteQuery({
     queryKey: ['conversation-insights', scope, conversationId, 'attachments', kind, filters],
     initialPageParam: undefined as string | undefined,
