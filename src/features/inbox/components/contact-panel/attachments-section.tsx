@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useVisible } from '@/features/inbox/hooks/use-visible';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import { conversationInsightsService, type AttachmentKind, type ConversationAttachment } from '@/features/inbox/services/conversation-insights.service';
+import { conversationInsightsService, type AttachmentKind, type AttachmentOrigin, type ConversationAttachment } from '@/features/inbox/services/conversation-insights.service';
 import { InsightsError, insightBody, insightButton, insightDate, useInsightsScope } from '@/features/inbox/components/contact-panel/insights-shared';
 
 export function AttachmentsSection({ conversationId }: { conversationId: string }) {
@@ -11,17 +11,26 @@ export function AttachmentsSection({ conversationId }: { conversationId: string 
 }
 function AttachmentsContent({ conversationId }: { conversationId: string }) {
   const scope = useInsightsScope(); const [kind, setKind] = useState<AttachmentKind | 'all'>('all');
+  const [q, setQ] = useState('');
+  const [origin, setOrigin] = useState<AttachmentOrigin | 'all'>('all');
+  const filters = { ...(q.trim() ? { q: q.trim() } : {}), ...(origin !== 'all' ? { origin } : {}) };
   const files = useInfiniteQuery({
-    queryKey: ['conversation-insights', scope, conversationId, 'attachments', kind],
+    queryKey: ['conversation-insights', scope, conversationId, 'attachments', kind, filters],
     initialPageParam: undefined as string | undefined,
-    queryFn: ({ pageParam, signal }) => conversationInsightsService.attachments(conversationId, kind, pageParam, signal),
+    queryFn: ({ pageParam, signal }) => conversationInsightsService.attachments(conversationId, kind, pageParam, signal, filters),
     getNextPageParam: page => page.nextCursor ?? undefined, retry: false,
   });
   const items = files.isError ? [] : files.data?.pages.flatMap(page => page.items) ?? [];
   return <div className={insightBody}>
+    <label className="block">Buscar anexo por nome<input type="search" aria-label="Buscar anexo por nome" className="mt-1 block w-full rounded-bq-radius-field border border-[var(--bq-hair)] bg-[var(--bq-win-solid)] p-2" value={q} onChange={event => setQ(event.target.value)} /></label>
+    <div className="grid grid-cols-2 gap-2">
+    <label className="block">Origem do anexo<select aria-label="Origem do anexo" className="mt-1 block w-full rounded-bq-radius-field border border-[var(--bq-hair)] bg-[var(--bq-win-solid)] p-2" value={origin} onChange={event => setOrigin(event.target.value as AttachmentOrigin | 'all')}>
+      <option value="all">Tudo</option><option value="received">Recebidos</option><option value="sent">Enviados</option>
+    </select></label>
     <label className="block">Tipo de anexo<select aria-label="Tipo de anexo" className="mt-1 block w-full rounded-bq-radius-field border border-[var(--bq-hair)] bg-[var(--bq-win-solid)] p-2" value={kind} onChange={event => setKind(event.target.value as AttachmentKind | 'all')}>
       <option value="all">Todos</option><option value="image">Imagens</option><option value="video">Vídeos</option><option value="audio">Áudios</option><option value="document">Documentos</option>
     </select></label>
+    </div>
     {files.isPending && <p role="status">Carregando anexos…</p>}
     {files.isError && <InsightsError error={files.error} retry={() => { void files.refetch(); }} />}
     {files.isSuccess && !items.length && <p>Nenhum anexo encontrado.</p>}

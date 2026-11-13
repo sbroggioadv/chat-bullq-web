@@ -60,7 +60,7 @@ describe('F5 anexos', () => {
   it('mostra vazio e filtra pelo tipo', async () => {
     mount(<AttachmentsSection conversationId="c1" />); expect(await screen.findByText('Nenhum anexo encontrado.')).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('Tipo de anexo'), { target: { value: 'document' } });
-    await waitFor(() => expect(service.attachments).toHaveBeenLastCalledWith('c1', 'document', undefined, expect.anything()));
+    await waitFor(() => expect(service.attachments).toHaveBeenLastCalledWith('c1', 'document', undefined, expect.anything(), {}));
   });
   it('resolve miniatura, abre e baixa pelo serviço autenticado', async () => {
     vi.mocked(service.attachments).mockResolvedValue({ items: [{ messageId: 'm1', kind: 'image', fileName: 'imagem.png', mimeType: 'image/png', sizeBytes: 128, createdAt: hit.createdAt, direction: 'INBOUND', senderName: null, mediaPath: '/messages/m1/media' }], nextCursor: null });
@@ -107,7 +107,7 @@ it('anexos: paginação conserva arquivos anteriores', async () => {
   vi.mocked(service.attachments).mockResolvedValueOnce({ items: [file], nextCursor: 'm1' }).mockResolvedValueOnce({ items: [{ ...file, messageId: 'm2', fileName: 'proposta.pdf' }], nextCursor: null });
   vi.mocked(service.resolveMedia).mockResolvedValue({ url: 'https://example.com/file' }); mount(<AttachmentsSection conversationId="c1" />);
   fireEvent.click(await screen.findByRole('button', { name: 'Mais anexos' })); expect(await screen.findByText('proposta.pdf')).toBeInTheDocument(); expect(screen.getByText('Anexo')).toBeInTheDocument();
-  expect(service.attachments).toHaveBeenLastCalledWith('c1', 'all', 'm1', expect.anything());
+  expect(service.attachments).toHaveBeenLastCalledWith('c1', 'all', 'm1', expect.anything(), {});
 });
 it('resumo: uma resposta tardia da conversa anterior não aparece na conversa atual', async () => {
   let finish!: (data: typeof summary) => void;
@@ -174,4 +174,22 @@ it('anexos: mídia criptografada não abre e uma retentativa resolve a URL utili
   fireEvent.click(screen.getByRole('button', { name: 'Tentar novamente' }));
   expect(await screen.findByAltText('foto.png')).toHaveAttribute('src', 'https://example.com/decrypted.png');
   expect(service.resolveMedia).toHaveBeenCalledTimes(2);
+});
+
+it('anexos: busca e origem combinam com tipo, reiniciam paginação e preservam mídia', async () => {
+  const file = { messageId: 'filtered', kind: 'document' as const, fileName: 'Contrato.pdf', mimeType: null, sizeBytes: null, createdAt: hit.createdAt, direction: 'OUTBOUND' as const, senderName: null, mediaPath: '/messages/filtered/media' };
+  vi.mocked(service.attachments).mockImplementation(async (...args) => ({ items: args[1] === 'document' ? [file] : [], nextCursor: args[1] === 'all' ? 'old-page' : null }));
+  vi.mocked(service.resolveMedia).mockResolvedValue({ url: 'https://example.com/contract.pdf' });
+  mount(<AttachmentsSection conversationId="c1" />);
+  await screen.findByRole('button', { name: 'Mais anexos' });
+  fireEvent.click(screen.getByRole('button', { name: 'Mais anexos' }));
+  await waitFor(() => expect(service.attachments).toHaveBeenLastCalledWith('c1', 'all', 'old-page', expect.anything(), {}));
+  fireEvent.change(screen.getByRole('searchbox', { name: 'Buscar anexo por nome' }), { target: { value: 'contrato' } });
+  fireEvent.change(screen.getByLabelText('Origem do anexo'), { target: { value: 'sent' } });
+  fireEvent.change(screen.getByLabelText('Tipo de anexo'), { target: { value: 'document' } });
+  await waitFor(() => expect(service.attachments).toHaveBeenLastCalledWith('c1', 'document', undefined, expect.anything(), { q: 'contrato', origin: 'sent' }));
+  expect(await screen.findByRole('link', { name: 'Abrir Contrato.pdf' })).toHaveAttribute('href', 'https://example.com/contract.pdf');
+  expect(service.resolveMedia).toHaveBeenCalledWith('filtered');
+  fireEvent.click(screen.getByRole('button', { name: 'Baixar Contrato.pdf' }));
+  await waitFor(() => expect(service.download).toHaveBeenCalledWith('filtered', 'Contrato.pdf'));
 });
