@@ -6,6 +6,8 @@ export interface SearchHit {
   id: string; createdAt: string; direction: Message['direction']; type: string;
   senderName: string | null; snippet: string; matchStart: number; matchLength: number;
 }
+export type AttachmentOrigin = 'received' | 'sent';
+export interface AttachmentFilters { q?: string; origin?: AttachmentOrigin }
 export type AttachmentKind = 'image' | 'video' | 'audio' | 'document';
 export interface ConversationAttachment {
   messageId: string; kind: AttachmentKind; fileName: string | null; mimeType: string | null;
@@ -45,8 +47,8 @@ export const conversationInsightsService = {
   async generateSummary(id: string, force = false): Promise<ConversationSummary> {
     const { data } = await api.post(`${idPath(id)}/summary`, { force }, { timeout: 90000 }); return data.data;
   },
-  async attachments(id: string, kind: AttachmentKind | 'all' = 'all', before?: string, signal?: AbortSignal): Promise<CursorPage<ConversationAttachment>> {
-    const { data } = await api.get(`${idPath(id)}/attachments`, { params: { kind, limit: 50, before }, signal }); return data.data;
+  async attachments(id: string, kind: AttachmentKind | 'all' = 'all', before?: string, signal?: AbortSignal, filters: AttachmentFilters = {}): Promise<CursorPage<ConversationAttachment>> {
+    const { data } = await api.get(`${idPath(id)}/attachments`, { params: { kind, limit: 50, before, ...filters }, signal }); return data.data;
   },
   async meetings(id: string, signal?: AbortSignal): Promise<MeetingsResponse> {
     const { data } = await api.get(`${idPath(id)}/meetings`, { signal }); return data.data;

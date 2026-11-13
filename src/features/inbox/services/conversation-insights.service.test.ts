@@ -62,3 +62,9 @@ it('traduz falha de rede/CORS do download', async () => {
   try { await expect(service.download('m1', 'arquivo')).rejects.toThrow('Não foi possível baixar o arquivo. Tente abrir pelo botão Abrir.'); }
   finally { vi.unstubAllGlobals(); }
 });
+
+it('anexos envia busca e origem junto de tipo e cursor', async () => {
+  mocks.get.mockResolvedValue({ data: { data: { items: [], nextCursor: null } } });
+  await service.attachments('c1', 'document', 'm2', undefined, { q: 'contrato', origin: 'received' });
+  expect(mocks.get).toHaveBeenLastCalledWith('/conversations/c1/attachments', { params: { kind: 'document', limit: 50, before: 'm2', q: 'contrato', origin: 'received' }, signal: undefined });
+});
